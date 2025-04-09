@@ -1,0 +1,39 @@
+.navbar {
+  /* Make the navbar stick to the top */
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+
+  /* Basic styles */
+  background-color: #636363;
+  padding: 1rem;
+
+  /* Keep it above other elements */
+  z-index: 999;
+}
+
+.logo {
+  float: left;
+}
+
+.navLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /* Reset float so it sits on the right */
+  float: right;
+}
+
+.navLinks li {
+  display: inline-block;
+  margin-left: 2rem;
+}
+
+/* Clear floats */
+.navbar::after {
+  content: "";
+  display: block;
+  clear: both;
+}
