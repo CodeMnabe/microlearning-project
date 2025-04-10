@@ -6,6 +6,7 @@ import UserList from "./UserList";
 import UserPage from "./UserPage";
 import MessageList from "./MessagesList";
 import CreateUserModal from "./CreateUser";
+import { useGlobalLoader } from "../LoadingScreen/GlobalLoaderContext";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -22,8 +23,10 @@ export default function UsersPage() {
   const [selectedThreadId, setSelectedThreadId] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
+    startLoading();
     async function fetchData() {
       try {
         const res = await fetch(`/api/users?orgId=${1}`);
@@ -31,11 +34,13 @@ export default function UsersPage() {
         setUsers(users);
       } catch (err) {
         console.error("Error fetching data:", err);
+      } finally {
+        stopLoading();
       }
     }
 
     fetchData();
-  }, []);
+  }, [startLoading, stopLoading]);
 
   useEffect(() => {
     async function fetchMessages() {
@@ -137,9 +142,6 @@ export default function UsersPage() {
     }
     return true; // fallback, should never happen
   });
-
-  // Then pass filteredMessages to your <MessageList />
-  <MessageList messages={filteredMessages} />;
 
   return (
     <div className={`${styles.row} ${styles.mainContent}`}>

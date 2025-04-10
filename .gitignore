@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 db.json
+src/lib/testOpenAi.js
