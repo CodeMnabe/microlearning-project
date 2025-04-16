@@ -80,14 +80,27 @@ export async function createAssistant({
   return newAssistant;
 }
 
+export async function updateAssistant(assistantId, updates) {
+  const db = await readDb();
+  const assistant = db.assistants.find((a) => a.id === assistantId);
+
+  if (!assistant) {
+    throw new Error(`Assistant with id ${assistantId} does not exist.`);
+  }
+
+  Object.assign(assistant, updates);
+  await writeDb(db);
+  return assistant;
+}
+
 export async function getAssistantsInOrg(organizationId) {
   const db = await readDb();
   return db.assistants.filter((a) => a.organizationId === organizationId);
 }
 
-export async function getAssistantsById(id) {
+export async function getAssistantById(id) {
   const db = await readDb();
-  return db.assistants.filter((a) => a.id === id);
+  return db.assistants.find((a) => a.id === id);
 }
 
 // Users

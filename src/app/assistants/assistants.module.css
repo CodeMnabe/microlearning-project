@@ -142,3 +142,52 @@
 .buttonGroup button:hover {
   background-color: #005bb5;
 }
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sliderLabel {
+  min-width: 50px;
+  text-align: center;
+  font-weight: bold;
+  padding: 0.2rem 0.6rem;
+  background-color: #2d2d2d;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.slider {
+  flex-grow: 1;
+}
+
+.infoIcon {
+  position: relative;
+  display: inline-block;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.infoIcon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.infoIcon:hover::after {
+  opacity: 1;
+}

@@ -8,7 +8,6 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("orgId");
-    console.log(id);
 
     const assistants = await getAssistantsInOrg(Number(id));
     return NextResponse.json(assistants);
