@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMessagesInThread, createMessage } from "@/lib/db";
+import { getMessagesInThread, createMessage } from "@/lib/repos/messages.repo";
 require("dotenv").config();
 const OpenAI = require("openai");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

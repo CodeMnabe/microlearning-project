@@ -22,12 +22,12 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         organizationId: 1, // or dynamic
-        _name: name,
-        _description: description,
-        _instructions: instructions,
-        _model: model,
-        _top_p: topP,
-        _temperature: temperature,
+        name: name,
+        description: description,
+        instructions: instructions,
+        model: model,
+        top_p: topP,
+        temperature: temperature,
       }),
     });
 

@@ -9,6 +9,9 @@ export default function AssistantDetailPage({ params }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { startLoading, stopLoading } = useGlobalLoader();
+  const [messages, setMessages] = useState([]); // { role, content }
+  const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     async function fetchAssistant() {
@@ -63,122 +66,172 @@ export default function AssistantDetailPage({ params }) {
     }
   }
 
+  async function deleteAssistant() {
+    try {
+      const res = await fetch(`/api/assistants/${assistantId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert("Erro: " + error.error);
+      } else {
+        const data = await res.json();
+        console.log(data);
+      }
+    } catch (error) {
+      console.error("Error deleting Assistant:", err);
+    } finally {
+      window.location.href = `/assistants`;
+    }
+  }
+
+  async function handleSend() {}
+
   if (!assistant)
     return <p className={styles.loading}>A carregar assistente...</p>;
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        {isEditing ? (
-          <>
-            <input
-              className={styles.input}
-              value={assistant.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-            />
-            <input
-              className={styles.input}
-              value={assistant.description}
-              maxLength={50}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
-            <textarea
-              className={styles.textareaLarge}
-              value={assistant.instructions}
-              onChange={(e) => handleChange("instructions", e.target.value)}
-            />
-          </>
-        ) : (
-          <>
-            <h1 className={styles.name}>{assistant.name}</h1>
-            <p className={styles.description}>{assistant.description}</p>
-            <p className={styles.instructions}>{assistant.instructions}</p>
-          </>
-        )}
-
-        <div className={styles.detailGroup}>
-          <label>Top P:</label>
-          {isEditing ? (
-            <div className={styles.sliderGroup}>
-              <span className={styles.sliderValue}>
-                {assistant.top_p.toFixed(2)}
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={assistant.top_p}
-                onChange={(e) =>
-                  handleChange("top_p", parseFloat(e.target.value))
-                }
-              />
-            </div>
-          ) : (
-            <span>{assistant.top_p}</span>
-          )}
-        </div>
-
-        <div className={styles.detailGroup}>
-          <label>Temperatura:</label>
-          {isEditing ? (
-            <div className={styles.sliderGroup}>
-              <span className={styles.sliderValue}>
-                {assistant.temperature.toFixed(2)}
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="2"
-                step="0.1"
-                value={assistant.temperature}
-                onChange={(e) =>
-                  handleChange("temperature", parseFloat(e.target.value))
-                }
-              />
-            </div>
-          ) : (
-            <span>{assistant.temperature}</span>
-          )}
-        </div>
-
-        <div className={styles.detailGroup}>
-          <label>Modelo:</label>
-          {isEditing ? (
-            <select
-              className={styles.select}
-              value={assistant.model}
-              onChange={(e) => handleChange("model", e.target.value)}
-            >
-              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-              <option value="gpt-4">gpt-4</option>
-            </select>
-          ) : (
-            <span>{assistant.model}</span>
-          )}
-        </div>
-
-        <div className={styles.detailGroup}>
-          <label>ID OpenAI:</label>
-          <span>{assistant.openAiId}</span>
-        </div>
-
-        <div className={styles.detailGroup}>
-          <label>Criado em:</label>
-          <span>{new Date(assistant.createdAt).toLocaleString()}</span>
-        </div>
-
-        <div className={styles.buttonGroup}>
+    <div className={styles.splitContainer}>
+      <div className={styles.leftPane}>
+        <div className={styles.card}>
           {isEditing ? (
             <>
-              <button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? "A guardar..." : "Guardar"}
-              </button>
-              <button onClick={() => setIsEditing(false)}>Cancelar</button>
+              <input
+                className={styles.input}
+                value={assistant.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+              />
+              <input
+                className={styles.input}
+                value={assistant.description}
+                maxLength={50}
+                onChange={(e) => handleChange("description", e.target.value)}
+              />
+              <textarea
+                className={styles.textareaLarge}
+                value={assistant.instructions}
+                onChange={(e) => handleChange("instructions", e.target.value)}
+              />
             </>
           ) : (
-            <button onClick={() => setIsEditing(true)}>Editar</button>
+            <>
+              <h1 className={styles.name}>{assistant.name}</h1>
+              <p className={styles.description}>{assistant.description}</p>
+              <p className={styles.instructions}>{assistant.instructions}</p>
+            </>
           )}
+
+          <div className={styles.detailGroup}>
+            <label>Top P:</label>
+            {isEditing ? (
+              <div className={styles.sliderGroup}>
+                <span className={styles.sliderValue}>
+                  {assistant.top_p.toFixed(2)}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={assistant.top_p}
+                  onChange={(e) =>
+                    handleChange("top_p", parseFloat(e.target.value))
+                  }
+                />
+              </div>
+            ) : (
+              <span>{assistant.top_p}</span>
+            )}
+          </div>
+
+          <div className={styles.detailGroup}>
+            <label>Temperatura:</label>
+            {isEditing ? (
+              <div className={styles.sliderGroup}>
+                <span className={styles.sliderValue}>
+                  {assistant.temperature.toFixed(2)}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={assistant.temperature}
+                  onChange={(e) =>
+                    handleChange("temperature", parseFloat(e.target.value))
+                  }
+                />
+              </div>
+            ) : (
+              <span>{assistant.temperature}</span>
+            )}
+          </div>
+
+          <div className={styles.detailGroup}>
+            <label>Modelo:</label>
+            {isEditing ? (
+              <select
+                className={styles.select}
+                value={assistant.model}
+                onChange={(e) => handleChange("model", e.target.value)}
+              >
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                <option value="gpt-4">gpt-4</option>
+              </select>
+            ) : (
+              <span>{assistant.model}</span>
+            )}
+          </div>
+
+          <div className={styles.detailGroup}>
+            <label>ID OpenAI:</label>
+            <span>{assistant.openAiId}</span>
+          </div>
+
+          <div className={styles.detailGroup}>
+            <label>Criado em:</label>
+            <span>{new Date(assistant.createdAt).toLocaleString()}</span>
+          </div>
+
+          <div className={styles.buttonGroup}>
+            {isEditing ? (
+              <>
+                <button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? "A guardar..." : "Guardar"}
+                </button>
+                <button onClick={() => setIsEditing(false)}>Cancelar</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setIsEditing(true)}>Editar</button>
+                <button onClick={() => deleteAssistant()}>Eliminar</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className={styles.rightPane}>
+        <div className={styles.wrapper}>
+          <h2 className={styles.headline}>Experimentar assistente</h2>
+
+          <div className={styles.viewport}>
+            {messages.map((m, i) => (
+              <div key={i} className={styles[m.role]}>
+                {m.content}
+              </div>
+            ))}
+            {isSending && <div className={styles.assistant}>...</div>}
+          </div>
+
+          <form onSubmit={handleSend} className={styles.form}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Escreve a tua mensagem..."
+            />
+            <button disabled={isSending || !input.trim()}>Enviar</button>
+          </form>
         </div>
       </div>
     </div>

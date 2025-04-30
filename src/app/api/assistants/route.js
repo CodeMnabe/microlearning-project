@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createAssistant, getAssistantsInOrg } from "@/lib/db";
-require("dotenv").config();
-const OpenAI = require("openai");
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import {
+  createAssistant,
+  getAssistantsInOrg,
+} from "@/lib/repos/assistants.repo";
+import { createOAiAssistant } from "@/lib/services/oAi.services";
 
 export async function GET(req) {
   try {
@@ -19,26 +20,10 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const {
-      organizationId,
-      _name,
-      _description,
-      _instructions,
-      _model,
-      _top_p,
-      _temperature,
-    } = body;
 
     console.log("Body is okay");
 
-    const assistant = await client.beta.assistants.create({
-      name: _name,
-      description: _description,
-      instructions: _instructions,
-      model: _model,
-      top_p: _top_p,
-      temperature: _temperature,
-    });
+    const assistant = await createOAiAssistant(body);
 
     console.log("Passed through the openai creation");
 
@@ -53,14 +38,14 @@ export async function POST(req) {
 
     //* TODO: finish adding it to the db
     const assistantDb = await createAssistant({
-      organizationId,
+      organizationId: body.organizationId,
       openAiId: assistant.id,
-      name: _name,
-      description: _description,
-      instructions: _instructions,
-      model: _model,
-      top_p: _top_p,
-      temperature: _temperature,
+      name: body.name,
+      description: body.description,
+      instructions: body.instructions,
+      model: body.model,
+      top_p: body.top_p,
+      temperature: body.temperature,
     });
 
     console.log("Added to the db");
@@ -77,20 +62,6 @@ export async function POST(req) {
       "Created new Assistant on DB with OpenAI ID: " + assistantDb.openAiId
     );
     return NextResponse.json({ message: assistant }, { status: 200 });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-
-export async function PATCH(req) {
-  try {
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-
-export async function DELETE(req) {
-  try {
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { createUser, getUsersInOrg, updateUser, deleteUser } from "@/lib/db.js";
+import {
+  createUser,
+  getUsersInOrg,
+  updateUser,
+  deleteUser,
+} from "@/lib/repos/user.repo";
 
 export async function GET(req) {
   try {

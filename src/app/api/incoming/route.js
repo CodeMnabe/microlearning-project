@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import twilio from "twilio";
 import chatWithAssistant from "@/lib/sendToAI";
-import { createMessage } from "@/lib/db";
+import { createMessage } from "@/lib/repos/messages.repo";
 
 export async function POST(request) {
   try {

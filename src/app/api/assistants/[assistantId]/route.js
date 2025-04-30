@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
-import { getAssistantById, updateAssistant } from "@/lib/db";
+import {
+  getAssistantById,
+  updateAssistant,
+  deleteAssistant,
+} from "@/lib/repos/assistants.repo";
+import {
+  getOAiAssistantById,
+  updateOAiAssistant,
+  deleteOAiAssistant,
+} from "@/lib/services/oAi.services";
 require("dotenv").config();
 const OpenAI = require("openai");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -9,6 +18,24 @@ export async function GET(req, { params }) {
     const body = await params;
     const assistantId = body.assistantId;
     const assistant = await getAssistantById(Number(assistantId));
+    const aiAssistant = await getOAiAssistantById(assistant.openAiId);
+
+    if (!aiAssistant) {
+      return NextResponse.json(
+        { error: "Erro com a ligação ao Assistant." },
+        { status: 404 }
+      );
+    }
+
+    if (assistant.instructions != aiAssistant.instructions) {
+      return NextResponse.json(
+        {
+          error: "Incoerência entre DB e ligação com o Assistant",
+        },
+        { status: 409 }
+      );
+    }
+
     if (!assistant) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -31,17 +58,7 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    const myUpdatedAssistant = await client.beta.assistants.update(
-      `${updates.openAiId}`,
-      {
-        name: updates.name,
-        description: updates.description,
-        instructions: updates.instructions,
-        model: updates.model,
-        top_p: updates.top_p,
-        temperature: updates.temperature,
-      }
-    );
+    const myUpdatedAssistant = await updateOAiAssistant(updates);
 
     if (!myUpdatedAssistant) {
       return NextResponse.json(
@@ -65,10 +82,12 @@ export async function DELETE(req, { params }) {
   try {
     const body = await params;
     const assistantId = body.assistantId;
+    const assistant = await getAssistantById(Number(assistantId));
 
-    console.log(assistantId);
+    await deleteOAiAssistant(assistant.openAiId);
+    await deleteAssistant(assistant.id);
 
-    return NextResponse({ status: 200 });
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

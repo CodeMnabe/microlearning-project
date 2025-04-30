@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readDb } from "@/lib/db.js";
+import { readDb } from "@/lib/persistence/db";
 
 export async function GET() {
   const { organization, users, threads, messages } = await readDb();
