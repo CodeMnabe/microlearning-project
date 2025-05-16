@@ -8,6 +8,7 @@ import {
   getOAiAssistantById,
   updateOAiAssistant,
   deleteOAiAssistant,
+  sendMessageToAi,
 } from "@/lib/services/oAi.services";
 require("dotenv").config();
 const OpenAI = require("openai");

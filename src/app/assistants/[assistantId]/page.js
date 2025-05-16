@@ -2,6 +2,7 @@
 import { use, useEffect, useState } from "react";
 import styles from "./assistantDetail.module.css";
 import { useGlobalLoader } from "../../LoadingScreen/GlobalLoaderContext";
+import ChatSandbox from "./Chatbox/Chatbox";
 
 export default function AssistantDetailPage({ params }) {
   const { assistantId } = use(params);
@@ -9,9 +10,8 @@ export default function AssistantDetailPage({ params }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { startLoading, stopLoading } = useGlobalLoader();
-  const [messages, setMessages] = useState([]); // { role, content }
-  const [input, setInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  const [vsName, setVsName] = useState("");
+  const [vsFiles, setVsFiles] = useState([]);
 
   useEffect(() => {
     async function fetchAssistant() {
@@ -86,7 +86,29 @@ export default function AssistantDetailPage({ params }) {
     }
   }
 
-  async function handleSend() {}
+  async function handleAddVectorStore() {
+    try {
+      const fd = new FormData();
+      fd.append("storeName", vsName);
+      vsFiles.forEach((file) => fd.append("files", file));
+
+      const res = await fetch(`/api/assistants/${assistant.id}/vector-store`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert("Erro: " + data.error);
+      } else {
+        alert("Vector store criado e associado!");
+        setVsName("");
+        setVsFiles([]);
+      }
+    } catch (err) {
+      alert("Falha: " + err.message);
+    }
+  }
 
   if (!assistant)
     return <p className={styles.loading}>A carregar assistente...</p>;
@@ -210,29 +232,38 @@ export default function AssistantDetailPage({ params }) {
             )}
           </div>
         </div>
+        <div className={styles.card} style={{ marginTop: 24 }}>
+          <h3>Adicionar Vector Store</h3>
+
+          <label className={styles.label}>Nome da store:</label>
+          <input
+            className={styles.input}
+            value={vsName}
+            onChange={(e) => setVsName(e.target.value)}
+            placeholder="Ex: HR-Docs"
+          />
+
+          <label className={styles.label} style={{ marginTop: 12 }}>
+            Ficheiros (pode escolher vários):
+          </label>
+          <input
+            type="file"
+            multiple
+            onChange={(e) => setVsFiles(Array.from(e.target.files))}
+            className={styles.input}
+          />
+
+          <button
+            style={{ marginTop: 16 }}
+            onClick={handleAddVectorStore}
+            disabled={!vsName.trim() || vsFiles.length === 0}
+          >
+            Criar e associar
+          </button>
+        </div>
       </div>
       <div className={styles.rightPane}>
-        <div className={styles.wrapper}>
-          <h2 className={styles.headline}>Experimentar assistente</h2>
-
-          <div className={styles.viewport}>
-            {messages.map((m, i) => (
-              <div key={i} className={styles[m.role]}>
-                {m.content}
-              </div>
-            ))}
-            {isSending && <div className={styles.assistant}>...</div>}
-          </div>
-
-          <form onSubmit={handleSend} className={styles.form}>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escreve a tua mensagem..."
-            />
-            <button disabled={isSending || !input.trim()}>Enviar</button>
-          </form>
-        </div>
+        <ChatSandbox assistant={assistant} />
       </div>
     </div>
   );

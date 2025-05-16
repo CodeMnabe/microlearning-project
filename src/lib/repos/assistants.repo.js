@@ -31,6 +31,7 @@ export async function createAssistant({
     instructions,
     top_p: top_p,
     temperature: temperature,
+    vectorStoreId: [],
     createdAt: new Date(),
   };
 
@@ -65,6 +66,14 @@ export async function getAssistantById(id) {
 export async function deleteAssistant(id) {
   const db = await readDb();
   db.assistants = db.assistants.filter((a) => a.id !== id);
+  await writeDb(db);
+  return true;
+}
+
+export async function associateVectorStoreToDBAssistant(assistantId, storeId) {
+  const db = await readDb();
+  const assistant = await db.assistants.find((a) => a.id === assistantId);
+  assistant.vectorStoreId.push(storeId);
   await writeDb(db);
   return true;
 }

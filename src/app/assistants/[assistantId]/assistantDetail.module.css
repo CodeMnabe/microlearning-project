@@ -8,32 +8,31 @@
   margin-top: 50px;
 }
 
+/* container shrinks to exactly the combined width */
 .splitContainer {
+  width: 80vw;
+  margin: 60px auto;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
   gap: 2rem;
-  padding: 40px 20px;
-  margin-top: 50px;
+  flex: 1; /* ← fills height leftover by Navbar */
 }
 
+/* fixed card */
 .leftPane {
-  flex: 1;
-  max-width: 600px;
+  flex: 0 0 540px;
 }
 
 .rightPane {
-  flex: 1;
-  max-width: 600px;
-}
+  flex: 0 0 700px;
+  display: flex;
+} /* make it a flex column */
 
 .card {
-  background-color: #1e1e1e;
+  width: 100%; /* stretch to fill its flex cell */
+  background: #1e1e1e;
   color: #fff;
   padding: 30px;
   border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   animation: fadeIn 0.4s ease-in;
 }
@@ -149,57 +148,4 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.wrapper {
-  margin-top: 2rem;
-  background: #1e1e1e;
-  padding: 16px;
-  border-radius: 8px;
-}
-.headline {
-  margin-bottom: 8px;
-  font-size: 1.1rem;
-}
-.viewport {
-  max-height: 240px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.user {
-  align-self: flex-end;
-  background: #006aff;
-  padding: 6px 10px;
-  border-radius: 8px;
-}
-.assistant {
-  align-self: flex-start;
-  background: #333;
-  padding: 6px 10px;
-  border-radius: 8px;
-}
-.system {
-  font-style: italic;
-  color: #f55;
-}
-.form {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.form input {
-  flex: 1;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: none;
-}
-.form button {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 4px;
-  background: #006aff;
-  color: #fff;
 }
