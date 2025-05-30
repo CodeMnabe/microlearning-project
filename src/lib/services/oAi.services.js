@@ -161,3 +161,17 @@ export async function sendMessageToAi(assistantId, input, threadId) {
     console.error(err);
   }
 }
+
+export async function deleteOAiVectorStoreAndFiles(store, fileIds) {
+  try {
+    for (const fileId of fileIds) {
+      await client.files.del(fileId);
+    }
+
+    const deletedStore = await client.vectorStores.del(store);
+
+    return deletedStore.deleted;
+  } catch (err) {
+    console.error(err);
+  }
+}

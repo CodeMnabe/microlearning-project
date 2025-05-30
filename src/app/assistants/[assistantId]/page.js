@@ -1,5 +1,5 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import styles from "./assistantDetail.module.css";
 import { useGlobalLoader } from "../../LoadingScreen/GlobalLoaderContext";
 import ChatSandbox from "./Chatbox/Chatbox";
@@ -10,24 +10,36 @@ export default function AssistantDetailPage({ params }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { startLoading, stopLoading } = useGlobalLoader();
+  const [vectorStore, setVectorStore] = useState(null);
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
 
-  useEffect(() => {
-    async function fetchAssistant() {
-      startLoading();
-      try {
-        const res = await fetch(`/api/assistants/${assistantId}`);
-        const data = await res.json();
-        setAssistant(data);
-      } catch (err) {
-        console.error("Error fetching assistant:", err);
-      } finally {
-        stopLoading();
+  const fetchAssistant = useCallback(async () => {
+    startLoading();
+    try {
+      const res = await fetch(`/api/assistants/${assistantId}`);
+      const data = await res.json();
+      setAssistant(data);
+
+      if (data.vectorStoreId) {
+        const res = await fetch(
+          `/api/assistants/${assistantId}/vector-store/${data.vectorStoreId}`
+        );
+        const store = await res.json();
+        setVectorStore(store);
+      } else {
+        setVectorStore(null);
       }
+    } catch (err) {
+      console.error("Error fetching assistant:", err);
+    } finally {
+      stopLoading();
     }
-    fetchAssistant();
   }, [assistantId, startLoading, stopLoading]);
+
+  useEffect(() => {
+    fetchAssistant();
+  }, [fetchAssistant]);
 
   function handleChange(field, value) {
     setAssistant((prev) => ({ ...prev, [field]: value }));
@@ -86,7 +98,32 @@ export default function AssistantDetailPage({ params }) {
     }
   }
 
+  async function deleteVectorStore() {
+    startLoading();
+    try {
+      const res = await fetch(
+        `/api/assistants/${assistantId}/vector-store/${vectorStore.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert("Erro: " + error.error);
+      } else {
+        const data = await res.json();
+        console.log(data);
+      }
+    } catch (err) {
+      console.error("Error deleting Vector Store:", err);
+    } finally {
+      await fetchAssistant();
+    }
+  }
+
   async function handleAddVectorStore() {
+    startLoading();
     try {
       const fd = new FormData();
       fd.append("storeName", vsName);
@@ -101,9 +138,10 @@ export default function AssistantDetailPage({ params }) {
       if (!res.ok) {
         alert("Erro: " + data.error);
       } else {
-        alert("Vector store criado e associado!");
         setVsName("");
         setVsFiles([]);
+        stopLoading();
+        await fetchAssistant();
       }
     } catch (err) {
       alert("Falha: " + err.message);
@@ -233,33 +271,63 @@ export default function AssistantDetailPage({ params }) {
           </div>
         </div>
         <div className={styles.card} style={{ marginTop: 24 }}>
-          <h3>Adicionar Vector Store</h3>
+          {!assistant.vectorStoreId ? (
+            // SHOW FORM if no vector store yet
+            <>
+              <h3>Adicionar Vector Store</h3>
 
-          <label className={styles.label}>Nome da store:</label>
-          <input
-            className={styles.input}
-            value={vsName}
-            onChange={(e) => setVsName(e.target.value)}
-            placeholder="Ex: HR-Docs"
-          />
+              <label className={styles.label}>Nome da store:</label>
+              <input
+                className={styles.input}
+                value={vsName}
+                onChange={(e) => setVsName(e.target.value)}
+                placeholder="Ex: HR-Docs"
+              />
 
-          <label className={styles.label} style={{ marginTop: 12 }}>
-            Ficheiros (pode escolher vários):
-          </label>
-          <input
-            type="file"
-            multiple
-            onChange={(e) => setVsFiles(Array.from(e.target.files))}
-            className={styles.input}
-          />
+              <label className={styles.label} style={{ marginTop: 12 }}>
+                Ficheiros (pode escolher vários):
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setVsFiles(Array.from(e.target.files))}
+                className={styles.input}
+              />
 
-          <button
-            style={{ marginTop: 16 }}
-            onClick={handleAddVectorStore}
-            disabled={!vsName.trim() || vsFiles.length === 0}
-          >
-            Criar e associar
-          </button>
+              <button
+                style={{ marginTop: 16 }}
+                onClick={handleAddVectorStore}
+                disabled={!vsName.trim() || vsFiles.length === 0}
+              >
+                Criar e associar
+              </button>
+            </>
+          ) : (
+            // SHOW INFO if store(s) exist
+            <>
+              <h3>Vector Store Associada</h3>
+              <div>
+                <p>
+                  Store ID: <strong>{assistant.vectorStoreId}</strong>
+                </p>
+                {vectorStore && (
+                  <>
+                    <p>
+                      Nome: <strong>{vectorStore.storeName}</strong>
+                    </p>
+                    <p>
+                      Número de ficheiros:{" "}
+                      <strong>{vectorStore.fileIds?.length}</strong>
+                    </p>
+
+                    <button onClick={() => deleteVectorStore()}>
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className={styles.rightPane}>

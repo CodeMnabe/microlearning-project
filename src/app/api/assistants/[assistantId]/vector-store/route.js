@@ -5,7 +5,7 @@ import {
   createOAiFile,
 } from "@/lib/services/oAi.services";
 import {
-  associateVectorStoreToDBAssistant,
+  associateVectorStoreToDbAssistant,
   getAssistantById,
 } from "@/lib/repos/assistants.repo";
 import { createDBStore } from "@/lib/repos/store.repo";
@@ -46,7 +46,7 @@ export async function POST(req, { params }) {
 
     const dbStore = await createDBStore(store, fileIds);
 
-    const dbAssociation = await associateVectorStoreToDBAssistant(
+    const dbAssociation = await associateVectorStoreToDbAssistant(
       Number(assistantId),
       dbStore.id
     );

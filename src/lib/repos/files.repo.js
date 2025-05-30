@@ -18,3 +18,10 @@ export async function getFileById(id) {
   const db = await readDb();
   return db.files.find((a) => a.id === id);
 }
+
+export async function deleteFileById(id) {
+  const db = await readDb();
+  db.files = db.files.filter((a) => a.id !== id);
+  await writeDb(db);
+  return true;
+}
