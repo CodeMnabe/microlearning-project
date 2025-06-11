@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getThreadsForUser } from "@/lib/repos/treads.repo";
+import { getThreadsForUser } from "@/lib/repos/threads.repo";
 
 export async function GET(req) {
   try {

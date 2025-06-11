@@ -1,6 +1,7 @@
 import { readDb, writeDb, nextId } from "../persistence/db";
+import { getUserById } from "./user.repo";
 
-export async function createThread({ userId, aiThreadId }) {
+export async function createThread({ userId, assistantId, aiThreadId }) {
   const db = await readDb();
   const user = getUserById(db, userId);
   if (!user) {
@@ -10,6 +11,7 @@ export async function createThread({ userId, aiThreadId }) {
   const newThread = {
     id: nextId("threadId", db),
     userId,
+    assistantId,
     aiThreadId,
     createdAt: new Date(),
   };

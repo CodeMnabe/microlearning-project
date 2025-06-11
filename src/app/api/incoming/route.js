@@ -14,7 +14,6 @@ export async function POST(request) {
     const userNumber = fromNumber.replace("whatsapp:+351", "");
 
     const { MessagingResponse } = twilio.twiml;
-
     console.log(`Received message: "${incomingMessage}" from ${userNumber}`);
 
     //* Sends the message to the AssistantsAPI

@@ -20,6 +20,9 @@ export async function GET(req, { params }) {
     const assistantId = body.assistantId;
     const assistant = await getAssistantById(Number(assistantId));
     const aiAssistant = await getOAiAssistantById(assistant.openAiId);
+    console.log(assistant.instructions);
+    console.log();
+    console.log(aiAssistant.instructions);
 
     if (!aiAssistant) {
       return NextResponse.json(

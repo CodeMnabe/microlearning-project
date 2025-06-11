@@ -6,7 +6,7 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [model, setModel] = useState("gpt-3.5-turbo");
+  const [model, setModel] = useState("gpt-4o");
   const [topP, setTopP] = useState(0.5);
   const [temperature, setTemperature] = useState(1.0);
 
@@ -163,7 +163,7 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
             </label>
             <select value={model} onChange={(e) => setModel(e.target.value)}>
               <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-              <option value="gpt-4">GPT-4</option>
+              <option value="gpt-4o">GPT-4o</option>
             </select>
           </div>
           <div className={styles.formGroup}>

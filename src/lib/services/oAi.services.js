@@ -175,3 +175,8 @@ export async function deleteOAiVectorStoreAndFiles(store, fileIds) {
     console.error(err);
   }
 }
+
+export async function createOAiThread() {
+  const aiThread = await client.beta.threads.create();
+  return aiThread;
+}

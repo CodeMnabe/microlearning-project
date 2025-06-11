@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.7",
+    "messagebird": "^4.0.1",
     "next": "15.2.3",
     "openai": "^4.89.1",
     "react": "^19.0.0",

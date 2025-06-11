@@ -1,4 +1,5 @@
 import { readDb, writeDb, nextId } from "../persistence/db";
+import { getOrganization } from "./organizations.repo";
 
 export async function createUser({ organizationId, phoneNumber, name }) {
   const org = getOrganization(organizationId);
