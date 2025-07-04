@@ -3,6 +3,14 @@ import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
 import { deleteFileById, getFileById } from "@/lib/repos/files.repo";
 import { deleteOAiVectorStoreAndFiles } from "@/lib/services/oAi.services";
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
+
+/**
+ * Returns the store object
+ *
+ * @param {Request} req
+ * @param {{ params: { assistantId: string, storeId: string }}} ctx
+ * @returns {Promise<NextResponse>}
+ */
 export async function GET(req, { params }) {
   try {
     const body = await params;
@@ -16,6 +24,16 @@ export async function GET(req, { params }) {
   }
 }
 
+/**
+ * Deletes everything related to a vector-store:
+ *   1. Removes vector-store & files from OpenAI.
+ *   2. Deletes store + files rows from DB.
+ *   3. Clears assistant.vectorStoreId in DB.
+ *
+ * @param {Request} req
+ * @param {{ params: { assistantId: string, storeId: string }}} ctx
+ * @returns {Promise<NextResponse>}
+ */
 export async function DELETE(req, { params }) {
   try {
     const body = await params;

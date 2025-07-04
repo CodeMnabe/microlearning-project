@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["aleatoriedade", "Chatbox", "messagebird"]
+  "cSpell.words": [
+    "aleatoriedade",
+    "autoincrement",
+    "Chatbox",
+    "messagebird",
+    "SUPABASE",
+    "supadb"
+  ]
 }

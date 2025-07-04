@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.50.2",
     "dotenv": "^16.4.7",
     "messagebird": "^4.0.1",
     "next": "15.2.3",
@@ -20,6 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.2.3"
+    "eslint-config-next": "15.2.3",
+    "prisma": "^6.10.1"
   }
 }

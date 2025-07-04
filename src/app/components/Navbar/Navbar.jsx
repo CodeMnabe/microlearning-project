@@ -15,7 +15,7 @@ export default function Navbar() {
           <Link href="/assistants">Assistants</Link>
         </li>
         <li>
-          <Link href="/compose">Compose</Link>
+          <Link href="/admin">Admin</Link>
         </li>
       </ul>
     </nav>
