@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "./AuthContext";
 import Navbar from "./components/Navbar/Navbar";
 import { GlobalLoaderProvider } from "./LoadingScreen/GlobalLoaderContext";
 import GlobalLoadingOverlay from "./LoadingScreen/GlobalLoadingOverlay";
@@ -24,8 +25,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <GlobalLoaderProvider>
-          <Navbar />
-          {children}
+          <AuthProvider>
+            <Navbar />
+            {children}
+          </AuthProvider>
           <GlobalLoadingOverlay />
         </GlobalLoaderProvider>
       </body>

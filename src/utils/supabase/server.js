@@ -19,6 +19,9 @@ export async function createClient() {
           );
         },
       },
+      auth: {
+        flowType: "implicit",
+      },
     }
   );
 }
