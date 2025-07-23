@@ -1,8 +1,8 @@
 import { readDb, writeDb, nextId } from "../persistence/db";
 import { getOrganization } from "./organizations.repo";
+import { createClient } from "@/utils/supabase/server";
 require("dotenv").config();
 const OpenAI = require("openai");
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function createAssistant({
   organizationId,

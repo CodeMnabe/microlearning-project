@@ -2,7 +2,11 @@
 import { createContext, use, useContext, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-const AuthContext = createContext({ user: null, loading: true });
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  setUser: () => {},
+});
 
 export function AuthProvider({ children }) {
   const supabase = createClient();
@@ -27,7 +31,7 @@ export function AuthProvider({ children }) {
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, supabase }}>
+    <AuthContext.Provider value={{ user, loading, supabase, setUser }}>
       {children}
     </AuthContext.Provider>
   );
