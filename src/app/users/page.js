@@ -1,254 +1,258 @@
+// app/users/page.js
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./users.module.css";
-
-import UserList from "./UserList";
-import UserPage from "./UserPage";
-import MessageList from "./MessagesList";
 import CreateUserModal from "./CreateUser";
 import { useGlobalLoader } from "../LoadingScreen/GlobalLoaderContext";
 
+function initial(name = "") {
+  return (name.trim()[0] || "?").toUpperCase();
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("name");
-  const [threads, setThreads] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [msgFilterType, setMsgFilterType] = useState("words");
-  const [msgSearchTerm, setMsgSearchTerm] = useState("");
-  const [msgStartDate, setMsgStartDate] = useState("");
-  const [msgEndDate, setMsgEndDate] = useState("");
-
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [selectedThreadId, setSelectedThreadId] = useState(null);
-
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState(new Set()); // selected ids (checkboxes)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
-    startLoading();
-    async function fetchData() {
+    (async () => {
+      startLoading();
       try {
         const res = await fetch(`/api/users?orgId=${1}`);
-        const users = await res.json();
-        setUsers(users);
-      } catch (err) {
-        console.error("Error fetching data:", err);
+        const data = await res.json();
+        setUsers(data);
+      } catch (e) {
+        console.error(e);
       } finally {
         stopLoading();
       }
-    }
-
-    fetchData();
+    })();
   }, [startLoading, stopLoading]);
 
-  useEffect(() => {
-    async function fetchMessages() {
-      if (!selectedThreadId) {
-        // If no thread selected, clear out messages
-        setMessages([]);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/messages?threadId=${selectedThreadId}`);
-        const data = await res.json();
-        setMessages(data.messages || []);
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-      }
+  const normalized = useMemo(
+    () =>
+      users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        phone: u.phone_number ?? u.phoneNumber ?? "",
+        email: u.email ?? "", // TODO: wire real email if you have it
+        tags: u.tags ?? ["IT", "Grupo 2"], // TODO: replace with real tags array
+        assistantName: u.assistantName ?? "Assistente Geral", // TODO: wire from DB
+      })),
+    [users]
+  );
+
+  const filtered = normalized.filter((u) =>
+    (u.name + " " + u.phone + " " + u.email)
+      .toLowerCase()
+      .includes(q.toLowerCase())
+  );
+
+  const allVisibleIds = filtered.map((u) => u.id);
+  const allChecked =
+    allVisibleIds.length > 0 && allVisibleIds.every((id) => selected.has(id));
+
+  function toggleAll() {
+    const next = new Set(selected);
+    if (allChecked) {
+      allVisibleIds.forEach((id) => next.delete(id));
+    } else {
+      allVisibleIds.forEach((id) => next.add(id));
     }
-    fetchMessages();
-  }, [selectedThreadId]);
-
-  async function handleUserClick(userId) {
-    setSelectedUserId(userId);
-    setSelectedThreadId(null);
-
-    try {
-      const res = await fetch(`/api/threads?userId=${userId}`);
-
-      if (!res.ok) {
-        console.error("Request failed with status:", res.status);
-        return;
-      }
-
-      const data = await res.json();
-      setThreads(data.threads || []);
-    } catch (error) {
-      console.error("Error fetching threads:", error);
-    }
+    setSelected(next);
   }
 
-  function handleThreadClick(threadId) {
-    setSelectedThreadId(threadId);
+  function toggleOne(id) {
+    const next = new Set(selected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelected(next);
   }
-
-  const handleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
 
   async function handleCreateUser({ userName, phoneNumber }) {
     const res = await fetch("/api/users", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        organizationId: 1,
-        phoneNumber: phoneNumber,
-        name: userName,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ organizationId: 1, phoneNumber, name: userName }),
     });
-
     if (!res.ok) {
       const err = await res.json();
       console.error(`Error creating user: ${err.error}`);
       return;
     }
-
-    const data = await res.json();
-
-    // Optional: refresh users list
-    const updatedUsers = await fetch(`/api/users?orgId=${1}`).then((r) =>
-      r.json()
-    );
-    setUsers(updatedUsers);
+    const updated = await fetch(`/api/users?orgId=${1}`).then((r) => r.json());
+    setUsers(updated);
     setIsModalOpen(false);
   }
 
-  const filteredUsers = users.filter((user) => {
-    if (filterType === "name") {
-      return user.name.toLowerCase().includes(searchTerm.toLowerCase());
-    } else if (filterType === "phone") {
-      return user.phoneNumber.includes(searchTerm);
-    }
-    return true;
-  });
-
-  const filteredMessages = messages.filter((msg) => {
-    if (msgFilterType === "words") {
-      return msg.content.toLowerCase().includes(msgSearchTerm.toLowerCase());
-    } else if (msgFilterType === "date") {
-      if (!msgStartDate || !msgEndDate) {
-        // If either date is missing, show all messages or skip filtering
-        return true;
-      }
-      const msgDate = new Date(msg.createdAt);
-      const start = new Date(msgStartDate);
-      const end = new Date(msgEndDate);
-
-      // Return true if msgDate is between start and end (inclusive)
-      return msgDate >= start && msgDate <= end;
-    }
-    return true; // fallback, should never happen
-  });
-
   return (
-    <div className={`${styles.row} ${styles.mainContent}`}>
-      <div className={`${styles.column}`}>
-        <h2>Utilizadores</h2>
-        <div className={styles.combinedSearch}>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="name">Nome</option>
-            <option value="phone">Número</option>
-          </select>
-
-          <div className={styles.divider}></div>
-
+    <div className={styles.usersScreen}>
+      {/* Toolbar */}
+      <div className={styles.toolbarRow}>
+        <div className={styles.searchWrap}>
+          <span className={styles.searchIcon} aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+            >
+              <circle cx="11" cy="11" r="7" strokeWidth="2" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" strokeWidth="2" />
+            </svg>
+          </span>
           <input
-            type="text"
-            placeholder={`Filtrar por ${
-              filterType === "name" ? "nome" : "número"
-            }`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
+            className={styles.searchInputXL}
+            placeholder="Procurar"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <UserList users={filteredUsers} onUserClick={handleUserClick} />
-      </div>
 
-      <div className={`${styles.column}`}>
-        <h2>Utilizador</h2>
-
-        {/* //TODO: Fazer filtro para threads por assistente */}
-        <UserPage
-          user={users.find((u) => u.id === selectedUserId)}
-          threads={threads}
-          onThreadClick={handleThreadClick}
-          onUserUpdated={(updatedUser) => {
-            // Replace old user in local state
-            setUsers((prev) =>
-              prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-            );
-          }}
-          onUserDeleted={(deletedUserId) => {
-            // Filter out the deleted user
-            setUsers((prev) => prev.filter((u) => u.id !== deletedUserId));
-            // If you just deleted the selected user, clear them from the UI
-            if (deletedUserId === selectedUserId) {
-              setSelectedUserId(null);
-              setThreads([]);
-            }
-          }}
-        />
-      </div>
-
-      <div className={`${styles.column}`}>
-        <h2>Mensagens</h2>
-        <div className={styles.messageFilterBar}>
-          <select
-            value={msgFilterType}
-            onChange={(e) => setMsgFilterType(e.target.value)}
-            className={styles.filterSelect}
+        <button className={styles.iconBtn} title="Filtrar" aria-label="Filtrar">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            stroke="currentColor"
+            fill="none"
           >
-            <option value="words">Palavras</option>
-            <option value="date">Data</option>
-          </select>
+            <path d="M3 5h18l-7 8v6l-4 2v-8L3 5z" strokeWidth="2" />
+          </svg>
+        </button>
 
-          <div className={styles.divider}></div>
+        <button
+          className={styles.iconBtnPrimary}
+          title="Novo utilizador"
+          aria-label="Novo utilizador"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            stroke="currentColor"
+            fill="none"
+          >
+            <path d="M12 5v14M5 12h14" strokeWidth="2" />
+          </svg>
+        </button>
 
-          {msgFilterType === "words" ? (
-            <input
-              type="text"
-              placeholder="Filtrar mensagens por conteúdo..."
-              value={msgSearchTerm}
-              onChange={(e) => setMsgSearchTerm(e.target.value)}
-              className={styles.searchInput}
-            />
-          ) : (
-            <div className={styles.dateRange}>
-              <input
-                type="date"
-                value={msgStartDate}
-                onChange={(e) => setMsgStartDate(e.target.value)}
-                className={styles.dateInput}
+        <div className={styles.viewBtns}>
+          <button className={styles.iconBtn} title="Lista" aria-label="Lista">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              stroke="currentColor"
+              fill="none"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" />
+            </svg>
+          </button>
+          <button className={styles.iconBtn} title="Grelha" aria-label="Grelha">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              stroke="currentColor"
+              fill="none"
+            >
+              <path
+                d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
+                strokeWidth="2"
               />
-              <span className={styles.dateRangeDash}>—</span>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className={styles.table}>
+        {/* Header */}
+        <div className={`${styles.row} ${styles.header}`}>
+          <div className={styles.cellChk}>
+            <label className={styles.chkWrap}>
               <input
-                type="date"
-                value={msgEndDate}
-                onChange={(e) => setMsgEndDate(e.target.value)}
-                className={styles.dateInput}
+                type="checkbox"
+                checked={allChecked}
+                onChange={toggleAll}
               />
-            </div>
-          )}
+              <span className={styles.chkFake} />
+            </label>
+          </div>
+          <div className={styles.cellHead}>Nome</div>
+          <div className={styles.cellHead}>Nº. Telemóvel</div>
+          <div className={styles.cellHead}>Tags</div>
+          <div className={styles.cellHead}>Assistente</div>
+          <div className={styles.cellHeadRight} />
         </div>
 
-        <MessageList messages={filteredMessages} />
-      </div>
+        {/* Rows */}
+        {filtered.map((u, i) => {
+          const extra = Math.max(0, (u.tags?.length || 0) - 2);
+          return (
+            <div
+              key={u.id}
+              className={`${styles.row} ${i % 2 ? styles.rowAlt : ""}`}
+            >
+              <div className={styles.cellChk}>
+                <label className={styles.chkWrap}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(u.id)}
+                    onChange={() => toggleOne(u.id)}
+                  />
+                  <span className={styles.chkFake} />
+                </label>
+              </div>
 
-      <button className={styles.floatingButton} onClick={handleModal}>
-        +
-      </button>
+              <div className={styles.cellName}>
+                <div className={styles.avatar}>{initial(u.name)}</div>
+                <div className={styles.nameBlock}>
+                  <div className={styles.name}>{u.name}</div>
+                  <div className={styles.subline}>
+                    {u.email || u.phone || "—"}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.cellPhone}>{u.phone || "—"}</div>
+
+              <div className={styles.cellTags}>
+                {(u.tags || []).slice(0, 2).map((t) => (
+                  <span key={t} className={styles.chip}>
+                    {t}
+                  </span>
+                ))}
+                {extra > 0 && (
+                  <span className={`${styles.chip} ${styles.chipDark}`}>
+                    +{extra}
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.cellAssistant}>
+                <button className={styles.chipBtn}>
+                  {u.assistantName || "—"}
+                </button>
+              </div>
+
+              <div className={styles.cellKebab}>
+                <button className={styles.iconBtn} aria-label="Mais opções">
+                  •••
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <CreateUserModal
         isOpen={isModalOpen}
-        onClose={handleModal}
+        onClose={() => setIsModalOpen(false)}
         onCreateUser={handleCreateUser}
       />
     </div>

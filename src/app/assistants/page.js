@@ -12,16 +12,17 @@ export default function AssistantsPage() {
 
   // Fetch all assistants for orgId=1 on load
   useEffect(() => {
-    startLoading();
     async function fetchAssistants() {
+      startLoading();
       try {
         const res = await fetch("/api/assistants?orgId=1");
         const data = await res.json();
+        console.log(data);
         setAssistants(data || []);
       } catch (err) {
         console.error("Error fetching assistants:", err);
       } finally {
-        stopLoading(); // fade out overlay
+        stopLoading();
       }
     }
     fetchAssistants();

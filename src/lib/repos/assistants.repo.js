@@ -23,15 +23,15 @@ export async function createAssistant({
 
   const newAssistant = {
     id: nextId("assistantId", db),
-    organizationId,
-    openAiId,
+    organization_id: organizationId,
+    open_ai_id: openAiId,
     name,
     description,
     model: model,
     instructions,
     top_p: top_p,
     temperature: temperature,
-    vectorStoreId: null,
+    vector_store_id: null,
     createdAt: new Date(),
   };
 
@@ -55,7 +55,7 @@ export async function updateAssistant(assistantId, updates) {
 
 export async function getAssistantsInOrg(organizationId) {
   const db = await readDb();
-  return db.assistants.filter((a) => a.organizationId === organizationId);
+  return db.assistants.filter((a) => a.organization_id === organizationId);
 }
 
 export async function getAssistantById(id) {
@@ -73,15 +73,15 @@ export async function deleteAssistant(id) {
 export async function associateVectorStoreToDbAssistant(assistantId, storeId) {
   const db = await readDb();
   const assistant = await db.assistants.find((a) => a.id === assistantId);
-  assistant.vectorStoreId = storeId;
+  assistant.vector_store_id = storeId;
   await writeDb(db);
   return true;
 }
 
 export async function nullifyVectorStoreToDbAssistant(assistantId) {
   const db = await readDb();
-  const assistant = await db.assistants.find((a) => a.id === assistantId);
-  assistant.vectorStoreId = null;
+  const assistant = await db.assistants.find((a) => a.id === assistant_id);
+  assistant.vector_store_id = null;
   await writeDb(db);
   return true;
 }

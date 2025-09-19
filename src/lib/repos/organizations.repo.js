@@ -32,5 +32,6 @@ export async function getAllOrganization() {
 
 export async function getOrganization(orgId) {
   const db = await readDb();
+  console.log(orgId);
   return db.organization.find((o) => o.id == orgId);
 }

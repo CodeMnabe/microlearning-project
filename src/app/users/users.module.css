@@ -1,261 +1,388 @@
 :root {
-  --color: #636363;
-  --cardColor: #2a2a2a; /* dark gray for cards */
+  /* layout */
+  --gutter-x: 24px;
+  --gutter-y: 16px;
+
+  /* palette (light UI inside your dark app) */
+  --ui-bg: #ffffff;
+  --ui-muted: #9aa3b2;
+  --ui-border: #e5edf5;
+  --ui-pill: #f3f7fb;
+
+  /* brand blues for the light rows */
+  --row-alt: #eaf6ff;
+  --row-base: #f7fbff;
+
+  /* chips */
+  --chip-bg: #eaf6ff;
+  --chip-border: #9fd3ff;
+  --chip-text: #1467a3;
+
+  --chip-dark-bg: #0f1c3f;
+  --chip-dark-text: #fff;
+
+  /* table */
+  --row-h: 56px;
+  --avatar: 34px;
+
+  /* rounded */
+  --radius: 12px;
 }
 
-.mainContent {
-  margin-top: 50px;
-}
-
-/* Container for columns */
-.row {
+/* screen container */
+.usersScreen {
   display: flex;
-  gap: 20px;
-  padding: 20px;
-  min-height: 95vh;
-  box-sizing: border-box;
+  flex-direction: column;
+  gap: var(--gutter-y);
+  padding: var(--gutter-y) var(--gutter-x);
 }
 
-/* Each column evenly splits the row:
-   flex: 1 => 3 columns = 3 "1" units = 3 total. 
-   If you want exactly 3 columns, ensure you have exactly 3. */
-.column {
-  flex: 1;
-  padding: 20px;
-  border-radius: 6px;
-  box-sizing: border-box;
-  background-color: var(--color);
+/* ───────────────── Toolbar ───────────────── */
+.toolbarRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.column h2 {
-  text-align: center;
-  margin: 0 0 20px;
-  color: #fff;
-  font-weight: 600;
+.searchWrap {
+  position: relative;
+  width: 30%;
+  height: 44px;
+  background: var(--ui-pill);
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  padding-left: 40px;
 }
 
-.card {
-  background-color: var(--cardColor);
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ui-muted);
 }
 
-.card:hover {
-  cursor: pointer;
-  background-color: #3a3a3a;
-}
-
-.card strong {
-  color: #bfbfbf;
-}
-
-.floatingButton {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-
-  /* Make it circular */
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-
-  border: none;
-  background-color: #0070f3;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-
-  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
-
-  transition: background-color 0.2s ease-in-out;
-}
-
-.userButton {
-  background-color: #0070f3; /* A nice blue that matches your floating button */
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 0.4rem 0.8rem;
-  margin-right: 0.5rem; /* small space between buttons */
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.userButton:hover {
-  background-color: #005bb5; /* slightly darker on hover */
-}
-
-.userButton:disabled {
-  background-color: #555; /* grey it out if disabled */
-  cursor: not-allowed;
-}
-
-/* If you want a 'danger' style for Delete */
-.deleteButton {
-  background-color: #dc3545;
-  color: #fff;
-}
-
-.deleteButton:hover {
-  background-color: #b02a37; /* darken on hover */
-}
-
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+.searchInputXL {
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f1c3f;
+  font-size: 0.95rem;
+}
 
-  display: flex;
+.iconBtn,
+.iconBtnPrimary {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-}
-
-.modalContent {
-  background-color: #444;
-  padding: 2rem;
-  border-radius: 8px;
-  max-width: 400px;
-  width: 90%;
-}
-
-.modalTitle {
-  text-align: center;
-  margin-top: 0;
-  color: #fff;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-}
-
-.formGroup label {
-  color: #fff;
-  margin-bottom: 0.5rem;
-}
-
-.formGroup input {
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-.buttonGroup {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.buttonGroup button {
-  background-color: #ccc;
-  border: none;
-  padding: 0.5rem 1rem;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: #0f1c3f;
   cursor: pointer;
-  border-radius: 4px;
-}
-.buttonGroup button:hover {
-  background-color: #aaa;
 }
 
-.combinedSearch {
-  display: flex; /* Fill the width of the parent */
-  width: 100%; /* Matches the column width */
-  align-items: center;
-  border: 1px solid #555;
-  border-radius: 8px;
-  background-color: #2d2d2d;
+.iconBtn:hover {
+  background: #f6f9fc;
+}
+.iconBtnPrimary {
+  background: linear-gradient(135deg, #0ea5e9, #7cc2ff);
   color: #fff;
-  height: 40px; /* Slightly taller */
-  margin-bottom: 15px; /* Spacing below the bar */
+  border: 0;
 }
 
-.filterSelect {
-  background-color: transparent;
-  color: #ccc;
-  border: none;
-  padding: 0 12px; /* Left-right padding inside the select */
-  font-size: 14px;
-  outline: none;
-  cursor: pointer;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+.viewBtns {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
 }
 
-.divider {
-  width: 1px;
-  height: 60%;
-  background-color: #444;
-}
-
-.searchInput {
-  flex: 1; /* Let input grow to fill the remaining space */
-  background-color: transparent;
-  color: #ccc;
-  border: none;
-  padding: 0 12px; /* Some padding for the text inside */
-  font-size: 14px;
-  outline: none;
-}
-
-/* Optional hover/focus highlight */
-.combinedSearch:hover,
-.combinedSearch:focus-within {
-  border-color: #777;
-}
-
-.messageFilterBar {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  border: 1px solid #555;
-  border-radius: 8px;
-  background-color: #2d2d2d;
-  color: #fff;
-  height: 40px;
-  margin-bottom: 15px;
+/* ───────────────── Table ───────────────── */
+.table {
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
-.dateInput {
-  background-color: transparent;
-  color: #ccc;
-  border: none;
-  font-size: 14px;
-  outline: none;
+/* columns: [checkbox, name, phone, tags, assistant, kebab] */
+.row {
+  display: grid;
+  grid-template-columns: 52px 1.2fr 220px 380px 260px 52px;
+  align-items: center;
+  min-height: var(--row-h);
+  padding: 6px 10px;
+  background: var(--row-base);
+}
+.header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--ui-border);
+}
+.rowAlt {
+  background: var(--row-alt);
 }
 
-.dateRangeDash {
-  margin: 0 6px;
-  color: #aaa;
+.cellHead {
+  font-weight: 600;
+  color: #0f1c3f;
+}
+.cellHeadRight {
 }
 
-/* Optional hover/focus highlight */
-.messageFilterBar:hover,
-.messageFilterBar:focus-within {
-  border-color: #777;
+/* checkbox (custom look) */
+.cellChk {
+  display: flex;
+  justify-content: center;
+}
+.chkWrap {
+  position: relative;
+  display: inline-flex;
+}
+.chkWrap input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.chkFake {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+.chkWrap input:checked + .chkFake {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  box-shadow: inset 0 0 0 2px #fff;
 }
 
-/* Responsive: on screens <= 600px, stack columns. 
-   (Or you can do flex-wrap: wrap with media queries.)
-*/
-@media (max-width: 600px) {
-  .row {
-    flex-direction: column;
+/* name cell */
+.cellName {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.avatar {
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0ea5e9, #4ab0ff);
+}
+.nameBlock {
+  min-width: 0;
+}
+.name {
+  font-weight: 600;
+  color: #0f1c3f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subline {
+  font-size: 12px;
+  color: var(--ui-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* phone */
+.cellPhone {
+  color: #0f1c3f;
+}
+
+/* tags chips */
+.cellTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  color: var(--chip-text);
+  font-weight: 600;
+  font-size: 12px;
+}
+.chipDark {
+  background: var(--chip-dark-bg);
+  border: 1px solid var(--chip-dark-bg);
+  color: var(--chip-dark-text);
+}
+
+/* assistant pill button */
+.cellAssistant {
+}
+.chipBtn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid #9fd3ff;
+  background: #eaf6ff;
+  color: #1467a3;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chipBtn:hover {
+  filter: brightness(0.98);
+}
+
+/* kebab */
+.cellKebab {
+  display: flex;
+  justify-content: center;
+}
+
+/* ─────────── Modal styles (kept from your file) ─────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center; /* final position: centered */
+  justify-content: center;
+  background: rgba(0, 0, 0, 0); /* animate in */
+}
+
+/* dialog card base (light look to match the new UI) */
+.modalContent {
+  width: min(420px, 92vw);
+  background: #fff;
+  color: #0f1c3f;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  opacity: 0;
+  transform: translateY(40vh) scale(0.98); /* start: lower on the screen */
+}
+
+/* entering */
+.open.modalOverlay {
+  animation: overlayIn 0.4s ease forwards;
+}
+.open.modalContent {
+  animation: modalIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* exiting */
+.closing.modalOverlay {
+  animation: overlayOut 0.28s ease forwards;
+}
+.closing.modalContent {
+  animation: modalOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* overlay fades */
+@keyframes overlayIn {
+  from {
+    background: rgba(0, 0, 0, 0);
   }
+  to {
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+@keyframes overlayOut {
+  from {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  to {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+/* card slides up to center with a tiny overshoot */
+@keyframes modalIn {
+  0% {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-6px) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes modalOut {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+}
+
+/* respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  .open.modalOverlay,
+  .closing.modalOverlay,
+  .open.modalContent,
+  .closing.modalContent {
+    animation: none !important;
+    transition: none !important;
+  }
+  .modalOverlay {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .modalContent {
+    opacity: 1;
+    transform: none;
+  }
+}
+.modalTitle {
+  margin: 0 0 0.75rem;
+}
+.form {
+  display: grid;
+  gap: 0.75rem;
+}
+.formGroup {
+  display: grid;
+  gap: 0.35rem;
+}
+.formGroup input {
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-pill);
+}
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.buttonGroup button {
+  border: 0;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.buttonGroup button[type="submit"] {
+  background: linear-gradient(135deg, #0ea5e9, #7cc2ff);
+  color: #fff;
+}
+.buttonGroup button[type="button"] {
+  background: #eef3f7;
+  color: #0f1c3f;
 }

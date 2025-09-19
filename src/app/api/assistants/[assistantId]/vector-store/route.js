@@ -36,7 +36,7 @@ export async function POST(req, { params }) {
 
     const assistantOAiId = await getAssistantById(Number(assistantId));
     const updatedAssistant = await associateStoreToAssistant(
-      assistantOAiId.openAiId,
+      assistantOAiId.open_ai_id,
       store
     );
 

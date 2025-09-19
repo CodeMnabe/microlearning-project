@@ -2,9 +2,17 @@
 import { useState } from "react";
 import styles from "./chatbox.module.css";
 
+/*
+ * @typedef {Object} Assistant
+ * @property {string} id - Internal DB id (route param)
+ * @property {string} openAiId - Corresponding OpenAi Assistant ID
+ *
+ * @param {{assistant: Assistant}} props
+ */
+
 export default function ChatSandbox({ assistant }) {
   const [threadId, setThreadId] = useState("");
-  const [messages, setMessages] = useState([]); // { role, content }
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -17,7 +25,7 @@ export default function ChatSandbox({ assistant }) {
     setIsSending(true);
 
     try {
-      const res = await fetch(`/api/assistants/${assistant.id}/message`, {
+      const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

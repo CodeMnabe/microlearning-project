@@ -49,10 +49,11 @@ export async function getUserById(db, userId) {
 
 export async function getUserByNumber(phoneNumber) {
   const db = await readDb();
-  return db.users.find((user) => user.phoneNumber === phoneNumber);
+  console.log(phoneNumber);
+  return db.users.find((user) => user.phone_number === phoneNumber);
 }
 
 export async function getUsersInOrg(orgId) {
   const db = await readDb();
-  return db.users.filter((user) => user.organizationId === orgId);
+  return db.users.filter((user) => user.organization_id === orgId);
 }

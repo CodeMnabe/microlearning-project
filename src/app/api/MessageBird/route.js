@@ -15,6 +15,7 @@ import {
 } from "@/lib/repos/assistants.repo";
 import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
 import { getOrganization } from "@/lib/repos/organizations.repo";
+import { channel } from "diagnostics_channel";
 
 /* --------------------
 Needed to check if the key we have is the
@@ -122,11 +123,12 @@ async function handleEvent(rawJSON) {
     evt.payload?.body?.type === "text"
   ) {
     //Extracts values from the event
-    const fromNumber =
-      evt.payload.sender?.contact?.identifierValue ?? "unknown";
+
+    const fromNumber = evt.payload.sender?.contact?.identifierValue;
+    const contactId = evt.payload.sender?.contact?.id ?? "unknown";
     const contactName = evt.payload.sender?.contact?.annotations?.name ?? "";
     const text = evt.payload.body.text.text;
-    const sentChannelId = evt.payload?.channel?.id;
+    const sentChannelId = evt.payload?.channelId;
 
     console.log(`📨 ${contactName} (${fromNumber}) → "${text}"`);
 
@@ -151,7 +153,7 @@ async function handleEvent(rawJSON) {
             receiver: {
               contacts: [
                 {
-                  identifierValue: fromNumber, // destination
+                  id: contactId, // destination
                 },
               ],
             },
@@ -168,6 +170,7 @@ async function handleEvent(rawJSON) {
       if (!res.ok) {
         const errorText = await res.text();
         console.error("❌ Failed to send message:", errorText);
+        return NextResponse.json({ status: 400 });
       } else {
         const data = await res.json();
       }
@@ -176,7 +179,7 @@ async function handleEvent(rawJSON) {
     }
 
     //Fetch user's organization and Assistants
-    const organization = await getOrganization(user.organizationId);
+    const organization = await getOrganization(user.organization_id);
 
     const assistants = await getAssistantsInOrg(organization.id);
 
@@ -192,18 +195,19 @@ async function handleEvent(rawJSON) {
     let aiThreadId;
     let assistantId;
 
+    console.log(thread);
+
     //If the user doesn't have any threads it creates a new thread and associates it with the user
     if (!thread) {
       console.log("Creating new thread since user doesn't have one");
       assistantId = assistants[0]?.id;
       const aiThread = await createOAiThread();
-      console.log(aiThread);
       aiThreadId = aiThread.id;
 
       thread = await createThread({ userId: user.id, assistantId, aiThreadId });
     } else {
-      assistantId = thread.assistantId;
-      aiThreadId = thread.aiThreadId;
+      assistantId = thread.assistant_id;
+      aiThreadId = thread.ai_thread_id;
     }
 
     //Get Assistant from thread
@@ -211,14 +215,14 @@ async function handleEvent(rawJSON) {
 
     //Send to AI
     const aiResponse = await sendMessageToAi(
-      assistant.openAiId,
+      assistant.open_ai_id,
       text,
-      thread.aiThreadId
+      aiThreadId
     );
     console.log(aiResponse);
 
     const res = await fetch(
-      `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channelId}/messages`,
+      `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`,
       {
         method: "POST",
         headers: {
@@ -229,7 +233,7 @@ async function handleEvent(rawJSON) {
           receiver: {
             contacts: [
               {
-                identifierValue: fromNumber, // destination
+                id: contactId, // destination
               },
             ],
           },

@@ -1,4 +1,5 @@
 import fs from "fs";
+import { stripOpenAICitations } from "./removeOAiCitations";
 require("dotenv").config();
 const OpenAI = require("openai");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -33,7 +34,7 @@ export async function getOAiAssistantById(id) {
 export async function updateOAiAssistant(updates) {
   try {
     const myUpdatedAssistant = await client.beta.assistants.update(
-      `${updates.openAiId}`,
+      `${updates.open_ai_id}`,
       {
         name: updates.name,
         description: updates.description,
@@ -151,7 +152,9 @@ export async function sendMessageToAi(assistantId, input, threadId) {
     }
 
     const messages = await client.beta.threads.messages.list(threadId);
-    const aiResponse = messages.data[0].content[0].text.value;
+    const aiResponse = stripOpenAICitations(
+      messages.data[0].content[0].text.value
+    );
 
     return {
       threadId,

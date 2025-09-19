@@ -6,21 +6,19 @@ export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
   const [userName, setUserName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
+  // Keep the modal mounted while running the closing animation
+  const [render, setRender] = useState(isOpen);
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) setRender(true);
+  }, [isOpen]);
 
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  // ESC to close (only when open)
+  useEffect(() => {
+    if (!render) return;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [render, onClose]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -29,11 +27,28 @@ export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
     setPhoneNumber("");
   };
 
-  if (!isOpen) return null;
+  if (!render) return null;
+
+  // Pick the animation state class
+  const stateClass = isOpen ? styles.open : styles.closing;
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
+    <div
+      className={`${styles.modalOverlay} ${stateClass}`}
+      // When the overlay finishing closing, unmount
+      onAnimationEnd={(e) => {
+        if (!isOpen && e.target === e.currentTarget) setRender(false);
+      }}
+      onClick={(e) => {
+        // click outside to close
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={`${styles.modalContent} ${stateClass}`}
+        role="dialog"
+        aria-modal="true"
+      >
         <h3 className={styles.modalTitle}>Create a New User</h3>
 
         <form onSubmit={handleSubmit} className={styles.form}>

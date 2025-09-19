@@ -1,11 +1,12 @@
 "use client";
-import { use, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import styles from "./assistantDetail.module.css";
 import { useGlobalLoader } from "../../LoadingScreen/GlobalLoaderContext";
 import ChatSandbox from "./Chatbox/Chatbox";
+import { useParams } from "next/navigation";
 
 export default function AssistantDetailPage({ params }) {
-  const { assistantId } = use(params);
+  const { assistantId } = useParams();
   const [assistant, setAssistant] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,7 +56,7 @@ export default function AssistantDetailPage({ params }) {
         },
         body: JSON.stringify({
           id: assistant.id,
-          openAiId: assistant.openAiId,
+          open_ai_id: assistant.open_ai_id,
           name: assistant.name,
           description: assistant.description,
           instructions: assistant.instructions,
@@ -251,7 +252,7 @@ export default function AssistantDetailPage({ params }) {
 
           <div className={styles.detailGroup}>
             <label>Criado em:</label>
-            <span>{new Date(assistant.createdAt).toLocaleString()}</span>
+            <span>{new Date(assistant.created_at).toLocaleString()}</span>
           </div>
 
           <div className={styles.buttonGroup}>

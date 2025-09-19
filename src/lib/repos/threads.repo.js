@@ -10,10 +10,10 @@ export async function createThread({ userId, assistantId, aiThreadId }) {
 
   const newThread = {
     id: nextId("threadId", db),
-    userId,
-    assistantId,
-    aiThreadId,
-    createdAt: new Date(),
+    user_id: userId,
+    assistant_id: assistantId,
+    ai_thread_id: aiThreadId,
+    created_at: new Date(),
   };
 
   db.threads.push(newThread);
@@ -28,5 +28,5 @@ export async function getThreadById(threadId) {
 
 export async function getThreadsForUser(userId) {
   const db = await readDb();
-  return db.threads.filter((thread) => thread.userId === userId);
+  return db.threads.filter((thread) => thread.user_id === userId);
 }

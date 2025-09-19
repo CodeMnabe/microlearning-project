@@ -13,7 +13,7 @@ export default function useOrganization(user) {
     async function fetchOrg() {
       const { data, error } = await supabase
         .from("organization")
-        .select("id, name")
+        .select("id, name, logo_url, theme")
         .eq("owner_user_id", user.id)
         .single();
 
@@ -24,6 +24,13 @@ export default function useOrganization(user) {
 
     fetchOrg();
   }, [user, supabase]);
+
+  useEffect(() => {
+    const t = org?.theme || {};
+    const root = document.documentElement;
+    root.style.setProperty("--color-primary", t.primary || "#30a9e0");
+    root.style.setProperty("--color-secondary", t.secondary || "#191e3b");
+  }, [org]);
 
   return { org, loading };
 }

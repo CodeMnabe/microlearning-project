@@ -1,61 +1,94 @@
-// src/app/components/Navbar.js
+// src/app/components/Navbar/Navbar.jsx
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./navbar.module.css";
 
 export default function Navbar() {
+  const [activeLink, setActiveLink] = useState(null);
   const { user, loading: authLoading, supabase, setUser } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const router = useRouter();
+  const pathName = usePathname();
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    setUser(null); // notify context
+    setUser(null);
     router.push("/login");
   }
 
+  useEffect(() => {
+    setActiveLink(pathName);
+  }, [pathName]);
+
   return (
-    <nav className={styles.navbar}>
-      <Link href="/">Home</Link>
-
-      {/* while auth/org are loading we just don't render user-specific items */}
-      {authLoading ? null : user ? (
-        <ul className={styles.navLinks}>
-          <li>
-            {orgLoading ? "…" : org?.name ?? "—"} {/* Org name */}
-            {" • "}
-            {user.email} {/* Email */}
-          </li>
-
-          <li>
-            <Link href="/users">Users</Link>
-          </li>
-          <li>
-            <Link href="/assistants">Assistants</Link>
-          </li>
-          <li>
-            <Link href="/admin">Admin</Link>
-          </li>
-          <li>
-            <button onClick={handleSignOut} className={styles.linkButton}>
-              Sign&nbsp;out
-            </button>
-          </li>
-        </ul>
+    <aside className={styles.sidebar}>
+      {!authLoading && user ? (
+        <>
+          <div className={styles.userBlock}>
+            <div className={styles.orgLine}>
+              {orgLoading ? "…" : org?.name ?? "—"}
+            </div>
+            <div className={styles.emailLine}>{user.email}</div>
+          </div>
+          <nav className={styles.nav}>
+            <Link
+              href="/"
+              className={`${styles.navItem} ${
+                activeLink === "/" ? styles.active : ""
+              }`}
+              onClick={() => setActiveLink("/")}
+            >
+              Home
+            </Link>
+            <Link
+              id={1}
+              className={`${styles.navItem} ${
+                activeLink === "/users" ? styles.active : ""
+              }`}
+              href="/users"
+              onClick={() => setActiveLink("/users")}
+            >
+              Users
+            </Link>
+            <Link
+              className={`${styles.navItem} ${
+                activeLink === "/assistants" ? styles.active : ""
+              }`}
+              href="/assistants"
+              onClick={() => setActiveLink("/assistants")}
+            >
+              Assistants
+            </Link>
+            <Link
+              className={`${styles.navItem} ${
+                activeLink === "/admin" ? styles.active : ""
+              }`}
+              href="/admin"
+              onClick={() => setActiveLink("/admin")}
+            >
+              Admin
+            </Link>
+          </nav>
+          <button onClick={handleSignOut} className={styles.signOut}>
+            Sign out
+          </button>
+        </>
       ) : (
-        <ul className={styles.navLinks}>
-          <li>
-            <Link href="/login">Login</Link>
-          </li>
-          <li>
-            <Link href="/signup">Sign&nbsp;up</Link>
-          </li>
-        </ul>
+        <nav className={styles.nav}>
+          <Link className={styles.navItem} href="/login">
+            Login
+          </Link>
+          <Link className={styles.navItem} href="/signup">
+            Sign up
+          </Link>
+        </nav>
       )}
-    </nav>
+    </aside>
   );
 }

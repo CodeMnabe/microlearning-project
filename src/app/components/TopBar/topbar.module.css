@@ -1,0 +1,116 @@
+/* src/app/components/TopBar/topbar.module.css */
+:root {
+  --topbar-h: 72px; /* taller like the mock */
+  --topbar-bg: #ffffff; /* white bar */
+  --topbar-text: #0f1c3f; /* dark navy text */
+  --topbar-border: rgba(15, 28, 63, 0.08); /* subtle lines/shadows */
+  --content-gutter: 24px; /* match your page padding */
+}
+
+/* full-width white top bar with a soft shadow */
+.topbar {
+  position: fixed; /* was: sticky */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-h);
+  z-index: 50; /* above sidebar/content */
+  background: var(--topbar-bg);
+  color: var(--topbar-text);
+  box-shadow: 0 1px 0 var(--topbar-border), 0 6px 18px rgba(15, 28, 63, 0.06);
+}
+
+/* align contents and give breathing room */
+.inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--content-gutter); /* align with page edges */
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* BIGGER LOGO: keep aspect ratio of a wide wordmark */
+.logo {
+  height: 40px; /* key change */
+  width: auto; /* keep aspect */
+  max-width: 220px; /* don’t let it explode */
+  object-fit: contain;
+}
+
+.logoFallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  background: var(--btn-gradient);
+  color: #fff;
+}
+
+.brandText {
+  font-weight: 700;
+  color: var(--topbar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* SEARCH: wide pill on the right */
+.search {
+  margin-left: auto;
+  width: min(720px, 60vw);
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  background: #f3f5f7;
+  border: 1px solid var(--topbar-border);
+  border-radius: 9999px; /* pill */
+  padding: 0 6px 0 38px; /* space for icon */
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280; /* gray icon */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--topbar-text);
+  font-size: 0.95rem;
+}
+.input::placeholder {
+  color: #9aa3b2;
+}
+
+.searchBtn {
+  border: 0;
+  border-radius: 9999px;
+  padding: 8px 14px;
+  background: var(--btn-gradient); /* your org gradient */
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.searchBtn:hover {
+  opacity: 0.95;
+}

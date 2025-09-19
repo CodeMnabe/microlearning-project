@@ -19,10 +19,7 @@ export async function GET(req, { params }) {
     const body = await params;
     const assistantId = body.assistantId;
     const assistant = await getAssistantById(Number(assistantId));
-    const aiAssistant = await getOAiAssistantById(assistant.openAiId);
-    console.log(assistant.instructions);
-    console.log();
-    console.log(aiAssistant.instructions);
+    const aiAssistant = await getOAiAssistantById(assistant.open_ai_id);
 
     if (!aiAssistant) {
       return NextResponse.json(
@@ -61,7 +58,7 @@ export async function PATCH(req, { params }) {
         { status: 400 }
       );
     }
-
+    console.log(updates);
     const myUpdatedAssistant = await updateOAiAssistant(updates);
 
     if (!myUpdatedAssistant) {
@@ -71,6 +68,7 @@ export async function PATCH(req, { params }) {
       );
     }
 
+    console.log(assistantId);
     const updated = await updateAssistant(Number(assistantId), updates);
 
     return NextResponse.json(updated, { status: 200 });

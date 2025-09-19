@@ -10,13 +10,13 @@ export default function UserPage({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || "");
-  const [editPhone, setEditPhone] = useState(user?.phoneNumber || "");
+  const [editPhone, setEditPhone] = useState(user?.phone_number || "");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
       setEditName(user.name);
-      setEditPhone(user.phoneNumber);
+      setEditPhone(user.phone_number);
     }
   }, [user]);
 
@@ -40,7 +40,7 @@ export default function UserPage({
         body: JSON.stringify({
           id: user.id,
           name: editName,
-          phoneNumber: editPhone,
+          phone_number: editPhone,
         }),
       });
 
@@ -115,7 +115,7 @@ export default function UserPage({
               onChange={(e) => setEditPhone(e.target.value)}
             />
           ) : (
-            user.phoneNumber
+            user.phone_number
           )}
         </p>
 
