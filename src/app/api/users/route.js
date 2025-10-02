@@ -9,24 +9,23 @@ import {
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("orgId");
+    const id = Number(searchParams.get("orgId"));
     console.log(id);
+
+    if (!id)
+      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
 
     const users = await getUsersInOrg(Number(id));
     return NextResponse.json(users);
   } catch (err) {
     console.error(err);
-    return NextResponse.json(
-      { error: "Failed to fetch users" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { name, phoneNumber, organizationId } = body;
+    const { name, phoneNumber, organizationId } = await req.json();
 
     if (!name || !phoneNumber || !organizationId) {
       return NextResponse.json(
@@ -35,14 +34,27 @@ export async function POST(req) {
       );
     }
 
-    const _newUser = createUser({
-      organizationId: organizationId,
-      name: name,
-      phoneNumber: phoneNumber,
+    console.log(name);
+    console.log(phoneNumber);
+    console.log(organizationId);
+
+    const _newUser = await createUser({
+      organizationId,
+      phoneNumber,
+      name,
     });
 
-    return NextResponse.json({ message: _newUser }, { status: 201 });
+    console.log(_newUser);
+
+    return NextResponse.json(_newUser, { status: 201 });
   } catch (error) {
+    if (error.code === "23505") {
+      return NextResponse.json(
+        { error: "User already exists (duplicate key)." },
+        { status: 409 }
+      );
+    }
+    console.error(error);
     return NextResponse.json({
       error: "Failed to create User:" + error.message,
     });
@@ -51,9 +63,7 @@ export async function POST(req) {
 
 export async function PATCH(req) {
   try {
-    const body = await req.json();
-    const { id, name, phoneNumber } = body;
-
+    const { id, name, phoneNumber } = await req.json();
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -61,35 +71,18 @@ export async function PATCH(req) {
       );
     }
 
-    const updates = {};
+    const updatedUser = await updateUser(id, { name, phoneNumber });
 
-    if (name !== undefined) {
-      updates.name = name;
-    }
-
-    if (phoneNumber !== undefined) {
-      updates.phoneNumber = phoneNumber;
-    }
-
-    const updatedUser = await updateUser(id, updates);
-
-    console.log("Updated user in PATCH:", updatedUser);
-
-    return NextResponse.json({ user: updatedUser }, { status: 200 });
+    return NextResponse.json(updatedUser);
   } catch (err) {
-    return NextResponse.json(
-      {
-        error: "Failed to update User:" + error.message,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("id");
+    const userId = Number(searchParams.get("id"));
     if (!userId) {
       return NextResponse.json(
         {
@@ -99,13 +92,13 @@ export async function DELETE(req) {
       );
     }
 
-    await deleteUser(Number(userId));
+    await deleteUser(userId);
 
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
       {
-        error: "Failed to delete User:" + err.message,
+        error: error.message,
       },
       {
         status: 500,

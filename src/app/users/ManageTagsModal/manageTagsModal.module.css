@@ -1,0 +1,183 @@
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+/* Card */
+.card {
+  position: relative;
+  width: min(820px, 92vw);
+  background: #fff;
+  color: #0f1c3f;
+  border: 1px solid var(--ui-border, #e5edf5);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  padding: 18px 18px 14px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* plus button (matches your blue style) */
+.iconBtnPrimary {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 0;
+  background: linear-gradient(135deg, #0ea5e9, #7cc2ff);
+  color: #fff;
+  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Body two columns */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 1px 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* Left: chips cloud */
+.leftCol {
+  min-height: 220px;
+}
+.chipsArea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* chip look (light) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: var(--chip-bg, #eaf6ff);
+  border: 1px solid var(--chip-border, #9fd3ff);
+  color: var(--chip-text, #1467a3);
+  font-weight: 700;
+  cursor: pointer;
+}
+.chip:hover {
+  filter: brightness(0.98);
+}
+
+.chipActive {
+  background: #0f1c3f;
+  border-color: #0f1c3f;
+  color: #fff;
+}
+.chipLabel {
+  pointer-events: none;
+}
+.chipClose {
+  font-weight: 900;
+  padding: 0 4px;
+  border-radius: 6px;
+  opacity: 0.6;
+}
+.chipClose:hover {
+  opacity: 1;
+}
+
+/* Divider */
+.divider {
+  width: 1px;
+  background: var(--ui-border, #e5edf5);
+  align-self: stretch;
+}
+
+/* Right: editor */
+.rightCol {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+}
+.label {
+  font-weight: 600;
+}
+.nameInput {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ui-border, #e5edf5);
+  background: var(--ui-pill, #f3f7fb);
+  color: #0f1c3f;
+  outline: none;
+}
+.nameInput:focus {
+  border-color: #7cc2ff;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+}
+
+/* Actions */
+.actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.btnGhost {
+  border: 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: #d0d5db;
+  color: #0f1c3f;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btnPrimary {
+  border: 0;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0ea5e9, #7cc2ff);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Close X */
+.closeX {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a8392;
+  cursor: pointer;
+}
+.closeX:hover {
+  background: #f3f7fb;
+}
+
+/* util */
+.muted {
+  opacity: 0.6;
+}

@@ -38,7 +38,7 @@ export default function LoginPage() {
     }
 
     setMsg("Sucesso! A redirecionar…");
-    router.push("/private");
+    router.push("/users");
   }
 
   return (

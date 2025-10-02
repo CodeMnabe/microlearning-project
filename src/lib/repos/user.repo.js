@@ -1,59 +1,92 @@
-import { readDb, writeDb, nextId } from "../persistence/db";
-import { getOrganization } from "./organizations.repo";
+// src/lib/repos/user.repo.js
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+
+const supabase = createSupabaseAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY, // service role => bypasses RLS
+  { auth: { persistSession: false } }
+);
+
+function cleanMsisdn(n) {
+  return String(n).replace(/\D/g, "").slice(-9);
+}
 
 export async function createUser({ organizationId, phoneNumber, name }) {
-  const org = getOrganization(organizationId);
-  if (!org) {
-    throw new Error(`Organization with id ${organizationId} does not exist.`);
-  }
-
-  const db = await readDb();
-
-  const cleanNumber = phoneNumber.replace(/\D/g, "").slice(-9);
-
-  const newUser = {
-    id: nextId("userId", db),
-    organizationId,
-    phoneNumber: cleanNumber,
-    name,
-    createdAt: new Date(),
-  };
-
-  db.users.push(newUser);
-  await writeDb(db);
-  return newUser;
+  const { data, error } = await supabase
+    .from("user")
+    .insert([
+      {
+        organization_id: organizationId,
+        phone_number: cleanMsisdn(phoneNumber),
+        name,
+      },
+    ])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function deleteUser(userId) {
-  const db = await readDb();
-  db.users = db.users.filter((u) => u.id !== userId);
-  await writeDb(db);
+  const { error } = await supabase.from("user").delete().eq("id", userId);
+  if (error) throw error;
   return true;
 }
 
 export async function updateUser(userId, updates) {
-  const db = await readDb();
-  const user = await getUserById(db, userId);
-  if (!user) {
-    throw new Error(`User with id ${userId} does not exist.`);
-  }
+  const patch = {};
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.phoneNumber !== undefined)
+    patch.phone_number = cleanMsisdn(updates.phoneNumber);
 
-  Object.assign(user, updates);
-  await writeDb(db);
-  return user;
+  const { data, error } = await supabase
+    .from("user")
+    .update(patch)
+    .eq("id", userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
-export async function getUserById(db, userId) {
-  return db.users.find((user) => user.id === userId);
+export async function getUserById(userId) {
+  const { data, error } = await supabase
+    .from("user")
+    .select("id, organization_id, phone_number, name, created_at")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
 }
 
 export async function getUserByNumber(phoneNumber) {
-  const db = await readDb();
-  console.log(phoneNumber);
-  return db.users.find((user) => user.phone_number === phoneNumber);
+  const digits = cleanMsisdn(phoneNumber);
+
+  // exact match first
+  let { data, error } = await supabase
+    .from("user")
+    .select("id, organization_id, phone_number, name, created_at")
+    .eq("phone_number", digits)
+    .maybeSingle();
+  if (error) throw error;
+  if (data) return data;
+
+  // fallback: trailing match (if some rows stored cc or spaces)
+  const alt = await supabase
+    .from("user")
+    .select("id, organization_id, phone_number, name, created_at")
+    .ilike("phone_number", `%${digits}`)
+    .maybeSingle();
+
+  return alt.data ?? null;
 }
 
 export async function getUsersInOrg(orgId) {
-  const db = await readDb();
-  return db.users.filter((user) => user.organization_id === orgId);
+  const { data, error } = await supabase
+    .from("user")
+    .select("id, name, phone_number, created_at")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
 }

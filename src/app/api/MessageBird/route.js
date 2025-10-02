@@ -8,14 +8,22 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 
 import { getUserByNumber } from "@/lib/repos/user.repo";
-import { createThread, getThreadsForUser } from "@/lib/repos/threads.repo";
+import {
+  createThread,
+  getOrCreateThread,
+  getThreadsForUser,
+} from "@/lib/repos/threads.repo";
 import {
   getAssistantById,
   getAssistantsInOrg,
 } from "@/lib/repos/assistants.repo";
 import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
 import { getOrganization } from "@/lib/repos/organizations.repo";
-import { channel } from "diagnostics_channel";
+import { createMessage } from "@/lib/repos/messages.repo";
+import {
+  getActivePendingOutreachByUser,
+  markPendingOutreachReplied,
+} from "@/lib/repos/pendingOutreach.repo";
 
 /* --------------------
 Needed to check if the key we have is the
@@ -132,6 +140,12 @@ async function handleEvent(rawJSON) {
 
     console.log(`📨 ${contactName} (${fromNumber}) → "${text}"`);
 
+    const inboundMsgId =
+      evt.payload?.id ||
+      evt.payload?.messageId ||
+      evt.payload?.body?.id ||
+      null;
+
     //Splits the E.164 number into country code and local number
     const { countryCode, nationalNumber } = splitE164(fromNumber);
 
@@ -146,7 +160,7 @@ async function handleEvent(rawJSON) {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.BIRD_API_KEY}`,
+            Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -178,6 +192,73 @@ async function handleEvent(rawJSON) {
       return NextResponse.json({ ok: true });
     }
 
+    const pending = await getActivePendingOutreachByUser(user.id);
+    if (pending) {
+      await createMessage({
+        threadId: null,
+        userId: user.id,
+        messageId: inboundMsgId,
+        whatsAppId: contactId,
+        content: text,
+        role: "user",
+      });
+      //mark replied
+      await markPendingOutreachReplied(pending.id, inboundMsgId);
+
+      //Send the queued message now that the 24h window is open
+      const organization = await getOrganization(user.organization_id);
+      const sendPoint = `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`;
+      const p = pending.payload || {};
+
+      const body =
+        Array.isArray(p.imageUrls) && p.imageUrls.length
+          ? {
+              type: "image",
+              image: {
+                images: p.imageUrls.map((u) => ({
+                  altText: "image",
+                  mediaUrl: u,
+                })),
+                ...(p.message ? { text: p.message } : {}),
+              },
+            }
+          : {
+              type: "text",
+              text: { text: p.message || "" },
+            };
+
+      const res = await fetch(sendPoint, {
+        method: "POST",
+        headers: {
+          Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receiver: { contacts: [{ id: contactId }] },
+          body,
+        }),
+      });
+
+      let outboundId = null;
+      try {
+        const outJson = await res.json();
+        outboundId = outJson?.id ?? outJson?.message?.id ?? null;
+      } catch (err) {
+        console.error(err.message);
+      }
+
+      await createMessage({
+        threadId: null,
+        userId: user.id,
+        messageId: outboundId,
+        whatsAppId: contactId,
+        content: p.message || "",
+        role: "system",
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
     //Fetch user's organization and Assistants
     const organization = await getOrganization(user.organization_id);
 
@@ -190,25 +271,30 @@ async function handleEvent(rawJSON) {
     }
 
     //Check if user has any Threads already
-    let threads = await getThreadsForUser(user.id);
-    let thread = threads[threads.length - 1];
-    let aiThreadId;
-    let assistantId;
+    let thread = (await getThreadsForUser(user.id))[0];
+    let assistantId = assistants[0]?.id;
 
-    console.log(thread);
-
-    //If the user doesn't have any threads it creates a new thread and associates it with the user
     if (!thread) {
       console.log("Creating new thread since user doesn't have one");
-      assistantId = assistants[0]?.id;
-      const aiThread = await createOAiThread();
-      aiThreadId = aiThread.id;
-
-      thread = await createThread({ userId: user.id, assistantId, aiThreadId });
-    } else {
-      assistantId = thread.assistant_id;
-      aiThreadId = thread.ai_thread_id;
+      const aiThread = await createOAiThread(); // create OpenAI thread
+      thread = await getOrCreateThread({
+        // insert a DB row
+        userId: user.id,
+        assistantId,
+        aiThreadId: aiThread.id,
+      });
     }
+
+    const aiThreadId = thread.ai_thread_id;
+
+    await createMessage({
+      threadId: thread?.id ?? null,
+      userId: user.id,
+      messageId: inboundMsgId,
+      whatsAppId: contactId,
+      content: text,
+      role: "user",
+    });
 
     //Get Assistant from thread
     const assistant = await getAssistantById(Number(assistantId));
@@ -221,6 +307,7 @@ async function handleEvent(rawJSON) {
     );
     console.log(aiResponse);
 
+    let outboundId = null;
     const res = await fetch(
       `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`,
       {
@@ -251,8 +338,18 @@ async function handleEvent(rawJSON) {
       const errorText = await res.text();
       console.error("❌ Failed to send message:", errorText);
     } else {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      outboundId = data?.id ?? data?.message?.id ?? null;
     }
+
+    await createMessage({
+      threadId: thread?.id ?? null,
+      userId: user.id,
+      messageId: outboundId,
+      whatsAppId: contactId,
+      content: aiResponse.aiResponse,
+      role: "assistant",
+    });
   }
 
   // Always ACK so Bird doesn’t retry

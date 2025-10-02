@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "../LoadingScreen/GlobalLoaderContext";
+import styles from "./admin.module.css";
+import ThemePreview from "./ThemePreview/ThemePreview";
 
 export default function AdminPage() {
   const supabase = createClient();
@@ -65,7 +67,7 @@ export default function AdminPage() {
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user, supabase]);
 
   // Helpers
   function setCssVars(theme) {
@@ -149,52 +151,39 @@ export default function AdminPage() {
   }
 
   return (
-    <main
-      style={{ maxWidth: 720, margin: "3rem auto", fontFamily: "sans-serif" }}
-    >
-      <h1 style={{ marginBottom: 16 }}>Admin</h1>
+    <main className={styles.pageWrapper}>
+      <h1 className={styles.header}>Admin</h1>
 
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 8 }}>Nova organização</h2>
-        <form onSubmit={handleCreate} style={{ display: "flex", gap: 8 }}>
+      <section className={styles.formContainer}>
+        <h2 className={styles.title}>Nova organização</h2>
+        <form onSubmit={handleCreate} className={styles.form}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nome da organização…"
             required
-            style={{ flex: 1, padding: 8 }}
+            className={styles.input}
           />
-          <button disabled={creating}>{creating ? "A criar…" : "Criar"}</button>
+          <button disabled={creating} className={styles.formButton}>
+            {creating ? "A criar…" : "Criar"}
+          </button>
         </form>
       </section>
 
       <section>
-        <h2 style={{ marginBottom: 8 }}>Temas</h2>
+        <h2 className={styles.title}>Temas</h2>
         {loading && <p>A carregar…</p>}
         {!loading && orgs.length === 0 && <p>Sem organizações.</p>}
 
         {orgs.map((org) => (
-          <div
-            key={org.id}
-            style={{
-              border: "1px solid #e5e7eb",
-              padding: 12,
-              borderRadius: 12,
-              marginBottom: 12,
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 12,
-            }}
-          >
+          <div key={org.id} className={styles.changeThemesWrapper}>
             <div>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>
+              <div className={styles.orgName}>
                 #{org.id} — {org.name}
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
+              <div className={styles.themesQuery}>
+                <label className={styles.colorPicker}>
                   <span style={{ width: 80 }}>Primary</span>
                   <input
                     type="color"
@@ -202,26 +191,18 @@ export default function AdminPage() {
                     onChange={(e) =>
                       handleColorChange(org.id, "primary", e.target.value)
                     }
-                    style={{
-                      width: 40,
-                      height: 32,
-                      padding: 0,
-                      border: "none",
-                      background: "none",
-                    }}
+                    className={styles.colorInput}
                   />
                   <input
                     value={org.theme.primary}
                     onChange={(e) =>
                       handleColorChange(org.id, "primary", e.target.value)
                     }
-                    style={{ width: 110, padding: "6px 8px" }}
+                    className={styles.colorTextInput}
                   />
                 </label>
 
-                <label
-                  style={{ display: "flex", alignItems: "center", gap: 8 }}
-                >
+                <label className={styles.colorPicker}>
                   <span style={{ width: 80 }}>Secondary</span>
                   <input
                     type="color"
@@ -229,57 +210,31 @@ export default function AdminPage() {
                     onChange={(e) =>
                       handleColorChange(org.id, "secondary", e.target.value)
                     }
-                    style={{
-                      width: 40,
-                      height: 32,
-                      padding: 0,
-                      border: "none",
-                      background: "none",
-                    }}
+                    className={styles.colorInput}
                   />
                   <input
                     value={org.theme.secondary}
                     onChange={(e) =>
                       handleColorChange(org.id, "secondary", e.target.value)
                     }
-                    style={{ width: 110, padding: "6px 8px" }}
+                    className={styles.colorTextInput}
                   />
                 </label>
-
-                {/* live preview */}
-                <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: org.theme.primary,
-                      border: "1px solid #e5e7eb",
-                    }}
-                  />
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: org.theme.secondary,
-                      border: "1px solid #e5e7eb",
-                    }}
-                  />
-                </div>
+                <button
+                  onClick={() => handleSave(org)}
+                  disabled={savingId === org.id}
+                  className={styles.saveButton}
+                >
+                  {savingId === org.id ? "A guardar…" : "Guardar"}
+                </button>
               </div>
             </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button
-                onClick={() => handleSave(org)}
-                disabled={savingId === org.id}
-                style={{ padding: "8px 12px" }}
-              >
-                {savingId === org.id ? "A guardar…" : "Guardar"}
-              </button>
+            <div className={styles.livePreviewWrapper}>
+              <ThemePreview
+                theme={org.theme}
+                orgName={org.name}
+                logo_url={org.logo_url}
+              />
             </div>
           </div>
         ))}

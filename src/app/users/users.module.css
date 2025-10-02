@@ -35,6 +35,7 @@
   flex-direction: column;
   gap: var(--gutter-y);
   padding: var(--gutter-y) var(--gutter-x);
+  min-height: 0;
 }
 
 /* ───────────────── Toolbar ───────────────── */
@@ -95,6 +96,10 @@
   border: 0;
 }
 
+.iconBtnPrimary svg {
+  pointer-events: none;
+}
+
 .viewBtns {
   margin-left: auto;
   display: inline-flex;
@@ -106,7 +111,9 @@
   background: var(--ui-bg);
   border: 1px solid var(--ui-border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: auto;
+  max-height: calc(100dvh - 160px);
+  isolation: isolate;
 }
 
 /* columns: [checkbox, name, phone, tags, assistant, kebab] */
@@ -119,6 +126,9 @@
   background: var(--row-base);
 }
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background: #ffffff;
   border-bottom: 1px solid var(--ui-border);
 }
@@ -129,8 +139,6 @@
 .cellHead {
   font-weight: 600;
   color: #0f1c3f;
-}
-.cellHeadRight {
 }
 
 /* checkbox (custom look) */
@@ -226,9 +234,6 @@
   color: var(--chip-dark-text);
 }
 
-/* assistant pill button */
-.cellAssistant {
-}
 .chipBtn {
   height: 32px;
   padding: 0 14px;
@@ -241,6 +246,126 @@
 }
 .chipBtn:hover {
   filter: brightness(0.98);
+}
+
+.viewActive {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+  background: #eef8ff;
+}
+
+/* grid scroll container (same height logic as table) */
+.gridScroll {
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  overflow: auto;
+  max-height: calc(100dvh - 160px); /* adjust to your layout */
+}
+
+/* responsive card grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* card look */
+.card {
+  background: #eaf6ff; /* light blue like your mock */
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  row-gap: 8px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* small checkbox for cards */
+.chkWrapSm {
+  position: relative;
+  display: inline-flex;
+}
+.chkWrapSm input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.chkFakeSm {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+.chkWrapSm input:checked + .chkFakeSm {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* lightweight kebab */
+.iconBtnGhost {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: #0f1c3f;
+}
+
+/* title & email */
+.cardTitle {
+  font-weight: 700;
+  color: #0f1c3f;
+  margin-top: 2px;
+}
+.cardEmail {
+  font-size: 12px;
+  color: var(--ui-muted);
+  margin-top: -2px;
+}
+
+/* chips row (reuses .chip / .chipDark) */
+.cardTags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* phone row with flag */
+.cardPhone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #0f1c3f;
+  margin-top: 2px;
+}
+.flag {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  font-size: 16px; /* emoji size */
+  line-height: 1;
+}
+
+/* footer button (reuses .chipBtn) */
+.cardFooter {
+  margin-top: 6px;
 }
 
 /* kebab */

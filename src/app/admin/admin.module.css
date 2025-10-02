@@ -1,76 +1,202 @@
+/* --- fixes of existing rules --- */
 .pageWrapper {
-  /* Centers the content vertically & horizontally */
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  font-family: sans-serif; /* optional fallback */
+  max-width: 720px;
+  margin: 3rem auto;
+  justify-items: center;
 }
-
-.formContainer {
-  width: min(90%, 400px);
-  background: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  /* subtle shadow for a "card" effect */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.header {
+  margin-bottom: 16px;
 }
-
-.title {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  color: #333;
-}
-
 .form {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
-
-.label {
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-  color: #555;
-  font-size: 0.9rem;
+.formButton {
+  height: 25px;
 }
-
-.input {
-  margin-bottom: 1rem;
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  color: #333;
+.changeThemesWrapper {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  display: grid;
+  gap: 12px;
 }
-
-.textarea {
-  resize: vertical; /* allows vertical resizing of the textarea */
+.orgName {
+  font-weight: 600;
+  margin-bottom: 8px;
 }
-
-.button {
-  padding: 0.75rem;
+.themesQuery {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.colorPicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.colorInput {
+  width: 40px;
+  height: 32px;
+  padding: 0;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  background: #4f46e5;
+  background: none;
+}
+.colorTextInput {
+  width: 110px;
+  padding: 6px 8px;
+}
+.livePreviewWrapper {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+  justify-content: center;
+}
+
+/* --- mini site preview --- */
+.preview {
+  width: 520px; /* wider to fit sidebar layout */
+  height: 260px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* app grid like your site: sidebar + topbar + main */
+.previewApp {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  grid-template-rows: 44px 1fr;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar main";
+  height: 100%;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+/* sidebar */
+.previewSidebar {
+  grid-area: sidebar;
   color: #fff;
-  transition: background 0.3s;
-  font-weight: bold;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
 }
-
-.button:hover {
-  background: #4338ca;
+.previewLogoWrap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
 }
-
-.response {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #f2f2f2;
+.previewLogoLg {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
   border-radius: 4px;
-  color: #333;
+  background: rgba(255, 255, 255, 0.15);
+}
+.previewLogoDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.previewNav {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  margin-top: 50%;
+}
+.previewNavItem {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  opacity: 0.95;
+  text-align: center;
+}
+
+.previewSignout {
+  padding: 6px;
+  text-align: center;
+  opacity: 0.85;
+  font-size: 12px;
+}
+
+/* topbar */
+.previewTopbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background: #0b1220; /* mimic your dark top bar */
+  color: #e5e7eb;
+}
+.previewSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 999px;
+  height: 26px;
+  padding: 0 10px;
+  width: 60%;
+}
+.previewSearchIcon {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+.previewSearchText {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #374151;
+}
+
+/* main content */
+.previewMain {
+  grid-area: main;
+  background: #f3f4f6;
+  padding: 12px;
+  overflow: hidden;
+}
+.previewCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  width: 340px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+.previewTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #111827;
+}
+.previewText {
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+.previewButton {
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* keep your existing rules … and maybe make the preview row full-width */
+.livePreviewWrapper {
+  display: flex;
+  justify-content: flex-start;
 }

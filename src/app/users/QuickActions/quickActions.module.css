@@ -1,0 +1,63 @@
+.wrap {
+  position: fixed;
+  z-index: 60;
+}
+
+.pop {
+  background: #fff;
+  color: #0f1c3f;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  min-width: 160px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.item,
+.item * {
+  color: #0f1c3f !important;
+  -webkit-text-fill-color: #0f1c3f;
+}
+
+.item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sep {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.07);
+  margin: 4px 6px;
+}
+
+.icon {
+  width: 20px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.arrow {
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  transform: rotate(45deg);
+  border-radius: 2px;
+  z-index: -1; /* keeps the arrow behind the card edge */
+}

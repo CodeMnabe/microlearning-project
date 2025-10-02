@@ -16,6 +16,8 @@ export default function Navbar() {
   const router = useRouter();
   const pathName = usePathname();
 
+  const isAdmin = !!org && org.id === 1;
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     setUser(null);
@@ -37,15 +39,17 @@ export default function Navbar() {
             <div className={styles.emailLine}>{user.email}</div>
           </div>
           <nav className={styles.nav}>
-            <Link
-              href="/"
-              className={`${styles.navItem} ${
-                activeLink === "/" ? styles.active : ""
-              }`}
-              onClick={() => setActiveLink("/")}
-            >
-              Home
-            </Link>
+            {isAdmin && (
+              <Link
+                href="/"
+                className={`${styles.navItem} ${
+                  activeLink === "/" ? styles.active : ""
+                }`}
+                onClick={() => setActiveLink("/")}
+              >
+                Home
+              </Link>
+            )}
             <Link
               id={1}
               className={`${styles.navItem} ${
@@ -67,13 +71,33 @@ export default function Navbar() {
             </Link>
             <Link
               className={`${styles.navItem} ${
-                activeLink === "/admin" ? styles.active : ""
+                activeLink === "/broadcast" ? styles.active : ""
               }`}
-              href="/admin"
-              onClick={() => setActiveLink("/admin")}
+              href="/broadcast"
+              onClick={() => setActiveLink("/broadcast")}
             >
-              Admin
+              Mandar Mensagem
             </Link>
+            <Link
+              className={`${styles.navItem} ${
+                activeLink === "/templates" ? styles.active : ""
+              }`}
+              href="/templates"
+              onClick={() => setActiveLink("/templates")}
+            >
+              Templates
+            </Link>
+            {isAdmin && (
+              <Link
+                className={`${styles.navItem} ${
+                  activeLink === "/admin" ? styles.active : ""
+                }`}
+                href="/admin"
+                onClick={() => setActiveLink("/admin")}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
           <button onClick={handleSignOut} className={styles.signOut}>
             Sign out

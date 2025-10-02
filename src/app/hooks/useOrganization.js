@@ -8,28 +8,37 @@ export default function useOrganization(user) {
   const supabase = createClient();
 
   useEffect(() => {
-    if (!user) return; // not logged-in → skip
+    let cancelled = false;
 
-    async function fetchOrg() {
+    (async () => {
+      if (!user) {
+        setOrg(null);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       const { data, error } = await supabase
         .from("organization")
-        .select("id, name, logo_url, theme")
+        .select("id, name, logo_url, theme, channel_id, waba_id")
         .eq("owner_user_id", user.id)
         .single();
 
-      if (error) console.error("[useOrganization] ", error.message);
-      setOrg(data); // may be null if row doesn’t exist
+      if (cancelled) return;
+      if (error) console.error("[useOrganization]", error.message);
+      setOrg(data ?? null);
       setLoading(false);
-    }
+    })();
 
-    fetchOrg();
+    return () => {
+      cancelled = true;
+    };
   }, [user, supabase]);
 
   useEffect(() => {
     const t = org?.theme || {};
     const root = document.documentElement;
-    root.style.setProperty("--color-primary", t.primary || "#30a9e0");
-    root.style.setProperty("--color-secondary", t.secondary || "#191e3b");
+    root.style.setProperty("--color-primary", t.primary ?? "#30a9e0");
+    root.style.setProperty("--color-secondary", t.secondary ?? "#191e3b");
   }, [org]);
 
   return { org, loading };

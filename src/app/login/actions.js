@@ -12,7 +12,7 @@ export async function login(formData) {
   });
 
   if (error) redirect("/error");
-  redirect("/");
+  redirect("/users");
 }
 
 export async function signup(formData) {
