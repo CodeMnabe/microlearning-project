@@ -1,0 +1,148 @@
+:root {
+  /* same palette you use in users.module.css */
+  --ui-bg: #ffffff;
+  --ui-muted: #9aa3b2;
+  --ui-border: #e5edf5;
+  --ui-pill: #f3f7fb;
+}
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column; /* ⬅️ stack brand over form */
+  gap: 1.25rem; /* space between brand and card */
+  background: radial-gradient(
+      1200px 520px at 50% -220px,
+      #eef8ff 0%,
+      transparent 70%
+    ),
+    #f4f8fc;
+  padding: 1.25rem;
+  font-family: var(--font-inter, system-ui), system-ui, sans-serif;
+}
+
+.brand {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2.25rem, 4vw + 0.5rem, 3.5rem);
+  font-weight: 700;
+  padding-bottom: 30px;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+  color: var(--ink);
+  /* optional gradient ink — comment out if you prefer solid ink */
+  background: linear-gradient(135deg, var(--ink) 20%, var(--brand-1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Card */
+.card {
+  width: min(92vw, 420px);
+  background: var(--ui-bg);
+  color: var(--ink);
+  padding: 2.25rem 2rem;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* Typography */
+.title {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #304059;
+}
+
+/* Inputs */
+.input {
+  height: 44px;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  background: var(--ui-pill);
+  border: 1px solid var(--ui-border);
+  color: var(--ink);
+  border-radius: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.input::placeholder {
+  color: var(--ui-muted);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--brand-2);
+  background: #f7fbff;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+}
+
+/* Buttons */
+.btnPrimary,
+.btnSecondary {
+  height: 44px;
+  padding: 0 0.9rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.05s ease, filter 0.2s ease;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.25);
+}
+.btnPrimary:hover {
+  filter: brightness(0.98);
+}
+.btnPrimary:active {
+  transform: translateY(1px);
+}
+
+.btnSecondary {
+  background: #eef3f7;
+  color: var(--ink);
+  border: 1px solid var(--ui-border);
+}
+.btnSecondary:hover {
+  filter: brightness(0.98);
+}
+
+/* “Forgot password?” link */
+.link {
+  display: block;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--brand-1);
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Message banner */
+.message {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #ef4444; /* error */
+}
+/* keep your quick success trick if you like */
+.message:has(+ .btnPrimary) {
+  color: #22c55e;
+}

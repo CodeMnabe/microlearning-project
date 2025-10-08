@@ -67,6 +67,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   gap: var(--gutter-x);
+  align-items: start;
 }
 @media (max-width: 1200px) {
   .columns {
@@ -78,6 +79,19 @@
 .rightCol {
   display: grid;
   gap: var(--gutter-y);
+  align-content: start; /* don't stretch rows to fill container */
+  grid-auto-rows: max-content; /* each row = content height */
+}
+
+.leftCol > .panel,
+.rightCol > .panel {
+  align-self: start;
+}
+
+.columns,
+.rightCol,
+.rightCol .panel {
+  min-height: 0;
 }
 
 .panel {
@@ -148,9 +162,9 @@
 /* template row */
 .templateRow {
   display: grid;
-  grid-template-columns: 1fr 180px auto;
+  grid-template-columns: 1fr auto;
   gap: 12px;
-  align-items: end;
+  align-items: center; /* was: end */
   margin-bottom: 8px;
 }
 .meta {
@@ -240,8 +254,9 @@
 .listBox {
   border: 1px solid var(--ui-border);
   border-radius: var(--radius);
-  max-height: calc(100dvh - 260px);
+  max-height: calc(100dvh - 260px); /* 👈 restore a viewport-based cap */
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .row {
   display: grid;
@@ -454,4 +469,58 @@
   color: #6b7280;
   font-size: 12px;
   margin-top: 6px;
+}
+
+/* 2-col layout inside the template panel: left = fields, right = preview */
+.templateGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start; /* keep both columns aligned at the top */
+}
+
+.templateFormCol {
+  display: grid;
+  gap: 12px;
+}
+
+.previewCol {
+  /* position: absolute; */
+  /* right: 0; */
+  /* width: 320px; */
+  position: static; /* back in normal flow */
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end; /* keeps the phone aligned to the right inside the col */
+}
+
+.previewPlaceholder {
+  border: 1px dashed var(--ui-border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+/* Keep section compact (optional tiny shrink of the phone) */
+.waFrameSmall {
+  width: 280px;
+  max-width: 100%;
+} /* was 300px */
+.waChat {
+  min-height: 120px;
+} /* was 160px */
+
+@media (max-width: 1100px) {
+  .templateGrid {
+    padding-right: 0;
+  }
+  .previewCol {
+    position: static;
+    width: auto;
+    align-items: flex-start;
+    margin-top: 8px;
+  }
 }

@@ -8,10 +8,12 @@ import { createOAiAssistant } from "@/lib/services/oAi.services";
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("orgId");
+    const orgId = Number(searchParams.get("orgId"));
+    if (!orgId) return NextResponse.json([], { status: 200 });
 
-    const assistants = await getAssistantsInOrg(Number(id));
-    return NextResponse.json(assistants);
+    const assistants = await getAssistantsInOrg(orgId);
+    // For the list view your UI doesn’t need mapping; return raw rows
+    return NextResponse.json(assistants, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -21,25 +23,17 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    console.log("Body is okay");
-
-    const assistant = await createOAiAssistant(body);
-
-    console.log("Passed through the openai creation");
-
-    if (!assistant) {
+    const ai = await createOAiAssistant(body);
+    if (!ai) {
       return NextResponse.json(
         { error: "Error creating assistant" },
         { status: 500 }
       );
     }
 
-    console.log("Assistant exists");
-
-    //* TODO: finish adding it to the db
-    const assistantDb = await createAssistant({
+    const row = await createAssistant({
       organizationId: body.organizationId,
-      openAiId: assistant.id,
+      openAiId: ai.id,
       name: body.name,
       description: body.description,
       instructions: body.instructions,
@@ -48,20 +42,8 @@ export async function POST(req) {
       temperature: body.temperature,
     });
 
-    console.log("Added to the db");
-
-    if (!assistantDb) {
-      return NextResponse.json(
-        { error: "Error creating assistant on db" },
-        { status: 500 }
-      );
-    }
-
-    console.log("Created new Assistant with ID: " + assistant.id);
-    console.log(
-      "Created new Assistant on DB with OpenAI ID: " + assistantDb.openAiId
-    );
-    return NextResponse.json({ message: assistant }, { status: 200 });
+    // Return the DB row (frontend reloads after modal closes)
+    return NextResponse.json(row, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -4,7 +4,7 @@
   --topbar-bg: #ffffff; /* white bar */
   --topbar-text: #0f1c3f; /* dark navy text */
   --topbar-border: rgba(15, 28, 63, 0.08); /* subtle lines/shadows */
-  --content-gutter: 24px; /* match your page padding */
+  --content-gutter: 16px; /* match your page padding */
 }
 
 /* full-width white top bar with a soft shadow */
@@ -18,6 +18,21 @@
   background: var(--topbar-bg);
   color: var(--topbar-text);
   box-shadow: 0 1px 0 var(--topbar-border), 0 6px 18px rgba(15, 28, 63, 0.06);
+}
+
+.brand {
+  margin: 0;
+  text-align: center;
+  font-size: 30;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+  color: var(--ink);
+  /* optional gradient ink — comment out if you prefer solid ink */
+  background: linear-gradient(135deg, var(--ink) 20%, var(--brand-1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* align contents and give breathing room */

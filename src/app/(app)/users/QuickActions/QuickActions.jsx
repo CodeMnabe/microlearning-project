@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import styles from "./quickActions.module.css";
+import { Tag, Users } from "lucide-react";
 
 export default function QuickActionsModal({
   anchorEl,
@@ -64,7 +65,7 @@ export default function QuickActionsModal({
           className={styles.item}
           onClick={() => onChoose("create")}
         >
-          <span className={styles.icon}>👤</span>
+          <Users size={18} />
           <span>Utilizador</span>
         </button>
         <div className={styles.sep} />
@@ -74,7 +75,7 @@ export default function QuickActionsModal({
           className={styles.item}
           onClick={() => onChoose("tags")}
         >
-          <span className={styles.icon}>🏷️</span>
+          <Tag size={18} />
           <span>Tags</span>
         </button>
       </div>

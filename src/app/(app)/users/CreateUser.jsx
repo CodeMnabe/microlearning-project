@@ -2,9 +2,15 @@
 import { useState, useEffect } from "react";
 import styles from "./users.module.css";
 
-export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
+export default function CreateUserModal({
+  isOpen,
+  onClose,
+  onCreateUser,
+  assistants = [],
+}) {
   const [userName, setUserName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [assistantId, setAssistantId] = useState("");
 
   // Keep the modal mounted while running the closing animation
   const [render, setRender] = useState(isOpen);
@@ -22,7 +28,11 @@ export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onCreateUser({ userName, phoneNumber });
+    onCreateUser({
+      userName,
+      phoneNumber,
+      assistantId: assistantId ? Number(assistantId) : null,
+    });
     setUserName("");
     setPhoneNumber("");
   };
@@ -49,11 +59,11 @@ export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
         role="dialog"
         aria-modal="true"
       >
-        <h3 className={styles.modalTitle}>Create a New User</h3>
+        <h3 className={styles.modalTitle}>Criar um novo Utilizador</h3>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="nome">Nome:</label>
+            <label htmlFor="nome">Nome do Utilizador:</label>
             <input
               id="nome"
               type="text"
@@ -74,10 +84,25 @@ export default function CreateUserModal({ isOpen, onClose, onCreateUser }) {
             />
           </div>
 
+          <div className={styles.formGroup}>
+            <label htmlFor="assistant">Assistente:</label>
+            <select
+              id="assistant"
+              value={assistantId}
+              onChange={(e) => setAssistantId(e.target.value)}
+            >
+              {assistants.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className={styles.buttonGroup}>
-            <button type="submit">Create</button>
+            <button type="submit">Criar</button>
             <button type="button" onClick={onClose}>
-              Cancel
+              Cancelar
             </button>
           </div>
         </form>

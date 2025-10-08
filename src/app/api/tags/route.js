@@ -1,17 +1,21 @@
+// src/app/api/tags/route.js
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { createClient as createSb } from "../../../utils/supabase/server.js";
-// import {
-//   getTagsInOrg,
-//   createTag,
-//   updateTag,
-//   deleteTag,
-// } from "@/lib/repos/tag.repo";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import {
   getTagsInOrg,
   createTag,
   updateTag,
   deleteTag,
 } from "@/lib/repos/tag.repo.js";
+
+// ✅ admin client (bypasses RLS)
+const admin = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
 
 export async function GET(req) {
   try {
@@ -20,8 +24,7 @@ export async function GET(req) {
     if (!Number.isFinite(orgId)) {
       return NextResponse.json({ error: "Invalid orgId" }, { status: 400 });
     }
-    const sb = await createSb();
-    const data = await getTagsInOrg(sb, orgId);
+    const data = await getTagsInOrg(admin, orgId);
     return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (e) {
     console.error(e);
@@ -31,16 +34,14 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { orgId, name, color } = body;
+    const { orgId, name, color } = await req.json();
     if (!orgId || !name) {
       return NextResponse.json(
         { error: "Missing orgId or name" },
         { status: 400 }
       );
     }
-    const sb = await createSb();
-    const tag = await createTag(sb, { orgId, name, color });
+    const tag = await createTag(admin, { orgId, name, color });
     return NextResponse.json(tag, { status: 201 });
   } catch (e) {
     console.error(e);
@@ -50,11 +51,9 @@ export async function POST(req) {
 
 export async function PATCH(req) {
   try {
-    const body = await req.json();
-    const { id, ...fields } = body;
+    const { id, ...fields } = await req.json();
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    const sb = await createSb();
-    const updated = await updateTag(sb, id, fields);
+    const updated = await updateTag(admin, id, fields);
     return NextResponse.json(updated);
   } catch (e) {
     console.error(e);
@@ -67,8 +66,7 @@ export async function DELETE(req) {
     const { searchParams } = new URL(req.url);
     const id = Number(searchParams.get("id"));
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    const sb = await createSb();
-    await deleteTag(sb, id);
+    await deleteTag(admin, id);
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error(e);

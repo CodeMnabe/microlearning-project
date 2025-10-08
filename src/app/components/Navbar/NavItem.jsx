@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import styles from "./navbar.module.css";
 
-export default function NavItem({ href, children }) {
+export default function NavItem({ href, icon: Icon, children }) {
   const pathname = usePathname();
   const isActive = pathname === href;
   const [clicked, setClicked] = useState(false);
@@ -26,6 +26,7 @@ export default function NavItem({ href, children }) {
         clicked ? styles.clicked : "",
       ].join(" ")}
     >
+      {Icon ? <Icon aria-hidden className={styles.icon} /> : null}
       <span className={styles.label}>{children}</span>
       <span aria-hidden className={styles.sweep} />
     </Link>

@@ -1,37 +1,43 @@
-import { readDb, writeDb, nextId } from "../persistence/db";
-// import { supabase } from "../persistence/supadb";
+// /lib/repos/organizations.repo.js
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 
-// Organizations
+const sb = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
+
+/**
+ * Table: organization
+ * cols: id (int4), name (text), created_at (timestamp)  ← adjust if different
+ */
+
 export async function createOrganization(name) {
-  const db = await readDb();
+  const { data, error } = await sb
+    .from("organization")
+    .insert([{ name }])
+    .select()
+    .single();
 
-  const newOrg = { id: nextId("orgId", db), name };
-  console.log("It got here");
-
-  // const { data, error } = await supabase
-  //   .from("Organization")
-  //   .insert([{ name: name }])
-  //   .select();
-
-  // if (error) {
-  //   // bubble a clear message up to the route
-  //   return console.error(`Supabase insert failed: ${error.message}`);
-  // }
-
-  // return data;
-
-  db.organization.push(newOrg);
-  await writeDb(db);
-  return newOrg;
+  if (error) throw error;
+  return data;
 }
 
 export async function getAllOrganization() {
-  const db = await readDb();
-  return db.organization;
+  const { data, error } = await sb
+    .from("organization")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getOrganization(orgId) {
-  const db = await readDb();
-  console.log(orgId);
-  return db.organization.find((o) => o.id == orgId);
+  const { data, error } = await sb
+    .from("organization")
+    .select("*")
+    .eq("id", orgId)
+    .single();
+  if (error) throw error;
+  return data;
 }

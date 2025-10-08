@@ -2,7 +2,6 @@
 require("dotenv").config();
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
-// Use the service-role key for all server-side writes (bypasses RLS)
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -10,74 +9,101 @@ const supabase = createServiceClient(
 );
 
 /**
- * Create a thread row in Supabase.
- * Relies on DB FKs to ensure user/assistant exist.
+ * Table: thread
+ * cols: id (int4), user_id (int4), assistant_id (int4),
+ *       ai_thread_id (text UNIQUE), created_at (timestamp)
  */
+const SELECT_COLS = "id, user_id, assistant_id, ai_thread_id, created_at";
+
 export async function createThread({ userId, assistantId, aiThreadId }) {
-  const { data, error } = await supabase
-    .from("thread")
-    .insert([
-      {
-        user_id: userId,
-        assistant_id: assistantId,
-        ai_thread_id: aiThreadId,
-      },
-    ])
-    .select("id, user_id, assistant_id, ai_thread_id, created_at")
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/** Fetch one thread by id (or null). */
-export async function getThreadById(threadId) {
-  const { data, error } = await supabase
-    .from("thread")
-    .select("id, user_id, assistant_id, ai_thread_id, created_at")
-    .eq("id", threadId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data ?? null;
-}
-
-export async function getOrCreateThread({ userId, assistantId, aiThreadId }) {
-  // Try to insert; if it conflicts, fetch the existing one
+  console.log("CREATING THREAD");
+  if (!userId || !assistantId || !aiThreadId) {
+    throw new Error("createThread requires userId, assistantId and aiThreadId");
+  }
   const { data, error } = await supabase
     .from("thread")
     .insert([
       { user_id: userId, assistant_id: assistantId, ai_thread_id: aiThreadId },
     ])
-    .select()
+    .select(SELECT_COLS)
     .single();
+  if (error) throw error;
+  return data;
+}
 
-  if (!error) return data;
+/**
+ * getOrCreateThread:
+ * - If a row with this ai_thread_id exists, return it.
+ * - Otherwise create it with (userId, assistantId, aiThreadId).
+ *   (Safer than upsert to avoid null-overwrites.)
+ */
+export async function getOrCreateThread({ userId, assistantId, aiThreadId }) {
+  console.log("GETTING OR CREATING THREAD");
+  if (!aiThreadId) throw new Error("getOrCreateThread requires aiThreadId");
 
-  // If conflict, read the latest thread for this user (and assistant if you enforced that)
-  if (error.code === "23505") {
-    const { data: existing, error: readErr } = await supabase
-      .from("thread")
-      .select("id, user_id, assistant_id, ai_thread_id, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (readErr) throw readErr;
+  // 1) try to find existing by ai_thread_id
+  const { data: existing, error: selErr } = await supabase
+    .from("thread")
+    .select(SELECT_COLS)
+    .eq("ai_thread_id", aiThreadId)
+    .maybeSingle();
+  if (selErr) throw selErr;
+  if (existing) {
+    console.log(existing);
     return existing;
   }
 
-  throw error;
+  // 2) create new
+  return await createThread({ userId, assistantId, aiThreadId });
 }
 
-/** All threads for a user, oldest → newest (like your previous code expected). */
 export async function getThreadsForUser(userId) {
   const { data, error } = await supabase
     .from("thread")
-    .select("id, user_id, assistant_id, ai_thread_id, created_at")
+    .select(SELECT_COLS)
     .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data || [];
+}
+
+// Keeping your originals for completeness/back-compat:
+export async function ensureThreadByAiId({ userId, assistantId, aiThreadId }) {
+  // Upsert in case callers still rely on it.
+  const { data, error } = await supabase
+    .from("thread")
+    .upsert(
+      [
+        {
+          user_id: userId ?? null,
+          assistant_id: assistantId ?? null,
+          ai_thread_id: aiThreadId,
+        },
+      ],
+      { onConflict: "ai_thread_id" }
+    )
+    .select(SELECT_COLS)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getThreadById(threadId) {
+  const { data, error } = await supabase
+    .from("thread")
+    .select(SELECT_COLS)
+    .eq("id", threadId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function getThreadByAiId(aiThreadId) {
+  const { data, error } = await supabase
+    .from("thread")
+    .select(SELECT_COLS)
+    .eq("ai_thread_id", aiThreadId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
 }

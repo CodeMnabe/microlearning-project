@@ -1,6 +1,10 @@
 :root {
   --background: #ffffff;
   --foreground: #111827;
+
+  --brand-1: #0ea5e9; /* light blue */
+  --brand-2: #7cc2ff; /* gradient end */
+  --ink: #0f1c3f; /* navy text */
 }
 
 @media (prefers-color-scheme: dark) {

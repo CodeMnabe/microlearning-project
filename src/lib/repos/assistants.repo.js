@@ -1,8 +1,19 @@
-import { readDb, writeDb, nextId } from "../persistence/db";
-import { getOrganization } from "./organizations.repo";
-import { createClient } from "@/utils/supabase/server";
-require("dotenv").config();
-const OpenAI = require("openai");
+// /lib/repos/assistants.repo.js
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+
+const sb = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY, // server-side writes
+  { auth: { persistSession: false } }
+);
+
+/**
+ * Table: assistant
+ * cols: id (int4), organization_id (int4), open_ai_id (text), name (text),
+ *       description (text), instructions (text), model (text),
+ *       top_p (float8), temperature (float8), vector_store_id (int4, nullable),
+ *       created_at (timestamp)
+ */
 
 export async function createAssistant({
   organizationId,
@@ -14,74 +25,95 @@ export async function createAssistant({
   top_p,
   temperature,
 }) {
-  const org = getOrganization(organizationId);
-  if (!org) {
-    throw new Error(`Organization with id ${organizationId} does not exist.`);
-  }
+  const { data, error } = await sb
+    .from("assistant")
+    .insert([
+      {
+        organization_id: organizationId,
+        open_ai_id: openAiId,
+        name,
+        description,
+        instructions,
+        model,
+        top_p,
+        temperature,
+        vector_store_id: null,
+      },
+    ])
+    .select()
+    .single();
 
-  const db = await readDb();
-
-  const newAssistant = {
-    id: nextId("assistantId", db),
-    organization_id: organizationId,
-    open_ai_id: openAiId,
-    name,
-    description,
-    model: model,
-    instructions,
-    top_p: top_p,
-    temperature: temperature,
-    vector_store_id: null,
-    createdAt: new Date(),
-  };
-
-  db.assistants.push(newAssistant);
-  await writeDb(db);
-  return newAssistant;
+  if (error) throw error;
+  return data;
 }
 
 export async function updateAssistant(assistantId, updates) {
-  const db = await readDb();
-  const assistant = db.assistants.find((a) => a.id === assistantId);
+  // Only allow columns that exist in the table
+  const patch = {};
+  const allow = [
+    "open_ai_id",
+    "name",
+    "description",
+    "instructions",
+    "model",
+    "top_p",
+    "temperature",
+    "vector_store_id",
+  ];
+  for (const k of allow) if (updates[k] !== undefined) patch[k] = updates[k];
 
-  if (!assistant) {
-    throw new Error(`Assistant with id ${assistantId} does not exist.`);
-  }
+  const { data, error } = await sb
+    .from("assistant")
+    .update(patch)
+    .eq("id", assistantId)
+    .select()
+    .single();
 
-  Object.assign(assistant, updates);
-  await writeDb(db);
-  return assistant;
+  if (error) throw error;
+  return data;
 }
 
 export async function getAssistantsInOrg(organizationId) {
-  const db = await readDb();
-  return db.assistants.filter((a) => a.organization_id === organizationId);
+  const { data, error } = await sb
+    .from("assistant")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getAssistantById(id) {
-  const db = await readDb();
-  return db.assistants.find((a) => a.id === id);
+  const { data, error } = await sb
+    .from("assistant")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function deleteAssistant(id) {
-  const db = await readDb();
-  db.assistants = db.assistants.filter((a) => a.id !== id);
-  await writeDb(db);
+  const { error } = await sb.from("assistant").delete().eq("id", id);
+  if (error) throw error;
   return true;
 }
 
 export async function associateVectorStoreToDbAssistant(assistantId, storeId) {
-  const db = await readDb();
-  const assistant = await db.assistants.find((a) => a.id === assistantId);
-  assistant.vector_store_id = storeId;
-  await writeDb(db);
+  const { error } = await sb
+    .from("assistant")
+    .update({ vector_store_id: storeId })
+    .eq("id", assistantId);
+  if (error) throw error;
   return true;
 }
 
 export async function nullifyVectorStoreToDbAssistant(assistantId) {
-  const db = await readDb();
-  const assistant = await db.assistants.find((a) => a.id === assistant_id);
-  assistant.vector_store_id = null;
-  await writeDb(db);
+  const { error } = await sb
+    .from("assistant")
+    .update({ vector_store_id: null })
+    .eq("id", assistantId);
+  if (error) throw error;
   return true;
 }

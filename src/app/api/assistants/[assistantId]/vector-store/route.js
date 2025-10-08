@@ -1,3 +1,4 @@
+// src/app/api/assistants/[assistantId]/vector-store/route.js
 import { NextResponse } from "next/server";
 import {
   createOAiVectorStore,
@@ -9,57 +10,76 @@ import {
   getAssistantById,
 } from "@/lib/repos/assistants.repo";
 import { createDBStore } from "@/lib/repos/store.repo";
-import { createDBFile } from "@/lib/repos/files.repo";
 
 export async function POST(req, { params }) {
   try {
-    const body = await params;
-    const assistantId = body.assistantId;
+    const { assistantId } = await params;
     const form = await req.formData();
     const storeName = form.get("storeName");
-    const files = form.getAll("files");
+    const files = form.getAll("files") || [];
 
-    const uploadedFilesId = [];
-    const fileIds = [];
+    if (!storeName || !files.length) {
+      return NextResponse.json(
+        { error: "Missing storeName/files" },
+        { status: 400 }
+      );
+    }
+
+    // 1) Upload files to OpenAI
+    const uploadedOpenAiIds = [];
+    const fileRowsForDb = [];
     for (const file of files) {
-      // waits for this upload to finish before continuing
       const uploaded = await createOAiFile(file);
-      if (!uploaded) {
-        return NextResponse.json({ status: 500 });
+      if (!uploaded?.id) {
+        return NextResponse.json(
+          { error: "Failed to upload a file to OpenAI" },
+          { status: 500 }
+        );
       }
-
-      const newFileId = await createDBFile(uploaded.id, file);
-      uploadedFilesId.push(uploaded.id);
-      fileIds.push(newFileId);
+      uploadedOpenAiIds.push(uploaded.id);
+      fileRowsForDb.push({
+        open_ai_id: uploaded.id,
+        name: file.name,
+        size: file.size,
+      });
     }
-    const store = await createOAiVectorStore(storeName, uploadedFilesId);
 
-    const assistantOAiId = await getAssistantById(Number(assistantId));
-    const updatedAssistant = await associateStoreToAssistant(
-      assistantOAiId.open_ai_id,
-      store
+    // 2) Create OpenAI Vector Store
+    const oaiStore = await createOAiVectorStore(storeName, uploadedOpenAiIds);
+    if (!oaiStore?.id) {
+      return NextResponse.json(
+        { error: "Failed to create OpenAI vector store" },
+        { status: 500 }
+      );
+    }
+
+    // 3) Create DB store + files
+    const dbStore = await createDBStore(
+      { name: oaiStore.name, open_ai_id: oaiStore.id }, // ← this persists open_ai_id
+      fileRowsForDb
     );
 
-    if (!updatedAssistant) {
-      console.error("Erro ao associar store ao assistente");
-    }
+    // 4) Associate to assistant in OpenAI
+    const dbAssistant = await getAssistantById(Number(assistantId));
+    await associateStoreToAssistant(dbAssistant.open_ai_id, oaiStore);
 
-    const dbStore = await createDBStore(store, fileIds);
+    // 5) Link on our assistant row
+    await associateVectorStoreToDbAssistant(Number(assistantId), dbStore.id);
 
-    const dbAssociation = await associateVectorStoreToDbAssistant(
-      Number(assistantId),
-      dbStore.id
-    );
-
-    if (!dbAssociation) {
-      return NextResponse.json({ status: 500 });
-    }
-
-    return NextResponse.json({ status: 200 });
-  } catch (err) {
+    // 6) Return UI-friendly payload (includes names)
     return NextResponse.json(
-      { message: `Something went wrong ${err.message}` },
-      { status: 400 }
+      {
+        id: dbStore.id,
+        storeName: dbStore.store_name,
+        files: (dbStore.file || []).map(({ id, name, size }) => ({
+          id,
+          name,
+          size,
+        })),
+      },
+      { status: 200 }
     );
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

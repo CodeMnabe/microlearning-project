@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useGlobalLoader } from "../LoadingScreen/GlobalLoaderContext";
+import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./admin.module.css";
 import ThemePreview from "./ThemePreview/ThemePreview";
 

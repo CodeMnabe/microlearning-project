@@ -1,0 +1,557 @@
+:root {
+  --bg: #0f1420;
+  --panel: #121826;
+  --panel-2: #0f1725;
+  --panel-white: #ffffff;
+  --panel-white-2: #f5f7fb;
+  --text: #e8eef6;
+  --text-dark: #172033;
+  --muted: #93a3b5;
+  --accent: #19a6df;
+  --accent-2: #0e86ba;
+  --navy: #101b33;
+  --navy-2: #1a2744;
+  --chip: #1e2a3f;
+  --success: #2bb673;
+  --danger: #e05252;
+}
+html,
+body {
+  overflow-x: hidden;
+}
+/* LAYOUT */
+.hub {
+  position: relative;
+  display: grid;
+
+  /* left list a touch narrower, center gets a bigger minimum, right chat stays */
+  grid-template-columns: 260px minmax(0, 1fr) 460px;
+  gap: 24px;
+
+  /* push the grid closer to the app sidebar (no centering) */
+  width: 100%;
+  max-width: none;
+  margin: 24px 24px 28px 16px; /* top, right, bottom, left */
+  padding-left: 24px; /* less left padding = closer to sidebar */
+  padding-right: 24px;
+
+  min-height: calc(100vh - 140px);
+  color: var(--text);
+}
+
+/* LEFT LIST (white panel + dark active pill) */
+.listCol {
+  background: var(--panel-white);
+  color: var(--text-dark);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 20px #00000022;
+}
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-dark);
+}
+.addBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 2px solid #fff; /* white ring */
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+
+  box-shadow: 0 8px 18px rgba(25, 166, 223, 0.35); /* soft lift */
+  transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.15s ease;
+}
+.addBtn:hover {
+  background: var(--accent-2);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(25, 166, 223, 0.45);
+}
+.addBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 14px rgba(25, 166, 223, 0.3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+}
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px; /* keep for non-active */
+  border: 1px solid transparent;
+  color: #334157;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.listItem:hover {
+  background: #30a9e0;
+  border-radius: 9999;
+}
+.listItemActive {
+  background: var(--navy-2);
+  color: #fff;
+  border: none;
+  box-shadow: inset 0 1px 0 #ffffff20;
+  border-radius: 9999px; /* ← pill shape */
+  padding: 10px 14px; /* a bit wider inside */
+}
+.listItemDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.listItemName {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.emptyState {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+  place-items: start;
+}
+.ctaPrimary {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #0c6e9d;
+  color: #fff;
+  font-weight: 600;
+}
+.ctaPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.ghostBtn {
+  border: 1px solid #ffffff40;
+  background: transparent;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.dangerBtn {
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.ctaPrimary,
+.ghostBtn,
+.dangerBtn,
+.addBtn {
+  transition: transform 0.06s ease;
+}
+.ctaPrimary:active,
+.ghostBtn:active,
+.dangerBtn:active,
+.addBtn:active {
+  transform: translateY(1px);
+}
+
+/* CENTER COLUMN */
+.mainCol {
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 20px;
+}
+.card {
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 10px 24px #0000002b;
+}
+.cardSubtitle {
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #fff;
+}
+.primaryCard {
+  background: var(--accent);
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+}
+.primaryCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 60% at 90% 0%, #ffffff18 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cardTitle {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.inputTitle {
+  width: 100%;
+  background: #ffffff22;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.inputSub,
+.input {
+  width: 100%;
+  background: #ffffff18;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.instructionsInput {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  background: #ffffff18;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+}
+/* White paper bubble like mock */
+.instructionsPaper {
+  background: #fff;
+  color: #142036;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  box-shadow: inset 0 0 0 1px #ffffff22;
+}
+
+/* specs chip + rows */
+.specBadge {
+  display: inline-block;
+  margin-top: 10px;
+  margin-bottom: 8px;
+  background: #0c6e9d;
+  color: #eaf7ff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.specs {
+  display: grid;
+  gap: 10px;
+}
+/* label | track | value */
+.specRowGrid {
+  display: grid;
+  grid-template-columns: 140px 1fr max-content;
+  gap: 12px;
+  align-items: center;
+}
+.specLabel {
+  font-weight: 600;
+}
+.specTrack {
+  width: 100%;
+  height: 8px;
+  background: #ffffff55;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 #00000020;
+}
+.specFill {
+  height: 100%;
+  background: #fff;
+}
+.specValue {
+  min-width: 36px;
+  text-align: right;
+  font-weight: 700;
+}
+.specValueBold {
+  font-weight: 800;
+}
+
+.sliderRow {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.sliderRow input[type="range"] {
+  width: 100%;
+}
+.sliderValue {
+  text-align: center;
+  font-weight: 700;
+}
+
+/* meta/footer */
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.metaLabel {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+.rowEnd {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+/* RIGHT COLUMN: white container for chat */
+.chatCol {
+  background: var(--panel-white);
+  color: var(--text-dark);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  box-shadow: 0 10px 24px #0000001a;
+}
+
+/* placeholder */
+.placeholderCard {
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  background: var(--panel);
+  border-radius: 18px;
+  color: var(--muted);
+}
+
+/* selects/labels */
+.label {
+  font-size: 0.9rem;
+  margin: 8px 0 4px;
+  opacity: 0.9;
+}
+.select {
+  appearance: none;
+  background: #ffffff18;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* ===== Modal (SCOPED to .hub) ===== */
+body.modal-open {
+  overflow: hidden;
+}
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 52, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overflow-x: hidden; /* ← important */
+}
+.modalTitle {
+  padding-bottom: 24px;
+}
+.modalContent {
+  background: var(--panel);
+  color: var(--text);
+  width: min(720px, calc(100% - 48px));
+  max-height: min(86vh, 100dvh - 96px);
+  overflow-y: auto;
+  overflow-x: hidden; /* ← important */
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 20px 50px #00000066;
+  min-width: 0; /* ← allow shrink in grid/flex contexts */
+}
+
+body.modalOpen {
+  overflow: hidden;
+}
+.form {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.formGroup {
+  display: grid;
+  gap: 6px;
+}
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  background: #0f1725;
+  border: 1px solid #22314a;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 285px;
+}
+.formGroup textArea {
+  resize: vertical;
+}
+.sliderLabel {
+  min-width: 56px;
+  text-align: center;
+  font-weight: 700;
+  background: #0f1725;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.buttonGroup button {
+  cursor: pointer;
+}
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.buttonGroup button {
+  border-radius: 10px;
+  border: none;
+  padding: 10px 14px;
+}
+.buttonGroup button[type="submit"] {
+  background: var(--accent);
+  color: #fff;
+}
+.buttonGroup button[type="button"] {
+  background: #22314a;
+  color: #dbe7f3;
+}
+.infoIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  cursor: help;
+}
+.infoIcon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+
+  background: #0f1725;
+  color: #fff;
+  padding: 8px 10px;
+  border: 1px solid #22314a;
+  border-radius: 5px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+
+  /* >>> fixes <<< */
+  display: block; /* avoid inline quirks */
+  min-width: 220px; /* don't shrink to icon width */
+  max-width: 36ch; /* wrap after ~36 characters */
+  white-space: normal; /* allow wrapping */
+  overflow-wrap: break-word; /* only break long tokens */
+
+  line-height: 1.35;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  z-index: 10000;
+}
+.infoIcon::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 10px;
+  border: 6px solid transparent;
+  border-top-color: #0f1725;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.infoIcon:hover::after {
+  opacity: 1;
+  border-radius: 5px;
+  transform: translateY(0);
+}
+
+.infoIcon:hover::after,
+.infoIcon:hover::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.paperCard {
+  background: #ffffff;
+  color: var(--text-dark);
+  box-shadow: 0 10px 24px #0000001a;
+}
+.paperCard .cardSubtitle,
+.paperCard .label {
+  color: var(--text-dark);
+}
+.paperCard .input {
+  background: #f3f6fb;
+  color: #172033;
+}
+
+@media (max-width: 1400px) {
+  .hub {
+    grid-template-columns: 240px 1fr 420px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .hub {
+    grid-template-columns: 240px 1fr;
+  }
+  .chatCol {
+    display: none;
+  } /* or move it below with grid-areas */
+}
+
+@media (max-width: 900px) {
+  .hub {
+    grid-template-columns: 1fr;
+    padding-right: 12px;
+    margin-right: 12px;
+  }
+}

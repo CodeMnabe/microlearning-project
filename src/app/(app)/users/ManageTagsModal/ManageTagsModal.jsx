@@ -99,14 +99,6 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
       <div className={styles.card}>
         <div className={styles.header}>
           <h3>Gerir Tags</h3>
-          <button
-            type="button"
-            className={styles.iconBtnPrimary}
-            title="Nova tag"
-            onClick={createTag}
-          >
-            +
-          </button>
         </div>
 
         <div className={styles.body}>
@@ -169,18 +161,26 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
             <div className={styles.actions}>
               <button
                 type="button"
-                className={styles.btnGhost}
-                onClick={onClose}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
                 className={styles.btnPrimary}
                 onClick={saveRename}
                 disabled={!selectedTag}
               >
                 Guardar Alterações
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                title="Nova tag"
+                onClick={createTag}
+              >
+                Adicionar
+              </button>
+              <button
+                type="button"
+                className={styles.btnGhost}
+                onClick={onClose}
+              >
+                Cancelar
               </button>
             </div>
           </div>

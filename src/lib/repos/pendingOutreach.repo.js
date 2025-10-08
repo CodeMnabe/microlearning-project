@@ -38,21 +38,19 @@ export async function createPendingOutreach({
   return data;
 }
 
-export async function getActivePendingOutreachByUser(userId) {
+export async function getAllPendingOutreachByUser(userId) {
   const { data, error } = await supabase
     .from("pending_outreach")
     .select(
-      "id, org_id, user_id, payload, status, expires_at, reply_message_id, template_message_id, created_at"
+      "id, org_id, user_id, payload, status, expires_at, template_message_id, created_at"
     )
     .eq("user_id", userId)
-    .eq("status", "pending")
+    .eq("status", "pending") // <- make sure your insert uses 'pending'
     .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return data ?? null;
+  return data ?? [];
 }
 
 export async function markPendingOutreachReplied(id, replyMessageId) {

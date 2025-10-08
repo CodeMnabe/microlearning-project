@@ -9,6 +9,17 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./navbar.module.css";
 
+import {
+  Home,
+  Users,
+  Bot,
+  MessageSquare,
+  FileText,
+  Settings,
+  LogOut,
+  LogIn,
+} from "lucide-react";
+
 export default function Navbar() {
   const [activeLink, setActiveLink] = useState(null);
   const { user, loading: authLoading, supabase, setUser } = useAuth();
@@ -47,7 +58,8 @@ export default function Navbar() {
                 }`}
                 onClick={() => setActiveLink("/")}
               >
-                Home
+                <Home aria-hidden className={styles.icon} />
+                <span>Home</span>
               </Link>
             )}
             <Link
@@ -58,7 +70,8 @@ export default function Navbar() {
               href="/users"
               onClick={() => setActiveLink("/users")}
             >
-              Users
+              <Users aria-hidden className={styles.icon} />
+              <span>Colaboradores</span>
             </Link>
             <Link
               className={`${styles.navItem} ${
@@ -67,7 +80,8 @@ export default function Navbar() {
               href="/assistants"
               onClick={() => setActiveLink("/assistants")}
             >
-              Assistants
+              <Bot aria-hidden className={styles.icon} />
+              <span>Assistentes</span>
             </Link>
             <Link
               className={`${styles.navItem} ${
@@ -76,17 +90,21 @@ export default function Navbar() {
               href="/broadcast"
               onClick={() => setActiveLink("/broadcast")}
             >
-              Mandar Mensagem
+              <MessageSquare aria-hidden className={styles.icon} />
+              <span>Mensagens</span>
             </Link>
-            <Link
-              className={`${styles.navItem} ${
-                activeLink === "/templates" ? styles.active : ""
-              }`}
-              href="/templates"
-              onClick={() => setActiveLink("/templates")}
-            >
-              Templates
-            </Link>
+            {isAdmin && (
+              <Link
+                className={`${styles.navItem} ${
+                  activeLink === "/templates" ? styles.active : ""
+                }`}
+                href="/templates"
+                onClick={() => setActiveLink("/templates")}
+              >
+                <FileText aria-hidden className={styles.icon} />
+                <span>Templates</span>
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 className={`${styles.navItem} ${
@@ -99,18 +117,23 @@ export default function Navbar() {
               </Link>
             )}
           </nav>
-          <button onClick={handleSignOut} className={styles.signOut}>
-            Sign out
+          <button
+            onClick={handleSignOut}
+            className={`${styles.navItem} ${styles.signOut}`}
+          >
+            <LogOut aria-hidden className={styles.icon} />
+            <span>Sair</span>
           </button>
         </>
       ) : (
         <nav className={styles.nav}>
           <Link className={styles.navItem} href="/login">
-            Login
+            <LogIn aria-hidden className={styles.icon} />
+            <span>Login</span>
           </Link>
-          <Link className={styles.navItem} href="/signup">
-            Sign up
-          </Link>
+          {/* <Link className={styles.navItem} href="/signup">
+            <span>Sign up</span>
+          </Link> */}
         </nav>
       )}
     </aside>

@@ -1,14 +1,8 @@
+// /app/assistants/Chatbox/Chatbox.jsx
 "use client";
 import { useState } from "react";
 import styles from "./chatbox.module.css";
-
-/*
- * @typedef {Object} Assistant
- * @property {string} id - Internal DB id (route param)
- * @property {string} openAiId - Corresponding OpenAi Assistant ID
- *
- * @param {{assistant: Assistant}} props
- */
+import ui from "../assistants.module.css"; // 👈 import shared button style
 
 export default function ChatSandbox({ assistant }) {
   const [threadId, setThreadId] = useState("");
@@ -18,6 +12,7 @@ export default function ChatSandbox({ assistant }) {
 
   async function handleSend(e) {
     e.preventDefault();
+    if (!input.trim()) return;
     const newUserMsg = { role: "user", content: input };
 
     setMessages((prev) => [newUserMsg, ...prev]);
@@ -27,13 +22,11 @@ export default function ChatSandbox({ assistant }) {
     try {
       const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          assistantId: assistant.openAiId,
+          assistantId: assistant.open_ai_id,
           message: input,
-          threadId: threadId,
+          threadId,
         }),
       });
 
@@ -51,7 +44,7 @@ export default function ChatSandbox({ assistant }) {
           ...prev,
         ]);
       }
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         { role: "system", content: "Erro ao comunicar com a API." },
         ...prev,
@@ -64,7 +57,7 @@ export default function ChatSandbox({ assistant }) {
   return (
     <div className={styles.wrapper}>
       <h2 className={styles.headline}>
-        Experimentar assistente{" "}
+        Experimentar Assistente{" "}
         {threadId && (
           <span className={styles.threadBadge}>
             Thread&nbsp;ID:&nbsp;{threadId}
@@ -87,7 +80,14 @@ export default function ChatSandbox({ assistant }) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Escreve a tua mensagem..."
         />
-        <button disabled={isSending || !input.trim()}>Enviar</button>
+        {/* 👇 same pill style as "Criar e Associar" */}
+        <button
+          type="submit"
+          className={`${ui.ctaPrimary} ${styles.sendBtn}`}
+          disabled={isSending || !input.trim()}
+        >
+          Enviar
+        </button>
       </form>
     </div>
   );

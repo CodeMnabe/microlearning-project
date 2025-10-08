@@ -1,11 +1,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "./AuthContext";
-import Navbar from "./components/Navbar/Navbar";
 import { GlobalLoaderProvider } from "./LoadingScreen/GlobalLoaderContext";
-import GlobalLoadingOverlay from "./LoadingScreen/GlobalLoadingOverlay";
-import RouteLoader from "./LoadingScreen/RouteLoader";
-import TopBar from "./components/TopBar/TopBar";
 
 const inter = localFont({
   src: [
@@ -29,20 +25,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={inter.variable}>
       <body>
         <GlobalLoaderProvider>
-          <AuthProvider>
-            <RouteLoader />
-            <TopBar />
-            <div className="app-shell">
-              <Navbar />
-              <div className="main-col">
-                {/* Only this area will be blocked by the loader */}
-                <div className="page-content">
-                  <GlobalLoadingOverlay />
-                  <main className="app-main">{children}</main>
-                </div>
-              </div>
-            </div>
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </GlobalLoaderProvider>
       </body>
     </html>

@@ -36,10 +36,12 @@
   margin-bottom: 8px;
 }
 .orgLine {
+  font-size: 20px;
   font-weight: 600;
+  padding-bottom: 5px;
 }
 .emailLine {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--sidebar-muted);
 }
 .nav {
@@ -49,7 +51,9 @@
   margin-top: 8px;
 }
 .navItem {
-  display: block;
+  display: flex; /* ← was block */
+  align-items: center;
+  gap: 10px; /* space between icon and text */
   text-decoration: none;
   color: var(--sidebar-fg);
   padding: 8px 10px;
@@ -71,16 +75,23 @@
   );
   outline: none;
 }
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #fff; /* default muted icon */
+}
 .signOut {
   margin-top: auto; /* push to bottom */
   width: 100%;
   padding: 10px 12px;
   border: none;
   border-radius: 12px;
-  background: #d9534f;
+  background: #ffffff00;
   color: white;
   cursor: pointer;
 }
 .signOut:hover {
   opacity: 0.9;
+  background: #d9534f;
 }

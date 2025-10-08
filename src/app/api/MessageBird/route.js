@@ -21,7 +21,7 @@ import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { createMessage } from "@/lib/repos/messages.repo";
 import {
-  getActivePendingOutreachByUser,
+  getAllPendingOutreachByUser,
   markPendingOutreachReplied,
 } from "@/lib/repos/pendingOutreach.repo";
 
@@ -64,6 +64,24 @@ function isValid(sigB64, ts, fullUrl, raw) {
 
   // Constant-Time comparison to prevent timing attacks
   return crypto.timingSafeEqual(expected, received);
+}
+
+async function getAssistantFromUser(user, organization) {
+  if (user.assistant_id) {
+    try {
+      console.log(user);
+      console.log(organization);
+      const assistant = await getAssistantById(Number(user.assistant_id));
+      console.log(assistant);
+      if (assistant && assistant.organization_id === organization.id)
+        return assistant;
+      console.warn(
+        `User assistant ${user.assistant_id} not in org ${organization.id}; falling back`
+      );
+    } catch (err) {
+      console.warn("Failed to load user assistant:", err?.message || e);
+    }
+  }
 }
 
 /**
@@ -192,8 +210,10 @@ async function handleEvent(rawJSON) {
       return NextResponse.json({ ok: true });
     }
 
-    const pending = await getActivePendingOutreachByUser(user.id);
-    if (pending) {
+    const pendingMessages = await getAllPendingOutreachByUser(user.id);
+
+    if (pendingMessages.length) {
+      // 1) log the user's inbound ack message
       await createMessage({
         threadId: null,
         userId: user.id,
@@ -202,69 +222,76 @@ async function handleEvent(rawJSON) {
         content: text,
         role: "user",
       });
-      //mark replied
-      await markPendingOutreachReplied(pending.id, inboundMsgId);
 
-      //Send the queued message now that the 24h window is open
+      // 2) prepare send endpoint once
       const organization = await getOrganization(user.organization_id);
       const sendPoint = `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`;
-      const p = pending.payload || {};
 
-      const body =
-        Array.isArray(p.imageUrls) && p.imageUrls.length
-          ? {
-              type: "image",
-              image: {
-                images: p.imageUrls.map((u) => ({
-                  altText: "image",
-                  mediaUrl: u,
-                })),
-                ...(p.message ? { text: p.message } : {}),
-              },
-            }
-          : {
-              type: "text",
-              text: { text: p.message || "" },
-            };
+      // 3) send each pending payload, log, then mark row as replied
+      for (const row of pendingMessages) {
+        const p = row.payload || {};
 
-      const res = await fetch(sendPoint, {
-        method: "POST",
-        headers: {
-          Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receiver: { contacts: [{ id: contactId }] },
-          body,
-        }),
-      });
+        const body =
+          Array.isArray(p.imageUrls) && p.imageUrls.length
+            ? {
+                type: "image",
+                image: {
+                  images: p.imageUrls.map((u) => ({
+                    altText: "image",
+                    mediaUrl: u,
+                  })),
+                  ...(p.message ? { text: p.message } : {}),
+                },
+              }
+            : {
+                type: "text",
+                text: { text: p.message || "" },
+              };
 
-      let outboundId = null;
-      try {
-        const outJson = await res.json();
-        outboundId = outJson?.id ?? outJson?.message?.id ?? null;
-      } catch (err) {
-        console.error(err.message);
+        const res = await fetch(sendPoint, {
+          method: "POST",
+          headers: {
+            Authorization: `AccessKey ${process.env.BIRD_API_KEY}`, // keep consistent with your Bird setup
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            receiver: { contacts: [{ id: contactId }] },
+            body,
+          }),
+        });
+
+        let outboundId = null;
+        try {
+          const outJson = await res.json();
+          outboundId = outJson?.id ?? outJson?.message?.id ?? null;
+        } catch {
+          // swallow parse errors; we'll still mark and log the attempt
+        }
+
+        // Log what we actually sent to the user (as a system message)
+        await createMessage({
+          threadId: null,
+          userId: user.id,
+          messageId: outboundId,
+          whatsAppId: contactId,
+          content: p.message || "",
+          role: "system",
+        });
+
+        // Mark this pending row as handled
+        await markPendingOutreachReplied(row.id, inboundMsgId);
       }
 
-      await createMessage({
-        threadId: null,
-        userId: user.id,
-        messageId: outboundId,
-        whatsAppId: contactId,
-        content: p.message || "",
-        role: "system",
-      });
-
+      // 4) Stop here – do not pass the reply to the assistant
       return NextResponse.json({ ok: true });
     }
 
     //Fetch user's organization and Assistants
     const organization = await getOrganization(user.organization_id);
 
-    const assistants = await getAssistantsInOrg(organization.id);
+    const assistantRow = await getAssistantFromUser(user, organization);
 
-    if (!assistants) {
+    if (!assistantRow) {
       //Do something when there are no assistants found
       console.warn("No assistants found for organization");
       return NextResponse.json({ error: "no assistants" }, { status: 400 });
@@ -272,15 +299,13 @@ async function handleEvent(rawJSON) {
 
     //Check if user has any Threads already
     let thread = (await getThreadsForUser(user.id))[0];
-    let assistantId = assistants[0]?.id;
 
     if (!thread) {
-      console.log("Creating new thread since user doesn't have one");
       const aiThread = await createOAiThread(); // create OpenAI thread
       thread = await getOrCreateThread({
         // insert a DB row
         userId: user.id,
-        assistantId,
+        assistantId: assistantRow.id,
         aiThreadId: aiThread.id,
       });
     }
@@ -296,12 +321,9 @@ async function handleEvent(rawJSON) {
       role: "user",
     });
 
-    //Get Assistant from thread
-    const assistant = await getAssistantById(Number(assistantId));
-
     //Send to AI
     const aiResponse = await sendMessageToAi(
-      assistant.open_ai_id,
+      assistantRow.open_ai_id,
       text,
       aiThreadId
     );

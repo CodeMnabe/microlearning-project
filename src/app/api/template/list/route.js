@@ -1,9 +1,16 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 const BIRD = "https://api.bird.com";
 const { BIRD_API_KEY, WORKSPACE_ID } = process.env;
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
 
 async function fetchAll(path) {
   let next,
@@ -63,6 +70,26 @@ export async function GET(req) {
     if (!BIRD_API_KEY || !WORKSPACE_ID) {
       return NextResponse.json({ error: "Missing BIRD envs" }, { status: 500 });
     }
+
+    const { data: allowedRows, error: dbErr } = await supabaseAdmin
+      .from("whatsapp_templates")
+      .select("name, language")
+      .or(`org_id.eq.${orgId},org_id.is.null`)
+      .eq("status", "ACTIVE");
+
+    if (dbErr) throw new Error(dbErr.message);
+
+    const norm = (s) =>
+      String(s ?? "")
+        .trim()
+        .toLowerCase();
+    const allowedKey = new Set(
+      (allowedRows ?? []).map((r) => `${norm(r.name)}__${norm(r.language)}`)
+    );
+
+    const allowedNameOnly = new Set(
+      (allowedRows ?? []).map((r) => norm(r.name))
+    );
 
     // 1) Which projects to read?
     let projectIds = [];
@@ -132,8 +159,13 @@ export async function GET(req) {
     }
     const best = Array.from(bestByKey.values());
 
+    const filtered = best.filter((t) => {
+      const k = `${norm(t.name)}__${norm(t.language)}`;
+      return allowedKey.has(k) || allowedNameOnly.has(norm(t.name));
+    });
+
     // 5) Return the list your UI expects
-    const items = best.map((t) => ({
+    const items = filtered.map((t) => ({
       id: t.provider_template_id,
       projectId: t.projectId,
       name: t.name,

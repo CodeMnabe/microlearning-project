@@ -1,78 +1,65 @@
+// src/app/api/assistants/[assistantId]/vector-store/[storeId]/route.js
 import { NextResponse } from "next/server";
 import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
-import { deleteFileById, getFileById } from "@/lib/repos/files.repo";
+import { deleteFileById } from "@/lib/repos/files.repo";
 import { deleteOAiVectorStoreAndFiles } from "@/lib/services/oAi.services";
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 
-/**
- * Returns the store object
- *
- * @param {Request} req
- * @param {{ params: { assistantId: string, storeId: string }}} ctx
- * @returns {Promise<NextResponse>}
- */
 export async function GET(req, { params }) {
   try {
-    const body = await params;
-    const storeId = Number(body.storeId);
+    const { storeId } = await params;
+    const store = await getStoreById(Number(storeId));
+    if (!store)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const store = await getStoreById(storeId);
-
-    return NextResponse.json(store, { status: 200 });
+    return NextResponse.json(
+      {
+        id: store.id,
+        storeName: store.store_name,
+        files: (store.file || []).map(({ id, name, size }) => ({
+          id,
+          name,
+          size,
+        })),
+      },
+      { status: 200 }
+    );
   } catch (err) {
-    return NextResponse.json({ status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-/**
- * Deletes everything related to a vector-store:
- *   1. Removes vector-store & files from OpenAI.
- *   2. Deletes store + files rows from DB.
- *   3. Clears assistant.vectorStoreId in DB.
- *
- * @param {Request} req
- * @param {{ params: { assistantId: string, storeId: string }}} ctx
- * @returns {Promise<NextResponse>}
- */
 export async function DELETE(req, { params }) {
   try {
-    const body = await params;
-    const storeId = Number(body.storeId);
-    const assistantId = Number(body.assistantId);
+    const { assistantId, storeId } = await params;
+    const sId = Number(storeId);
+    const aId = Number(assistantId);
 
-    const store = await getStoreById(storeId);
+    const store = await getStoreById(sId);
+    if (!store)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    console.log(store);
-    const dbFileIds = store.fileIds;
-    const fileIds = [];
-    for (const fileId of dbFileIds) {
-      const file = await getFileById(fileId);
-      fileIds.push(file.openAiId);
+    // Collect OpenAI file ids & store id
+    const openAiFileIds = (store.file || []).map((f) => f.open_ai_id);
+    const openAiStoreId = store.open_ai_id; // now populated
+
+    // 1) Delete from OpenAI
+    await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
+
+    // 2) Delete DB files + store
+    for (const f of store.file || []) {
+      await deleteFileById(f.id);
     }
+    await deleteStoreById(sId);
 
-    console.log(fileIds);
-
-    const deleted = await deleteOAiVectorStoreAndFiles(store.openAiId, fileIds);
-    if (!deleted) {
-      return NextResponse.json(
-        { message: "Failed to delete vector store from OpenAI" },
-        { status: 500 }
-      );
-    }
-
-    // Clean up DB: store, files, assistant link
-    await deleteStoreById(storeId);
-    for (const fileId of dbFileIds) {
-      await deleteFileById(fileId); // <- this line previously used fileId.id which is wrong
-    }
-
-    await nullifyVectorStoreToDbAssistant(assistantId);
+    // 3) Clear assistant.vector_store_id
+    await nullifyVectorStoreToDbAssistant(aId);
 
     return NextResponse.json(
       { message: "Vector store and files deleted" },
       { status: 200 }
     );
   } catch (err) {
-    return NextResponse.json({ status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

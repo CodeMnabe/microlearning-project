@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
 
 export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
@@ -10,7 +11,16 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
   const [topP, setTopP] = useState(0.5);
   const [temperature, setTemperature] = useState(1.0);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    document.body.classList.add("modal-open");
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.classList.remove("modal-open");
+    };
+  }, [isOpen, onClose]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,23 +41,29 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
       }),
     });
 
-    console.log("Res was created");
-
     if (!res.ok) {
       const error = await res.json();
       alert("Error creating assistant: " + error.error);
       return;
     }
 
-    console.log("Res was ok");
     // all good
     onCreated(); // let parent refresh the list
   }
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <h2>Criar Assistant</h2>
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      className={styles.modalOverlay}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h2 className={styles.modalTitle}>Criar novo Assistente</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label>
@@ -163,12 +179,12 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
             </label>
             <select value={model} onChange={(e) => setModel(e.target.value)}>
               <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-              <option value="gpt-4o">GPT-4o</option>
+              {/* <option value="gpt-4o">GPT-4o</option> */}
             </select>
           </div>
           <div className={styles.formGroup}>
             <label>
-              Top_P
+              Criatividade
               <span
                 className={styles.infoIcon}
                 data-tooltip="Controla a variedade das respostas: com o valor 0.5, o Assistant escolhe entre as opções com maior probabilidade, limitando-se às mais relevantes."
@@ -206,7 +222,7 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
 
           <div className={styles.formGroup}>
             <label>
-              Temperatura
+              Variedade
               <span
                 className={styles.infoIcon}
                 data-tooltip="Controla a aleatoriedade das respostas: quanto mais baixo for o valor, mais previsíveis e repetitivas serão as respostas. Ao aproximar-se de zero, o Assistant torna-se mais determinístico."
@@ -251,6 +267,7 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

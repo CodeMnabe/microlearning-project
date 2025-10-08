@@ -57,7 +57,9 @@ export default function TopBar() {
   return (
     <header className={styles.topbar} role="banner">
       <div className={styles.inner}>
-        <div className={styles.brand}>
+        <h1 className={styles.brand}>MyDigitalBot</h1>
+        {/* Old way to put logos in the top left corner */}
+        {/* <div className={styles.brand}>
           {logoUrl ? (
             <img
               src={logoUrl}
@@ -69,9 +71,9 @@ export default function TopBar() {
               {initials(orgName)}
             </div>
           )}
-        </div>
+        </div> */}
 
-        <form className={styles.search} onSubmit={onSubmit} role="search">
+        {/* <form className={styles.search} onSubmit={onSubmit} role="search">
           <div className={styles.searchBox}>
             <span className={styles.searchIcon} aria-hidden="true">
               <svg
@@ -96,7 +98,7 @@ export default function TopBar() {
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search…  ( / to focus )"
+              placeholder="Procurar..."
               className={styles.input}
               aria-label="Search"
               autoComplete="off"
@@ -105,7 +107,7 @@ export default function TopBar() {
               Go
             </button>
           </div>
-        </form>
+        </form> */}
       </div>
     </header>
   );

@@ -2,9 +2,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./users.module.css";
 import CreateUserModal from "./CreateUser";
-import { useGlobalLoader } from "../LoadingScreen/GlobalLoaderContext";
+import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import ManageTagsModal from "./ManageTagsModal/ManageTagsModal";
 import QuickActionsModal from "./QuickActions/QuickActions";
+import RowActionsMenu from "./RowActionsMenu";
+import EditUserModal from "./EditUserModal";
+import { MoreHorizontal } from "lucide-react";
 
 function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
@@ -17,7 +20,18 @@ export default function UsersPage() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [assistantsList, setAssistantsList] = useState([]);
+  const [rowMenu, setRowMenu] = useState({
+    open: false,
+    anchor: null,
+    user: null,
+  });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const plusRef = useRef(null);
+
+  // how many tags to show before "+n"
+  const MAX_TAGS = 6;
 
   // NEW: list | grid (persisted)
   const [view, setView] = useState(() => {
@@ -31,6 +45,18 @@ export default function UsersPage() {
   useEffect(() => {
     localStorage.setItem("usersView", view);
   }, [view]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/assistants?orgId=${ORG_ID}`);
+        const data = await res.json();
+        setAssistantsList(data || []);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
 
   async function refreshUsers() {
     const res = await fetch(`/api/users?orgId=${ORG_ID}`);
@@ -58,9 +84,13 @@ export default function UsersPage() {
         name: u.name,
         phone: u.phone_number ?? u.phoneNumber ?? "",
         email: u.email ?? "",
-        // if you later join tags in the API, map them here
-        tags: u.tags ?? [],
-        assistantName: u.assistantName ?? "Assistente Geral",
+        // for chips in the list:
+        tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
+        // for editing:
+        tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
+        assistantId: u.assistant_id ?? null,
+        assistantName: u.assistantName ?? "—",
+        organization_id: u.organization_id, // handy for modal fetch
       })),
     [users]
   );
@@ -82,13 +112,29 @@ export default function UsersPage() {
   const allChecked =
     allVisibleIds.length > 0 && allVisibleIds.every((id) => selected.has(id));
   function toggleAll() {
-    /* unchanged */
-  }
-  function toggleOne(id) {
-    /* unchanged */
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) {
+        // unselect all visible
+        allVisibleIds.forEach((id) => next.delete(id));
+      } else {
+        // select all visible
+        allVisibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
   }
 
-  async function handleCreateUser({ userName, phoneNumber }) {
+  function toggleOne(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleCreateUser({ userName, phoneNumber, assistantId }) {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,6 +142,7 @@ export default function UsersPage() {
         organizationId: ORG_ID,
         phoneNumber,
         name: userName,
+        assistantId,
       }),
     });
     if (!res.ok) {
@@ -106,6 +153,88 @@ export default function UsersPage() {
     await refreshUsers();
     setIsCreateOpen(false);
     setIsActionsOpen(false);
+  }
+
+  function AssistantPicker({ value, assistants, onChange }) {
+    return (
+      <select
+        value={value ?? ""}
+        onChange={(e) =>
+          onChange(e.target.value ? Number(e.target.value) : null)
+        }
+        style={{
+          padding: "6px 10px",
+          borderRadius: 9999,
+          border: "1px solid #9fd3ff",
+          background: "#eaf6ff",
+          fontWeight: 700,
+          color: "#1467a3",
+        }}
+        title="Escolher assistente"
+      >
+        {/* <option value="">— Sem assistente —</option> */}
+        {assistants.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  function openRowMenu(user, anchorEl) {
+    setRowMenu({ open: true, anchor: anchorEl, user });
+  }
+
+  function closeRowMenu() {
+    setRowMenu({ open: false, anchor: null, user: null });
+  }
+
+  async function deleteUserById(id) {
+    if (!confirm("Eliminar este utilizador")) return;
+    const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      console.error(await res.text());
+      return;
+    }
+    await refreshUsers();
+  }
+
+  function openEditFor(user) {
+    setEditingUser(user);
+    setEditOpen(true);
+  }
+
+  function BulkActionsBar({
+    count,
+    onAddTags,
+    onRemoveTags,
+    onSendMessage,
+    onDelete,
+    onClear,
+  }) {
+    if (count === 0) return null;
+    return (
+      <div style={styles.quickAction}>
+        <strong>{count}</strong> selecionados
+        <span aria-hidden>•</span>
+        <button onClick={onAddTags} style={styles.quickActionBtn}>
+          Adicionar tags
+        </button>
+        <button onClick={onRemoveTags} style={styles.quickActionBtn}>
+          Remover tags
+        </button>
+        <button onClick={onSendMessage} style={styles.quickActionBtn}>
+          Enviar mensagem
+        </button>
+        <button onClick={onDelete} style={styles.quickActionBtn}>
+          Apagar
+        </button>
+        <button onClick={onDelete} style={styles.quickActionBtn}>
+          Limpar
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -133,7 +262,7 @@ export default function UsersPage() {
           />
         </div>
 
-        <button className={styles.iconBtn} title="Filtrar" aria-label="Filtrar">
+        {/* <button className={styles.iconBtn} title="Filtrar" aria-label="Filtrar">
           <svg
             viewBox="0 0 24 24"
             width="18"
@@ -143,7 +272,7 @@ export default function UsersPage() {
           >
             <path d="M3 5h18l-7 8v6l-4 2v-8L3 5z" strokeWidth="2" />
           </svg>
-        </button>
+        </button> */}
 
         <button
           ref={plusRef}
@@ -164,7 +293,7 @@ export default function UsersPage() {
         </button>
 
         {/* View switch */}
-        <div className={styles.viewBtns}>
+        {/* <div className={styles.viewBtns}>
           <button
             className={`${styles.iconBtn} ${
               view === "list" ? styles.viewActive : ""
@@ -183,28 +312,7 @@ export default function UsersPage() {
               <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" />
             </svg>
           </button>
-          <button
-            className={`${styles.iconBtn} ${
-              view === "grid" ? styles.viewActive : ""
-            }`}
-            aria-pressed={view === "grid"}
-            title="Grelha"
-            onClick={() => setView("grid")}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              stroke="currentColor"
-              fill="none"
-            >
-              <path
-                d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"
-                strokeWidth="2"
-              />
-            </svg>
-          </button>
-        </div>
+        </div> */}
       </div>
 
       {/* LIST VIEW */}
@@ -229,12 +337,16 @@ export default function UsersPage() {
           </div>
 
           {visible.map((u, i) => {
-            const extra = Math.max(0, (u.tags?.length || 0) - 2);
+            const all = Array.isArray(u.tags) ? u.tags : [];
+            const shown = all.slice(0, MAX_TAGS);
+            const extra = all.length - shown.length;
+
             return (
               <div
                 key={u.id}
                 className={`${styles.row} ${i % 2 ? styles.rowAlt : ""}`}
               >
+                {/* checkbox */}
                 <div className={styles.cellChk}>
                   <label className={styles.chkWrap}>
                     <input
@@ -246,6 +358,7 @@ export default function UsersPage() {
                   </label>
                 </div>
 
+                {/* name */}
                 <div className={styles.cellName}>
                   <div className={styles.avatar}>{initial(u.name)}</div>
                   <div className={styles.nameBlock}>
@@ -256,10 +369,12 @@ export default function UsersPage() {
                   </div>
                 </div>
 
+                {/* phone */}
                 <div className={styles.cellPhone}>{u.phone || "—"}</div>
 
+                {/* tags */}
                 <div className={styles.cellTags}>
-                  {(u.tags || []).slice(0, 2).map((t) => (
+                  {shown.map((t) => (
                     <span key={t} className={styles.chip}>
                       {t}
                     </span>
@@ -271,15 +386,45 @@ export default function UsersPage() {
                   )}
                 </div>
 
+                {/* assistant */}
                 <div className={styles.cellAssistant}>
-                  <button className={styles.chipBtn}>
-                    {u.assistantName || "—"}
-                  </button>
+                  <AssistantPicker
+                    value={u.assistantId}
+                    assistants={assistantsList}
+                    onChange={async (newAssistantId) => {
+                      try {
+                        const res = await fetch("/api/users", {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            id: u.id,
+                            assistantId: newAssistantId,
+                          }),
+                        });
+                        if (!res.ok) {
+                          const err = await res.json();
+                          console.error(
+                            "Falha ao atualizar assistente:",
+                            err.error
+                          );
+                        } else {
+                          await refreshUsers();
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                  />
                 </div>
 
+                {/* kebab */}
                 <div className={styles.cellKebab}>
-                  <button className={styles.iconBtn} aria-label="Mais opções">
-                    •••
+                  <button
+                    className={styles.iconBtn}
+                    aria-label="Mais opções"
+                    onClick={(e) => openRowMenu(u, e.currentTarget)}
+                  >
+                    <MoreHorizontal size={18} />
                   </button>
                 </div>
               </div>
@@ -288,66 +433,9 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* GRID (CARD) VIEW */}
-      {view === "grid" && (
-        <div className={styles.gridScroll}>
-          <div className={styles.grid}>
-            {visible.map((u) => {
-              const extra = Math.max(0, (u.tags?.length || 0) - 2);
-              return (
-                <div key={u.id} className={styles.card}>
-                  <div className={styles.cardTop}>
-                    <label className={styles.chkWrapSm}>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(u.id)}
-                        onChange={() => toggleOne(u.id)}
-                      />
-                      <span className={styles.chkFakeSm} />
-                    </label>
-                    <button
-                      className={styles.iconBtnGhost}
-                      aria-label="Mais opções"
-                    >
-                      •••
-                    </button>
-                  </div>
+      {/* GRID (CARD) VIEW — left as-is; list view is the main area you asked about */}
 
-                  <div className={styles.cardTitle}>{u.name}</div>
-                  <div className={styles.cardEmail}>{u.email || "—"}</div>
-
-                  <div className={styles.cardTags}>
-                    {(u.tags || []).slice(0, 2).map((t) => (
-                      <span key={t} className={styles.chip}>
-                        {t}
-                      </span>
-                    ))}
-                    {extra > 0 && (
-                      <span className={`${styles.chip} ${styles.chipDark}`}>
-                        +{extra}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className={styles.cardPhone}>
-                    <span className={styles.flag} aria-hidden>
-                      🇵🇹
-                    </span>
-                    <span>{u.phone || "—"}</span>
-                  </div>
-
-                  <div className={styles.cardFooter}>
-                    <button className={styles.chipBtn}>
-                      {u.assistantName || "—"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
+      {/* Menus / Modals */}
       <QuickActionsModal
         anchorEl={plusRef.current}
         open={isActionsOpen}
@@ -362,12 +450,44 @@ export default function UsersPage() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreateUser={handleCreateUser}
+        assistants={assistantsList}
       />
 
       <ManageTagsModal
         isOpen={isTagsOpen}
         orgId={ORG_ID}
         onClose={() => setIsTagsOpen(false)}
+      />
+
+      <RowActionsMenu
+        anchorEl={rowMenu.anchor}
+        open={rowMenu.open}
+        onClose={closeRowMenu}
+        onSendMessage={() => {
+          closeRowMenu();
+          // TODO: your send-message flow
+          alert(`(demo) Enviar mensagem para ${rowMenu.user?.name}`);
+        }}
+        onEdit={() => {
+          const u = rowMenu.user;
+          closeRowMenu();
+          openEditFor(u);
+        }}
+        onDelete={async () => {
+          const id = rowMenu.user?.id;
+          closeRowMenu();
+          if (id) await deleteUserById(id);
+        }}
+      />
+
+      <EditUserModal
+        open={editOpen}
+        user={editingUser}
+        orgId={editingUser?.organization_id ?? 1}
+        onClose={() => setEditOpen(false)}
+        onSaved={async () => {
+          await refreshUsers();
+        }}
       />
     </div>
   );

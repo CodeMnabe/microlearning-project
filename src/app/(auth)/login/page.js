@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client"; // <- the browser client helper you already made
 import styles from "./login.module.css";
+import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
     (async () => {
@@ -15,7 +17,7 @@ export default function LoginPage() {
       } = await supabase.auth.getSession();
       if (session) router.replace("/users"); // <— your target page
     })();
-  }, [supabase, router]);
+  }, [supabase, router, stopLoading]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +45,7 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
+      <h1 className={styles.brand}>MyDigitalBot</h1>
       <form className={styles.card}>
         <h1 className={styles.title}>Entrar</h1>
 

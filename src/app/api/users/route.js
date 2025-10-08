@@ -25,7 +25,9 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { name, phoneNumber, organizationId } = await req.json();
+    const { name, phoneNumber, organizationId, assistantId } = await req.json();
+
+    console.log(assistantId);
 
     if (!name || !phoneNumber || !organizationId) {
       return NextResponse.json(
@@ -42,6 +44,7 @@ export async function POST(req) {
       organizationId,
       phoneNumber,
       name,
+      assistantId: assistantId ?? null,
     });
 
     console.log(_newUser);
@@ -61,9 +64,10 @@ export async function POST(req) {
   }
 }
 
+// src/app/api/users/route.js  (PATCH)
 export async function PATCH(req) {
   try {
-    const { id, name, phoneNumber } = await req.json();
+    const { id, name, phoneNumber, assistantId, tagIds } = await req.json();
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -71,7 +75,12 @@ export async function PATCH(req) {
       );
     }
 
-    const updatedUser = await updateUser(id, { name, phoneNumber });
+    const updatedUser = await updateUser(id, {
+      name,
+      phoneNumber,
+      assistantId, // ← new
+      tagIds, // ← new (array of numbers)
+    });
 
     return NextResponse.json(updatedUser);
   } catch (err) {
