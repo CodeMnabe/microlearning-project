@@ -4,7 +4,7 @@
   --panel-2: #0f1725;
   --panel-white: #ffffff;
   --panel-white-2: #f5f7fb;
-  --text: #e8eef6;
+  --text: #353535;
   --text-dark: #172033;
   --muted: #93a3b5;
   --accent: #19a6df;
@@ -31,7 +31,7 @@ body {
   /* push the grid closer to the app sidebar (no centering) */
   width: 100%;
   max-width: none;
-  margin: 24px 24px 28px 16px; /* top, right, bottom, left */
+  margin: 24px 24px 28px 0px; /* top, right, bottom, left */
   padding-left: 24px; /* less left padding = closer to sidebar */
   padding-right: 24px;
 
@@ -199,6 +199,7 @@ body {
   color: #fff;
   overflow: hidden;
   position: relative;
+  gap: 10px;
 }
 .primaryCard::after {
   content: "";
@@ -213,6 +214,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding-bottom: 10px;
 }
 .cardTitle {
   font-size: 1.6rem;
@@ -238,6 +240,10 @@ body {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.95rem;
+}
+
+.inputSub {
+  margin-bottom: 10px;
 }
 
 .instructionsInput {
@@ -396,7 +402,7 @@ body.modal-open {
   padding-bottom: 24px;
 }
 .modalContent {
-  background: var(--panel);
+  background: var(--panel-white);
   color: var(--text);
   width: min(720px, calc(100% - 48px));
   max-height: min(86vh, 100dvh - 96px);
@@ -423,8 +429,8 @@ body.modalOpen {
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
-  background: #0f1725;
-  border: 1px solid #22314a;
+  background: #f3f7fb;
+  border: 1px solid #e5edf5;
   color: var(--text);
   border-radius: 10px;
   padding: 10px 12px;
@@ -437,7 +443,7 @@ body.modalOpen {
   min-width: 56px;
   text-align: center;
   font-weight: 700;
-  background: #0f1725;
+  background: #f3f7fb;
   padding: 4px 8px;
   border-radius: 8px;
 }
@@ -459,8 +465,8 @@ body.modalOpen {
   color: #fff;
 }
 .buttonGroup button[type="button"] {
-  background: #22314a;
-  color: #dbe7f3;
+  background: #eef3f7;
+  color: var(--text);
 }
 .infoIcon {
   position: relative;

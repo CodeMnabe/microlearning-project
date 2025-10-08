@@ -427,7 +427,7 @@ export default function AssistantsHub() {
                     className={styles.input}
                     value={vsName}
                     onChange={(e) => setVsName(e.target.value)}
-                    placeholder="Ex.: Coleção para Assistente Geral"
+                    placeholder={`Ex.: Coleção para ${selected.name}`}
                   />
                   <label className={styles.label}>
                     Escolher Ficheiros (pode escolher vários):
