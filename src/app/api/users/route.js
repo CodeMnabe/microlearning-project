@@ -10,12 +10,12 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const id = Number(searchParams.get("orgId"));
-    console.log(id);
 
     if (!id)
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
 
     const users = await getUsersInOrg(Number(id));
+    console.log(users);
     return NextResponse.json(users);
   } catch (err) {
     console.error(err);

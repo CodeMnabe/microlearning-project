@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import styles from "./users.module.css";
 import CreateUserModal from "./CreateUser";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
@@ -8,12 +8,16 @@ import QuickActionsModal from "./QuickActions/QuickActions";
 import RowActionsMenu from "./RowActionsMenu";
 import EditUserModal from "./EditUserModal";
 import { MoreHorizontal } from "lucide-react";
+import useOrganization from "@/app/hooks/useOrganization";
+import { useAuth } from "@/app/AuthContext";
 
 function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
 }
 
 export default function UsersPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { org, loading: orgLoading } = useOrganization(user);
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
@@ -40,42 +44,35 @@ export default function UsersPage() {
   });
 
   const { startLoading, stopLoading } = useGlobalLoader();
-  const ORG_ID = 1;
 
   useEffect(() => {
     localStorage.setItem("usersView", view);
   }, [view]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`/api/assistants?orgId=${ORG_ID}`);
-        const data = await res.json();
-        setAssistantsList(data || []);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, []);
+  const orgId = org?.id;
 
-  async function refreshUsers() {
-    const res = await fetch(`/api/users?orgId=${ORG_ID}`);
+  useEffect(() => {
+    if (authLoading || orgLoading || !orgId) return;
+    (async () => {
+      const res = await fetch(`/api/assistants?orgId=${orgId}`);
+      const data = await res.json();
+      setAssistantsList(data || []);
+    })().catch(console.error);
+  }, [authLoading, orgLoading, orgId, users]);
+
+  const refreshUsers = useCallback(async () => {
+    if (!orgId) return;
+    const res = await fetch(`/api/users?orgId=${orgId}`);
     const data = await res.json();
+    console.log(data);
     setUsers(data);
-  }
+  }, [orgId]);
 
   useEffect(() => {
-    (async () => {
-      startLoading();
-      try {
-        await refreshUsers();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        stopLoading();
-      }
-    })();
-  }, [startLoading, stopLoading]);
+    if (authLoading || orgLoading || !orgId) return;
+    startLoading();
+    refreshUsers().finally(stopLoading);
+  }, [authLoading, orgLoading, orgId, refreshUsers, startLoading, stopLoading]);
 
   const normalized = useMemo(
     () =>
@@ -139,7 +136,7 @@ export default function UsersPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        organizationId: ORG_ID,
+        organizationId: org.id,
         phoneNumber,
         name: userName,
         assistantId,
@@ -453,11 +450,13 @@ export default function UsersPage() {
         assistants={assistantsList}
       />
 
-      <ManageTagsModal
-        isOpen={isTagsOpen}
-        orgId={ORG_ID}
-        onClose={() => setIsTagsOpen(false)}
-      />
+      {orgId && (
+        <ManageTagsModal
+          isOpen={isTagsOpen}
+          orgId={org.id}
+          onClose={() => setIsTagsOpen(false)}
+        />
+      )}
 
       <RowActionsMenu
         anchorEl={rowMenu.anchor}
@@ -480,15 +479,17 @@ export default function UsersPage() {
         }}
       />
 
-      <EditUserModal
-        open={editOpen}
-        user={editingUser}
-        orgId={editingUser?.organization_id ?? 1}
-        onClose={() => setEditOpen(false)}
-        onSaved={async () => {
-          await refreshUsers();
-        }}
-      />
+      {orgId && (
+        <EditUserModal
+          open={editOpen}
+          user={editingUser}
+          orgId={orgId}
+          onClose={() => setEditOpen(false)}
+          onSaved={async () => {
+            await refreshUsers();
+          }}
+        />
+      )}
     </div>
   );
 }

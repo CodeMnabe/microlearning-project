@@ -21,6 +21,7 @@ export default function EditUserModal({ open, onClose, user, orgId, onSaved }) {
     if (!open || !orgId) return;
     (async () => {
       try {
+        console.log(`Getting tags from org: ${orgId}`);
         const res = await fetch(`/api/tags?orgId=${orgId}`);
         const data = await res.json();
         setAllTags(Array.isArray(data) ? data : []);

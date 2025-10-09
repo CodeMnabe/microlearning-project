@@ -16,7 +16,7 @@ const inter = localFont({
 });
 
 export const metadata = {
-  title: "MicroLearning App",
+  title: "MyDigitalBot",
   description: "Created by the company Digik, by the dev Gaspar Alves",
 };
 

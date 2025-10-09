@@ -1,13 +1,18 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+
+import { useEffect, useState, useCallback } from "react";
 import styles from "./assistants.module.css";
 import CreateAssistantModal from "./CreateAssistantModal";
 import ChatSandbox from "./Chatbox/Chatbox.jsx";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-
-const ORG_ID = 1;
+import { useAuth } from "@/app/AuthContext";
+import useOrganization from "@/app/hooks/useOrganization";
 
 export default function AssistantsHub() {
+  const { user, loading: authLoading } = useAuth();
+  const { org, loading: orgLoading } = useOrganization(user);
+  const orgId = org?.id || null;
+
   const { startLoading, stopLoading } = useGlobalLoader();
   const [assistants, setAssistants] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -21,71 +26,94 @@ export default function AssistantsHub() {
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
 
-  // fetch all
+  // 1) fetch assistants when auth/org are ready
   useEffect(() => {
+    if (authLoading || orgLoading || !orgId) return;
+
+    let alive = true;
     (async () => {
       startLoading();
       try {
-        const res = await fetch(`/api/assistants?orgId=${ORG_ID}`);
-        const data = await res.json();
-        setAssistants(data || []);
-        if (data?.length && !selectedId) setSelectedId(data[0].id);
+        const res = await fetch(`/api/assistants?orgId=${orgId}`);
+        const data = await res.json().catch(() => []);
+        if (!alive) return;
+
+        const list = Array.isArray(data) ? data : [];
+        setAssistants(list);
+        if (!selectedId && list.length) setSelectedId(list[0].id);
       } catch (e) {
         console.error(e);
       } finally {
-        stopLoading();
+        if (alive) stopLoading();
       }
     })();
-  }, [startLoading, stopLoading, selectedId]);
 
-  // fetch one (details + vector store) whenever selectedId changes
+    return () => {
+      alive = false;
+    };
+  }, [authLoading, orgLoading, orgId, startLoading, selectedId, stopLoading]); // ← no selectedId here (prevents refetch loops)
+
+  // 2) fetch details of current assistant
   const fetchOne = useCallback(
     async (id) => {
       if (!id) return;
+      let alive = true;
       startLoading();
+      // clear previous selection to avoid flicker
+      setSelected(null);
+      setVectorStore(null);
+
       try {
         const res = await fetch(`/api/assistants/${id}`);
         const data = await res.json();
+        if (!alive) return;
         setSelected(data);
 
-        if (data?.vectorStoreId) {
+        if (data && data.vectorStoreId) {
           const r = await fetch(
             `/api/assistants/${id}/vector-store/${data.vectorStoreId}`
           );
           const store = await r.json();
+          if (!alive) return;
           setVectorStore(store);
-        } else {
-          setVectorStore(null);
         }
       } catch (e) {
         console.error(e);
       } finally {
-        stopLoading();
+        if (alive) stopLoading();
       }
     },
     [startLoading, stopLoading]
   );
 
   useEffect(() => {
-    fetchOne(selectedId);
+    if (selectedId) fetchOne(selectedId);
   }, [selectedId, fetchOne]);
 
-  // create modal handlers
+  // modal open
   function openCreate() {
+    if (!orgId) return; // guard
     setIsModalOpen(true);
   }
+
+  // after creating a new assistant, refresh list and select newest
   async function handleAssistantCreated() {
-    const updated = await fetch(`/api/assistants?orgId=${ORG_ID}`).then((r) =>
-      r.json()
-    );
-    setAssistants(updated);
-    const newest = updated[updated.length - 1];
-    setSelectedId(newest?.id ?? null);
+    if (!orgId) {
+      setIsModalOpen(false);
+      return;
+    }
+    const updated = await fetch(`/api/assistants?orgId=${orgId}`)
+      .then((r) => r.json())
+      .catch(() => []);
+    const list = Array.isArray(updated) ? updated : [];
+    setAssistants(list);
+    const newest = list[list.length - 1];
+    setSelectedId(newest ? newest.id : null);
     setIsModalOpen(false);
   }
 
   function handleChange(field, value) {
-    setSelected((prev) => ({ ...prev, [field]: value }));
+    setSelected((prev) => ({ ...(prev || {}), [field]: value }));
   }
 
   async function handleSave() {
@@ -107,13 +135,12 @@ export default function AssistantsHub() {
         }),
       });
       if (!res.ok) {
-        const { error } = await res.json();
-        alert("Erro ao guardar: " + error);
+        const payload = await res.json().catch(() => ({}));
+        alert("Erro ao guardar: " + (payload.error || res.statusText));
         return;
       }
       setIsEditing(false);
-      // refresh to keep DB truth
-      await fetchOne(selected.id);
+      await fetchOne(selected.id); // refresh with DB truth
     } finally {
       setIsSaving(false);
     }
@@ -128,15 +155,14 @@ export default function AssistantsHub() {
         method: "DELETE",
       });
       if (!res.ok) {
-        const { error } = await res.json();
-        alert("Erro: " + error);
+        const payload = await res.json().catch(() => ({}));
+        alert("Erro: " + (payload.error || res.statusText));
         return;
       }
-      // prune list
       const remaining = assistants.filter((a) => a.id !== selected.id);
       setAssistants(remaining);
       setSelected(null);
-      setSelectedId(remaining[0]?.id ?? null);
+      setSelectedId(remaining[0] ? remaining[0].id : null);
     } finally {
       stopLoading();
     }
@@ -156,9 +182,9 @@ export default function AssistantsHub() {
         method: "POST",
         body: fd,
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert("Erro: " + (data?.error || "Falha ao criar a store"));
+        alert("Erro: " + (data.error || "Falha ao criar a store"));
         return;
       }
       setVsName("");
@@ -170,7 +196,7 @@ export default function AssistantsHub() {
   }
 
   async function deleteVectorStore() {
-    if (!selected?.vectorStoreId) return;
+    if (!selected || !selected.vectorStoreId) return;
     if (!confirm("Eliminar vector store e ficheiros?")) return;
     startLoading();
     try {
@@ -179,8 +205,8 @@ export default function AssistantsHub() {
         { method: "DELETE" }
       );
       if (!res.ok) {
-        const { message } = await res.json();
-        alert("Erro: " + (message || "Falha a eliminar a store"));
+        const payload = await res.json().catch(() => ({}));
+        alert("Erro: " + (payload.message || res.statusText));
         return;
       }
       await fetchOne(selected.id);
@@ -190,12 +216,17 @@ export default function AssistantsHub() {
   }
 
   return (
-    <div className={styles.hub /* <- relative; modal is scoped here */}>
+    <div className={styles.hub}>
       {/* LEFT: list + add */}
       <aside className={styles.listCol}>
         <div className={styles.listHeader}>
           <span>Os meus Assistentes</span>
-          <button className={styles.addBtn} onClick={openCreate}>
+          <button
+            className={styles.addBtn}
+            onClick={openCreate}
+            disabled={!orgId}
+            title={!orgId ? "A carregar organização…" : "Criar Assistant"}
+          >
             +
           </button>
         </div>
@@ -209,14 +240,18 @@ export default function AssistantsHub() {
               }`}
               onClick={() => setSelectedId(a.id)}
             >
-              {/* <span className={styles.listItemDot} /> */}
               <span className={styles.listItemName}>{a.name}</span>
             </button>
           ))}
+
           {!assistants.length && (
             <div className={styles.emptyState}>
               <p>Sem assistants ainda.</p>
-              <button className={styles.ctaPrimary} onClick={openCreate}>
+              <button
+                className={styles.ctaPrimary}
+                onClick={openCreate}
+                disabled={!orgId}
+              >
                 Criar Assistant
               </button>
             </div>
@@ -224,7 +259,7 @@ export default function AssistantsHub() {
         </div>
       </aside>
 
-      {/* CENTER: big card with details + vector store */}
+      {/* CENTER: details + vector store */}
       <main className={styles.mainCol}>
         {selected ? (
           <>
@@ -233,7 +268,7 @@ export default function AssistantsHub() {
                 {isEditing ? (
                   <input
                     className={styles.inputTitle}
-                    value={selected.name}
+                    value={selected.name || ""}
                     onChange={(e) => handleChange("name", e.target.value)}
                   />
                 ) : (
@@ -245,7 +280,7 @@ export default function AssistantsHub() {
                 <>
                   <input
                     className={styles.inputSub}
-                    value={selected.description ?? ""}
+                    value={selected.description || ""}
                     maxLength={80}
                     onChange={(e) =>
                       handleChange("description", e.target.value)
@@ -254,7 +289,7 @@ export default function AssistantsHub() {
                   />
                   <textarea
                     className={styles.instructionsInput}
-                    value={selected.instructions ?? ""}
+                    value={selected.instructions || ""}
                     onChange={(e) =>
                       handleChange("instructions", e.target.value)
                     }
@@ -273,20 +308,20 @@ export default function AssistantsHub() {
               <div className={styles.specBadge}>Especificidades:</div>
 
               <div className={styles.specs}>
-                {/* Top Palavras */}
+                {/* Criatividade (top_p) */}
                 <div className={styles.specRowGrid}>
                   <span className={styles.specLabel}>Criatividade</span>
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
-                        {(selected.top_p ?? 0).toFixed(2)}
+                        {(selected.top_p || 0).toFixed(2)}
                       </span>
                       <input
                         type="range"
                         min="0"
                         max="1"
                         step="0.01"
-                        value={selected.top_p ?? 0}
+                        value={selected.top_p || 0}
                         onChange={(e) =>
                           handleChange("top_p", parseFloat(e.target.value))
                         }
@@ -297,30 +332,30 @@ export default function AssistantsHub() {
                       <div className={styles.specTrack}>
                         <div
                           className={styles.specFill}
-                          style={{ width: `${(selected.top_p ?? 0) * 100}%` }}
+                          style={{ width: `${(selected.top_p || 0) * 100}%` }}
                         />
                       </div>
                       <span className={styles.specValue}>
-                        {(selected.top_p ?? 0).toFixed(1)}
+                        {(selected.top_p || 0).toFixed(1)}
                       </span>
                     </>
                   )}
                 </div>
 
-                {/* Objetividade */}
+                {/* Variedade (temperature) */}
                 <div className={styles.specRowGrid}>
                   <span className={styles.specLabel}>Variedade</span>
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
-                        {(selected.temperature ?? 0).toFixed(2)}
+                        {(selected.temperature || 0).toFixed(2)}
                       </span>
                       <input
                         type="range"
                         min="0"
                         max="2"
                         step="0.01"
-                        value={selected.temperature ?? 0}
+                        value={selected.temperature || 0}
                         onChange={(e) =>
                           handleChange(
                             "temperature",
@@ -336,13 +371,13 @@ export default function AssistantsHub() {
                           className={styles.specFill}
                           style={{
                             width: `${
-                              Math.min((selected.temperature ?? 0) / 2, 1) * 100
+                              Math.min((selected.temperature || 0) / 2, 1) * 100
                             }%`,
                           }}
                         />
                       </div>
                       <span className={styles.specValue}>
-                        {(selected.temperature ?? 0).toFixed(0)}
+                        {(selected.temperature || 0).toFixed(0)}
                       </span>
                     </>
                   )}
@@ -355,11 +390,10 @@ export default function AssistantsHub() {
                   {isEditing ? (
                     <select
                       className={styles.select}
-                      value={selected.model}
+                      value={selected.model || "gpt-3.5-turbo"}
                       onChange={(e) => handleChange("model", e.target.value)}
                     >
                       <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                      {/* <option value="gpt-4o">gpt-4o</option> */}
                     </select>
                   ) : (
                     <span className={styles.specValueBold}>
@@ -416,6 +450,7 @@ export default function AssistantsHub() {
               </div>
             </section>
 
+            {/* Vector store card */}
             <section className={`${styles.card} ${styles.paperCard}`}>
               {!selected.vectorStoreId ? (
                 <>
@@ -436,7 +471,9 @@ export default function AssistantsHub() {
                     className={styles.input}
                     type="file"
                     multiple
-                    onChange={(e) => setVsFiles(Array.from(e.target.files))}
+                    onChange={(e) =>
+                      setVsFiles(Array.from(e.target.files || []))
+                    }
                   />
                   <div className={styles.rowEnd}>
                     <button
@@ -462,13 +499,15 @@ export default function AssistantsHub() {
                         </div>
                         <div>
                           <span className={styles.metaLabel}>Quantidade</span>
-                          <span>{vectorStore.files?.length ?? 0}</span>
+                          <span>{vectorStore.files?.length || 0}</span>
                         </div>
                       </>
                     )}
                   </div>
 
-                  {vectorStore?.files?.length ? (
+                  {vectorStore &&
+                  vectorStore.files &&
+                  vectorStore.files.length ? (
                     <div style={{ marginTop: 8 }}>
                       <span className={styles.metaLabel}>
                         Nome dos Ficheiros
@@ -502,10 +541,12 @@ export default function AssistantsHub() {
 
       {/* RIGHT: live chat */}
       <section className={styles.chatCol}>
-        {selected && <ChatSandbox assistant={selected} />}
+        {selected && !authLoading && !orgLoading && (
+          <ChatSandbox assistant={selected} />
+        )}
       </section>
 
-      {/* Modal is SCOPED to this hub container */}
+      {/* Modal (scoped) */}
       <CreateAssistantModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
