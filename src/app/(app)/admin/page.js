@@ -32,7 +32,7 @@ export default function AdminPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [supabase]);
 
   // 2) load orgs for owner
   useEffect(() => {
