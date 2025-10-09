@@ -1,10 +1,4 @@
 /* src/app/components/Navbar/navbar.module.css */
-:root {
-  --sidebar-w: 260px; /* change width here if you want */
-  --sidebar-muted: #bdbdbd;
-  --sidebar-border: #2a2a2a;
-  --topbar-h: 72px;
-}
 .sidebar {
   /* lives inside a flex/grid shell, so no fixed positioning needed */
   position: sticky;

@@ -1,11 +1,4 @@
 /* src/app/components/TopBar/topbar.module.css */
-:root {
-  --topbar-h: 72px; /* taller like the mock */
-  --topbar-bg: #ffffff; /* white bar */
-  --topbar-text: #0f1c3f; /* dark navy text */
-  --topbar-border: rgba(15, 28, 63, 0.08); /* subtle lines/shadows */
-  --content-gutter: 16px; /* match your page padding */
-}
 
 /* full-width white top bar with a soft shadow */
 .topbar {

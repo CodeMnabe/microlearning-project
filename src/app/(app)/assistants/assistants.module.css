@@ -1,24 +1,3 @@
-:root {
-  --bg: #0f1420;
-  --panel: #121826;
-  --panel-2: #0f1725;
-  --panel-white: #ffffff;
-  --panel-white-2: #f5f7fb;
-  --text: #353535;
-  --text-dark: #172033;
-  --muted: #93a3b5;
-  --accent: #19a6df;
-  --accent-2: #0e86ba;
-  --navy: #101b33;
-  --navy-2: #1a2744;
-  --chip: #1e2a3f;
-  --success: #2bb673;
-  --danger: #e05252;
-}
-html,
-body {
-  overflow-x: hidden;
-}
 /* LAYOUT */
 .hub {
   position: relative;

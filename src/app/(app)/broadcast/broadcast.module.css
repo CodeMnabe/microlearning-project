@@ -1,15 +1,3 @@
-:root {
-  --gutter-x: 24px;
-  --gutter-y: 16px;
-  --ui-bg: #fff;
-  --ui-border: #e5edf5;
-  --ui-pill: #f3f7fb;
-  --ui-muted: #9aa3b2;
-  --row-alt: #eaf6ff;
-  --row-base: #f7fbff;
-  --radius: 12px;
-}
-
 .screen {
   display: grid;
   gap: var(--gutter-y);

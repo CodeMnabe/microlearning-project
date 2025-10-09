@@ -1,12 +1,83 @@
+/* src/app/globals.css */
+
+/* ───────────── Root design tokens (global) ───────────── */
 :root {
+  /* base surface & text */
   --background: #ffffff;
   --foreground: #111827;
 
+  /* brand & ink */
   --brand-1: #0ea5e9; /* light blue */
   --brand-2: #7cc2ff; /* gradient end */
   --ink: #0f1c3f; /* navy text */
+
+  /* gradients & shared theme helpers */
+  --btn-gradient: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  --color-primary: var(--brand-1);
+  --color-secondary: var(--brand-2);
+
+  /* app layout */
+  --gutter-x: 24px;
+  --gutter-y: 16px;
+  --radius: 12px;
+
+  /* light UI palette (tables, cards, forms) */
+  --ui-bg: #ffffff;
+  --ui-muted: #9aa3b2;
+  --ui-border: #e5edf5;
+  --ui-pill: #f3f7fb;
+
+  /* alternating rows */
+  --row-base: #f7fbff;
+  --row-alt: #eaf6ff;
+
+  /* chips (light + dark variants) */
+  --chip-bg: #eaf6ff;
+  --chip-border: #9fd3ff;
+  --chip-text: #1467a3;
+  --chip-dark-bg: #0f1c3f;
+  --chip-dark-text: #ffffff;
+
+  /* table sizing */
+  --row-h: 56px;
+  --avatar: 34px;
+
+  /* dark app panels (assistants area) */
+  --bg: #0f1420;
+  --panel: #121826;
+  --panel-2: #0f1725;
+  --panel-white: #ffffff;
+  --panel-white-2: #f5f7fb;
+
+  /* text tones used in mixed UIs */
+  --text: #353535;
+  --text-dark: #172033;
+  --muted: #93a3b5;
+
+  /* accents & states */
+  --accent: #19a6df;
+  --accent-2: #0e86ba;
+  --navy: #101b33;
+  --navy-2: #1a2744;
+  --chip: #1e2a3f;
+  --success: #2bb673;
+  --danger: #e05252;
+
+  /* navigation + chrome */
+  --sidebar-w: 260px;
+  --sidebar-fg: #ffffff;
+  --sidebar-muted: #bdbdbd;
+  --sidebar-border: #2a2a2a;
+
+  /* top bar */
+  --topbar-h: 72px;
+  --topbar-bg: #ffffff;
+  --topbar-text: #0f1c3f;
+  --topbar-border: rgba(15, 28, 63, 0.08);
+  --content-gutter: 16px;
 }
 
+/* auto-adjust a couple of base surfaces in dark scheme */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #e5e7eb;
@@ -14,11 +85,13 @@
   }
 }
 
+/* ───────────── Base resets & layout helpers ───────────── */
 html,
 body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 body {
@@ -41,13 +114,14 @@ a {
   text-decoration: none;
 }
 
+/* App shell that leaves room for the fixed TopBar */
 .app-shell {
-  /* existing: min-height:100vh; display:flex; */
   min-height: 100vh;
   display: flex;
-  padding-top: var(--topbar-h); /* <-- NEW: clears room for fixed TopBar */
+  padding-top: var(--topbar-h);
 }
 
+/* common flex columns used across pages */
 .main-col {
   flex: 1;
   min-height: 0;
