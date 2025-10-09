@@ -30,7 +30,7 @@ Needed to check if the key we have is the
 same as the message sent from the whatsapp provider
 ----------------------*/
 
-const SIGNING_KEY = process.env.SIGNING_KEY;
+const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
 /**
  * Checks if an incoming webhook was really sent by Bird, not faked.

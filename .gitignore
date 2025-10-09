@@ -32,5 +32,5 @@ yarn-error.log*
 db.json
 src/lib/testOpenAi.js
 src/lib/sendToAi.js
-/src/generated/prisma
+/src/generated/
 seed.mjs

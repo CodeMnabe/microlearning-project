@@ -18,14 +18,12 @@
     "next": "15.2.3",
     "openai": "^4.89.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "twilio": "^5.5.1"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9",
-    "eslint-config-next": "15.2.3",
-    "prisma": "^6.10.1"
+    "eslint-config-next": "15.2.3"
   }
 }
