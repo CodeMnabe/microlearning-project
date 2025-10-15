@@ -69,10 +69,7 @@ function isValid(sigB64, ts, fullUrl, raw) {
 async function getAssistantFromUser(user, organization) {
   if (user.assistant_id) {
     try {
-      console.log(user);
-      console.log(organization);
       const assistant = await getAssistantById(Number(user.assistant_id));
-      console.log(assistant);
       if (assistant && assistant.organization_id === organization.id)
         return assistant;
       console.warn(
@@ -155,8 +152,6 @@ async function handleEvent(rawJSON) {
     const contactName = evt.payload.sender?.contact?.annotations?.name ?? "";
     const text = evt.payload.body.text.text;
     const sentChannelId = evt.payload?.channelId;
-
-    console.log(`📨 ${contactName} (${fromNumber}) → "${text}"`);
 
     const inboundMsgId =
       evt.payload?.id ||
@@ -327,7 +322,6 @@ async function handleEvent(rawJSON) {
       text,
       aiThreadId
     );
-    console.log(aiResponse);
 
     let outboundId = null;
     const res = await fetch(

@@ -1,6 +1,8 @@
 // components/CreateUserModal.jsx
+"use client";
 import { useState, useEffect } from "react";
 import styles from "./users.module.css";
+import PillSelect from "@/app/components/PillSelect/PillSelect";
 
 export default function CreateUserModal({
   isOpen,
@@ -10,7 +12,8 @@ export default function CreateUserModal({
 }) {
   const [userName, setUserName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [assistantId, setAssistantId] = useState("");
+  const [email, setEmail] = useState("");
+  const [assistantId, setAssistantId] = useState(null); // number | null
 
   // Keep the modal mounted while running the closing animation
   const [render, setRender] = useState(isOpen);
@@ -31,26 +34,26 @@ export default function CreateUserModal({
     onCreateUser({
       userName,
       phoneNumber,
-      assistantId: assistantId ? Number(assistantId) : null,
+      email,
+      assistantId: assistantId ?? null, // already numeric
     });
     setUserName("");
     setPhoneNumber("");
+    setEmail("");
+    setAssistantId(null);
   };
 
   if (!render) return null;
 
-  // Pick the animation state class
   const stateClass = isOpen ? styles.open : styles.closing;
 
   return (
     <div
       className={`${styles.modalOverlay} ${stateClass}`}
-      // When the overlay finishing closing, unmount
       onAnimationEnd={(e) => {
         if (!isOpen && e.target === e.currentTarget) setRender(false);
       }}
       onClick={(e) => {
-        // click outside to close
         if (e.target === e.currentTarget) onClose();
       }}
     >
@@ -85,18 +88,26 @@ export default function CreateUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="assistant">Assistente:</label>
-            <select
-              id="assistant"
-              value={assistantId}
-              onChange={(e) => setAssistantId(e.target.value)}
-            >
-              {assistants.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            <label htmlFor="email">E-Mail:</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Assistente:</label>
+            <PillSelect
+              options={assistants.map((a) => ({ value: a.id, label: a.name }))}
+              value={assistantId ?? ""}
+              onChange={(val) => setAssistantId(val)} // val is the selected id (number)
+              placeholder="Escolher assistente"
+              fullWidth // ⟵ stretch to the form width
+              portalToBody
+            />
           </div>
 
           <div className={styles.buttonGroup}>

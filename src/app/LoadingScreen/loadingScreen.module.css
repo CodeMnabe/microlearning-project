@@ -4,7 +4,7 @@
   width: 100%;
   height: 100%;
   background-color: var(--background);
-  z-index: 20; /* above page content, below sidebar */
+  z-index: 2000; /* above page content, below sidebar */
   display: flex;
   align-items: center;
   justify-content: center;

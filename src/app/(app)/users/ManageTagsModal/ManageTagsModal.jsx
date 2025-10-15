@@ -8,8 +8,23 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [nameInput, setNameInput] = useState("");
 
-  // ---------- API helpers ----------
+  // ───────── same mount/unmount animation pattern as CreateUser ─────────
+  const [render, setRender] = useState(isOpen);
+  useEffect(() => {
+    if (isOpen) setRender(true);
+  }, [isOpen]);
 
+  // ESC to close (only while rendered)
+  useEffect(() => {
+    if (!render) return;
+    const onKey = (e) => e.key === "Escape" && onClose?.();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [render, onClose]);
+
+  const stateClass = isOpen ? styles.open : styles.closing;
+
+  // ---------- API helpers ----------
   async function fetchTags() {
     setLoading(true);
     try {
@@ -21,7 +36,6 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
         setNameInput("");
         return;
       }
-
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
       setTags(arr);
@@ -47,11 +61,13 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
     fetchTags(orgId);
   }, [isOpen, orgId]);
 
-  const selectedTag = useMemo(() => {
-    return Array.isArray(tags)
-      ? tags.find((t) => t.id === selectedId) || null
-      : null;
-  }, [tags, selectedId]);
+  const selectedTag = useMemo(
+    () =>
+      Array.isArray(tags)
+        ? tags.find((t) => t.id === selectedId) || null
+        : null,
+    [tags, selectedId]
+  );
 
   async function createTag() {
     const base = nameInput.trim() || `Grupo ${tags.length + 1}`;
@@ -92,11 +108,22 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
   }
 
   // ---------- UI ----------
-  if (!isOpen) return null;
+  if (!render) return null;
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true">
-      <div className={styles.card}>
+    <div
+      className={`${styles.overlay} ${stateClass}`}
+      role="dialog"
+      aria-modal="true"
+      onAnimationEnd={(e) => {
+        if (!isOpen && e.target === e.currentTarget) setRender(false);
+      }}
+      onClick={(e) => {
+        // click outside (negative space) closes
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div className={`${styles.card} ${stateClass}`}>
         <div className={styles.header}>
           <h3>Gerir Tags</h3>
         </div>

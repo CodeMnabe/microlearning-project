@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import styles from "../login/login.module.css"; // reuse login styles
 
 export default function ResetRequestPage() {
   const supabase = createClient();
@@ -14,36 +15,44 @@ export default function ResetRequestPage() {
     setMsg("A enviar…");
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      // IMPORTANT: this URL must be whitelisted in
-      // **Auth → URL Configuration → Redirect URLs**
       redirectTo: `${location.origin}/reset/confirm`,
       flowType: "implicit",
     });
 
     setMsg(
-      error ? error.message : "E-mail enviado! Verifica a tua caixa de entrada."
+      error
+        ? error.message
+        : "E-mail enviado! Verifique a sua caixa de entrada."
     );
     if (!error) setEmail("");
   }
 
   return (
-    <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "grid", gap: "1rem", width: "min(92vw,420px)" }}
-      >
-        <h1>Recuperar password</h1>
+    <main className={styles.page}>
+      <h1 className={styles.brand}>MyDigitalBot</h1>
 
+      <form onSubmit={handleSubmit} className={styles.card}>
+        <h1 className={styles.title}>Recuperar palavra-passe</h1>
+
+        <label className={styles.label}>E-mail</label>
         <input
+          className={styles.input}
           type="email"
-          placeholder="tiago@exemplo.com"
+          placeholder="exemplo@exemplo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
 
-        <button className="btnPrimary">Enviar link</button>
-        {msg && <p>{msg}</p>}
+        <button type="submit" className={styles.btnPrimary}>
+          Enviar link
+        </button>
+
+        <a href="/login" className={styles.link}>
+          Voltar ao login
+        </a>
+
+        {msg && <p className={styles.message}>{msg}</p>}
       </form>
     </main>
   );

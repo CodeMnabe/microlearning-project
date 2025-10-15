@@ -1,15 +1,25 @@
+// src/app/(app)/users/page.js
 "use client";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import styles from "./users.module.css";
 import CreateUserModal from "./CreateUser";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import ManageTagsModal from "./ManageTagsModal/ManageTagsModal";
-import QuickActionsModal from "./QuickActions/QuickActions";
-import RowActionsMenu from "./RowActionsMenu";
 import EditUserModal from "./EditUserModal";
-import { MoreHorizontal } from "lucide-react";
+import PillSelect from "@/app/components/PillSelect/PillSelect";
+import {
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  Trash2,
+  Plus,
+  Tag,
+  Filter,
+} from "lucide-react";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useAuth } from "@/app/AuthContext";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import FilterMenu from "./FilterMenu";
 
 function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
@@ -18,39 +28,43 @@ function initial(name = "") {
 export default function UsersPage() {
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
+
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
-  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [assistantsList, setAssistantsList] = useState([]);
+
+  // filters
+  const [allTags, setAllTags] = useState([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterBtnRef = useRef(null);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedAssistantIds, setSelectedAssistantIds] = useState([]);
+
+  // UI state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
-  const [assistantsList, setAssistantsList] = useState([]);
-  const [rowMenu, setRowMenu] = useState({
-    open: false,
-    anchor: null,
-    user: null,
-  });
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const plusRef = useRef(null);
+  const confirm = useConfirm();
 
   // how many tags to show before "+n"
   const MAX_TAGS = 6;
 
-  // NEW: list | grid (persisted)
+  // list | grid (persisted)
   const [view, setView] = useState(() => {
     if (typeof window === "undefined") return "list";
     return localStorage.getItem("usersView") || "list";
   });
 
-  const { startLoading, stopLoading } = useGlobalLoader();
-
+  const { stopLoading } = useGlobalLoader();
   useEffect(() => {
     localStorage.setItem("usersView", view);
   }, [view]);
 
   const orgId = org?.id;
 
+  // assistants
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
     (async () => {
@@ -60,19 +74,32 @@ export default function UsersPage() {
     })().catch(console.error);
   }, [authLoading, orgLoading, orgId, users]);
 
+  // tags for filter
+  useEffect(() => {
+    if (!orgId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/tags?orgId=${orgId}`);
+        const data = await r.json();
+        setAllTags(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+        setAllTags([]);
+      }
+    })();
+  }, [orgId]);
+
   const refreshUsers = useCallback(async () => {
     if (!orgId) return;
     const res = await fetch(`/api/users?orgId=${orgId}`);
     const data = await res.json();
-    console.log(data);
     setUsers(data);
   }, [orgId]);
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
-    startLoading();
     refreshUsers().finally(stopLoading);
-  }, [authLoading, orgLoading, orgId, refreshUsers, startLoading, stopLoading]);
+  }, [authLoading, orgLoading, orgId, refreshUsers, stopLoading]);
 
   const normalized = useMemo(
     () =>
@@ -81,47 +108,47 @@ export default function UsersPage() {
         name: u.name,
         phone: u.phone_number ?? u.phoneNumber ?? "",
         email: u.email ?? "",
-        // for chips in the list:
         tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
-        // for editing:
         tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
         assistantId: u.assistant_id ?? null,
         assistantName: u.assistantName ?? "—",
-        organization_id: u.organization_id, // handy for modal fetch
+        organization_id: u.organization_id,
       })),
     [users]
   );
 
-  const filtered = useMemo(
-    () =>
-      normalized.filter((u) =>
-        (u.name + " " + u.phone + " " + u.email)
-          .toLowerCase()
-          .includes(q.toLowerCase())
-      ),
-    [normalized, q]
-  );
+  // Apply text + Tag + Assistant filters
+  const visible = useMemo(() => {
+    return normalized.filter((u) => {
+      const textOk = (u.name + " " + u.phone + " " + u.email)
+        .toLowerCase()
+        .includes(q.toLowerCase());
 
-  const visible = filtered;
+      const tagsOk =
+        selectedTagIds.length === 0 ||
+        // ALL-of logic; switch to .some() for ANY-of
+        selectedTagIds.every((id) => (u.tagIds || []).includes(id));
 
-  // selection helpers …
+      const assistantOk =
+        selectedAssistantIds.length === 0 ||
+        selectedAssistantIds.includes(u.assistantId);
+
+      return textOk && tagsOk && assistantOk;
+    });
+  }, [normalized, q, selectedTagIds, selectedAssistantIds]);
+
+  // selection helpers
   const allVisibleIds = visible.map((u) => u.id);
   const allChecked =
     allVisibleIds.length > 0 && allVisibleIds.every((id) => selected.has(id));
   function toggleAll() {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (allChecked) {
-        // unselect all visible
-        allVisibleIds.forEach((id) => next.delete(id));
-      } else {
-        // select all visible
-        allVisibleIds.forEach((id) => next.add(id));
-      }
+      if (allChecked) allVisibleIds.forEach((id) => next.delete(id));
+      else allVisibleIds.forEach((id) => next.add(id));
       return next;
     });
   }
-
   function toggleOne(id) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -131,7 +158,12 @@ export default function UsersPage() {
     });
   }
 
-  async function handleCreateUser({ userName, phoneNumber, assistantId }) {
+  async function handleCreateUser({
+    userName,
+    phoneNumber,
+    email,
+    assistantId,
+  }) {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -139,6 +171,7 @@ export default function UsersPage() {
         organizationId: org.id,
         phoneNumber,
         name: userName,
+        email: email || null,
         assistantId,
       }),
     });
@@ -149,46 +182,26 @@ export default function UsersPage() {
     }
     await refreshUsers();
     setIsCreateOpen(false);
-    setIsActionsOpen(false);
   }
 
-  function AssistantPicker({ value, assistants, onChange }) {
-    return (
-      <select
-        value={value ?? ""}
-        onChange={(e) =>
-          onChange(e.target.value ? Number(e.target.value) : null)
-        }
-        style={{
-          padding: "6px 10px",
-          borderRadius: 9999,
-          border: "1px solid #9fd3ff",
-          background: "#eaf6ff",
-          fontWeight: 700,
-          color: "#1467a3",
-        }}
-        title="Escolher assistente"
-      >
-        {/* <option value="">— Sem assistente —</option> */}
-        {assistants.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.name}
-          </option>
-        ))}
-      </select>
-    );
+  function openEditFor(u) {
+    setEditingUser(u);
+    setEditOpen(true);
   }
-
-  function openRowMenu(user, anchorEl) {
-    setRowMenu({ open: true, anchor: anchorEl, user });
-  }
-
-  function closeRowMenu() {
-    setRowMenu({ open: false, anchor: null, user: null });
+  function openViewFor(u) {
+    alert(`(demo) Ver utilizador: ${u.name}`);
   }
 
   async function deleteUserById(id) {
-    if (!confirm("Eliminar este utilizador")) return;
+    const ok = await confirm({
+      title: "Eliminar este utilizador",
+      message: "Esta ação não pode ser desfeita.",
+      confirmText: "Apagar",
+      cancelText: "Cancelar",
+      tone: "danger",
+    });
+    if (!ok) return;
+
     const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
     if (!res.ok) {
       console.error(await res.text());
@@ -197,42 +210,7 @@ export default function UsersPage() {
     await refreshUsers();
   }
 
-  function openEditFor(user) {
-    setEditingUser(user);
-    setEditOpen(true);
-  }
-
-  function BulkActionsBar({
-    count,
-    onAddTags,
-    onRemoveTags,
-    onSendMessage,
-    onDelete,
-    onClear,
-  }) {
-    if (count === 0) return null;
-    return (
-      <div style={styles.quickAction}>
-        <strong>{count}</strong> selecionados
-        <span aria-hidden>•</span>
-        <button onClick={onAddTags} style={styles.quickActionBtn}>
-          Adicionar tags
-        </button>
-        <button onClick={onRemoveTags} style={styles.quickActionBtn}>
-          Remover tags
-        </button>
-        <button onClick={onSendMessage} style={styles.quickActionBtn}>
-          Enviar mensagem
-        </button>
-        <button onClick={onDelete} style={styles.quickActionBtn}>
-          Apagar
-        </button>
-        <button onClick={onDelete} style={styles.quickActionBtn}>
-          Limpar
-        </button>
-      </div>
-    );
-  }
+  const activeFilterCount = selectedTagIds.length + selectedAssistantIds.length;
 
   return (
     <div className={styles.usersScreen}>
@@ -258,59 +236,88 @@ export default function UsersPage() {
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-
-        {/* <button className={styles.iconBtn} title="Filtrar" aria-label="Filtrar">
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            stroke="currentColor"
-            fill="none"
-          >
-            <path d="M3 5h18l-7 8v6l-4 2v-8L3 5z" strokeWidth="2" />
-          </svg>
-        </button> */}
-
         <button
-          ref={plusRef}
-          className={styles.iconBtnPrimary}
-          title="Ações Rápidas"
-          aria-label="Ações Rápidas"
-          onClick={() => setIsActionsOpen((v) => !v)}
+          type="button"
+          ref={filterBtnRef}
+          className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+          onClick={() => setFilterOpen((v) => !v)}
+          title="Filtrar"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            stroke="currentColor"
-            fill="none"
-          >
-            <path d="M12 5v14M5 12h14" strokeWidth="2" />
-          </svg>
+          <Filter size={16} /> <span>Filtrar</span>
+          {activeFilterCount > 0 && (
+            <span className={styles.filterBadge}>{activeFilterCount}</span>
+          )}
         </button>
 
-        {/* View switch */}
-        {/* <div className={styles.viewBtns}>
+        {/* Right-side actions */}
+        <div className={styles.toolbarRight}>
           <button
-            className={`${styles.iconBtn} ${
-              view === "list" ? styles.viewActive : ""
-            }`}
-            aria-pressed={view === "list"}
-            title="Lista"
-            onClick={() => setView("list")}
+            type="button"
+            className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+            onClick={() => setIsTagsOpen(true)}
+            title="Gerir tags"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              stroke="currentColor"
-              fill="none"
-            >
-              <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" />
-            </svg>
+            <Tag size={16} /> <span>Gerir Tags</span>
           </button>
-        </div> */}
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+            onClick={() => setIsCreateOpen(true)}
+            title="Novo utilizador"
+          >
+            <Plus size={16} /> <span>Novo Utilizador</span>
+          </button>
+        </div>
       </div>
+
+      {/* Active filter chips */}
+      {activeFilterCount > 0 && (
+        <div className={styles.activeFilters}>
+          {selectedTagIds.map((id) => {
+            const t = allTags.find((x) => x.id === id);
+            if (!t) return null;
+            return (
+              <button
+                key={`t${id}`}
+                className={styles.filterChip}
+                onClick={() =>
+                  setSelectedTagIds((prev) => prev.filter((x) => x !== id))
+                }
+                title="Remover filtro"
+              >
+                {t.name} ×
+              </button>
+            );
+          })}
+          {selectedAssistantIds.map((id) => {
+            const a = assistantsList.find((x) => x.id === id);
+            if (!a) return null;
+            return (
+              <button
+                key={`a${id}`}
+                className={styles.filterChip}
+                onClick={() =>
+                  setSelectedAssistantIds((prev) =>
+                    prev.filter((x) => x !== id)
+                  )
+                }
+                title="Remover filtro"
+              >
+                {a.name} ×
+              </button>
+            );
+          })}
+          <button
+            className={styles.filterClearAll}
+            onClick={() => {
+              setSelectedTagIds([]);
+              setSelectedAssistantIds([]);
+            }}
+          >
+            Limpar tudo
+          </button>
+        </div>
+      )}
 
       {/* LIST VIEW */}
       {view === "list" && (
@@ -360,9 +367,7 @@ export default function UsersPage() {
                   <div className={styles.avatar}>{initial(u.name)}</div>
                   <div className={styles.nameBlock}>
                     <div className={styles.name}>{u.name}</div>
-                    <div className={styles.subline}>
-                      {u.email || u.phone || "—"}
-                    </div>
+                    <div className={styles.subline}>{u.email || ""}</div>
                   </div>
                 </div>
 
@@ -385,9 +390,12 @@ export default function UsersPage() {
 
                 {/* assistant */}
                 <div className={styles.cellAssistant}>
-                  <AssistantPicker
+                  <PillSelect
                     value={u.assistantId}
-                    assistants={assistantsList}
+                    options={assistantsList.map((a) => ({
+                      value: a.id,
+                      label: a.name,
+                    }))}
                     onChange={async (newAssistantId) => {
                       try {
                         const res = await fetch("/api/users", {
@@ -414,15 +422,39 @@ export default function UsersPage() {
                   />
                 </div>
 
-                {/* kebab */}
+                {/* tail actions */}
                 <div className={styles.cellKebab}>
                   <button
-                    className={styles.iconBtn}
+                    className={`${styles.iconBtn} ${styles.kebabDefault}`}
                     aria-label="Mais opções"
-                    onClick={(e) => openRowMenu(u, e.currentTarget)}
+                    onClick={() => openEditFor(u)}
                   >
                     <MoreHorizontal size={18} />
                   </button>
+
+                  <div className={styles.rowActions} aria-label="Ações">
+                    <button
+                      className={styles.rowActBtn}
+                      onClick={() => openViewFor(u)}
+                      title="Ver"
+                    >
+                      <Eye size={16} /> <span>Ver</span>
+                    </button>
+                    <button
+                      className={styles.rowActBtn}
+                      onClick={() => openEditFor(u)}
+                      title="Editar"
+                    >
+                      <Pencil size={16} /> <span>Editar</span>
+                    </button>
+                    <button
+                      className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
+                      onClick={() => deleteUserById(u.id)}
+                      title="Apagar"
+                    >
+                      <Trash2 size={16} /> <span>Apagar</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -430,19 +462,24 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* GRID (CARD) VIEW — left as-is; list view is the main area you asked about */}
-
-      {/* Menus / Modals */}
-      <QuickActionsModal
-        anchorEl={plusRef.current}
-        open={isActionsOpen}
-        onClose={() => setIsActionsOpen(false)}
-        onChoose={(which) => {
-          if (which === "create") setIsCreateOpen(true);
-          if (which === "tags") setIsTagsOpen(true);
+      {/* Popover filter */}
+      <FilterMenu
+        open={filterOpen}
+        anchorEl={filterBtnRef.current}
+        tags={allTags}
+        assistants={assistantsList}
+        selectedTagIds={selectedTagIds}
+        setSelectedTagIds={setSelectedTagIds}
+        selectedAssistantIds={selectedAssistantIds}
+        setSelectedAssistantIds={setSelectedAssistantIds}
+        onClose={() => setFilterOpen(false)}
+        onClear={() => {
+          setSelectedTagIds([]);
+          setSelectedAssistantIds([]);
         }}
       />
 
+      {/* Modals */}
       <CreateUserModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
@@ -458,32 +495,13 @@ export default function UsersPage() {
         />
       )}
 
-      <RowActionsMenu
-        anchorEl={rowMenu.anchor}
-        open={rowMenu.open}
-        onClose={closeRowMenu}
-        onSendMessage={() => {
-          closeRowMenu();
-          // TODO: your send-message flow
-          alert(`(demo) Enviar mensagem para ${rowMenu.user?.name}`);
-        }}
-        onEdit={() => {
-          const u = rowMenu.user;
-          closeRowMenu();
-          openEditFor(u);
-        }}
-        onDelete={async () => {
-          const id = rowMenu.user?.id;
-          closeRowMenu();
-          if (id) await deleteUserById(id);
-        }}
-      />
-
       {orgId && (
         <EditUserModal
           open={editOpen}
           user={editingUser}
           orgId={orgId}
+          assistants={assistantsList}
+          onDelete={deleteUserById}
           onClose={() => setEditOpen(false)}
           onSaved={async () => {
             await refreshUsers();

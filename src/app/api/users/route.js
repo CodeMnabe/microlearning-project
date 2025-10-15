@@ -15,7 +15,6 @@ export async function GET(req) {
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
 
     const users = await getUsersInOrg(Number(id));
-    console.log(users);
     return NextResponse.json(users);
   } catch (err) {
     console.error(err);
@@ -25,9 +24,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { name, phoneNumber, organizationId, assistantId } = await req.json();
-
-    console.log(assistantId);
+    const { name, phoneNumber, organizationId, assistantId, email } =
+      await req.json();
 
     if (!name || !phoneNumber || !organizationId) {
       return NextResponse.json(
@@ -36,18 +34,13 @@ export async function POST(req) {
       );
     }
 
-    console.log(name);
-    console.log(phoneNumber);
-    console.log(organizationId);
-
     const _newUser = await createUser({
       organizationId,
       phoneNumber,
       name,
+      email,
       assistantId: assistantId ?? null,
     });
-
-    console.log(_newUser);
 
     return NextResponse.json(_newUser, { status: 201 });
   } catch (error) {
@@ -67,7 +60,8 @@ export async function POST(req) {
 // src/app/api/users/route.js  (PATCH)
 export async function PATCH(req) {
   try {
-    const { id, name, phoneNumber, assistantId, tagIds } = await req.json();
+    const { id, name, phoneNumber, email, assistantId, tagIds } =
+      await req.json();
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -78,6 +72,7 @@ export async function PATCH(req) {
     const updatedUser = await updateUser(id, {
       name,
       phoneNumber,
+      email,
       assistantId, // ← new
       tagIds, // ← new (array of numbers)
     });

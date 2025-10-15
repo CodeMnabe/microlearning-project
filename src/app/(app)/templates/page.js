@@ -70,9 +70,8 @@ export default function TemplatesPage() {
   }
 
   useEffect(() => {
-    startLoading();
     if (org?.id) refresh();
-  }, [org?.id, refresh, startLoading]);
+  }, [org?.id, refresh]);
 
   function onPresetChange(key) {
     setPresetKey(key);

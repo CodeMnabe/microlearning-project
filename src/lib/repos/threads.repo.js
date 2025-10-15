@@ -16,7 +16,6 @@ const supabase = createServiceClient(
 const SELECT_COLS = "id, user_id, assistant_id, ai_thread_id, created_at";
 
 export async function createThread({ userId, assistantId, aiThreadId }) {
-  console.log("CREATING THREAD");
   if (!userId || !assistantId || !aiThreadId) {
     throw new Error("createThread requires userId, assistantId and aiThreadId");
   }
@@ -38,7 +37,6 @@ export async function createThread({ userId, assistantId, aiThreadId }) {
  *   (Safer than upsert to avoid null-overwrites.)
  */
 export async function getOrCreateThread({ userId, assistantId, aiThreadId }) {
-  console.log("GETTING OR CREATING THREAD");
   if (!aiThreadId) throw new Error("getOrCreateThread requires aiThreadId");
 
   // 1) try to find existing by ai_thread_id
@@ -49,7 +47,6 @@ export async function getOrCreateThread({ userId, assistantId, aiThreadId }) {
     .maybeSingle();
   if (selErr) throw selErr;
   if (existing) {
-    console.log(existing);
     return existing;
   }
 

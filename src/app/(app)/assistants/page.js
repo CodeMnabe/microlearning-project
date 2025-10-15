@@ -32,7 +32,6 @@ export default function AssistantsHub() {
 
     let alive = true;
     (async () => {
-      startLoading();
       try {
         const res = await fetch(`/api/assistants?orgId=${orgId}`);
         const data = await res.json().catch(() => []);
@@ -51,7 +50,7 @@ export default function AssistantsHub() {
     return () => {
       alive = false;
     };
-  }, [authLoading, orgLoading, orgId, startLoading, selectedId, stopLoading]); // ← no selectedId here (prevents refetch loops)
+  }, [authLoading, orgLoading, orgId, selectedId, stopLoading]); // ← no selectedId here (prevents refetch loops)
 
   // 2) fetch details of current assistant
   const fetchOne = useCallback(

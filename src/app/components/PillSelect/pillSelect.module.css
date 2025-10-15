@@ -1,0 +1,95 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  border: 1px solid #9fd3ff;
+  background: #eaf6ff;
+  color: #1467a3;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+.full {
+  /* ⟵ NEW */
+  width: 100%;
+  justify-content: space-between;
+}
+.trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.trigger:hover {
+  filter: brightness(0.98);
+}
+
+.label {
+  max-width: 28ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.caret {
+  opacity: 0.9;
+}
+
+.menu {
+  position: fixed; /* stays aligned to viewport when portaled */
+  z-index: 10001; /* ⟵ above your modal overlay (9999) */
+  background: #fff;
+  border: 1px solid var(--ui-border, #e5edf5);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+  padding: 6px;
+  animation: fadeIn 0.12s ease-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.list {
+  max-height: 280px;
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+}
+.item {
+  display: grid;
+  grid-template-columns: 1fr 18px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 0;
+  background: #fff;
+  color: #0f1c3f;
+  cursor: pointer;
+  text-align: left;
+}
+.item:hover {
+  background: #f7fbff;
+}
+.itemActive {
+  background: #eef8ff;
+  border: 1px solid #9fd3ff;
+}
+.itemLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.check {
+  color: #0ea5e9;
+}
+.empty {
+  color: var(--ui-muted, #7a8392);
+  padding: 10px 8px;
+}

@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "./AuthContext";
 import { GlobalLoaderProvider } from "./LoadingScreen/GlobalLoaderContext";
+import { ConfirmProvider } from "./components/Confirm/ConfirmProvider";
 
 const inter = localFont({
   src: [
@@ -24,9 +25,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <GlobalLoaderProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </GlobalLoaderProvider>
+        <ConfirmProvider>
+          <GlobalLoaderProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </GlobalLoaderProvider>
+        </ConfirmProvider>
       </body>
     </html>
   );

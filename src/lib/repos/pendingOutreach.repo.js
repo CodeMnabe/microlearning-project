@@ -33,7 +33,6 @@ export async function createPendingOutreach({
     ])
     .select()
     .single();
-  console.log(data);
   if (error) throw error;
   return data;
 }

@@ -1,27 +1,52 @@
+// (app)/(app)/users/EditUserModal.jsx
 "use client";
 import { useEffect, useState } from "react";
+import styles from "./users.module.css";
+import PillSelect from "@/app/components/PillSelect/PillSelect";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 
-export default function EditUserModal({ open, onClose, user, orgId, onSaved }) {
+export default function EditUserModal({
+  open,
+  onClose,
+  user,
+  orgId,
+  assistants = [],
+  onDelete,
+  onSaved,
+}) {
+  const confirm = useConfirm();
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [assistantId, setAssistantId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // tags
   const [allTags, setAllTags] = useState([]);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
 
+  // Keep mounted while the closing animation runs
+  const [render, setRender] = useState(open);
+  useEffect(() => {
+    if (open) setRender(true);
+  }, [open]);
+
+  // Prefill fields when opening
   useEffect(() => {
     if (!open || !user) return;
     setName(user.name || "");
     setPhone(user.phone || user.phone_number || "");
+    setEmail(user.email || "");
+    setAssistantId(user.assistantId ?? null);
     setSelectedTagIds(user.tagIds || user.tag_ids || []);
   }, [open, user]);
 
+  // Load tags when opened
   useEffect(() => {
     if (!open || !orgId) return;
     (async () => {
       try {
-        console.log(`Getting tags from org: ${orgId}`);
         const res = await fetch(`/api/tags?orgId=${orgId}`);
         const data = await res.json();
         setAllTags(Array.isArray(data) ? data : []);
@@ -32,7 +57,15 @@ export default function EditUserModal({ open, onClose, user, orgId, onSaved }) {
     })();
   }, [open, orgId]);
 
-  if (!open || !user) return null;
+  // ESC to close
+  useEffect(() => {
+    if (!render) return;
+    const onKey = (e) => e.key === "Escape" && onClose?.();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [render, onClose]);
+
+  if (!render || !user) return null;
 
   function toggleTag(id) {
     setSelectedTagIds((prev) =>
@@ -50,7 +83,9 @@ export default function EditUserModal({ open, onClose, user, orgId, onSaved }) {
           id: user.id,
           name,
           phoneNumber: phone,
-          tagIds: selectedTagIds, // 👈 send full set
+          email,
+          assistantId,
+          tagIds: selectedTagIds,
         }),
       });
       if (!res.ok) {
@@ -59,124 +94,143 @@ export default function EditUserModal({ open, onClose, user, orgId, onSaved }) {
       }
       const updated = await res.json();
       onSaved?.(updated);
-      onClose();
+      onClose?.();
     } finally {
       setSaving(false);
     }
   }
 
-  const overlay = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,.45)",
-    display: "grid",
-    placeItems: "center",
-    zIndex: 9998,
-  };
-  const card = {
-    width: "min(460px, 92vw)",
-    background: "#fff",
-    color: "#0f1c3f",
-    borderRadius: 14,
-    border: "1px solid #e5edf5",
-    boxShadow: "0 20px 60px rgba(0,0,0,.25)",
-    padding: "1.25rem",
-  };
-  const tagList = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))",
-    gap: 8,
-    marginBottom: 14,
-  };
-  const chip = (active) => ({
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "6px 10px",
-    borderRadius: 9999,
-    border: active ? "1px solid #0ea5e9" : "1px solid #e5edf5",
-    background: active ? "#eaf6ff" : "#f7fbff",
-    cursor: "pointer",
-    userSelect: "none",
-  });
+  async function handleDelete() {
+    if (!onDelete) return;
+    const ok = await confirm({
+      title: "Eliminar este utilizador",
+      message: "Esta ação não pode ser desfeita.",
+      confirmText: "Apagar",
+      cancelText: "Cancelar",
+      tone: "danger",
+    });
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      await onDelete(user.id);
+      onSaved?.();
+      onClose?.();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const stateClass = open ? styles.open : styles.closing;
 
   return (
-    <div style={overlay} role="dialog" aria-modal="true">
-      <div style={card}>
-        <h3 style={{ marginTop: 0, marginBottom: 12 }}>Editar Utilizador</h3>
+    <div
+      className={`${styles.modalOverlay} ${stateClass}`}
+      role="dialog"
+      aria-modal="true"
+      onAnimationEnd={(e) => {
+        if (!open && e.target === e.currentTarget) setRender(false);
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div className={`${styles.modalContent} ${stateClass}`}>
+        <h3 className={styles.modalTitle}>Editar Utilizador</h3>
 
-        <label>Nome</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #e5edf5",
-            borderRadius: 10,
-            marginBottom: 10,
-          }}
-        />
+        <div className={styles.form}>
+          <div className={styles.formGroup}>
+            <label>Nome</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nome"
+            />
+          </div>
 
-        <label>Telefone</label>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #e5edf5",
-            borderRadius: 10,
-            marginBottom: 16,
-          }}
-        />
+          <div className={styles.formGroup}>
+            <label>Telemóvel</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Número de telemóvel"
+            />
+          </div>
 
-        <label>Tags</label>
-        <div style={tagList}>
-          {allTags.map((t) => {
-            const active = selectedTagIds.includes(t.id);
-            return (
-              <label key={t.id} style={chip(active)}>
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => toggleTag(t.id)}
-                  style={{ accentColor: "#0ea5e9" }}
-                />
-                <span>{t.name}</span>
-              </label>
-            );
-          })}
-          {!allTags.length && (
-            <div style={{ color: "#9aa3b2" }}>Sem tags disponíveis.</div>
-          )}
-        </div>
+          <div className={styles.formGroup}>
+            <label>E-mail</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="exemplo@exemplo.com"
+            />
+          </div>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: "#eef3f7",
-              border: 0,
-              borderRadius: 10,
-              padding: "8px 12px",
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{
-              background: "linear-gradient(135deg,#0ea5e9,#7cc2ff)",
-              color: "#fff",
-              border: 0,
-              borderRadius: 10,
-              padding: "8px 12px",
-            }}
-          >
-            {saving ? "A guardar…" : "Guardar"}
-          </button>
+          <div className={styles.formGroup}>
+            <label>Assistente</label>
+            <PillSelect
+              options={assistants.map((a) => ({ value: a.id, label: a.name }))}
+              value={assistantId ?? ""}
+              onChange={(val) => setAssistantId(val)}
+              placeholder="Escolher assistente"
+              fullWidth
+              portalToBody
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Tags</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {allTags.map((t) => {
+                const active = selectedTagIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={styles.chip}
+                    onClick={() => toggleTag(t.id)}
+                    style={
+                      active
+                        ? { borderColor: "#9fd3ff", background: "#eaf6ff" }
+                        : undefined
+                    }
+                    title={active ? "Remover" : "Adicionar"}
+                  >
+                    {t.name}
+                  </button>
+                );
+              })}
+              {!allTags.length && (
+                <div style={{ color: "var(--ui-muted)" }}>
+                  Sem tags disponíveis.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.buttonGroup}>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={saving}
+              style={{
+                background: "#fff5f5",
+                color: "#b42318",
+                border: "1px solid #ffd0d0",
+              }}
+            >
+              {saving ? "A eliminar…" : "Eliminar"}
+            </button>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              <button type="button" onClick={onClose}>
+                Cancelar
+              </button>
+              <button type="button" onClick={save} disabled={saving}>
+                {saving ? "A guardar…" : "Guardar"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

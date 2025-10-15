@@ -34,3 +34,4 @@ src/lib/testOpenAi.js
 src/lib/sendToAi.js
 /src/generated/
 seed.mjs
+src.zip

@@ -17,7 +17,6 @@ export async function createMessage({
   content = "",
   role = "user",
 }) {
-  console.log(`Creating message for ${userId}`);
   const { data, error } = await supabase
     .from("message")
     .insert([

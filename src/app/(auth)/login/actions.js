@@ -24,5 +24,5 @@ export async function signup(formData) {
   });
 
   if (error) redirect("/error");
-  redirect("/"); // user still must confirm e-mail
+  redirect("/login"); // user still must confirm e-mail
 }

@@ -53,7 +53,6 @@ export async function updateOAiAssistant(updates) {
 
 export async function deleteOAiAssistant(id) {
   try {
-    console.log("Trying to delete on OpenAI");
     const wasDeleted = await client.beta.assistants.del(`${id}`);
 
     if (wasDeleted.deleted) {
@@ -128,10 +127,8 @@ export async function sendMessageToAi(assistantId, input, threadId) {
     if (!threadId) {
       const newThread = await client.beta.threads.create();
       threadId = newThread.id;
-      console.log("New thread created");
     }
 
-    console.log(threadId);
     const newMessage = await client.beta.threads.messages.create(threadId, {
       role: "user",
       content: input,

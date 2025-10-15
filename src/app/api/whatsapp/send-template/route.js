@@ -86,15 +86,6 @@ export async function POST(req) {
       },
     };
 
-    // helpful log
-    console.log("Sending template:", {
-      to: e164,
-      projectId,
-      templateName,
-      languageCode,
-      parameters: kvParameters,
-    });
-
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {

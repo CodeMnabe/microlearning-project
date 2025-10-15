@@ -8,7 +8,7 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { stopLoading } = useGlobalLoader();
 
   useEffect(() => {
     (async () => {
@@ -49,7 +49,7 @@ export default function LoginPage() {
       <form className={styles.card}>
         <h1 className={styles.title}>Entrar</h1>
 
-        <label className={styles.label}>Email</label>
+        <label className={styles.label}>E-mail</label>
         <input
           className={styles.input}
           type="email"
@@ -59,7 +59,7 @@ export default function LoginPage() {
           required
         />
 
-        <label className={styles.label}>Password</label>
+        <label className={styles.label}>Palavra-Passe</label>
         <input
           className={styles.input}
           type="password"
@@ -86,8 +86,8 @@ export default function LoginPage() {
         </button>
          */}
 
-        <a href="/reset" className="link">
-          Esqueceu a password?
+        <a href="/reset" className={styles.link}>
+          Esqueceu a palavra-passe?
         </a>
 
         {msg && <p className={styles.message}>{msg}</p>}

@@ -15,6 +15,7 @@ export async function createUser({
   organizationId,
   phoneNumber,
   name,
+  email = null,
   assistantId,
 }) {
   const { data, error } = await supabase
@@ -24,6 +25,7 @@ export async function createUser({
         organization_id: organizationId,
         phone_number: cleanMsisdn(phoneNumber),
         name,
+        email,
         assistant_id: assistantId,
       },
     ])
@@ -52,6 +54,7 @@ export async function updateUser(userId, updates) {
   if (updates.name !== undefined) patch.name = updates.name;
   if (updates.phoneNumber !== undefined)
     patch.phone_number = cleanMsisdn(updates.phoneNumber);
+  if (updates.email !== undefined) patch.email = updates.email;
   if (updates.assistantId !== undefined)
     patch.assistant_id = updates.assistantId;
 
@@ -160,7 +163,7 @@ export async function getUsersInOrg(orgId) {
     .from("user")
     .select(
       `
-      id, name, phone_number, assistant_id, created_at,
+      id, name, phone_number, email, assistant_id, created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
       )
@@ -176,6 +179,7 @@ export async function getUsersInOrg(orgId) {
       id: u.id,
       name: u.name,
       phone_number: u.phone_number,
+      email: u.email,
       assistant_id: u.assistant_id,
       created_at: u.created_at,
       tags, // objects

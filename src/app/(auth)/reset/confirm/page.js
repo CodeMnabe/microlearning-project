@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import styles from "../../login/login.module.css"; // one level deeper
 
 export default function ResetConfirmPage() {
   const supabase = createClient();
@@ -11,7 +12,6 @@ export default function ResetConfirmPage() {
   const [msg, setMsg] = useState("");
   const [ready, setReady] = useState(false);
 
-  // detectSessionInUrl:true will already parse the hash on first render
   useEffect(() => {
     (async () => {
       const {
@@ -37,21 +37,25 @@ export default function ResetConfirmPage() {
 
   if (!ready) {
     return (
-      <p style={{ textAlign: "center", marginTop: "20vh" }}>
-        {msg || "A preparar sessão…"}
-      </p>
+      <main className={styles.page}>
+        <h1 className={styles.brand}>MyDigitalBot</h1>
+        <p className={styles.message} style={{ textAlign: "center" }}>
+          {msg || "A preparar sessão…"}
+        </p>
+      </main>
     );
   }
 
   return (
-    <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "grid", gap: "1rem", width: "min(92vw,420px)" }}
-      >
-        <h1>Nova password</h1>
+    <main className={styles.page}>
+      <h1 className={styles.brand}>MyDigitalBot</h1>
 
+      <form onSubmit={handleSubmit} className={styles.card}>
+        <h1 className={styles.title}>Definir nova palavra-passe</h1>
+
+        <label className={styles.label}>Nova palavra-passe</label>
         <input
+          className={styles.input}
           type="password"
           placeholder="••••••••"
           value={newPw}
@@ -60,8 +64,15 @@ export default function ResetConfirmPage() {
           required
         />
 
-        <button className="btnPrimary">Definir</button>
-        {msg && <p>{msg}</p>}
+        <button type="submit" className={styles.btnPrimary}>
+          Confirmar
+        </button>
+
+        <a href="/login" className={styles.link}>
+          Voltar ao login
+        </a>
+
+        {msg && <p className={styles.message}>{msg}</p>}
       </form>
     </main>
   );

@@ -25,8 +25,6 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    console.log("Sending Info");
-
     const res = await fetch("/api/assistants", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -131,7 +131,6 @@ export default function BroadcastPage() {
     if (!org?.id) return;
     let alive = true;
     (async () => {
-      startLoading();
       await getUsers();
       await loadTemplates();
       if (alive) stopLoading();

@@ -2,7 +2,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0); /* start transparent for animation */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,6 +19,83 @@
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
   padding: 18px 18px 14px;
+
+  /* match CreateUser starting pose */
+  opacity: 0;
+  transform: translateY(40vh) scale(0.98);
+}
+
+/* ───────── animations (same feel as CreateUser modal) ───────── */
+.open.overlay {
+  animation: overlayIn 0.4s ease forwards;
+}
+.open.card {
+  animation: modalIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.closing.overlay {
+  animation: overlayOut 0.28s ease forwards;
+}
+.closing.card {
+  animation: modalOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes overlayIn {
+  from {
+    background: rgba(0, 0, 0, 0);
+  }
+  to {
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+@keyframes overlayOut {
+  from {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  to {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+@keyframes modalIn {
+  0% {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-6px) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes modalOut {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+}
+
+/* Reduce motion respect */
+@media (prefers-reduced-motion: reduce) {
+  .open.overlay,
+  .closing.overlay,
+  .open.card,
+  .closing.card {
+    animation: none !important;
+    transition: none !important;
+  }
+  .overlay {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .card {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Header */

@@ -3,18 +3,18 @@
 /* ───────────── Root design tokens (global) ───────────── */
 :root {
   /* base surface & text */
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #e5e7eb;
+  --foreground: #0b1220;
 
   /* brand & ink */
-  --brand-1: #0ea5e9; /* light blue */
+  --brand-1: #30a9e0; /* light blue */
   --brand-2: #7cc2ff; /* gradient end */
-  --ink: #0f1c3f; /* navy text */
+  --ink: #191e3b; /* navy text */
 
   /* gradients & shared theme helpers */
   --btn-gradient: linear-gradient(135deg, var(--brand-1), var(--brand-2));
   --color-primary: var(--brand-1);
-  --color-secondary: var(--brand-2);
+  --color-secondary: var(--ink);
 
   /* app layout */
   --gutter-x: 24px;
@@ -75,14 +75,6 @@
   --topbar-text: #0f1c3f;
   --topbar-border: rgba(15, 28, 63, 0.08);
   --content-gutter: 16px;
-}
-
-/* auto-adjust a couple of base surfaces in dark scheme */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #e5e7eb;
-    --foreground: #0b1220;
-  }
 }
 
 /* ───────────── Base resets & layout helpers ───────────── */

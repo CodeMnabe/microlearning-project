@@ -2,13 +2,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./navbar.module.css";
-
 import {
   Home,
   Users,
@@ -19,25 +16,42 @@ import {
   LogOut,
   LogIn,
 } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 
 export default function Navbar() {
-  const [activeLink, setActiveLink] = useState(null);
   const { user, loading: authLoading, supabase, setUser } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const router = useRouter();
   const pathName = usePathname();
+  const [pendingHref, setPendingHref] = useState(null);
 
   const isAdmin = !!org && org.id === 1;
+
+  // CLEAR optimistic highlight only when the actual route changes
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathName]); // ← important
+
+  const isActive = useCallback(
+    (href) => {
+      const current = pendingHref ?? pathName;
+      if (href === "/") return current === "/";
+      return current === href || current.startsWith(href + "/");
+    },
+    [pendingHref, pathName]
+  );
+
+  const onNavClick = (href) => (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
+      return;
+    setPendingHref(href); // optimistic: highlight immediately
+  };
 
   async function handleSignOut() {
     await supabase.auth.signOut();
     setUser(null);
     router.push("/login");
   }
-
-  useEffect(() => {
-    setActiveLink(pathName);
-  }, [pathName]);
 
   return (
     <aside className={styles.sidebar}>
@@ -49,74 +63,81 @@ export default function Navbar() {
             </div>
             <div className={styles.emailLine}>{user.email}</div>
           </div>
+
           <nav className={styles.nav}>
             {isAdmin && (
               <Link
                 href="/"
+                onClick={onNavClick("/")}
                 className={`${styles.navItem} ${
-                  activeLink === "/" ? styles.active : ""
+                  isActive("/") ? styles.active : ""
                 }`}
-                onClick={() => setActiveLink("/")}
               >
                 <Home aria-hidden className={styles.icon} />
-                <span>Home</span>
+                <span>Início</span>
               </Link>
             )}
+
             <Link
-              id={1}
-              className={`${styles.navItem} ${
-                activeLink === "/users" ? styles.active : ""
-              }`}
               href="/users"
-              onClick={() => setActiveLink("/users")}
+              onClick={onNavClick("/users")}
+              className={`${styles.navItem} ${
+                isActive("/users") ? styles.active : ""
+              }`}
             >
               <Users aria-hidden className={styles.icon} />
               <span>Colaboradores</span>
             </Link>
+
             <Link
-              className={`${styles.navItem} ${
-                activeLink === "/assistants" ? styles.active : ""
-              }`}
               href="/assistants"
-              onClick={() => setActiveLink("/assistants")}
+              onClick={onNavClick("/assistants")}
+              className={`${styles.navItem} ${
+                isActive("/assistants") ? styles.active : ""
+              }`}
             >
               <Bot aria-hidden className={styles.icon} />
               <span>Assistentes</span>
             </Link>
+
             <Link
-              className={`${styles.navItem} ${
-                activeLink === "/broadcast" ? styles.active : ""
-              }`}
               href="/broadcast"
-              onClick={() => setActiveLink("/broadcast")}
+              onClick={onNavClick("/broadcast")}
+              className={`${styles.navItem} ${
+                isActive("/broadcast") ? styles.active : ""
+              }`}
             >
               <MessageSquare aria-hidden className={styles.icon} />
               <span>Mensagens</span>
             </Link>
+
             {isAdmin && (
               <Link
-                className={`${styles.navItem} ${
-                  activeLink === "/templates" ? styles.active : ""
-                }`}
                 href="/templates"
-                onClick={() => setActiveLink("/templates")}
+                onClick={onNavClick("/templates")}
+                className={`${styles.navItem} ${
+                  isActive("/templates") ? styles.active : ""
+                }`}
               >
                 <FileText aria-hidden className={styles.icon} />
                 <span>Templates</span>
               </Link>
             )}
+
             {isAdmin && (
               <Link
-                className={`${styles.navItem} ${
-                  activeLink === "/admin" ? styles.active : ""
-                }`}
                 href="/admin"
-                onClick={() => setActiveLink("/admin")}
+                onClick={onNavClick("/admin")}
+                className={`${styles.navItem} ${
+                  isActive("/admin") ? styles.active : ""
+                }`}
               >
-                Admin
+                <Settings aria-hidden className={styles.icon} />
+                <span>Administração</span>
               </Link>
             )}
           </nav>
+
           <button
             onClick={handleSignOut}
             className={`${styles.navItem} ${styles.signOut}`}
@@ -131,9 +152,6 @@ export default function Navbar() {
             <LogIn aria-hidden className={styles.icon} />
             <span>Login</span>
           </Link>
-          {/* <Link className={styles.navItem} href="/signup">
-            <span>Sign up</span>
-          </Link> */}
         </nav>
       )}
     </aside>

@@ -31,7 +31,6 @@ export default function UserPage({
   async function handleSaveClick() {
     setIsSaving(true);
     try {
-      console.log("Saving");
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: {
