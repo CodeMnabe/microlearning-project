@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
+import { useTranslations } from "next-intl";
 
 export default function CreateUserModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function CreateUserModal({
   onCreateUser,
   assistants = [],
 }) {
+  const translation = useTranslations();
   const [userName, setUserName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -62,11 +64,15 @@ export default function CreateUserModal({
         role="dialog"
         aria-modal="true"
       >
-        <h3 className={styles.modalTitle}>Criar um novo Utilizador</h3>
+        <h3 className={styles.modalTitle}>
+          {translation("CreateUserModal.title")}
+        </h3>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="nome">Nome do Utilizador:</label>
+            <label htmlFor="nome">
+              {translation("CreateUserModal.userName")}
+            </label>
             <input
               id="nome"
               type="text"
@@ -77,7 +83,9 @@ export default function CreateUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="telefone">Número de Telemóvel:</label>
+            <label htmlFor="telefone">
+              {translation("CreateUserModal.phone")}
+            </label>
             <input
               id="telefone"
               type="text"
@@ -88,7 +96,9 @@ export default function CreateUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="email">E-Mail:</label>
+            <label htmlFor="email">
+              {translation("CreateUserModal.email")}
+            </label>
             <input
               id="email"
               type="email"
@@ -99,21 +109,23 @@ export default function CreateUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Assistente:</label>
+            <label>{translation("CreateUserModal.assistant")}</label>
             <PillSelect
               options={assistants.map((a) => ({ value: a.id, label: a.name }))}
               value={assistantId ?? ""}
               onChange={(val) => setAssistantId(val)} // val is the selected id (number)
-              placeholder="Escolher assistente"
+              placeholder={translation("CreateUserModal.chooseAssistant")}
               fullWidth // ⟵ stretch to the form width
               portalToBody
             />
           </div>
 
           <div className={styles.buttonGroup}>
-            <button type="submit">Criar</button>
+            <button type="submit">
+              {translation("CreateUserModal.create")}
+            </button>
             <button type="button" onClick={onClose}>
-              Cancelar
+              {translation("CreateUserModal.cancel")}
             </button>
           </div>
         </form>

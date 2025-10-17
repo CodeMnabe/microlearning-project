@@ -1,25 +1,26 @@
+// src/app/components/Navbar/NavItem.jsx
 "use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useState } from "react";
 import styles from "./navbar.module.css";
 
-export default function NavItem({ href, icon: Icon, children }) {
+export default function NavItem({ href, icon: Icon, children, onClick }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
-  const [clicked, setClicked] = useState(false);
+  const pathNoLocale = pathname.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
+  const isActive = pathNoLocale === href || pathNoLocale.startsWith(href + "/");
 
-  function playSweep() {
-    // restart animation if clicked repeatedly
+  const [clicked, setClicked] = useState(false);
+  function playSweep(e) {
     setClicked(false);
     requestAnimationFrame(() => setClicked(true));
+    onClick?.(e);
   }
 
+  // NOTE: href stays like "/users"; the locale-aware Link will prefix it.
   return (
     <Link
       href={href}
-      onClick={playSweep} // Link supports onClick
+      onClick={playSweep}
       className={[
         styles.navItem,
         isActive ? styles.active : "",

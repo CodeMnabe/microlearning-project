@@ -1,9 +1,10 @@
-// (app)/(app)/users/EditUserModal.jsx
+// app/[locale]/(app)/users/EditUserModal.jsx
 "use client";
 import { useEffect, useState } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import { useTranslations } from "next-intl";
 
 export default function EditUserModal({
   open,
@@ -14,6 +15,7 @@ export default function EditUserModal({
   onDelete,
   onSaved,
 }) {
+  const translation = useTranslations();
   const confirm = useConfirm();
 
   const [name, setName] = useState("");
@@ -103,10 +105,10 @@ export default function EditUserModal({
   async function handleDelete() {
     if (!onDelete) return;
     const ok = await confirm({
-      title: "Eliminar este utilizador",
-      message: "Esta ação não pode ser desfeita.",
-      confirmText: "Apagar",
-      cancelText: "Cancelar",
+      title: translation("Users.confirmDeleteTitle", { name: user.name }),
+      message: translation("Users.confirmDeleteMessage"),
+      confirmText: translation("Common.delete"),
+      cancelText: translation("Common.cancel"),
       tone: "danger",
     });
     if (!ok) return;
@@ -136,24 +138,26 @@ export default function EditUserModal({
       }}
     >
       <div className={`${styles.modalContent} ${stateClass}`}>
-        <h3 className={styles.modalTitle}>Editar Utilizador</h3>
+        <h3 className={styles.modalTitle}>
+          {translation("EditUserModal.title")}
+        </h3>
 
         <div className={styles.form}>
           <div className={styles.formGroup}>
-            <label>Nome</label>
+            <label>{translation("EditUserModal.name")}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nome"
+              placeholder={translation("EditUserModal.name")}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label>Telemóvel</label>
+            <label>{translation("EditUserModal.phone")}</label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Número de telemóvel"
+              placeholder={translation("EditUserModal.phone")}
             />
           </div>
 
@@ -168,19 +172,19 @@ export default function EditUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Assistente</label>
+            <label>{translation("EditUserModal.assistant")}</label>
             <PillSelect
               options={assistants.map((a) => ({ value: a.id, label: a.name }))}
               value={assistantId ?? ""}
               onChange={(val) => setAssistantId(val)}
-              placeholder="Escolher assistente"
+              placeholder={translation("EditUserModal.chooseAssistant")}
               fullWidth
               portalToBody
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label>Tags</label>
+            <label>{translation("EditUserModal.tags")}</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {allTags.map((t) => {
                 const active = selectedTagIds.includes(t.id);
@@ -195,7 +199,11 @@ export default function EditUserModal({
                         ? { borderColor: "#9fd3ff", background: "#eaf6ff" }
                         : undefined
                     }
-                    title={active ? "Remover" : "Adicionar"}
+                    title={
+                      active
+                        ? translation("EditUserModal.remove")
+                        : translation("EditUserModal.add")
+                    }
                   >
                     {t.name}
                   </button>
@@ -203,7 +211,7 @@ export default function EditUserModal({
               })}
               {!allTags.length && (
                 <div style={{ color: "var(--ui-muted)" }}>
-                  Sem tags disponíveis.
+                  {translation("EditUserModal.noTags")}
                 </div>
               )}
             </div>
@@ -220,14 +228,18 @@ export default function EditUserModal({
                 border: "1px solid #ffd0d0",
               }}
             >
-              {saving ? "A eliminar…" : "Eliminar"}
+              {saving
+                ? translation("EditUserModal.deleting")
+                : translation("EditUserModal.delete")}
             </button>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
               <button type="button" onClick={onClose}>
-                Cancelar
+                {translation("EditUserModal.cancel")}
               </button>
               <button type="button" onClick={save} disabled={saving}>
-                {saving ? "A guardar…" : "Guardar"}
+                {saving
+                  ? translation("EditUserModal.saving")
+                  : translation("EditUserModal.save")}
               </button>
             </div>
           </div>

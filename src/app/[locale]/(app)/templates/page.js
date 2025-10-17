@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useAuth } from "../../AuthContext";
-import useOrganization from "../../hooks/useOrganization";
+import { useAuth } from "../../../AuthContext";
+import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 
 export default function TemplatesPage() {

@@ -1,8 +1,8 @@
 // src/app/components/Navbar/Navbar.jsx
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./navbar.module.css";
@@ -19,38 +19,38 @@ import {
 import { useState, useCallback, useEffect } from "react";
 
 export default function Navbar() {
+  const translation = useTranslations();
   const { user, loading: authLoading, supabase, setUser } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const router = useRouter();
+  const locale = useLocale();
   const pathName = usePathname();
-  const [pendingHref, setPendingHref] = useState(null);
 
+  const pathNoLocale = pathName.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
+  const [pendingHref, setPendingHref] = useState(null);
   const isAdmin = !!org && org.id === 1;
 
-  // CLEAR optimistic highlight only when the actual route changes
-  useEffect(() => {
-    setPendingHref(null);
-  }, [pathName]); // ← important
+  useEffect(() => setPendingHref(null), [pathName]);
 
   const isActive = useCallback(
     (href) => {
-      const current = pendingHref ?? pathName;
+      const current = pendingHref ?? pathNoLocale;
       if (href === "/") return current === "/";
       return current === href || current.startsWith(href + "/");
     },
-    [pendingHref, pathName]
+    [pendingHref, pathNoLocale]
   );
 
   const onNavClick = (href) => (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
       return;
-    setPendingHref(href); // optimistic: highlight immediately
+    setPendingHref(href);
   };
 
   async function handleSignOut() {
     await supabase.auth.signOut();
     setUser(null);
-    router.push("/login");
+    router.push(`/login`);
   }
 
   return (
@@ -74,7 +74,7 @@ export default function Navbar() {
                 }`}
               >
                 <Home aria-hidden className={styles.icon} />
-                <span>Início</span>
+                <span>{translation("Nav.home")}</span>
               </Link>
             )}
 
@@ -86,7 +86,7 @@ export default function Navbar() {
               }`}
             >
               <Users aria-hidden className={styles.icon} />
-              <span>Colaboradores</span>
+              <span>{translation("Nav.users")}</span>
             </Link>
 
             <Link
@@ -97,7 +97,7 @@ export default function Navbar() {
               }`}
             >
               <Bot aria-hidden className={styles.icon} />
-              <span>Assistentes</span>
+              <span>{translation("Nav.assistants")}</span>
             </Link>
 
             <Link
@@ -108,7 +108,7 @@ export default function Navbar() {
               }`}
             >
               <MessageSquare aria-hidden className={styles.icon} />
-              <span>Mensagens</span>
+              <span>{translation("Nav.broadcast")}</span>
             </Link>
 
             {isAdmin && (
@@ -120,7 +120,7 @@ export default function Navbar() {
                 }`}
               >
                 <FileText aria-hidden className={styles.icon} />
-                <span>Templates</span>
+                <span>{translation("Nav.templates")}</span>
               </Link>
             )}
 
@@ -133,7 +133,7 @@ export default function Navbar() {
                 }`}
               >
                 <Settings aria-hidden className={styles.icon} />
-                <span>Administração</span>
+                <span>{translation("Nav.admin")}</span>
               </Link>
             )}
           </nav>
@@ -143,14 +143,14 @@ export default function Navbar() {
             className={`${styles.navItem} ${styles.signOut}`}
           >
             <LogOut aria-hidden className={styles.icon} />
-            <span>Sair</span>
+            <span>{translation("Nav.logout")}</span>
           </button>
         </>
       ) : (
         <nav className={styles.nav}>
           <Link className={styles.navItem} href="/login">
             <LogIn aria-hidden className={styles.icon} />
-            <span>Login</span>
+            <span>{translation("Nav.login")}</span>
           </Link>
         </nav>
       )}

@@ -1,8 +1,8 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import { cookies } from "next/headers";
 import { AuthProvider } from "./AuthContext";
 import { GlobalLoaderProvider } from "./LoadingScreen/GlobalLoaderContext";
-import { ConfirmProvider } from "./components/Confirm/ConfirmProvider";
 
 const inter = localFont({
   src: [
@@ -21,15 +21,16 @@ export const metadata = {
   description: "Created by the company Digik, by the dev Gaspar Alves",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
+
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang={locale} className={inter.variable}>
       <body>
-        <ConfirmProvider>
-          <GlobalLoaderProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </GlobalLoaderProvider>
-        </ConfirmProvider>
+        <GlobalLoaderProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </GlobalLoaderProvider>
       </body>
     </html>
   );

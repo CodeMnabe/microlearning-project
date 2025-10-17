@@ -92,6 +92,12 @@
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.05s ease, filter 0.2s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 200px;
 }
 
 .btnPrimary {
@@ -137,4 +143,64 @@
 /* keep your quick success trick if you like */
 .message:has(+ .btnPrimary) {
   color: #22c55e;
+}
+
+.btnLabel {
+  line-height: 1;
+  transition: opacity 120ms ease;
+}
+.btnPrimary[data-state="loading"] .btnLabel,
+.btnPrimary[data-state="success"] .btnLabel {
+  opacity: 0;
+}
+
+/* Spinner (pure CSS) */
+.spinner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-right-color: #fff;
+  animation: loginSpin 0.8s linear infinite;
+}
+
+@keyframes loginSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animated checkmark (stroke draw) */
+.check {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* draw animation */
+  stroke-dasharray: 20 20;
+  stroke-dashoffset: 20;
+  animation: loginCheck 420ms ease-out forwards;
+}
+
+@keyframes loginCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Make disabled button feel disabled but preserve gradient */
+.btnPrimary:disabled {
+  cursor: default;
+  filter: grayscale(0.1) brightness(0.92);
+  opacity: 0.9;
+}
+.input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }

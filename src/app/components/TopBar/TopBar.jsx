@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./topbar.module.css";
+import LanguageSwitch from "./LanguageSwitch";
 
 function initials(name = "") {
   return name
@@ -18,7 +19,7 @@ function initials(name = "") {
 
 export default function TopBar() {
   const { user } = useAuth();
-  const { org, loading } = useOrganization(user);
+  const { org } = useOrganization(user);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,23 +33,6 @@ export default function TopBar() {
     router.push(`/search?q=${encodeURIComponent(term)}`);
   }
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key !== "/") return;
-      const tag = document.activeElement?.tagName?.toLowerCase();
-      if (
-        tag === "input" ||
-        tag === "textarea" ||
-        document.activeElement?.isContentEditable
-      )
-        return;
-      e.preventDefault();
-      inputRef.current?.focus();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   useEffect(() => setQ(""), [pathname]);
 
   const logoUrl = org?.logo_url;
@@ -58,56 +42,12 @@ export default function TopBar() {
     <header className={styles.topbar} role="banner">
       <div className={styles.inner}>
         <h1 className={styles.brand}>MyDigitalBot</h1>
-        {/* Old way to put logos in the top left corner */}
-        {/* <div className={styles.brand}>
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={`${orgName} logo`}
-              className={styles.logo}
-            />
-          ) : (
-            <div className={styles.logoFallback} aria-hidden="true">
-              {initials(orgName)}
-            </div>
-          )}
-        </div> */}
 
-        {/* <form className={styles.search} onSubmit={onSubmit} role="search">
-          <div className={styles.searchBox}>
-            <span className={styles.searchIcon} aria-hidden="true">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-              >
-                <circle cx="11" cy="11" r="7" strokeWidth="2"></circle>
-                <line
-                  x1="21"
-                  y1="21"
-                  x2="16.65"
-                  y2="16.65"
-                  strokeWidth="2"
-                ></line>
-              </svg>
-            </span>
-            <input
-              ref={inputRef}
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Procurar..."
-              className={styles.input}
-              aria-label="Search"
-              autoComplete="off"
-            />
-            <button type="submit" className={styles.searchBtn}>
-              Go
-            </button>
-          </div>
-        </form> */}
+        {/* RIGHT SIDE (pushes to the far right) */}
+        <div className={styles.right}>
+          {/* put other right-side controls here later if you want */}
+          <LanguageSwitch />
+        </div>
       </div>
     </header>
   );

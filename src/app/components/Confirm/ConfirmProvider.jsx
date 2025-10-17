@@ -1,16 +1,18 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import styles from "./confirm.module.css";
 
 const ConfirmCtx = createContext(null);
 
 export function ConfirmProvider({ children }) {
+  const translation = useTranslations("Confirm");
   const [state, setState] = useState({
     open: false,
     title: "",
     message: "",
-    confirmText: "OK",
-    cancelText: "Cancelar",
+    confirmText: "",
+    cancelText: "",
     tone: "default", // "default" | "danger"
     onResolve: null,
   });
@@ -26,10 +28,10 @@ export function ConfirmProvider({ children }) {
     return new Promise((resolve) => {
       setState({
         open: true,
-        title: opts.title ?? "Tem a certeza?",
+        title: opts.title ?? translation("title"),
         message: opts.message ?? "",
-        confirmText: opts.confirmText ?? "OK",
-        cancelText: opts.cancelText ?? "Cancelar",
+        confirmText: opts.confirmText ?? translation("ok"),
+        cancelText: opts.cancelText ?? translation("cancel"),
         tone: opts.tone ?? "default",
         onResolve: resolve,
       });

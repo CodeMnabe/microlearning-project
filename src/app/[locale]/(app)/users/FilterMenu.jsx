@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import styles from "./users.module.css";
+import { useTranslations } from "next-intl";
 
 export default function FilterMenu({
   open,
@@ -15,6 +16,7 @@ export default function FilterMenu({
   onClose,
   onClear,
 }) {
+  const translation = useTranslations();
   const ref = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const [q, setQ] = useState("");
@@ -72,25 +74,35 @@ export default function FilterMenu({
       className={styles.filterPopover}
       style={{ top: pos.top, left: pos.left, width: 360 }}
       role="dialog"
-      aria-label="Filtros"
+      aria-label={translation("FilterMenu.title")}
     >
       <div className={styles.filterHead}>
         <input
           className={styles.filterSearch}
-          placeholder="Procurar…"
+          placeholder={translation("FilterMenu.search")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <button className={styles.filterGhost} onClick={onClear} title="Limpar">
-          Limpar
+        <button
+          className={styles.filterGhost}
+          onClick={onClear}
+          title={translation("FilterMenu.clear")}
+        >
+          {translation("FilterMenu.clear")}
         </button>
-        <button className={styles.filterGhost} onClick={onClose} title="Fechar">
+        <button
+          className={styles.filterGhost}
+          onClick={onClose}
+          title={translation("FilterMenu.close")}
+        >
           <X size={16} />
         </button>
       </div>
 
       <div className={styles.filterSection}>
-        <div className={styles.filterTitle}>Tags</div>
+        <div className={styles.filterTitle}>
+          {translation("FilterMenu.tags")}
+        </div>
         <div className={styles.filterList}>
           {fTags.map((t) => {
             const checked = selectedTagIds.includes(t.id);
@@ -108,13 +120,17 @@ export default function FilterMenu({
             );
           })}
           {!fTags.length && (
-            <div className={styles.filterEmpty}>Sem resultados.</div>
+            <div className={styles.filterEmpty}>
+              {translation("FilterMenu.empty")}
+            </div>
           )}
         </div>
       </div>
 
       <div className={styles.filterSection}>
-        <div className={styles.filterTitle}>Assistentes</div>
+        <div className={styles.filterTitle}>
+          {translation("FilterMenu.assistants")}
+        </div>
         <div className={styles.filterList}>
           {fAssistants.map((a) => {
             const checked = selectedAssistantIds.includes(a.id);
@@ -132,7 +148,9 @@ export default function FilterMenu({
             );
           })}
           {!fAssistants.length && (
-            <div className={styles.filterEmpty}>Sem resultados.</div>
+            <div className={styles.filterEmpty}>
+              {translation("FilterMenu.empty")}
+            </div>
           )}
         </div>
       </div>

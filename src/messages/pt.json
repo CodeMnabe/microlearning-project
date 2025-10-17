@@ -1,0 +1,327 @@
+{
+  "Nav": {
+    "home": "Início",
+    "users": "Colaboradores",
+    "assistants": "Assistentes",
+    "broadcast": "Mensagens",
+    "templates": "Templates",
+    "admin": "Administração",
+    "login": "Login",
+    "logout": "Sair"
+  },
+  "Common": {
+    "search": "Procurar",
+    "filter": "Filtrar",
+    "clear": "Limpar",
+    "clearAll": "Limpar tudo",
+    "close": "Fechar",
+    "removeFilter": "Remover filtro",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "create": "Criar",
+    "delete": "Eliminar",
+    "deleting": "A eliminar…",
+    "cancel": "Cancelar",
+    "loading": "A carregar…",
+    "none": "—",
+    "yes": "Sim",
+    "no": "Não",
+    "actions": "Ações",
+    "status": "Estado",
+    "assistant": "Assistente",
+    "email": "Email",
+    "phone": "Nº. Telemóvel",
+    "name": "Nome",
+    "tags": "Tags",
+    "noResults": "Sem resultados.",
+    "chooseAssistant": "Escolher assistente",
+    "add": "Adicionar",
+    "edit": "Editar",
+    "view": "Ver",
+    "new": "Novo",
+    "ok": "OK",
+    "error": "Erro",
+    "areYouSure": "Tem a certeza?"
+  },
+  "Lang": {
+    "pt": "PT",
+    "en": "EN",
+    "switchTo": "Mudar para {code}"
+  },
+  "Confirm": {
+    "title": "Tem a certeza?",
+    "ok": "OK",
+    "cancel": "Cancelar"
+  },
+  "Navbar": {
+    "orgUnknown": "—"
+  },
+  "Users": {
+    "title": "Utilizadores",
+    "searchPlaceholder": "Procurar",
+    "manageTags": "Gerir Tags",
+    "newUser": "Novo Utilizador",
+    "list": {
+      "name": "Nome",
+      "phone": "Nº. Telemóvel",
+      "tags": "Tags",
+      "assistant": "Assistente"
+    },
+    "row": {
+      "more": "Mais opções",
+      "view": "Ver",
+      "edit": "Editar",
+      "delete": "Apagar"
+    },
+    "filters": {
+      "title": "Filtros",
+      "placeholder": "Procurar…",
+      "remove": "Remover filtro"
+    },
+    "empty": "Sem utilizadores.",
+    "assistantUpdateFailed": "Falha ao atualizar assistente",
+    "confirmDeleteTitle": "Eliminar {name}?",
+    "confirmDeleteMessage": "Esta ação não pode ser desfeita."
+  },
+  "UserPage": {
+    "selectUser": "Selecione um utilizador.",
+    "id": "ID",
+    "name": "Nome",
+    "phone": "Telefone",
+    "org": "Organização",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleted": "Utilizador {name} eliminado com sucesso",
+    "threads": "Threads",
+    "noThreads": "Este utilizador não tem threads."
+  },
+
+  "MessagesList": {
+    "empty": "Sem mensagens.",
+    "id": "ID",
+    "sender": "Remetente",
+    "content": "Conteúdo",
+    "noText": "Sem texto"
+  },
+  "FilterMenu": {
+    "title": "Filtros",
+    "search": "Procurar…",
+    "clear": "Limpar",
+    "close": "Fechar",
+    "tags": "Tags",
+    "assistants": "Assistentes",
+    "empty": "Sem resultados."
+  },
+  "EditUserModal": {
+    "title": "Editar Utilizador",
+    "name": "Nome",
+    "phone": "Telemóvel",
+    "email": "E-mail",
+    "assistant": "Assistente",
+    "chooseAssistant": "Escolher assistente",
+    "tags": "Tags",
+    "noTags": "Sem tags disponíveis.",
+    "remove": "Remover",
+    "add": "Adicionar",
+    "delete": "Eliminar",
+    "deleting": "A eliminar…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "confirmDeleteTitle": "Eliminar este utilizador",
+    "confirmDeleteMsg": "Esta ação não pode ser desfeita."
+  },
+
+  "CreateUserModal": {
+    "title": "Criar um novo Utilizador",
+    "userName": "Nome do Utilizador:",
+    "phone": "Número de Telemóvel:",
+    "email": "E-Mail:",
+    "assistant": "Assistente:",
+    "chooseAssistant": "Escolher assistente",
+    "create": "Criar",
+    "cancel": "Cancelar"
+  },
+  "ManageTagsModal": {
+    "title": "Gerir Tags",
+    "loading": "A carregar…",
+    "none": "Sem tags.",
+    "name": "Nome:",
+    "placeholder": "Grupo 1",
+    "save": "Guardar Alterações",
+    "add": "Adicionar",
+    "cancel": "Cancelar",
+    "removeLabel": "Remover {name}"
+  },
+  "Templates": {
+    "title": "WhatsApp Templates",
+    "tabList": "Lista",
+    "tabCreate": "Criar",
+    "sync": "Sincronizar",
+    "syncing": "A sincronizar…",
+    "empty": "Sem templates. Vá a \"Criar\" para adicionar um.",
+    "name": "Nome",
+    "language": "Idioma",
+    "category": "Categoria",
+    "status": "Estado",
+    "sendTest": "Enviar teste",
+    "createForm": {
+      "name": "Nome",
+      "language": "Idioma",
+      "category": "Categoria",
+      "preset": "Modelo",
+      "components": "Components (JSON)",
+      "submit": "Submeter para aprovação",
+      "reset": "Repor exemplo",
+      "creating": "A criar…"
+    },
+    "modal": {
+      "title": "Enviar teste",
+      "to": "Para (E.164 ou nacional)",
+      "bodyParams": "Parâmetros do corpo (separados por vírgula)",
+      "urlVar": "Variável do botão URL (opcional)",
+      "cancel": "Cancelar",
+      "send": "Enviar",
+      "sending": "A enviar…",
+      "close": "Fechar"
+    }
+  },
+  "Broadcast": {
+    "title": "Mensagens WhatsApp",
+    "selected": "Selecionados:",
+    "send": "Enviar via WhatsApp",
+    "sending": "A enviar…",
+    "message": "Mensagem",
+    "messagePlaceholder": "Escreve a tua mensagem...",
+    "templatePreview": "Pré-Visualização do Template",
+    "template": "Template",
+    "noTemplates": "Sem templates",
+    "varKeyDesc": "Parâmetros (key=value, separados por vírgula)",
+    "urlVar": "Variável do botão URL",
+    "chooseRecipients": "Escolhe destinatários",
+    "recipients": "Destinatários",
+    "selectAll": "Selecionar todos",
+    "deselectAll": "Desselecionar todos",
+    "searchPeople": "Procurar nome ou telefone…",
+    "emptyUsers": "Sem utilizadores.",
+    "result": "Resultado:",
+    "sent": "enviados",
+    "failed": "falharam"
+  },
+  "Assistants": {
+    "myAssistants": "Os meus Assistentes",
+    "createAssistant": "Criar Assistant",
+    "empty": "Sem assistants ainda.",
+    "details": {
+      "createdAt": "Criado em",
+      "specs": "Especificidades:",
+      "creativity": "Criatividade",
+      "variety": "Variedade",
+      "model": "Modelo",
+      "save": "Guardar",
+      "saving": "A guardar...",
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "vector": {
+      "create": "Criar coleção de ficheiros",
+      "collectionName": "Nome da coleção",
+      "chooseFiles": "Escolher Ficheiros (pode escolher vários):",
+      "createAndAttach": "Criar e Associar",
+      "docCollection": "Coleção de Documentos",
+      "collectionTitle": "Nome da Coleção",
+      "quantity": "Quantidade",
+      "filenames": "Nome dos Ficheiros"
+    },
+    "placeholder": "Seleciona um assistant na coluna da esquerda."
+  },
+  "CreateAssistant": {
+    "title": "Criar novo Assistente",
+    "name": "Nome",
+    "nameHelp": "Nome que vai ficar associado ao Assistant.",
+    "description": "Descrição",
+    "descriptionHelp": "Uma breve descrição sobre o Assistant.",
+    "instructions": "Instruções",
+    "instructionsHelp": "Instruções que o Assistant vai seguir.",
+    "model": "Modelo",
+    "modelHelp": "Modelo de Inteligência Artificial que o Assistant vai utilizar.",
+    "creativity": "Criatividade",
+    "creativityHelp": "Controla a variedade das respostas: com o valor 0.5, o Assistant escolhe entre as opções com maior probabilidade, limitando-se às mais relevantes.",
+    "variety": "Variedade",
+    "varietyHelp": "Controla a aleatoriedade das respostas: quanto mais baixo for o valor, mais previsíveis e repetitivas serão as respostas. Ao aproximar-se de zero, o Assistant torna-se mais determinístico.",
+    "create": "Criar",
+    "cancel": "Cancelar"
+  },
+
+  "Chatbox": {
+    "try": "Experimentar Assistente",
+    "threadId": "Thread ID:",
+    "placeholder": "Escreve a tua mensagem...",
+    "send": "Enviar",
+    "errorReply": "Erro na resposta",
+    "errorApi": "Erro ao comunicar com a API."
+  },
+  "Admin": {
+    "title": "Admin",
+    "newOrg": "Nova organização",
+    "orgNamePlaceholder": "Nome da organização…",
+    "create": "Criar",
+    "creating": "A criar…",
+    "themes": "Temas",
+    "loading": "A carregar…",
+    "noOrgs": "Sem organizações.",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "savedFor": "✓ Tema guardado para «{name}».",
+    "saveError": "❌ Não foi possível guardar o tema.",
+    "createOk": "✓ Criada organização #{id}: «{name}»",
+    "createErr": "❌ Erro ao criar organização."
+  },
+
+  "Auth": {
+    "brand": "MyDigitalBot",
+    "example": "exemplo@exemplo.pt",
+    "login": {
+      "title": "Entrar",
+      "email": "E-mail",
+      "password": "Palavra-Passe",
+      "login": "Iniciar sessão",
+      "forgot": "Esqueceu a palavra-passe?",
+      "working": "A trabalhar…",
+      "success": "Sucesso! A redirecionar…"
+    },
+    "reset": {
+      "title": "Recuperar palavra-passe",
+      "email": "E-mail",
+      "send": "Enviar link",
+      "back": "Voltar ao login",
+      "sending": "A enviar…",
+      "sent": "E-mail enviado! Verifique a sua caixa de entrada."
+    },
+    "resetConfirm": {
+      "title": "Definir nova palavra-passe",
+      "newPassword": "Nova palavra-passe",
+      "confirm": "Confirmar",
+      "back": "Voltar ao login",
+      "preparing": "A preparar sessão…",
+      "invalid": "Link inválido ou expirado",
+      "updating": "A atualizar…",
+      "updated": "Password atualizada! Redirecionando…"
+    }
+  },
+  "PillSelect": {
+    "placeholder": "Selecionar…",
+    "empty": "Sem opções."
+  },
+
+  "ThemePreview": {
+    "sampleCard": "Sample card",
+    "sampleBody": "Body text using your theme. Tweak colors to see it change.",
+    "primaryAction": "Primary action"
+  }
+}

@@ -34,7 +34,7 @@ export function GlobalLoaderProvider({ children }) {
     hideTimerRef.current = setTimeout(() => {
       setShowLoading(false);
       setFadeOut(false);
-      hideTimerRef(null);
+      hideTimerRef.current = null;
     }, 500);
   }, []);
 

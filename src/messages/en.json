@@ -1,0 +1,331 @@
+{
+  "Nav": {
+    "home": "Home",
+    "users": "Users",
+    "assistants": "Assistants",
+    "broadcast": "Messages",
+    "templates": "Templates",
+    "admin": "Admin",
+    "login": "Login",
+    "logout": "Sign out"
+  },
+  "Common": {
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "clearAll": "Clear all",
+    "close": "Close",
+    "removeFilter": "Remove filter",
+    "save": "Save",
+    "saving": "Saving…",
+    "create": "Create",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "none": "—",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "status": "Status",
+    "assistant": "Assistant",
+    "email": "E-mail",
+    "phone": "Phone Number",
+    "name": "Name",
+    "tags": "Tags",
+    "noResults": "No results.",
+    "chooseAssistant": "Choose assistant",
+    "add": "Add",
+    "edit": "Edit",
+    "view": "View",
+    "new": "New",
+    "ok": "OK",
+    "error": "Error",
+    "areYouSure": "Are you sure?"
+  },
+  "Lang": {
+    "pt": "PT",
+    "en": "EN",
+    "switchTo": "Switch to {code}"
+  },
+  "Confirm": {
+    "title": "Are you sure?",
+    "ok": "OK",
+    "cancel": "Cancel"
+  },
+  "Navbar": {
+    "orgUnknown": "—"
+  },
+
+  "Users": {
+    "title": "Users",
+    "searchPlaceholder": "Search",
+    "manageTags": "Manage Tags",
+    "newUser": "New User",
+    "list": {
+      "name": "Name",
+      "phone": "Phone Number",
+      "tags": "Tags",
+      "assistant": "Assistant"
+    },
+    "row": {
+      "more": "More options",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "filters": {
+      "title": "Filters",
+      "placeholder": "Search…",
+      "remove": "Remove filter"
+    },
+    "empty": "No users.",
+    "assistantUpdateFailed": "Failed to update assistant",
+    "confirmDeleteTitle": "Delete {name}?",
+    "confirmDeleteMessage": "This action cannot be undone."
+  },
+  "UserPage": {
+    "selectUser": "Select a user.",
+    "id": "ID",
+    "name": "Name",
+    "phone": "Phone Number",
+    "org": "Organization",
+    "save": "Save",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleted": "User {name} deleted successfully",
+    "threads": "Threads",
+    "noThreads": "This user has no threads."
+  },
+
+  "MessagesList": {
+    "empty": "No messages yet.",
+    "id": "ID",
+    "sender": "Sender",
+    "content": "Content",
+    "noText": "No text found!"
+  },
+
+  "FilterMenu": {
+    "title": "Filters",
+    "search": "Search…",
+    "clear": "Clear",
+    "close": "Close",
+    "tags": "Tags",
+    "assistants": "Assistants",
+    "empty": "No results."
+  },
+  "EditUserModal": {
+    "title": "Edit User",
+    "name": "Name",
+    "phone": "Phone Number",
+    "email": "E-mail",
+    "assistant": "Assistant",
+    "chooseAssistant": "Choose assistant",
+    "tags": "Tags",
+    "noTags": "No tags available.",
+    "remove": "Remove",
+    "add": "Add",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "confirmDeleteTitle": "Delete this user",
+    "confirmDeleteMsg": "This action cannot be undone."
+  },
+
+  "CreateUserModal": {
+    "title": "Create a new User",
+    "userName": "User Name:",
+    "phone": "Phone Number:",
+    "email": "E-Mail:",
+    "assistant": "Assistant:",
+    "chooseAssistant": "Choose assistant",
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+  "ManageTagsModal": {
+    "title": "Manage Tags",
+    "loading": "Loading…",
+    "none": "No tags.",
+    "name": "Name:",
+    "placeholder": "Group 1",
+    "save": "Save Changes",
+    "add": "Add",
+    "cancel": "Cancel",
+    "removeLabel": "Remove {name}"
+  },
+
+  "Templates": {
+    "title": "WhatsApp Templates",
+    "tabList": "List",
+    "tabCreate": "Create",
+    "sync": "Sync",
+    "syncing": "Syncing…",
+    "empty": "No templates. Go to \"Create\" to add one.",
+    "name": "Name",
+    "language": "Language",
+    "category": "Category",
+    "status": "Status",
+    "sendTest": "Send test",
+    "createForm": {
+      "name": "Name",
+      "language": "Language",
+      "category": "Category",
+      "preset": "Preset",
+      "components": "Components (JSON)",
+      "submit": "Submit for approval",
+      "reset": "Reset example",
+      "creating": "Creating…"
+    },
+    "modal": {
+      "title": "Send test",
+      "to": "To (E.164 or national)",
+      "bodyParams": "Body parameters (comma separated)",
+      "urlVar": "URL button variable (optional)",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sending": "Sending…",
+      "close": "Close"
+    }
+  },
+  "Broadcast": {
+    "title": "WhatsApp Messages",
+    "selected": "Selected:",
+    "send": "Send via WhatsApp",
+    "sending": "Sending…",
+    "message": "Message",
+    "messagePlaceholder": "Type your message...",
+    "templatePreview": "Template Preview",
+    "template": "Template",
+    "noTemplates": "No templates",
+    "varKeyDesc": "Parameters (key=value, comma separated)",
+    "urlVar": "URL button variable",
+    "chooseRecipients": "Choose recipients",
+    "recipients": "Recipients",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "searchPeople": "Search name or phone…",
+    "emptyUsers": "No users.",
+    "result": "Result:",
+    "sent": "sent",
+    "failed": "failed"
+  },
+
+  "Assistants": {
+    "myAssistants": "My Assistants",
+    "createAssistant": "Create Assistant",
+    "empty": "No assistants yet.",
+    "details": {
+      "createdAt": "Created at",
+      "specs": "Specifications:",
+      "creativity": "Creativity",
+      "variety": "Variety",
+      "model": "Model",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "vector": {
+      "create": "Create file collection",
+      "collectionName": "Collection name",
+      "chooseFiles": "Choose Files (you can pick multiple):",
+      "createAndAttach": "Create & Attach",
+      "docCollection": "Document Collection",
+      "collectionTitle": "Collection Name",
+      "quantity": "Quantity",
+      "filenames": "Filenames"
+    },
+    "placeholder": "Select an assistant from the left column."
+  },
+  "CreateAssistant": {
+    "title": "Create new Assistant",
+    "name": "Name",
+    "nameHelp": "Name that will be associated with the Assistant.",
+    "description": "Description",
+    "descriptionHelp": "A brief description about the Assistant.",
+    "instructions": "Instructions",
+    "instructionsHelp": "Instructions the Assistant will follow.",
+    "model": "Model",
+    "modelHelp": "AI model the Assistant will use.",
+    "creativity": "Creativity",
+    "creativityHelp": "Controls diversity of answers: at 0.5, the Assistant picks among higher-probability options, keeping to the most relevant ones.",
+    "variety": "Variety",
+    "varietyHelp": "Controls randomness: lower values lead to more predictable replies. Closer to zero becomes more deterministic.",
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+
+  "Chatbox": {
+    "try": "Try Assistant",
+    "threadId": "Thread ID:",
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "errorReply": "Error in reply",
+    "errorApi": "Error communicating with the API."
+  },
+
+  "Admin": {
+    "title": "Admin",
+    "newOrg": "New organization",
+    "orgNamePlaceholder": "Organization name…",
+    "create": "Create",
+    "creating": "Creating…",
+    "themes": "Themes",
+    "loading": "Loading…",
+    "noOrgs": "No organizations.",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "save": "Save",
+    "saving": "Saving…",
+    "savedFor": "✓ Theme saved for \"{name}\".",
+    "saveError": "❌ Couldn't save theme.",
+    "createOk": "✓ Organization #{id} created: \"{name}\"",
+    "createErr": "❌ Error creating organization."
+  },
+  "Auth": {
+    "brand": "MyDigitalBot",
+    "example": "example@example.com",
+    "login": {
+      "title": "Sign in",
+      "email": "E-mail",
+      "password": "Password",
+      "login": "Sign in",
+      "forgot": "Forgot your password?",
+      "working": "Working…",
+      "success": "Success! Redirecting…"
+    },
+    "reset": {
+      "title": "Recover password",
+      "email": "E-mail",
+      "send": "Send link",
+      "back": "Back to login",
+      "sending": "Sending…",
+      "sent": "E-mail sent! Check your inbox."
+    },
+    "resetConfirm": {
+      "title": "Set a new password",
+      "newPassword": "New password",
+      "confirm": "Confirm",
+      "back": "Back to login",
+      "preparing": "Preparing session…",
+      "invalid": "Invalid or expired link",
+      "updating": "Updating…",
+      "updated": "Password updated! Redirecting…"
+    }
+  },
+  "PillSelect": {
+    "placeholder": "Select…",
+    "empty": "No options."
+  },
+
+  "ThemePreview": {
+    "sampleCard": "Sample card",
+    "sampleBody": "Body text using your theme. Tweak colors to see it change.",
+    "primaryAction": "Primary action"
+  }
+}

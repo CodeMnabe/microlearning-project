@@ -1,7 +1,7 @@
-import RouteLoader from "../LoadingScreen/RouteLoader";
-import GlobalLoadingOverlay from "../LoadingScreen/GlobalLoadingOverlay";
-import Navbar from "../components/Navbar/Navbar";
-import TopBar from "../components/TopBar/TopBar";
+import RouteLoader from "../../LoadingScreen/RouteLoader";
+import GlobalLoadingOverlay from "../../LoadingScreen/GlobalLoadingOverlay";
+import Navbar from "../../components/Navbar/Navbar";
+import TopBar from "../../components/TopBar/TopBar";
 
 export default function AppLayout({ children }) {
   return (

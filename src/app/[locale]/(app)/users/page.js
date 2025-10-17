@@ -1,6 +1,7 @@
-// src/app/(app)/users/page.js
+// src/app/[locale]/(app)/users/page.js
 "use client";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import styles from "./users.module.css";
 import CreateUserModal from "./CreateUser";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
@@ -26,6 +27,7 @@ function initial(name = "") {
 }
 
 export default function UsersPage() {
+  const translation = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
 
@@ -192,17 +194,17 @@ export default function UsersPage() {
     alert(`(demo) Ver utilizador: ${u.name}`);
   }
 
-  async function deleteUserById(id) {
+  async function deleteUserById(u) {
     const ok = await confirm({
-      title: "Eliminar este utilizador",
-      message: "Esta ação não pode ser desfeita.",
-      confirmText: "Apagar",
-      cancelText: "Cancelar",
+      title: translation("Users.confirmDeleteTitle", { name: u.name }),
+      message: translation("Users.confirmDeleteMessage"),
+      confirmText: translation("Common.delete"),
+      cancelText: translation("Common.cancel"),
       tone: "danger",
     });
     if (!ok) return;
 
-    const res = await fetch(`/api/users?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/users?id=${u.id}`, { method: "DELETE" });
     if (!res.ok) {
       console.error(await res.text());
       return;
@@ -231,7 +233,7 @@ export default function UsersPage() {
           </span>
           <input
             className={styles.searchInputXL}
-            placeholder="Procurar"
+            placeholder={translation("Users.searchPlaceholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -241,9 +243,9 @@ export default function UsersPage() {
           ref={filterBtnRef}
           className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
           onClick={() => setFilterOpen((v) => !v)}
-          title="Filtrar"
+          title={translation("Common.filter")}
         >
-          <Filter size={16} /> <span>Filtrar</span>
+          <Filter size={16} /> <span>{translation("Common.filter")}</span>
           {activeFilterCount > 0 && (
             <span className={styles.filterBadge}>{activeFilterCount}</span>
           )}
@@ -255,17 +257,17 @@ export default function UsersPage() {
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
             onClick={() => setIsTagsOpen(true)}
-            title="Gerir tags"
+            title={translation("Users.manageTags")}
           >
-            <Tag size={16} /> <span>Gerir Tags</span>
+            <Tag size={16} /> <span>{translation("Users.manageTags")}</span>
           </button>
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
             onClick={() => setIsCreateOpen(true)}
-            title="Novo utilizador"
+            title={translation("Users.newUser")}
           >
-            <Plus size={16} /> <span>Novo Utilizador</span>
+            <Plus size={16} /> <span>{translation("Users.newUser")}</span>
           </button>
         </div>
       </div>
@@ -283,7 +285,7 @@ export default function UsersPage() {
                 onClick={() =>
                   setSelectedTagIds((prev) => prev.filter((x) => x !== id))
                 }
-                title="Remover filtro"
+                title={translation("Users.filters.remove")}
               >
                 {t.name} ×
               </button>
@@ -301,7 +303,7 @@ export default function UsersPage() {
                     prev.filter((x) => x !== id)
                   )
                 }
-                title="Remover filtro"
+                title={translation("Users.filters.remove")}
               >
                 {a.name} ×
               </button>
@@ -314,7 +316,7 @@ export default function UsersPage() {
               setSelectedAssistantIds([]);
             }}
           >
-            Limpar tudo
+            {translation("Common.clearAll")}
           </button>
         </div>
       )}
@@ -333,10 +335,18 @@ export default function UsersPage() {
                 <span className={styles.chkFake} />
               </label>
             </div>
-            <div className={styles.cellHead}>Nome</div>
-            <div className={styles.cellHead}>Nº. Telemóvel</div>
-            <div className={styles.cellHead}>Tags</div>
-            <div className={styles.cellHead}>Assistente</div>
+            <div className={styles.cellHead}>
+              {translation("Users.list.name")}
+            </div>
+            <div className={styles.cellHead}>
+              {translation("Users.list.phone")}
+            </div>
+            <div className={styles.cellHead}>
+              {translation("Users.list.tags")}
+            </div>
+            <div className={styles.cellHead}>
+              {translation("Users.list.assistant")}
+            </div>
             <div className={styles.cellHeadRight} />
           </div>
 
@@ -426,33 +436,39 @@ export default function UsersPage() {
                 <div className={styles.cellKebab}>
                   <button
                     className={`${styles.iconBtn} ${styles.kebabDefault}`}
-                    aria-label="Mais opções"
+                    aria-label={translation("Users.row.more")}
                     onClick={() => openEditFor(u)}
                   >
                     <MoreHorizontal size={18} />
                   </button>
 
-                  <div className={styles.rowActions} aria-label="Ações">
+                  <div
+                    className={styles.rowActions}
+                    aria-label={translation("Common.actions")}
+                  >
                     <button
                       className={styles.rowActBtn}
                       onClick={() => openViewFor(u)}
-                      title="Ver"
+                      title={translation("Users.row.view")}
                     >
-                      <Eye size={16} /> <span>Ver</span>
+                      <Eye size={16} />{" "}
+                      <span>{translation("Users.row.view")}</span>
                     </button>
                     <button
                       className={styles.rowActBtn}
                       onClick={() => openEditFor(u)}
-                      title="Editar"
+                      title={translation("Users.row.edit")}
                     >
-                      <Pencil size={16} /> <span>Editar</span>
+                      <Pencil size={16} />{" "}
+                      <span>{translation("Users.row.edit")}</span>
                     </button>
                     <button
                       className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
-                      onClick={() => deleteUserById(u.id)}
-                      title="Apagar"
+                      onClick={() => deleteUserById(u)}
+                      title={translation("Users.row.delete")}
                     >
-                      <Trash2 size={16} /> <span>Apagar</span>
+                      <Trash2 size={16} />{" "}
+                      <span>{translation("Users.row.delete")}</span>
                     </button>
                   </div>
                 </div>

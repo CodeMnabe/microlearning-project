@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./manageTagsModal.module.css";
+import { useTranslations } from "next-intl";
 
 export default function ManageTagsModal({ isOpen, onClose, orgId }) {
+  const translation = useTranslations();
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -125,14 +127,16 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
     >
       <div className={`${styles.card} ${stateClass}`}>
         <div className={styles.header}>
-          <h3>Gerir Tags</h3>
+          <h3>{translation("ManageTagsModal.title")}</h3>
         </div>
 
         <div className={styles.body}>
           {/* LEFT: chips */}
           <div className={styles.leftCol}>
             {loading ? (
-              <div className={styles.muted}>A carregar…</div>
+              <div className={styles.muted}>
+                {translation("ManageTagsModal.loading")}
+              </div>
             ) : (
               <div className={styles.chipsArea}>
                 {Array.isArray(tags) && tags.length ? (
@@ -152,7 +156,10 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
                       <span
                         className={styles.chipClose}
                         role="button"
-                        aria-label={`Remover ${t.name}`}
+                        aria-label={translation(
+                          "ManageTagsModal.removeLabel",
+                          t.name
+                        )}
                         onClick={(e) => {
                           e.stopPropagation();
                           removeTag(t.id);
@@ -163,7 +170,9 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
                     </button>
                   ))
                 ) : (
-                  <div className={styles.muted}>Sem tags.</div>
+                  <div className={styles.muted}>
+                    {translation("ManageTagsModal.none")}
+                  </div>
                 )}
               </div>
             )}
@@ -175,12 +184,12 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
           {/* RIGHT: editor */}
           <div className={styles.rightCol}>
             <label className={styles.label} htmlFor="tag-name">
-              Nome:
+              {translation("ManageTagsModal.name")}
             </label>
             <input
               id="tag-name"
               className={styles.nameInput}
-              placeholder="Grupo 1"
+              placeholder={translation("ManageTagsModal.placeholder")}
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
             />
@@ -192,22 +201,22 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
                 onClick={saveRename}
                 disabled={!selectedTag}
               >
-                Guardar Alterações
+                {translation("ManageTagsModal.save")}
               </button>
               <button
                 type="button"
                 className={styles.btnPrimary}
-                title="Nova tag"
+                title={translation("ManageTagsModal.add")}
                 onClick={createTag}
               >
-                Adicionar
+                {translation("ManageTagsModal.add")}
               </button>
               <button
                 type="button"
                 className={styles.btnGhost}
                 onClick={onClose}
               >
-                Cancelar
+                {translation("ManageTagsModal.cancel")}
               </button>
             </div>
           </div>
