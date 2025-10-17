@@ -105,6 +105,12 @@ export async function POST(req) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
   const fullUrl = `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
 
+  console.log("MB webhook hit", {
+    url: fullUrl,
+    hasJwt: !!req.headers.get("messagebird-signature-jwt"),
+    hasLegacy: !!req.headers.get("messagebird-signature"),
+  });
+
   //Validating the request using HMAC signature
   const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
 
@@ -113,14 +119,17 @@ export async function POST(req) {
     return new NextResponse("invalid signature", { status: 401 });
   }
 
-  const response = NextResponse.json({ ok: true });
-
-  //Process webhook *asynchronously*
-  handleEvent(rawBody).catch((err) =>
-    console.error("Error in webhook handler:", err)
-  );
-
-  return response;
+  try {
+    await handleEvent(rawBody); // run the work before returning
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Webhook error:", err);
+    // Keep 200 while debugging to avoid retries; switch to 500 if you want Bird to retry
+    return NextResponse.json(
+      { ok: false, error: String(err) },
+      { status: 200 }
+    );
+  }
 }
 
 /**
@@ -143,6 +152,13 @@ async function handleEvent(rawJSON) {
     console.warn("Webhook - bad JSON");
     return;
   }
+
+  console.log("MB evt", {
+    service: evt.service,
+    event: evt.event,
+    bodyType: evt.payload?.body?.type,
+    topKeys: Object.keys(evt.payload || {}),
+  });
 
   //Makes sure that this is a WhatsApp text message
   if (

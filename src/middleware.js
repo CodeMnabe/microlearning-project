@@ -9,7 +9,6 @@ const intl = createMiddleware(routing);
 export function middleware(request) {
   const p = new URL(request.url).pathname;
 
-  // ⬇️ Ensure API/static requests never hit i18n/auth logic
   if (
     p.startsWith("/api") ||
     p.startsWith("/_next") ||
