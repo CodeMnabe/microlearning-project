@@ -18,7 +18,8 @@ const inter = localFont({
 
 export const metadata = {
   title: "MyDigitalBot",
-  description: "Created by the company Digik, by the dev Gaspar Alves",
+  description:
+    "Send any type of messages to your employees or let them have a chat on WhatsApp with a Virtual Assistant powered by AI",
 };
 
 export default async function RootLayout({ children }) {

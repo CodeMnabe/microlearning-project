@@ -10,17 +10,22 @@ export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
   const supabase = createClient();
-  const { stopLoading } = useGlobalLoader();
+  const { startLoading, stopLoading } = useGlobalLoader();
 
   useEffect(() => {
     (async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (session) router.replace("/users");
+      if (session) {
+        console.log(session);
+        startLoading();
+        router.replace("/users");
+        return;
+      }
       stopLoading?.();
     })();
-  }, [supabase, router, stopLoading]);
+  }, [supabase, router, startLoading, stopLoading]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +50,10 @@ export default function LoginPage() {
 
     setStatus("success");
     // give the tick a brief moment, then navigate
-    setTimeout(() => router.push("/users"), 650);
+    setTimeout(() => {
+      startLoading?.();
+      router.push("/users");
+    }, 650);
   }
 
   const disabled = status !== "idle";

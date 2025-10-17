@@ -2,12 +2,19 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
+import { useTranslations } from "next-intl";
+import PillSelect from "@/app/components/PillSelect/PillSelect";
 
 export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
+  const translation = useTranslations();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [model, setModel] = useState("gpt-4o");
+  const [model, setModel] = useState("gpt-3.5-turbo");
+  const modelOptions = [
+    { value: "gpt-3.5-turbo", label: "gpt-3.5-turbo" },
+    // { value: "gpt-4o", label: "gpt-4o" },
+  ];
   const [topP, setTopP] = useState(0.5);
   const [temperature, setTemperature] = useState(1.0);
 
@@ -61,14 +68,16 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
       aria-modal="true"
     >
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.modalTitle}>Criar novo Assistente</h2>
+        <h2 className={styles.modalTitle}>
+          {translation("CreateAssistant.title")}
+        </h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label>
-              Nome
+              {translation("CreateAssistant.name")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Nome que vai ficar associado ao Assistant."
+                data-tooltip={translation("CreateAssistant.nameHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -95,10 +104,10 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
           </div>
           <div className={styles.formGroup}>
             <label>
-              Descrição
+              {translation("CreateAssistant.description")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Uma breve descrição sobre o Assistant."
+                data-tooltip={translation("CreateAssistant.descriptionHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -124,10 +133,10 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
           </div>
           <div className={styles.formGroup}>
             <label>
-              Instruções
+              {translation("CreateAssistant.instructions")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Instruções que o Assistant vai seguir."
+                data-tooltip={translation("CreateAssistant.instructionsHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -153,10 +162,10 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
           </div>
           <div className={styles.formGroup}>
             <label>
-              Modelo
+              {translation("CreateAssistant.model")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Modelo de Inteligência Artificial que o Assistant vai utilizar."
+                data-tooltip={translation("CreateAssistant.modelHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -175,17 +184,23 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
                 </svg>
               </span>
             </label>
-            <select value={model} onChange={(e) => setModel(e.target.value)}>
-              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-              {/* <option value="gpt-4o">GPT-4o</option> */}
-            </select>
+            <PillSelect
+              options={modelOptions}
+              value={model}
+              onChange={setModel}
+              placeholder={translation("CreateAssistant.modelPlaceholder", {
+                default: "Select a model",
+              })}
+              fullWidth
+              className={styles.input} // keeps same width/spacing as your inputs
+            />
           </div>
           <div className={styles.formGroup}>
             <label>
-              Criatividade
+              {translation("CreateAssistant.creativity")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Controla a variedade das respostas: com o valor 0.5, o Assistant escolhe entre as opções com maior probabilidade, limitando-se às mais relevantes."
+                data-tooltip={translation("CreateAssistant.creativityHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -220,10 +235,10 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
 
           <div className={styles.formGroup}>
             <label>
-              Variedade
+              {translation("CreateAssistant.variety")}
               <span
                 className={styles.infoIcon}
-                data-tooltip="Controla a aleatoriedade das respostas: quanto mais baixo for o valor, mais previsíveis e repetitivas serão as respostas. Ao aproximar-se de zero, o Assistant torna-se mais determinístico."
+                data-tooltip={translation("CreateAssistant.varietyHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -258,9 +273,11 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
             </div>
           </div>
           <div className={styles.buttonGroup}>
-            <button type="submit">Criar</button>
+            <button type="submit">
+              {translation("CreateAssistant.create")}
+            </button>
             <button type="button" onClick={onClose}>
-              Cancelar
+              {translation("Common.cancel")}
             </button>
           </div>
         </form>

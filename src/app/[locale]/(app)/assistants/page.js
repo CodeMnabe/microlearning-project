@@ -7,8 +7,12 @@ import ChatSandbox from "./Chatbox/Chatbox.jsx";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
+import { useTranslations } from "next-intl";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 
 export default function AssistantsHub() {
+  const translation = useTranslations();
+  const confirm = useConfirm();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const orgId = org?.id || null;
@@ -147,7 +151,14 @@ export default function AssistantsHub() {
 
   async function deleteAssistant() {
     if (!selected) return;
-    if (!confirm("Eliminar este assistant?")) return;
+    const ok = await confirm({
+      title: translation("Delete.namedTitle", { name: selected.name }),
+      message: translation("Delete.deleteMessage"),
+      confirmText: translation("Common.delete"),
+      cancelText: translation("Common.cancel"),
+      tone: "danger",
+    });
+    if (!ok) return;
     startLoading();
     try {
       const res = await fetch(`/api/assistants/${selected.id}`, {
@@ -196,7 +207,15 @@ export default function AssistantsHub() {
 
   async function deleteVectorStore() {
     if (!selected || !selected.vectorStoreId) return;
-    if (!confirm("Eliminar vector store e ficheiros?")) return;
+    const ok = await confirm({
+      title: translation("Delete.title"),
+      message: translation("Delete.deleteMessage"),
+      confirmText: translation("Common.delete"),
+      cancelText: translation("Common.cancel"),
+      tone: "danger",
+    });
+
+    if (!ok) return;
     startLoading();
     try {
       const res = await fetch(
@@ -219,12 +238,16 @@ export default function AssistantsHub() {
       {/* LEFT: list + add */}
       <aside className={styles.listCol}>
         <div className={styles.listHeader}>
-          <span>Os meus Assistentes</span>
+          <span>{translation("Assistants.myAssistants")}</span>
           <button
             className={styles.addBtn}
             onClick={openCreate}
             disabled={!orgId}
-            title={!orgId ? "A carregar organização…" : "Criar Assistant"}
+            title={
+              !orgId
+                ? `${translation("Assistants.loadingOrg")}`
+                : `${translation("Assistants.createAssistant")}`
+            }
           >
             +
           </button>
@@ -245,13 +268,13 @@ export default function AssistantsHub() {
 
           {!assistants.length && (
             <div className={styles.emptyState}>
-              <p>Sem assistants ainda.</p>
+              <p>{translation("Assistants.empty")}</p>
               <button
                 className={styles.ctaPrimary}
                 onClick={openCreate}
                 disabled={!orgId}
               >
-                Criar Assistant
+                {translation("Assistants.createAssistant")}
               </button>
             </div>
           )}
@@ -284,7 +307,9 @@ export default function AssistantsHub() {
                     onChange={(e) =>
                       handleChange("description", e.target.value)
                     }
-                    placeholder="Descrição curta"
+                    placeholder={translation(
+                      "Assistants.details.descriptionPlaceholder"
+                    )}
                   />
                   <textarea
                     className={styles.instructionsInput}
@@ -292,7 +317,9 @@ export default function AssistantsHub() {
                     onChange={(e) =>
                       handleChange("instructions", e.target.value)
                     }
-                    placeholder="Instruções do assistente"
+                    placeholder={translation(
+                      "Assistants.details.instructionsPlaceholder"
+                    )}
                   />
                 </>
               ) : (
@@ -304,12 +331,16 @@ export default function AssistantsHub() {
                 </>
               )}
 
-              <div className={styles.specBadge}>Especificidades:</div>
+              <div className={styles.specBadge}>
+                {translation("Assistants.details.specs")}
+              </div>
 
               <div className={styles.specs}>
                 {/* Criatividade (top_p) */}
                 <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>Criatividade</span>
+                  <span className={styles.specLabel}>
+                    {translation("Assistants.details.creativity")}
+                  </span>
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
@@ -343,7 +374,9 @@ export default function AssistantsHub() {
 
                 {/* Variedade (temperature) */}
                 <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>Variedade</span>
+                  <span className={styles.specLabel}>
+                    {translation("Assistants.details.variety")}
+                  </span>
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
@@ -384,7 +417,9 @@ export default function AssistantsHub() {
 
                 {/* Modelo */}
                 <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>Modelo</span>
+                  <span className={styles.specLabel}>
+                    {translation("Assistants.details.model")}
+                  </span>
                   <div className={styles.specTrack} />
                   {isEditing ? (
                     <select
@@ -408,7 +443,9 @@ export default function AssistantsHub() {
                   <span>{selected.open_ai_id}</span>
                 </div>
                 <div>
-                  <span className={styles.metaLabel}>Criado em</span>
+                  <span className={styles.metaLabel}>
+                    {translation("Assistants.details.createdAt")}
+                  </span>
                   <span>{new Date(selected.created_at).toLocaleString()}</span>
                 </div>
               </div>
@@ -421,13 +458,15 @@ export default function AssistantsHub() {
                       disabled={isSaving}
                       onClick={handleSave}
                     >
-                      {isSaving ? "A guardar..." : "Guardar"}
+                      {isSaving
+                        ? `${translation("Assistants.details.saving")}`
+                        : `${translation("Assistants.details.save")}`}
                     </button>
                     <button
                       className={styles.ghostBtn}
                       onClick={() => setIsEditing(false)}
                     >
-                      Cancelar
+                      {translation("Common.cancel")}
                     </button>
                   </>
                 ) : (
@@ -436,13 +475,13 @@ export default function AssistantsHub() {
                       className={styles.ghostBtn}
                       onClick={() => setIsEditing(true)}
                     >
-                      Editar
+                      {translation("Assistants.details.edit")}
                     </button>
                     <button
                       className={styles.dangerBtn}
                       onClick={deleteAssistant}
                     >
-                      Eliminar
+                      {translation("Assistants.details.delete")}
                     </button>
                   </>
                 )}
@@ -454,17 +493,21 @@ export default function AssistantsHub() {
               {!selected.vectorStoreId ? (
                 <>
                   <h3 className={styles.cardSubtitle}>
-                    Criar coleção de ficheiros
+                    {translation("Assistants.vector.create")}
                   </h3>
-                  <label className={styles.label}>Nome da coleção</label>
+                  <label className={styles.label}>
+                    {translation("Assistants.vector.collectionName")}
+                  </label>
                   <input
                     className={styles.input}
                     value={vsName}
                     onChange={(e) => setVsName(e.target.value)}
-                    placeholder={`Ex.: Coleção para ${selected.name}`}
+                    placeholder={`${translation(
+                      "Assistants.vector.collectionNamePlaceholder"
+                    )} ${selected.name}`}
                   />
                   <label className={styles.label}>
-                    Escolher Ficheiros (pode escolher vários):
+                    {translation("Assistants.vector.chooseFiles")}
                   </label>
                   <input
                     className={styles.input}
@@ -480,24 +523,28 @@ export default function AssistantsHub() {
                       onClick={handleAddVectorStore}
                       disabled={!vsName.trim() || vsFiles.length === 0}
                     >
-                      Criar e Associar
+                      {translation("Assistants.vector.createAndAttach")}
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <h3 className={styles.cardSubtitle}>Coleção de Documentos</h3>
+                  <h3 className={styles.cardSubtitle}>
+                    {translation("Assistants.vector.docCollection")}
+                  </h3>
                   <div className={styles.metaGrid}>
                     {vectorStore && (
                       <>
                         <div>
                           <span className={styles.metaLabel}>
-                            Nome da Coleção
+                            {translation("Assistants.vector.collectionTitle")}
                           </span>
                           <span>{vectorStore.storeName}</span>
                         </div>
                         <div>
-                          <span className={styles.metaLabel}>Quantidade</span>
+                          <span className={styles.metaLabel}>
+                            {translation("Assistants.vector.quantity")}
+                          </span>
                           <span>{vectorStore.files?.length || 0}</span>
                         </div>
                       </>
@@ -509,7 +556,7 @@ export default function AssistantsHub() {
                   vectorStore.files.length ? (
                     <div style={{ marginTop: 8 }}>
                       <span className={styles.metaLabel}>
-                        Nome dos Ficheiros
+                        {translation("Assistants.vector.filenames")}
                       </span>
                       <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
                         {vectorStore.files.map((f) => (
@@ -524,7 +571,7 @@ export default function AssistantsHub() {
                       className={styles.dangerBtn}
                       onClick={deleteVectorStore}
                     >
-                      Eliminar
+                      {translation("Common.delete")}
                     </button>
                   </div>
                 </>
@@ -533,7 +580,7 @@ export default function AssistantsHub() {
           </>
         ) : (
           <div className={styles.placeholderCard}>
-            <p>Seleciona um assistant na coluna da esquerda.</p>
+            <p>{translation("Assistants.placeholder")}</p>
           </div>
         )}
       </main>

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import styles from "./chatbox.module.css";
 import ui from "../assistants.module.css"; // 👈 import shared button style
+import { useTranslations } from "next-intl";
 
 export default function ChatSandbox({ assistant }) {
+  const translation = useTranslations();
   const [threadId, setThreadId] = useState("");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -40,13 +42,16 @@ export default function ChatSandbox({ assistant }) {
         setThreadId(data.threadId);
       } else {
         setMessages((prev) => [
-          { role: "system", content: data.error || "Erro na resposta" },
+          {
+            role: "system",
+            content: data.error || `${translation("Chatbox.errorReply")}`,
+          },
           ...prev,
         ]);
       }
     } catch {
       setMessages((prev) => [
-        { role: "system", content: "Erro ao comunicar com a API." },
+        { role: "system", content: `${translation("Chatbox.errorApi")}` },
         ...prev,
       ]);
     } finally {
@@ -57,7 +62,7 @@ export default function ChatSandbox({ assistant }) {
   return (
     <div className={styles.wrapper}>
       <h2 className={styles.headline}>
-        Experimentar Assistente{" "}
+        {translation("Chatbox.try")}{" "}
         {threadId && (
           <span className={styles.threadBadge}>
             Thread&nbsp;ID:&nbsp;{threadId}
@@ -78,7 +83,7 @@ export default function ChatSandbox({ assistant }) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Escreve a tua mensagem..."
+          placeholder={translation("Chatbox.placeholder")}
         />
         {/* 👇 same pill style as "Criar e Associar" */}
         <button
@@ -86,7 +91,7 @@ export default function ChatSandbox({ assistant }) {
           className={`${ui.ctaPrimary} ${styles.sendBtn}`}
           disabled={isSending || !input.trim()}
         >
-          Enviar
+          {translation("Chatbox.send")}
         </button>
       </form>
     </div>

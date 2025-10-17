@@ -7,7 +7,7 @@ export default function PillSelect({
   options = [], // [{ value, label }]
   value,
   onChange,
-  placeholder = "Selecionar…",
+  placeholder = "Select...",
   disabled = false,
   menuWidth, // optional fixed width for the menu
   portalToBody = true, // ⟵ NEW: render menu at document.body (fixes modal transform issue)

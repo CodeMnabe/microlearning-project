@@ -212,9 +212,12 @@
   },
   "Assistants": {
     "myAssistants": "Os meus Assistentes",
-    "createAssistant": "Criar Assistant",
+    "createAssistant": "Criar Assistente",
+    "loadingOrg": "A carregar organização…",
     "empty": "Sem assistants ainda.",
     "details": {
+      "descriptionPlaceholder": "Descrição curta",
+      "instructionsPlaceholder": "Instruções do assistente",
       "createdAt": "Criado em",
       "specs": "Especificidades:",
       "creativity": "Criatividade",
@@ -229,6 +232,7 @@
     "vector": {
       "create": "Criar coleção de ficheiros",
       "collectionName": "Nome da coleção",
+      "collectionNamePlaceholder": "Ex.: Coleção para",
       "chooseFiles": "Escolher Ficheiros (pode escolher vários):",
       "createAndAttach": "Criar e Associar",
       "docCollection": "Coleção de Documentos",
@@ -330,5 +334,11 @@
     "message": "A página que procura não existe ou foi movida.",
     "buttonUsers": "Ir para Colaboradores",
     "buttonLogin": "Ir para Login"
+  },
+
+  "Delete": {
+    "title": "Tem a certeza?",
+    "namedTitle": "Tem a certeza que quer eliminar {name}?",
+    "deleteMessage": "Esta ação não pode ser desfeita."
   }
 }

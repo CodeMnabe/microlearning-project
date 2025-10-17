@@ -217,8 +217,11 @@
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",
+    "loadingOrg": "Loading organization…",
     "empty": "No assistants yet.",
     "details": {
+      "descriptionPlaceholder": "A brief description",
+      "instructionsPlaceholder": "Assistant's instructions",
       "createdAt": "Created at",
       "specs": "Specifications:",
       "creativity": "Creativity",
@@ -233,6 +236,7 @@
     "vector": {
       "create": "Create file collection",
       "collectionName": "Collection name",
+      "collectionNamePlaceholder": "Eg.: Collection for",
       "chooseFiles": "Choose Files (you can pick multiple):",
       "createAndAttach": "Create & Attach",
       "docCollection": "Document Collection",
@@ -333,5 +337,11 @@
     "message": " The page you are searching for doesn't exist or was moved",
     "buttonUser": "Got to Users",
     "buttonLogin": "Go to Login"
+  },
+
+  "Delete": {
+    "title": "Are you sure?",
+    "namedTitle": "Are you sure you want to delete {name}?",
+    "deleteMessage": "This action cannot be undone."
   }
 }

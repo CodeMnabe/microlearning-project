@@ -48,9 +48,42 @@ export default function Navbar() {
   };
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
+    console.log("This is happening");
+
+    // A) local signout (SDK may still 403 — ignore)
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {}
+
+    // B) purge any lingering localStorage keys (older SDKs / racey tabs)
+    try {
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+          localStorage.removeItem(k);
+        }
+        if (k.startsWith("sb-") && k.endsWith("-refresh-token")) {
+          localStorage.removeItem(k);
+        }
+      }
+      // Tell other tabs
+      try {
+        const bc = new BroadcastChannel("supabase.auth");
+        bc.postMessage({ event: "SIGNED_OUT" });
+        bc.close();
+      } catch {}
+    } catch {}
+
+    // C) clear HTTP-only cookies on the server (the real logout)
+    await fetch("/api/auth/signout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+
+    // D) reset app state & HARD reload to kill any in-memory session
     setUser(null);
-    router.push(`/login`);
+    router.replace("/login");
+    window.location.assign(`/${locale}/login`);
   }
 
   return (
