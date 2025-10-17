@@ -4,7 +4,7 @@ DO NOT TOUCH
 ----------------------*/
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-require("dotenv").config();
+//require("dotenv").config();
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
