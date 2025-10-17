@@ -7,6 +7,16 @@ import { NextResponse } from "next/server";
 const intl = createMiddleware(routing);
 
 export function middleware(request) {
+  const p = new URL(request.url).pathname;
+
+  // ⬇️ Ensure API/static requests never hit i18n/auth logic
+  if (
+    p.startsWith("/api") ||
+    p.startsWith("/_next") ||
+    /\.[\w]+$/.test(p) // files like .png, .ico, .js, .css
+  ) {
+    return NextResponse.next();
+  }
   // Let next-intl handle locale (may return a Response for redirect/rewrite)
   const intlRes = intl(request);
 
