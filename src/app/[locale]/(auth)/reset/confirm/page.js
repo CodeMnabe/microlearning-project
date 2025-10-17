@@ -2,13 +2,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import styles from "../../login/login.module.css";
 
 export default function ResetConfirmPage() {
   const supabase = createClient();
   const router = useRouter();
   const t = useTranslations();
+  const locale = useLocale();
 
   const [newPw, setNewPw] = useState("");
   const [msg, setMsg] = useState("");
@@ -41,7 +42,7 @@ export default function ResetConfirmPage() {
     }
 
     setStatus("done"); // show "Password updated!" on the button
-    setTimeout(() => router.push("/login"), 800);
+    setTimeout(() => router.push(`/${locale}/login`), 800);
   }
 
   if (!ready) {
@@ -101,7 +102,7 @@ export default function ResetConfirmPage() {
           )}
         </button>
 
-        <a href="/login" className={styles.link}>
+        <a href={`/${locale}/login`} className={styles.link}>
           {t("Auth.resetConfirm.back")}
         </a>
 

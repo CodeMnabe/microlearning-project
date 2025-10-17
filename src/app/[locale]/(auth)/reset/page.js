@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import styles from "../login/login.module.css"; // reuses spinner/check/btn styles
 
 export default function ResetRequestPage() {
   const supabase = createClient();
   const router = useRouter();
   const t = useTranslations();
+  const locale = useLocale();
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'done'
@@ -20,7 +21,7 @@ export default function ResetRequestPage() {
     setStatus("loading");
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/reset/confirm`,
+      redirectTo: `${location.origin}/${locale}/reset/confirm`,
       flowType: "implicit",
     });
 
