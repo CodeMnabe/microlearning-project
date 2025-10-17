@@ -2,7 +2,8 @@
 All the imports here and requirements are made in the beginning
 DO NOT TOUCH
 ----------------------*/
-
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 require("dotenv").config();
 import { NextResponse } from "next/server";
 import crypto from "crypto";
@@ -81,6 +82,10 @@ async function getAssistantFromUser(user, organization) {
   }
 }
 
+export async function GET() {
+  return NextResponse.json({ ok: true, service: "messagebird" });
+}
+
 /**
  * Handles the incoming POSt webhook request from Bird
  * Verifies the authenticity of the request using the HMAC signature and,
@@ -136,7 +141,7 @@ async function handleEvent(rawJSON) {
     evt = JSON.parse(rawJSON);
   } catch {
     console.warn("Webhook - bad JSON");
-    return NextResponse.json({ error: "bad json" }, { status: 400 });
+    return;
   }
 
   //Makes sure that this is a WhatsApp text message

@@ -327,5 +327,11 @@
     "sampleCard": "Sample card",
     "sampleBody": "Body text using your theme. Tweak colors to see it change.",
     "primaryAction": "Primary action"
+  },
+  "NotFound": {
+    "title": "Page not Found",
+    "message": " The page you are searching for doesn't exist or was moved",
+    "buttonUser": "Got to Users",
+    "buttonLogin": "Go to Login"
   }
 }
