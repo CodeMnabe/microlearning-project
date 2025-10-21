@@ -5,7 +5,12 @@ import styles from "./assistants.module.css";
 import { useTranslations } from "next-intl";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 
-export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
+export default function CreateAssistantModal({
+  orgId,
+  isOpen,
+  onClose,
+  onCreated,
+}) {
   const translation = useTranslations();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -36,7 +41,7 @@ export default function CreateAssistantModal({ isOpen, onClose, onCreated }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        organizationId: 1, // or dynamic
+        organizationId: orgId, // or dynamic
         name: name,
         description: description,
         instructions: instructions,

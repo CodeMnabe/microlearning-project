@@ -185,28 +185,34 @@ export default function EditUserModal({
 
           <div className={styles.formGroup}>
             <label>{translation("EditUserModal.tags")}</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div className={styles.tagsWrap}>
               {allTags.map((t) => {
-                const active = selectedTagIds.includes(t.id);
+                const checked = selectedTagIds.includes(t.id);
                 return (
-                  <button
+                  <label
                     key={t.id}
-                    type="button"
-                    className={styles.chip}
-                    onClick={() => toggleTag(t.id)}
-                    style={
-                      active
-                        ? { borderColor: "#9fd3ff", background: "#eaf6ff" }
-                        : undefined
-                    }
+                    className={`${styles.chip} ${styles.chipCheck} ${
+                      checked ? styles.chipChecked : ""
+                    }`}
                     title={
-                      active
+                      checked
                         ? translation("EditUserModal.remove")
                         : translation("EditUserModal.add")
                     }
                   >
-                    {t.name}
-                  </button>
+                    <input
+                      type="checkbox"
+                      className={styles.visuallyHidden}
+                      checked={checked}
+                      onChange={() => toggleTag(t.id)}
+                    />
+                    <span className={styles.checkboxSquare} aria-hidden="true">
+                      <svg viewBox="0 0 24 24" className={styles.checkIcon}>
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </span>
+                    <span className={styles.chipText}>{t.name}</span>
+                  </label>
                 );
               })}
               {!allTags.length && (

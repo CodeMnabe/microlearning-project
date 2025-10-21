@@ -93,3 +93,28 @@
   color: var(--ui-muted, #7a8392);
   padding: 10px 8px;
 }
+
+/* Ensures the menu never runs off-screen */
+.menu {
+  position: fixed;
+  z-index: 1000;
+  max-height: min(320px, calc(100vh - 24px));
+  overflow: auto;
+}
+
+/* Optional: tweak shadow/origin when opening upward */
+.menuUp {
+  transform-origin: bottom center;
+}
+/* Ensures the menu never runs off-screen */
+.menu {
+  position: fixed;
+  z-index: 1000;
+  max-height: min(320px, calc(100vh - 24px));
+  overflow: auto;
+}
+
+/* Optional: tweak shadow/origin when opening upward */
+.menuUp {
+  transform-origin: bottom center;
+}

@@ -594,6 +594,7 @@ export default function AssistantsHub() {
 
       {/* Modal (scoped) */}
       <CreateAssistantModal
+        orgId={orgId}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreated={handleAssistantCreated}

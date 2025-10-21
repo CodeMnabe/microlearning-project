@@ -10,21 +10,23 @@ export default function PillSelect({
   placeholder = "Select...",
   disabled = false,
   menuWidth, // optional fixed width for the menu
-  portalToBody = true, // ⟵ NEW: render menu at document.body (fixes modal transform issue)
-  fullWidth = false, // ⟵ NEW: make the trigger 100% wide (good for forms)
-  className = "", // optional extra class for the trigger
+  portalToBody = true,
+  fullWidth = false,
+  className = "",
 }) {
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0, width: 220 });
+  const [direction, setDirection] = useState("down"); // "down" | "up"
 
   const selected = options.find((o) => String(o.value) === String(value));
   const label = selected?.label ?? placeholder;
 
-  // close on outside/ESC
+  // Close on outside click / ESC + keep position updated
   useEffect(() => {
     if (!open) return;
+
     function onDoc(e) {
       if (menuRef.current?.contains(e.target)) return;
       if (triggerRef.current?.contains(e.target)) return;
@@ -33,28 +35,71 @@ export default function PillSelect({
     function onEsc(e) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onResize() {
+      reposition();
+    }
+    function onScroll() {
+      reposition();
+    }
+
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onEsc);
+    window.addEventListener("resize", onResize);
+    // capture=true catches scrolls in nested containers
+    document.addEventListener("scroll", onScroll, true);
+
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("scroll", onScroll, true);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // compute viewport position under the trigger
-  useLayoutEffect(() => {
+  // Compute position & flip if needed
+  const reposition = () => {
     if (!open || !triggerRef.current) return;
+
     const r = triggerRef.current.getBoundingClientRect();
     const width = menuWidth ?? Math.max(220, r.width);
     const left = Math.max(12, Math.min(window.innerWidth - width - 12, r.left));
-    const top = Math.min(r.bottom + 6, window.innerHeight - 12);
-    setPos({ top, left, width });
-  }, [open, menuWidth]);
+
+    // Provisional place (down) to measure height
+    const downTop = r.bottom + 6;
+    setPos((p) => ({ ...p, top: downTop, left, width }));
+
+    // Measure then decide up vs down
+    requestAnimationFrame(() => {
+      const mh = menuRef.current?.getBoundingClientRect().height ?? 0;
+      const spaceBelow = window.innerHeight - (r.bottom + 6) - 12;
+      const spaceAbove = r.top - 6 - 12;
+
+      if (mh > spaceBelow && spaceAbove > spaceBelow) {
+        // Open UP
+        const upTop = Math.max(12, r.top - 6 - mh);
+        setDirection("up");
+        setPos({ top: upTop, left, width });
+      } else {
+        // Stay DOWN (clamp so it never goes off-screen)
+        const clampedDown = Math.min(downTop, window.innerHeight - mh - 12);
+        setDirection("down");
+        setPos({ top: clampedDown, left, width });
+      }
+    });
+  };
+
+  // Reposition when opening or option count changes (height)
+  useLayoutEffect(() => {
+    if (!open) return;
+    reposition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, menuWidth, options.length]);
 
   const menuEl = (
     <div
       ref={menuRef}
-      className={styles.menu}
+      className={`${styles.menu} ${direction === "up" ? styles.menuUp : ""}`}
       role="listbox"
       style={{ top: pos.top, left: pos.left, width: pos.width }}
     >
