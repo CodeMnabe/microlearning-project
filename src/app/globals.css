@@ -120,7 +120,7 @@ a {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .page-content {
@@ -128,8 +128,18 @@ a {
   flex: 1;
   min-height: 0;
 }
-
 .app-main {
-  flex: 1;
+  display: flex; /* lets .hub fill and size to 100% */
   min-width: 0;
+  min-height: calc(100dvh - var(--topbar-h));
+}
+
+input,
+textarea,
+select,
+button,
+option {
+  font: inherit; /* pulls from body’s Inter */
+  letter-spacing: inherit;
+  color: inherit;
 }

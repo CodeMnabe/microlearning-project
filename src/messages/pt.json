@@ -194,7 +194,7 @@
     "send": "Enviar via WhatsApp",
     "sending": "A enviar…",
     "message": "Mensagem",
-    "messagePlaceholder": "Escreve a tua mensagem...",
+    "messagePlaceholder": "Escreva a sua mensagem...",
     "templatePreview": "Pré-Visualização do Template",
     "template": "Template",
     "noTemplates": "Sem templates",
@@ -263,7 +263,7 @@
   "Chatbox": {
     "try": "Experimentar Assistente",
     "threadId": "Thread ID:",
-    "placeholder": "Escreve a tua mensagem...",
+    "placeholder": "Escreva a sua mensagem...",
     "send": "Enviar",
     "errorReply": "Erro na resposta",
     "errorApi": "Erro ao comunicar com a API."

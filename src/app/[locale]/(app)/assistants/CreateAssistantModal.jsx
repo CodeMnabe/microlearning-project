@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
 import { useTranslations } from "next-intl";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
+import Slider from "@/app/components/Slider/Slider";
 
 export default function CreateAssistantModal({
   orgId,
@@ -226,14 +227,12 @@ export default function CreateAssistantModal({
             </label>
             <div className={styles.sliderRow}>
               <span className={styles.sliderLabel}>{topP.toFixed(2)}</span>
-              <input
-                type="range"
-                min="0.00"
-                max="1.00"
-                step="0.01"
+              <Slider
+                min={0}
+                max={1}
+                step={0.01}
                 value={topP}
                 onChange={(e) => setTopP(parseFloat(e.target.value))}
-                className={styles.slider}
               />
             </div>
           </div>
@@ -266,14 +265,12 @@ export default function CreateAssistantModal({
               <span className={styles.sliderLabel}>
                 {temperature.toFixed(2)}
               </span>
-              <input
-                type="range"
-                min="0.00"
-                max="2.00"
-                step="0.01"
+              <Slider
+                min={0}
+                max={2}
+                step={0.01}
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className={styles.slider}
               />
             </div>
           </div>

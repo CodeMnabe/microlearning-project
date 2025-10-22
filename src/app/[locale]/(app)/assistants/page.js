@@ -1,3 +1,4 @@
+// /app/assistants/page.js
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -9,6 +10,7 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import Slider from "@/app/components/Slider/Slider";
 
 export default function AssistantsHub() {
   const translation = useTranslations();
@@ -21,14 +23,18 @@ export default function AssistantsHub() {
   const [assistants, setAssistants] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [vectorStore, setVectorStore] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // vector store form
+  // editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(null); // <- isolated edits
+  const [isSaving, setIsSaving] = useState(false);
+
+  // vector store state
+  const [vectorStore, setVectorStore] = useState(null);
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 1) fetch assistants when auth/org are ready
   useEffect(() => {
@@ -54,7 +60,7 @@ export default function AssistantsHub() {
     return () => {
       alive = false;
     };
-  }, [authLoading, orgLoading, orgId, selectedId, stopLoading]); // ← no selectedId here (prevents refetch loops)
+  }, [authLoading, orgLoading, orgId, selectedId, stopLoading]);
 
   // 2) fetch details of current assistant
   const fetchOne = useCallback(
@@ -62,7 +68,6 @@ export default function AssistantsHub() {
       if (!id) return;
       let alive = true;
       startLoading();
-      // clear previous selection to avoid flicker
       setSelected(null);
       setVectorStore(null);
 
@@ -93,13 +98,11 @@ export default function AssistantsHub() {
     if (selectedId) fetchOne(selectedId);
   }, [selectedId, fetchOne]);
 
-  // modal open
   function openCreate() {
-    if (!orgId) return; // guard
+    if (!orgId) return;
     setIsModalOpen(true);
   }
 
-  // after creating a new assistant, refresh list and select newest
   async function handleAssistantCreated() {
     if (!orgId) {
       setIsModalOpen(false);
@@ -115,12 +118,18 @@ export default function AssistantsHub() {
     setIsModalOpen(false);
   }
 
+  // unified field changer — writes to draft while editing
   function handleChange(field, value) {
-    setSelected((prev) => ({ ...(prev || {}), [field]: value }));
+    if (isEditing) {
+      setDraft((prev) => ({ ...(prev || {}), [field]: value }));
+    } else {
+      setSelected((prev) => ({ ...(prev || {}), [field]: value }));
+    }
   }
 
+  // save applies the draft
   async function handleSave() {
-    if (!selected) return;
+    if (!selected || !draft) return;
     setIsSaving(true);
     try {
       const res = await fetch(`/api/assistants/${selected.id}`, {
@@ -129,12 +138,12 @@ export default function AssistantsHub() {
         body: JSON.stringify({
           id: selected.id,
           open_ai_id: selected.open_ai_id,
-          name: selected.name,
-          description: selected.description,
-          instructions: selected.instructions,
-          model: selected.model,
-          temperature: selected.temperature,
-          top_p: selected.top_p,
+          name: draft.name,
+          description: draft.description,
+          instructions: draft.instructions,
+          model: draft.model,
+          temperature: draft.temperature,
+          top_p: draft.top_p,
         }),
       });
       if (!res.ok) {
@@ -143,7 +152,8 @@ export default function AssistantsHub() {
         return;
       }
       setIsEditing(false);
-      await fetchOne(selected.id); // refresh with DB truth
+      setDraft(null);
+      await fetchOne(selected.id); // refresh from server
     } finally {
       setIsSaving(false);
     }
@@ -233,24 +243,16 @@ export default function AssistantsHub() {
     }
   }
 
+  // helpers to read either draft (editing) or selected (read-only)
+  const read = (key, fallback = "") =>
+    (isEditing ? draft?.[key] : selected?.[key]) ?? fallback;
+
   return (
     <div className={styles.hub}>
-      {/* LEFT: list + add */}
+      {/* LEFT LIST */}
       <aside className={styles.listCol}>
         <div className={styles.listHeader}>
           <span>{translation("Assistants.myAssistants")}</span>
-          <button
-            className={styles.addBtn}
-            onClick={openCreate}
-            disabled={!orgId}
-            title={
-              !orgId
-                ? `${translation("Assistants.loadingOrg")}`
-                : `${translation("Assistants.createAssistant")}`
-            }
-          >
-            +
-          </button>
         </div>
 
         <div className={styles.list}>
@@ -260,7 +262,11 @@ export default function AssistantsHub() {
               className={`${styles.listItem} ${
                 a.id === selectedId ? styles.listItemActive : ""
               }`}
-              onClick={() => setSelectedId(a.id)}
+              onClick={() => {
+                setIsEditing(false);
+                setDraft(null);
+                setSelectedId(a.id);
+              }}
             >
               <span className={styles.listItemName}>{a.name}</span>
             </button>
@@ -269,20 +275,24 @@ export default function AssistantsHub() {
           {!assistants.length && (
             <div className={styles.emptyState}>
               <p>{translation("Assistants.empty")}</p>
-              <button
-                className={styles.ctaPrimary}
-                onClick={openCreate}
-                disabled={!orgId}
-              >
-                {translation("Assistants.createAssistant")}
-              </button>
             </div>
           )}
         </div>
+
+        <div className={styles.listFooter}>
+          <button
+            className={styles.ctaPrimary}
+            onClick={openCreate}
+            disabled={!orgId}
+            title={translation("Assistants.createAssistant")}
+          >
+            {translation("Assistants.createAssistant")}
+          </button>
+        </div>
       </aside>
 
-      {/* CENTER: details + vector store */}
-      <main className={styles.mainCol}>
+      {/* CENTER */}
+      <section className={styles.mainCol}>
         {selected ? (
           <>
             <section className={`${styles.card} ${styles.primaryCard}`}>
@@ -290,7 +300,7 @@ export default function AssistantsHub() {
                 {isEditing ? (
                   <input
                     className={styles.inputTitle}
-                    value={selected.name || ""}
+                    value={read("name")}
                     onChange={(e) => handleChange("name", e.target.value)}
                   />
                 ) : (
@@ -302,7 +312,7 @@ export default function AssistantsHub() {
                 <>
                   <input
                     className={styles.inputSub}
-                    value={selected.description || ""}
+                    value={read("description")}
                     maxLength={80}
                     onChange={(e) =>
                       handleChange("description", e.target.value)
@@ -313,7 +323,7 @@ export default function AssistantsHub() {
                   />
                   <textarea
                     className={styles.instructionsInput}
-                    value={selected.instructions || ""}
+                    value={read("instructions")}
                     onChange={(e) =>
                       handleChange("instructions", e.target.value)
                     }
@@ -336,22 +346,22 @@ export default function AssistantsHub() {
               </div>
 
               <div className={styles.specs}>
-                {/* Criatividade (top_p) */}
+                {/* Creativity */}
                 <div className={styles.specRowGrid}>
                   <span className={styles.specLabel}>
                     {translation("Assistants.details.creativity")}
                   </span>
+
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
-                        {(selected.top_p || 0).toFixed(2)}
+                        {(read("top_p", 0) || 0).toFixed(2)}
                       </span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={selected.top_p || 0}
+                      <Slider
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={read("top_p", 0)}
                         onChange={(e) =>
                           handleChange("top_p", parseFloat(e.target.value))
                         }
@@ -372,22 +382,22 @@ export default function AssistantsHub() {
                   )}
                 </div>
 
-                {/* Variedade (temperature) */}
+                {/* Variety */}
                 <div className={styles.specRowGrid}>
                   <span className={styles.specLabel}>
                     {translation("Assistants.details.variety")}
                   </span>
+
                   {isEditing ? (
                     <div className={styles.sliderRow}>
                       <span className={styles.sliderValue}>
-                        {(selected.temperature || 0).toFixed(2)}
+                        {(read("temperature", 0) || 0).toFixed(2)}
                       </span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="2"
-                        step="0.01"
-                        value={selected.temperature || 0}
+                      <Slider
+                        min={0}
+                        max={2}
+                        step={0.01}
+                        value={read("temperature", 0)}
                         onChange={(e) =>
                           handleChange(
                             "temperature",
@@ -415,7 +425,7 @@ export default function AssistantsHub() {
                   )}
                 </div>
 
-                {/* Modelo */}
+                {/* Model */}
                 <div className={styles.specRowGrid}>
                   <span className={styles.specLabel}>
                     {translation("Assistants.details.model")}
@@ -424,7 +434,7 @@ export default function AssistantsHub() {
                   {isEditing ? (
                     <select
                       className={styles.select}
-                      value={selected.model || "gpt-3.5-turbo"}
+                      value={read("model", "gpt-3.5-turbo")}
                       onChange={(e) => handleChange("model", e.target.value)}
                     >
                       <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
@@ -437,58 +447,69 @@ export default function AssistantsHub() {
                 </div>
               </div>
 
-              <div className={styles.metaGrid}>
-                <div>
-                  <span className={styles.metaLabel}>ID</span>
-                  <span>{selected.open_ai_id}</span>
+              {/* Meta + Actions */}
+              <div className={styles.metaBar}>
+                <div className={styles.metaGrid}>
+                  <div>
+                    <span className={styles.metaLabel}>ID</span>
+                    <span>{selected.open_ai_id}</span>
+                  </div>
+                  <div>
+                    <span className={styles.metaLabel}>
+                      {translation("Assistants.details.createdAt")}
+                    </span>
+                    <span>
+                      {new Date(selected.created_at).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className={styles.metaLabel}>
-                    {translation("Assistants.details.createdAt")}
-                  </span>
-                  <span>{new Date(selected.created_at).toLocaleString()}</span>
-                </div>
-              </div>
 
-              <div className={styles.rowEnd}>
-                {isEditing ? (
-                  <>
-                    <button
-                      className={styles.ctaPrimary}
-                      disabled={isSaving}
-                      onClick={handleSave}
-                    >
-                      {isSaving
-                        ? `${translation("Assistants.details.saving")}`
-                        : `${translation("Assistants.details.save")}`}
-                    </button>
-                    <button
-                      className={styles.ghostBtn}
-                      onClick={() => setIsEditing(false)}
-                    >
-                      {translation("Common.cancel")}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className={styles.ghostBtn}
-                      onClick={() => setIsEditing(true)}
-                    >
-                      {translation("Assistants.details.edit")}
-                    </button>
-                    <button
-                      className={styles.dangerBtn}
-                      onClick={deleteAssistant}
-                    >
-                      {translation("Assistants.details.delete")}
-                    </button>
-                  </>
-                )}
+                <div className={styles.actionsRow}>
+                  {isEditing ? (
+                    <>
+                      <button
+                        className={styles.ctaPrimary}
+                        disabled={isSaving}
+                        onClick={handleSave}
+                      >
+                        {isSaving
+                          ? translation("Assistants.details.saving")
+                          : translation("Assistants.details.save")}
+                      </button>
+                      <button
+                        className={styles.ghostBtn}
+                        onClick={() => {
+                          setIsEditing(false);
+                          setDraft(null); // discard everything
+                        }}
+                      >
+                        {translation("Common.cancel")}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className={styles.ghostBtn}
+                        onClick={() => {
+                          setDraft(selected ? { ...selected } : null);
+                          setIsEditing(true);
+                        }}
+                      >
+                        {translation("Assistants.details.edit")}
+                      </button>
+                      <button
+                        className={styles.dangerBtn}
+                        onClick={deleteAssistant}
+                      >
+                        {translation("Assistants.details.delete")}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </section>
 
-            {/* Vector store card */}
+            {/* Vector store */}
             <section className={`${styles.card} ${styles.paperCard}`}>
               {!selected.vectorStoreId ? (
                 <>
@@ -551,9 +572,7 @@ export default function AssistantsHub() {
                     )}
                   </div>
 
-                  {vectorStore &&
-                  vectorStore.files &&
-                  vectorStore.files.length ? (
+                  {vectorStore?.files?.length ? (
                     <div style={{ marginTop: 8 }}>
                       <span className={styles.metaLabel}>
                         {translation("Assistants.vector.filenames")}
@@ -583,7 +602,7 @@ export default function AssistantsHub() {
             <p>{translation("Assistants.placeholder")}</p>
           </div>
         )}
-      </main>
+      </section>
 
       {/* RIGHT: live chat */}
       <section className={styles.chatCol}>
@@ -592,7 +611,6 @@ export default function AssistantsHub() {
         )}
       </section>
 
-      {/* Modal (scoped) */}
       <CreateAssistantModal
         orgId={orgId}
         isOpen={isModalOpen}

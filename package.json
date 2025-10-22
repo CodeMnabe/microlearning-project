@@ -12,6 +12,7 @@
     "@prisma/client": "^6.10.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.3",
+    "clsx": "^2.1.1",
     "dotenv": "^16.6.1",
     "lucide-react": "^0.545.0",
     "messagebird": "^4.0.1",

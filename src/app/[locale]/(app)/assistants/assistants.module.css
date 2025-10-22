@@ -1,31 +1,33 @@
-/* LAYOUT */
+/* ===== LAYOUT ROOT ===== */
 .hub {
-  position: relative;
   display: grid;
-
-  /* left list a touch narrower, center gets a bigger minimum, right chat stays */
-  grid-template-columns: 260px minmax(0, 1fr) 460px;
+  grid-template-columns: 260px minmax(0, 1fr) 380px;
   gap: 24px;
-
-  /* push the grid closer to the app sidebar (no centering) */
+  height: 100dvh - 34px;
+  min-height: 0;
   width: 100%;
-  max-width: none;
-  margin: 24px 24px 28px 0px; /* top, right, bottom, left */
-  padding-left: 24px; /* less left padding = closer to sidebar */
-  padding-right: 24px;
-
-  min-height: calc(100vh - 140px);
+  padding: 16px 24px 20px;
+  box-sizing: border-box;
   color: var(--text);
 }
 
-/* LEFT LIST (white panel + dark active pill) */
+.listCol,
+.mainCol,
+.chatCol {
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+/* ===== LEFT LIST ===== */
 .listCol {
   background: var(--panel-white);
   color: var(--text-dark);
   border-radius: 18px;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
   gap: 10px;
   box-shadow: 0 8px 20px #00000022;
 }
@@ -33,50 +35,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.2rem;
   margin-bottom: 6px;
   color: var(--text-dark);
 }
-.addBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 2px solid #fff; /* white ring */
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-
-  display: grid;
-  place-items: center;
-  font-size: 20px;
-  line-height: 1;
-
-  box-shadow: 0 8px 18px rgba(25, 166, 223, 0.35); /* soft lift */
-  transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.15s ease;
-}
-.addBtn:hover {
-  background: var(--accent-2);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(25, 166, 223, 0.45);
-}
-.addBtn:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 14px rgba(25, 166, 223, 0.3);
-}
-
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  max-height: calc(100vh - 220px);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 .listItem {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 12px; /* keep for non-active */
+  border-radius: 12px;
   border: 1px solid transparent;
   color: #334157;
   background: transparent;
@@ -84,22 +58,17 @@
   text-align: left;
 }
 .listItem:hover {
-  background: #30a9e0;
-  border-radius: 9999;
+  background: #eaf6ff;
+  color: var(--ink);
+  border-radius: 9999px;
 }
 .listItemActive {
   background: var(--navy-2);
   color: #fff;
   border: none;
   box-shadow: inset 0 1px 0 #ffffff20;
-  border-radius: 9999px; /* ← pill shape */
-  padding: 10px 14px; /* a bit wider inside */
-}
-.listItemDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--accent);
+  border-radius: 9999px;
+  padding: 10px 14px;
 }
 .listItemName {
   font-size: 0.95rem;
@@ -107,19 +76,31 @@
   text-overflow: ellipsis;
   overflow: hidden;
 }
-
-.emptyState {
-  margin-top: 20px;
-  display: grid;
-  gap: 10px;
-  place-items: start;
+.listFooter {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e5edf5;
+  display: flex;
+  justify-content: center;
 }
+.listFooter .ctaPrimary {
+  width: 100%;
+  max-width: 220px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+/* ===== Buttons ===== */
 .ctaPrimary {
   border: none;
   border-radius: 10px;
   padding: 10px 14px;
   cursor: pointer;
-  background: #0c6e9d;
+  background: var(--brand-1);
   color: #fff;
   font-weight: 600;
 }
@@ -145,34 +126,45 @@
 }
 .ctaPrimary,
 .ghostBtn,
-.dangerBtn,
-.addBtn {
+.dangerBtn {
   transition: transform 0.06s ease;
 }
 .ctaPrimary:active,
 .ghostBtn:active,
-.dangerBtn:active,
-.addBtn:active {
+.dangerBtn:active {
   transform: translateY(1px);
 }
 
-/* CENTER COLUMN */
+/* ===== CENTER COLUMN ===== */
 .mainCol {
-  display: grid;
-  grid-auto-rows: min-content;
+  overflow: auto;
+  min-width: 0;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
+.mainCol::-webkit-scrollbar {
+  width: 8px;
+}
+.mainCol::-webkit-scrollbar-thumb {
+  background: #d3deea;
+  border-radius: 8px;
+}
+
 .card {
   background: var(--panel);
   border-radius: 18px;
   padding: 22px;
-  box-shadow: 0 10px 24px #0000002b;
+  /* box-shadow: 0 10px 24px #0000002b; */
 }
 .cardSubtitle {
   font-weight: 800;
   margin-bottom: 10px;
   color: #fff;
 }
+
 .primaryCard {
   background: var(--accent);
   color: #fff;
@@ -200,6 +192,7 @@
   font-weight: 800;
   letter-spacing: 0.2px;
 }
+
 .inputTitle {
   width: 100%;
   background: #ffffff22;
@@ -220,35 +213,53 @@
   padding: 10px 12px;
   font-size: 0.95rem;
 }
-
 .inputSub {
   margin-bottom: 10px;
 }
+.subdued {
+  margin: 6px 0 8px;
+  opacity: 0.95;
+}
 
+/* EDIT MODE — textarea should scroll and size nicely */
 .instructionsInput {
   width: 100%;
-  min-height: 110px;
-  resize: vertical;
   background: #ffffff18;
   color: #fff;
   border: none;
   border-radius: 12px;
   padding: 12px;
+  min-height: 120px;
+  max-height: clamp(140px, 27vh, 300px);
+  overflow: auto;
+  resize: vertical;
 }
-/* White paper bubble like mock */
+
+/* READ-ONLY — fills “enough” but leaves room for specs/meta/actions */
 .instructionsPaper {
   background: #fff;
   color: #142036;
   border-radius: 14px;
   padding: 12px 14px;
-  margin-top: 8px;
+  margin-top: 6px;
   box-shadow: inset 0 0 0 1px #ffffff22;
+
+  /* Responsive cap: tune the middle percentage if you want more/less height */
+  max-height: clamp(140px, 26vh, 340px);
+  overflow: auto;
+}
+.instructionsPaper::-webkit-scrollbar {
+  width: 8px;
+}
+.instructionsPaper::-webkit-scrollbar-thumb {
+  background: #d3deea;
+  border-radius: 8px;
 }
 
-/* specs chip + rows */
+/* specs */
 .specBadge {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 12px;
   margin-bottom: 8px;
   background: #0c6e9d;
   color: #eaf7ff;
@@ -261,7 +272,6 @@
   display: grid;
   gap: 10px;
 }
-/* label | track | value */
 .specRowGrid {
   display: grid;
   grid-template-columns: 140px 1fr max-content;
@@ -291,7 +301,12 @@
 .specValueBold {
   font-weight: 800;
 }
-
+.primaryCard,
+.paperCard,
+.modalContent,
+.form {
+  color-scheme: light;
+}
 .sliderRow {
   display: grid;
   grid-template-columns: 64px 1fr;
@@ -301,31 +316,73 @@
 .sliderRow input[type="range"] {
   width: 100%;
 }
+.sliderRow input[type="range"],
+.form input[type="range"],
+input[type="range"].slider {
+  accent-color: var(--brand-1);
+}
 .sliderValue {
   text-align: center;
   font-weight: 700;
 }
 
-/* meta/footer */
-.metaGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-.metaLabel {
-  display: block;
-  font-size: 0.8rem;
-  opacity: 0.9;
-}
-.rowEnd {
+/* ===== Meta + Actions (one row) ===== */
+.metaBar {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
 }
 
-/* RIGHT COLUMN: white container for chat */
+/* Stack ID + Created vertically on the left */
+.metaBar .metaGrid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+.metaGrid > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+.metaLabel {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  margin-right: 2px;
+}
+.metaGrid > div span:not(.metaLabel) {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Actions on the right */
+.actionsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+.actionsRow .ghostBtn,
+.actionsRow .dangerBtn,
+.actionsRow .ctaPrimary {
+  white-space: nowrap;
+}
+
+/* Legacy rowEnd (used in vector store card) */
+.rowEnd {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+/* ===== RIGHT COLUMN ===== */
 .chatCol {
   background: var(--panel-white);
   color: var(--text-dark);
@@ -333,9 +390,12 @@
   padding: 16px;
   display: flex;
   box-shadow: 0 10px 24px #0000001a;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow: hidden;
 }
 
-/* placeholder */
+/* ===== Placeholder ===== */
 .placeholderCard {
   display: grid;
   place-items: center;
@@ -362,7 +422,7 @@
   cursor: pointer;
 }
 
-/* ===== Modal (SCOPED to .hub) ===== */
+/* ===== Modal ===== */
 body.modal-open {
   overflow: hidden;
 }
@@ -375,7 +435,7 @@ body.modal-open {
   display: grid;
   place-items: center;
   overflow-y: auto;
-  overflow-x: hidden; /* ← important */
+  overflow-x: hidden;
 }
 .modalTitle {
   padding-bottom: 24px;
@@ -386,16 +446,16 @@ body.modal-open {
   width: min(720px, calc(100% - 48px));
   max-height: min(86vh, 100dvh - 96px);
   overflow-y: auto;
-  overflow-x: hidden; /* ← important */
+  overflow-x: hidden;
   border-radius: 18px;
   padding: 22px;
   box-shadow: 0 20px 50px #00000066;
-  min-width: 0; /* ← allow shrink in grid/flex contexts */
+  min-width: 0;
 }
-
 body.modalOpen {
   overflow: hidden;
 }
+
 .form {
   display: grid;
   gap: 12px;
@@ -405,7 +465,7 @@ body.modalOpen {
   display: grid;
   gap: 6px;
 }
-.formGroup input,
+.formGroup :where(input:not([type="range"])),
 .formGroup select,
 .formGroup textarea {
   background: #f3f7fb;
@@ -418,6 +478,7 @@ body.modalOpen {
 .formGroup textArea {
   resize: vertical;
 }
+
 .sliderLabel {
   min-width: 56px;
   text-align: center;
@@ -425,9 +486,6 @@ body.modalOpen {
   background: #f3f7fb;
   padding: 4px 8px;
   border-radius: 8px;
-}
-.buttonGroup button {
-  cursor: pointer;
 }
 .buttonGroup {
   display: flex;
@@ -440,74 +498,19 @@ body.modalOpen {
   padding: 10px 14px;
 }
 .buttonGroup button[type="submit"] {
-  background: var(--accent);
+  background: var(--brand-1);
   color: #fff;
 }
 .buttonGroup button[type="button"] {
   background: #eef3f7;
   color: var(--text);
 }
-.infoIcon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  margin-left: 6px;
-  cursor: help;
-}
-.infoIcon::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
 
-  background: #0f1725;
-  color: #fff;
-  padding: 8px 10px;
-  border: 1px solid #22314a;
-  border-radius: 5px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-
-  /* >>> fixes <<< */
-  display: block; /* avoid inline quirks */
-  min-width: 220px; /* don't shrink to icon width */
-  max-width: 36ch; /* wrap after ~36 characters */
-  white-space: normal; /* allow wrapping */
-  overflow-wrap: break-word; /* only break long tokens */
-
-  line-height: 1.35;
-  text-align: left;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  pointer-events: none;
-  z-index: 10000;
-}
-.infoIcon::before {
-  content: "";
-  position: absolute;
-  bottom: 100%;
-  left: 10px;
-  border: 6px solid transparent;
-  border-top-color: #0f1725;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.infoIcon:hover::after {
-  opacity: 1;
-  border-radius: 5px;
-  transform: translateY(0);
-}
-
-.infoIcon:hover::after,
-.infoIcon:hover::before {
-  opacity: 1;
-  transform: translateY(0);
-}
-
+/* Paper card (vector store) overrides */
 .paperCard {
   background: #ffffff;
   color: var(--text-dark);
-  box-shadow: 0 10px 24px #0000001a;
+  /* box-shadow: 0 10px 24px #0000001a; */
 }
 .paperCard .cardSubtitle,
 .paperCard .label {
@@ -517,26 +520,43 @@ body.modalOpen {
   background: #f3f6fb;
   color: #172033;
 }
+.paperCard .input + .label {
+  margin-top: 14px;
+}
 
+.formGroup input,
+.formGroup select,
+.formGroup textarea,
+.instructionsInput,
+.instructionsPaper {
+  font: inherit; /* Inter, from body */
+  line-height: 1.5; /* nicer reading */
+  font-size: 0.95rem; /* match your inputs */
+}
+
+/* ===== DESKTOP BREAKPOINTS ===== */
+@media (max-width: 1680px) {
+  .hub {
+    grid-template-columns: 250px 1fr 360px;
+  }
+}
+@media (max-width: 1536px) {
+  .hub {
+    grid-template-columns: 240px 1fr 340px;
+  }
+}
 @media (max-width: 1400px) {
   .hub {
-    grid-template-columns: 240px 1fr 420px;
+    grid-template-columns: 230px 1fr 320px;
   }
 }
 
+/* Hide chat on narrower desktop */
 @media (max-width: 1200px) {
   .hub {
     grid-template-columns: 240px 1fr;
   }
   .chatCol {
     display: none;
-  } /* or move it below with grid-areas */
-}
-
-@media (max-width: 900px) {
-  .hub {
-    grid-template-columns: 1fr;
-    padding-right: 12px;
-    margin-right: 12px;
   }
 }
