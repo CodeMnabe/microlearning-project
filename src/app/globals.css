@@ -17,8 +17,8 @@
   --color-secondary: var(--ink);
 
   /* app layout */
-  --gutter-x: 24px;
-  --gutter-y: 16px;
+  --gutter-x: 20px;
+  --gutter-y: 12px;
   --radius: 12px;
 
   /* light UI palette (tables, cards, forms) */

@@ -41,6 +41,10 @@ export default function FilterMenu({
     };
   }, [open, anchorEl, onClose]);
 
+  useEffect(() => {
+    if (!open) setQ("");
+  }, [open]);
+
   // position next to the button
   useLayoutEffect(() => {
     if (!open || !anchorEl) return;
@@ -64,8 +68,10 @@ export default function FilterMenu({
     (a) => !q.trim() || a.name.toLowerCase().includes(q.toLowerCase())
   );
 
-  function toggle(setter, list, id) {
-    setter(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+  function toggle(setter, id) {
+    setter((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   return (
@@ -85,18 +91,21 @@ export default function FilterMenu({
         />
         <button
           className={styles.filterGhost}
-          onClick={onClear}
+          onClick={() => {
+            onClear?.();
+            setQ("");
+          }}
           title={translation("FilterMenu.clear")}
         >
           {translation("FilterMenu.clear")}
         </button>
-        <button
+        {/* <button
           className={styles.filterGhost}
           onClick={onClose}
           title={translation("FilterMenu.close")}
         >
           <X size={16} />
-        </button>
+        </button> */}
       </div>
 
       <div className={styles.filterSection}>
@@ -111,9 +120,7 @@ export default function FilterMenu({
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={() =>
-                    toggle(setSelectedTagIds, selectedTagIds, t.id)
-                  }
+                  onChange={() => toggle(setSelectedTagIds, t.id)}
                 />
                 <span>{t.name}</span>
               </label>
@@ -139,9 +146,7 @@ export default function FilterMenu({
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={() =>
-                    toggle(setSelectedAssistantIds, selectedAssistantIds, a.id)
-                  }
+                  onChange={() => toggle(setSelectedAssistantIds, a.id)}
                 />
                 <span>{a.name}</span>
               </label>

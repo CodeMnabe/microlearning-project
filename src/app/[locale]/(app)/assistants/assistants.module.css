@@ -157,7 +157,6 @@
   background: var(--panel);
   border-radius: 18px;
   padding: 22px;
-  /* box-shadow: 0 10px 24px #0000002b; */
 }
 .cardSubtitle {
   font-weight: 800;
@@ -195,7 +194,7 @@
 
 .inputTitle {
   width: 100%;
-  background: #ffffff22;
+  background: #ffffff22; /* default = view mode tint */
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -206,7 +205,7 @@
 .inputSub,
 .input {
   width: 100%;
-  background: #ffffff18;
+  background: #ffffff18; /* default = view mode tint */
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -224,7 +223,7 @@
 /* EDIT MODE — textarea should scroll and size nicely */
 .instructionsInput {
   width: 100%;
-  background: #ffffff18;
+  background: #ffffff18; /* default = view mode tint */
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -235,7 +234,7 @@
   resize: vertical;
 }
 
-/* READ-ONLY — fills “enough” but leaves room for specs/meta/actions */
+/* READ-ONLY */
 .instructionsPaper {
   background: #fff;
   color: #142036;
@@ -243,8 +242,6 @@
   padding: 12px 14px;
   margin-top: 6px;
   box-shadow: inset 0 0 0 1px #ffffff22;
-
-  /* Responsive cap: tune the middle percentage if you want more/less height */
   max-height: clamp(140px, 26vh, 340px);
   overflow: auto;
 }
@@ -301,12 +298,15 @@
 .specValueBold {
   font-weight: 800;
 }
+
 .primaryCard,
 .paperCard,
 .modalContent,
 .form {
   color-scheme: light;
 }
+
+/* Simple two-col slider row used elsewhere */
 .sliderRow {
   display: grid;
   grid-template-columns: 64px 1fr;
@@ -326,7 +326,7 @@ input[type="range"].slider {
   font-weight: 700;
 }
 
-/* ===== Meta + Actions (one row) ===== */
+/* ===== Meta + Actions ===== */
 .metaBar {
   display: flex;
   align-items: center;
@@ -334,8 +334,6 @@ input[type="range"].slider {
   gap: 16px;
   margin-top: 12px;
 }
-
-/* Stack ID + Created vertically on the left */
 .metaBar .metaGrid {
   display: flex;
   flex-direction: column;
@@ -358,8 +356,6 @@ input[type="range"].slider {
   font-size: 0.85rem;
   font-weight: 600;
 }
-
-/* Actions on the right */
 .actionsRow {
   display: flex;
   align-items: center;
@@ -510,7 +506,6 @@ body.modalOpen {
 .paperCard {
   background: #ffffff;
   color: var(--text-dark);
-  /* box-shadow: 0 10px 24px #0000001a; */
 }
 .paperCard .cardSubtitle,
 .paperCard .label {
@@ -529,9 +524,9 @@ body.modalOpen {
 .formGroup textarea,
 .instructionsInput,
 .instructionsPaper {
-  font: inherit; /* Inter, from body */
-  line-height: 1.5; /* nicer reading */
-  font-size: 0.95rem; /* match your inputs */
+  font: inherit;
+  line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 /* ===== DESKTOP BREAKPOINTS ===== */
@@ -550,8 +545,6 @@ body.modalOpen {
     grid-template-columns: 230px 1fr 320px;
   }
 }
-
-/* Hide chat on narrower desktop */
 @media (max-width: 1200px) {
   .hub {
     grid-template-columns: 240px 1fr;
@@ -559,4 +552,40 @@ body.modalOpen {
   .chatCol {
     display: none;
   }
+}
+
+/* ========================= */
+/* EDITING LOOK (inputs only)*/
+/* ========================= */
+
+/* Apply these when the main card also has the .editing class */
+.primaryCard.editing .inputTitle,
+.primaryCard.editing .inputSub,
+.primaryCard.editing .instructionsInput {
+  background: #ffffff; /* white inputs on blue card */
+  color: var(--text-dark);
+  box-shadow: inset 0 0 0 1px #e5edf5;
+}
+.primaryCard.editing .ghostBtn {
+  border: 1px solid #d6e2ee;
+  color: var(--text-dark);
+}
+.primaryCard.editing .ghostBtn:hover {
+  background: #f3f7fb;
+}
+
+/* Edit-mode: slider should span columns 2-3, value right-aligned */
+.sliderRowEditing {
+  grid-column: 2 / 4; /* span both the track + value columns */
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  gap: 10px;
+  align-items: center;
+}
+.sliderRowEditing input[type="range"] {
+  width: 100%;
+}
+.sliderValueRight {
+  text-align: right;
+  font-weight: 700;
 }

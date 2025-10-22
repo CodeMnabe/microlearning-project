@@ -26,7 +26,7 @@ export default function AssistantsHub() {
 
   // editing state
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(null); // <- isolated edits
+  const [draft, setDraft] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // vector store state
@@ -153,7 +153,7 @@ export default function AssistantsHub() {
       }
       setIsEditing(false);
       setDraft(null);
-      await fetchOne(selected.id); // refresh from server
+      await fetchOne(selected.id);
     } finally {
       setIsSaving(false);
     }
@@ -295,7 +295,12 @@ export default function AssistantsHub() {
       <section className={styles.mainCol}>
         {selected ? (
           <>
-            <section className={`${styles.card} ${styles.primaryCard}`}>
+            {/* Keep the blue card; only invert inputs when editing */}
+            <section
+              className={`${styles.card} ${styles.primaryCard} ${
+                isEditing ? styles.editing : ""
+              }`}
+            >
               <div className={styles.cardTitleRow}>
                 {isEditing ? (
                   <input
@@ -353,10 +358,7 @@ export default function AssistantsHub() {
                   </span>
 
                   {isEditing ? (
-                    <div className={styles.sliderRow}>
-                      <span className={styles.sliderValue}>
-                        {(read("top_p", 0) || 0).toFixed(2)}
-                      </span>
+                    <div className={styles.sliderRowEditing}>
                       <Slider
                         min={0}
                         max={1}
@@ -366,6 +368,9 @@ export default function AssistantsHub() {
                           handleChange("top_p", parseFloat(e.target.value))
                         }
                       />
+                      <span className={styles.sliderValueRight}>
+                        {(read("top_p", 0) || 0).toFixed(2)}
+                      </span>
                     </div>
                   ) : (
                     <>
@@ -389,10 +394,7 @@ export default function AssistantsHub() {
                   </span>
 
                   {isEditing ? (
-                    <div className={styles.sliderRow}>
-                      <span className={styles.sliderValue}>
-                        {(read("temperature", 0) || 0).toFixed(2)}
-                      </span>
+                    <div className={styles.sliderRowEditing}>
                       <Slider
                         min={0}
                         max={2}
@@ -405,6 +407,9 @@ export default function AssistantsHub() {
                           )
                         }
                       />
+                      <span className={styles.sliderValueRight}>
+                        {(read("temperature", 0) || 0).toFixed(2)}
+                      </span>
                     </div>
                   ) : (
                     <>
@@ -480,7 +485,7 @@ export default function AssistantsHub() {
                         className={styles.ghostBtn}
                         onClick={() => {
                           setIsEditing(false);
-                          setDraft(null); // discard everything
+                          setDraft(null);
                         }}
                       >
                         {translation("Common.cancel")}
@@ -509,7 +514,7 @@ export default function AssistantsHub() {
               </div>
             </section>
 
-            {/* Vector store */}
+            {/* Vector store (still paper card) */}
             <section className={`${styles.card} ${styles.paperCard}`}>
               {!selected.vectorStoreId ? (
                 <>

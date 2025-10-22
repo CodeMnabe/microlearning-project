@@ -7,6 +7,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 function Initial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
@@ -58,6 +59,7 @@ function extractText(node, out = []) {
 export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
+  const translation = useTranslations();
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoader();
 
@@ -298,7 +300,7 @@ export default function BroadcastPage() {
       const urls = await supabaseUpload(files);
       setImageUrls((prev) => [...prev, ...urls]);
     } catch (err) {
-      alert("upload failed: " + err.message);
+      alert(translation("Common.error") + ": " + err.message);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -397,7 +399,7 @@ export default function BroadcastPage() {
 
   async function handleSend() {
     const chosen = users.filter((u) => selected.has(u.id));
-    if (!chosen.length) return alert("Escolhe destinatários");
+    if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
     setSending(true);
     setResult(null);
     try {
@@ -428,11 +430,11 @@ export default function BroadcastPage() {
       setResult(data);
       if (!res.ok) {
         console.error("Broadcast error", data);
-        alert(data?.error || "Falha ao mandar mensagem.");
+        alert(translation("Common.error"));
       }
     } catch (err) {
       console.error(err);
-      alert("Alguma coisa correu mal: " + err.message);
+      alert(translation("Common.error") + ": " + err.message);
     } finally {
       setSending(false);
     }
@@ -440,9 +442,9 @@ export default function BroadcastPage() {
 
   async function handleSendTemplateOnly() {
     const chosen = users.filter((u) => selected.has(u.id));
-    if (!chosen.length) return alert("Escolhe destinatários");
+    if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
     if (!tplName.trim() || !paramsComplete)
-      return alert("Completa os parâmetros do template.");
+      return alert(translation("Common.error"));
     setSending(true);
     setResult(null);
     try {
@@ -490,7 +492,7 @@ export default function BroadcastPage() {
       });
     } catch (err) {
       console.error(err);
-      alert("Alguma coisa correu mal: " + err.message);
+      alert(translation("Common.error") + ": " + err.message);
     } finally {
       setSending(false);
     }
@@ -507,17 +509,19 @@ export default function BroadcastPage() {
   return (
     <div className={styles.screen}>
       <div className={styles.headerRow}>
-        <h1>Mensagens WhatsApp</h1>
+        <h1>{translation("Broadcast.title")}</h1>
         <div className={styles.actionsRight}>
           <div className={styles.selectedLabel}>
-            Selecionados: <strong>{selected.size}</strong>
+            {translation("Broadcast.selected")} <strong>{selected.size}</strong>
           </div>
           <button
             onClick={handleSend}
             disabled={sending || !canSend}
             className={styles.primaryBtn}
           >
-            {sending ? "A enviar…" : "Enviar via WhatsApp"}
+            {sending
+              ? translation("Broadcast.sending")
+              : translation("Broadcast.send")}
           </button>
           {/* <button
             onClick={handleSendTemplateOnly}
@@ -529,7 +533,7 @@ export default function BroadcastPage() {
             }
             className={styles.ghostBtn}
           >
-            {sending ? "A enviar…" : "Enviar só template"}
+            {sending ? translation("Broadcast.sending") : "Enviar só template"}
           </button> */}
         </div>
       </div>
@@ -539,12 +543,14 @@ export default function BroadcastPage() {
         <div className={styles.leftCol}>
           {/* Message */}
           <div className={styles.panel}>
-            <div className={styles.panelTitle}>Mensagem</div>
+            <div className={styles.panelTitle}>
+              {translation("Broadcast.message")}
+            </div>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={19}
-              placeholder="Escreve a tua mensagem..."
+              rows={10}
+              placeholder={translation("Broadcast.messagePlaceholder")}
               className={styles.textarea}
             />
             {/* <div className={styles.imagesRow}>
@@ -587,17 +593,18 @@ export default function BroadcastPage() {
           {/* Template — compact */}
           <div className={`${styles.panel} ${styles.panelSlim}`}>
             <div className={styles.panelTitle}>
-              Pré-Visualização do Template
+              {translation("Broadcast.templatePreview")}
             </div>
             {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
 
             {/* 2-column layout: LEFT = select + fields, RIGHT = preview */}
             <div className={styles.templateGrid}>
               <div className={styles.templateFormCol}>
-                {/* ⬇️ moved INSIDE the left column */}
                 <div className={styles.templateRow}>
                   <div className={styles.field}>
-                    <div className={styles.label}>Template</div>
+                    <div className={styles.label}>
+                      {translation("Broadcast.template")}
+                    </div>
                     <select
                       disabled={tplLoading || nameOptions.length === 0}
                       value={tplName}
@@ -605,7 +612,9 @@ export default function BroadcastPage() {
                       className={styles.select}
                     >
                       {nameOptions.length === 0 ? (
-                        <option value="">Sem templates</option>
+                        <option value="">
+                          {translation("Broadcast.noTemplates")}
+                        </option>
                       ) : (
                         nameOptions.map((n) => (
                           <option key={n} value={n}>
@@ -620,7 +629,7 @@ export default function BroadcastPage() {
                     <div className={styles.meta}>
                       <span className={styles.metaItem}>
                         <span className={`${styles.pill} ${styles.pillSoft}`}>
-                          {chosenTemplate.status}
+                          {/* {chosenTemplate.status} */}
                         </span>
                       </span>
                     </div>
@@ -664,14 +673,14 @@ export default function BroadcastPage() {
                     })}
                     {!paramsComplete && (
                       <div className={styles.helpDanger}>
-                        Todos os parâmetros são obrigatórios para este template.
+                        {translation("Common.error")}
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className={styles.fieldWide}>
                     <label className={styles.smallLabel}>
-                      Parâmetros (key=value, separados por vírgula)
+                      {translation("Broadcast.varKeyDesc")}
                     </label>
                     <input
                       value={tplParamsManual}
@@ -685,7 +694,7 @@ export default function BroadcastPage() {
                 {needsUrlVar && (
                   <div className={styles.fieldWide}>
                     <label className={styles.smallLabel}>
-                      Variável do botão URL
+                      {translation("Broadcast.urlVar")}
                     </label>
                     <input
                       value={tplUrlVar}
@@ -706,7 +715,8 @@ export default function BroadcastPage() {
                         <div className={styles.waAvatar}>U</div>
                         <div className={styles.waHeaderText}>
                           <div className={styles.waTitle}>
-                            {sampleRecipient?.name || "Utilizador"}
+                            {sampleRecipient?.name ||
+                              translation("Common.none")}
                           </div>
                           <div className={styles.waSubtitle}>online</div>
                         </div>
@@ -744,7 +754,7 @@ export default function BroadcastPage() {
                   </>
                 ) : (
                   <div className={styles.previewPlaceholder}>
-                    Seleciona um template para ver a pré-visualização.
+                    {translation("Common.noResults")}
                   </div>
                 )}
               </aside>
@@ -752,13 +762,17 @@ export default function BroadcastPage() {
           </div>
         </div>
 
-        {/* RIGHT: Recipients (unchanged) */}
+        {/* RIGHT: Recipients */}
         <div className={styles.rightCol}>
           <div className={styles.panel}>
             <div className={styles.panelTitleRow}>
-              <div className={styles.panelTitle}>Destinatários</div>
+              <div className={styles.panelTitle}>
+                {translation("Broadcast.recipients")}
+              </div>
               <button onClick={toggleAllCurrent} className={styles.kbdBtn}>
-                {allOnPageSelected ? "Desselecionar todos" : "Selecionar todos"}
+                {allOnPageSelected
+                  ? translation("Broadcast.deselectAll")
+                  : translation("Broadcast.selectAll")}
               </button>
             </div>
 
@@ -766,7 +780,7 @@ export default function BroadcastPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Procurar nome ou telefone…"
+                placeholder={translation("Broadcast.searchPeople")}
                 className={styles.searchInput}
               />
             </div>
@@ -788,14 +802,18 @@ export default function BroadcastPage() {
                     />
                     <div className={styles.avatar}>{Initial(u.name)}</div>
                     <div className={styles.nameBlock}>
-                      <div className={styles.name}>{u.name || "Sem nome"}</div>
+                      <div className={styles.name}>
+                        {u.name || translation("Common.none")}
+                      </div>
                       <div className={styles.subline}>{u.phone_number}</div>
                     </div>
                   </label>
                 );
               })}
               {filtered.length === 0 && (
-                <div className={styles.empty}>Sem utilizadores.</div>
+                <div className={styles.empty}>
+                  {translation("Broadcast.emptyUsers")}
+                </div>
               )}
             </div>
           </div>
@@ -805,8 +823,9 @@ export default function BroadcastPage() {
       {result && (
         <div className={styles.resultWrap}>
           <div className={styles.resultSummary}>
-            <strong>Resultado:</strong> {result.ok} enviados, {result.failed}{" "}
-            falharam
+            <strong>{translation("Broadcast.result")}</strong> {result.ok}{" "}
+            {translation("Broadcast.sent")}, {result.failed}{" "}
+            {translation("Broadcast.failed")}
           </div>
           <div className={styles.resultBox}>
             {Array.isArray(result.results) &&
@@ -814,7 +833,9 @@ export default function BroadcastPage() {
                 <div key={idx} className={styles.resultRow}>
                   <div>{String(r.to || "")}</div>
                   <div className={r.ok ? styles.ok : styles.bad}>
-                    {r.ok ? "OK" : "Falhou"}
+                    {r.ok
+                      ? translation("Common.ok")
+                      : translation("Common.error")}
                   </div>
                   <pre className={styles.resultPre}>
                     {JSON.stringify(r.data, null, 2)}
