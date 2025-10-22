@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function LoginPage() {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoader();
@@ -20,12 +22,12 @@ export default function LoginPage() {
       if (session) {
         console.log(session);
         startLoading();
-        router.replace("/users");
+        router.replace(`/${locale}/users`);
         return;
       }
       stopLoading?.();
     })();
-  }, [supabase, router, startLoading, stopLoading]);
+  }, [supabase, router, startLoading, stopLoading, locale]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +46,7 @@ export default function LoginPage() {
 
     if (error) {
       setStatus("idle");
-      setErrorMsg(error.message); // optional (or remove if you don't want any text)
+      setErrorMsg(error.message);
       return;
     }
 
@@ -52,7 +54,7 @@ export default function LoginPage() {
     // give the tick a brief moment, then navigate
     setTimeout(() => {
       startLoading?.();
-      router.push("/users");
+      router.push(`/${locale}/users`);
     }, 650);
   }
 
@@ -60,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.brand}>MyDigitalBot</h1>
+      <h1 className={styles.brand}>{t("Auth.brand")}</h1>
 
       <form className={styles.card} onSubmit={handleAuth}>
         <h1 className={styles.title}>{t("Auth.login.title")}</h1>
@@ -115,11 +117,10 @@ export default function LoginPage() {
           )}
         </button>
 
-        <a href="/reset" className={styles.link}>
+        <Link href={`/${locale}/reset`} className={styles.link}>
           {t("Auth.login.forgot")}
-        </a>
+        </Link>
 
-        {/* Optional: keep error text if you want it */}
         {errorMsg && <p className={styles.message}>{errorMsg}</p>}
       </form>
     </main>

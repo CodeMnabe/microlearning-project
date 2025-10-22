@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import styles from "../../login/login.module.css";
+import Link from "next/link";
 
 export default function ResetConfirmPage() {
   const supabase = createClient();
@@ -102,9 +103,9 @@ export default function ResetConfirmPage() {
           )}
         </button>
 
-        <a href={`/${locale}/login`} className={styles.link}>
+        <Link href={`/${locale}/login`} className={styles.link}>
           {t("Auth.resetConfirm.back")}
-        </a>
+        </Link>
 
         {msg && <p className={styles.message}>{msg}</p>}
       </form>

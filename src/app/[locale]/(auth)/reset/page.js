@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import styles from "../login/login.module.css"; // reuses spinner/check/btn styles
+import styles from "../login/login.module.css"; // reuse spinner/check/btn styles
 
 export default function ResetRequestPage() {
   const supabase = createClient();
@@ -31,7 +32,7 @@ export default function ResetRequestPage() {
       return;
     }
 
-    setStatus("done"); // label changes to “E-mail sent” (localized)
+    setStatus("done"); // label changes to “E-mail enviado”
     setEmail("");
   }
 
@@ -39,7 +40,7 @@ export default function ResetRequestPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.brand}>MyDigitalBot</h1>
+      <h1 className={styles.brand}>{t("Auth.brand")}</h1>
 
       <form onSubmit={handleSubmit} className={styles.card}>
         <h1 className={styles.title}>{t("Auth.reset.title")}</h1>
@@ -58,7 +59,7 @@ export default function ResetRequestPage() {
         <button
           type="submit"
           className={styles.btnPrimary}
-          data-state={status} // CSS hides label only during 'loading'
+          data-state={status}
           disabled={disabled}
           aria-busy={status === "loading"}
           aria-live="polite"
@@ -76,9 +77,9 @@ export default function ResetRequestPage() {
           )}
         </button>
 
-        <a href="/login" className={styles.link}>
+        <Link href={`/${locale}/login`} className={styles.link}>
           {t("Auth.reset.back")}
-        </a>
+        </Link>
 
         {errorMsg && <p className={styles.message}>{errorMsg}</p>}
       </form>
