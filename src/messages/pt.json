@@ -105,6 +105,12 @@
     "content": "Conteúdo",
     "noText": "Sem texto"
   },
+
+  "ViewUserModal": {
+    "error": "Erro",
+    "threadErrorMessage": "Erro ao carregar threads.",
+    "messageErrorMessage": "Erro ao carregar mensagens."
+  },
   "FilterMenu": {
     "title": "Filtros",
     "search": "Procurar…",
@@ -133,7 +139,6 @@
     "confirmDeleteTitle": "Eliminar este utilizador",
     "confirmDeleteMsg": "Esta ação não pode ser desfeita."
   },
-
   "CreateUserModal": {
     "title": "Criar um novo Utilizador",
     "userName": "Nome do Utilizador:",

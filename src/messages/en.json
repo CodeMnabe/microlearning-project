@@ -107,6 +107,11 @@
     "noText": "No text found!"
   },
 
+  "ViewUserModal": {
+    "error": "Error",
+    "threadErrorMessage": "Error loading threads.",
+    "messageErrorMessage": "Error loading messages."
+  },
   "FilterMenu": {
     "title": "Filters",
     "search": "Search…",

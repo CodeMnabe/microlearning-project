@@ -7,6 +7,7 @@ import CreateUserModal from "./CreateUser";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import ManageTagsModal from "./ManageTagsModal/ManageTagsModal";
 import EditUserModal from "./EditUserModal";
+import ViewUserModal from "./ViewUserModal"; // ← NEW
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import {
   MoreHorizontal,
@@ -48,6 +49,11 @@ export default function UsersPage() {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+
+  // NEW: view modal state
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingUser, setViewingUser] = useState(null);
+
   const confirm = useConfirm();
 
   // how many tags to show before "+n"
@@ -128,7 +134,6 @@ export default function UsersPage() {
 
       const tagsOk =
         selectedTagIds.length === 0 ||
-        // ALL-of logic; switch to .some() for ANY-of
         selectedTagIds.every((id) => (u.tagIds || []).includes(id));
 
       const assistantOk =
@@ -190,8 +195,11 @@ export default function UsersPage() {
     setEditingUser(u);
     setEditOpen(true);
   }
+
+  // NEW: open the view modal
   function openViewFor(u) {
-    alert(`(demo) Ver utilizador: ${u.name}`);
+    setViewingUser(u);
+    setViewOpen(true);
   }
 
   async function deleteUserById(u) {
@@ -448,7 +456,7 @@ export default function UsersPage() {
                   >
                     <button
                       className={styles.rowActBtn}
-                      onClick={() => openViewFor(u)}
+                      onClick={() => openViewFor(u)} // ← NEW
                       title={translation("Users.row.view")}
                     >
                       <Eye size={16} />{" "}
@@ -521,6 +529,24 @@ export default function UsersPage() {
           onClose={() => setEditOpen(false)}
           onSaved={async () => {
             await refreshUsers();
+          }}
+        />
+      )}
+
+      {/* NEW: View modal with threads/messages */}
+      {orgId && (
+        <ViewUserModal
+          open={viewOpen}
+          onClose={() => setViewOpen(false)}
+          user={viewingUser}
+          orgId={orgId}
+          onEdit={() => {
+            // jump into edit flow from view
+            setViewOpen(false);
+            if (viewingUser) {
+              setEditingUser(viewingUser);
+              setEditOpen(true);
+            }
           }}
         />
       )}

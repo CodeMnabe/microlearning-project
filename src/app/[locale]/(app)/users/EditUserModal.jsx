@@ -23,6 +23,8 @@ export default function EditUserModal({
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // tags
   const [allTags, setAllTags] = useState([]);
@@ -76,7 +78,7 @@ export default function EditUserModal({
   }
 
   async function save() {
-    setSaving(true);
+    setIsSaving(true);
     try {
       const res = await fetch("/api/users", {
         method: "PATCH",
@@ -98,7 +100,7 @@ export default function EditUserModal({
       onSaved?.(updated);
       onClose?.();
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   }
 
@@ -113,13 +115,13 @@ export default function EditUserModal({
     });
     if (!ok) return;
 
-    setSaving(true);
+    setIsDeleting(true);
     try {
       await onDelete(user.id);
       onSaved?.();
       onClose?.();
     } finally {
-      setSaving(false);
+      setIsDeleting(false);
     }
   }
 
@@ -179,7 +181,6 @@ export default function EditUserModal({
               onChange={(val) => setAssistantId(val)}
               placeholder={translation("EditUserModal.chooseAssistant")}
               fullWidth
-              portalToBody
             />
           </div>
 
@@ -227,14 +228,14 @@ export default function EditUserModal({
             <button
               type="button"
               onClick={handleDelete}
-              disabled={saving}
+              disabled={isSaving || isDeleting}
               style={{
                 background: "#fff5f5",
                 color: "#b42318",
                 border: "1px solid #ffd0d0",
               }}
             >
-              {saving
+              {isDeleting
                 ? translation("EditUserModal.deleting")
                 : translation("EditUserModal.delete")}
             </button>
@@ -242,8 +243,12 @@ export default function EditUserModal({
               <button type="button" onClick={onClose}>
                 {translation("EditUserModal.cancel")}
               </button>
-              <button type="button" onClick={save} disabled={saving}>
-                {saving
+              <button
+                type="button"
+                onClick={save}
+                disabled={isSaving || isDeleting}
+              >
+                {isSaving
                   ? translation("EditUserModal.saving")
                   : translation("EditUserModal.save")}
               </button>
