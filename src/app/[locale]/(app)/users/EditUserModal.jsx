@@ -181,6 +181,7 @@ export default function EditUserModal({
               onChange={(val) => setAssistantId(val)}
               placeholder={translation("EditUserModal.chooseAssistant")}
               fullWidth
+              portalToBody
             />
           </div>
 

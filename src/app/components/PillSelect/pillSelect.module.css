@@ -96,22 +96,16 @@
 
 /* Ensures the menu never runs off-screen */
 .menu {
-  position: fixed;
-  z-index: 1000;
+  position: fixed; /* stays aligned to viewport when portaled */
+  z-index: 10001; /* above .modalOverlay (9999) */
+  background: #fff;
+  border: 1px solid var(--ui-border, #e5edf5);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+  padding: 6px;
   max-height: min(320px, calc(100vh - 24px));
   overflow: auto;
-}
-
-/* Optional: tweak shadow/origin when opening upward */
-.menuUp {
-  transform-origin: bottom center;
-}
-/* Ensures the menu never runs off-screen */
-.menu {
-  position: fixed;
-  z-index: 1000;
-  max-height: min(320px, calc(100vh - 24px));
-  overflow: auto;
+  animation: fadeIn 0.12s ease-out;
 }
 
 /* Optional: tweak shadow/origin when opening upward */
