@@ -15,16 +15,16 @@ export default function ResetConfirmPage() {
   const [newPw, setNewPw] = useState("");
   const [msg, setMsg] = useState("");
   const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'done'
+  const [status, setStatus] = useState("idle");
 
   useEffect(() => {
     (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        setMsg(t("Auth.resetConfirm.invalid"));
-        return;
+      // Converts ?code=... into a session cookie
+      const { error } = await supabase.auth.exchangeCodeForSession(
+        window.location.href
+      );
+      if (error) {
+        setMsg(error.message || t("Auth.resetConfirm.invalid"));
       }
       setReady(true);
     })();
@@ -42,7 +42,7 @@ export default function ResetConfirmPage() {
       return;
     }
 
-    setStatus("done"); // show "Password updated!" on the button
+    setStatus("done");
     setTimeout(() => router.push(`/${locale}/login`), 800);
   }
 
@@ -62,10 +62,8 @@ export default function ResetConfirmPage() {
   return (
     <main className={styles.page}>
       <h1 className={styles.brand}>MyDigitalBot</h1>
-
       <form onSubmit={handleSubmit} className={styles.card}>
         <h1 className={styles.title}>{t("Auth.resetConfirm.title")}</h1>
-
         <label className={styles.label}>
           {t("Auth.resetConfirm.newPassword")}
         </label>
@@ -79,7 +77,6 @@ export default function ResetConfirmPage() {
           required
           disabled={disabled}
         />
-
         <button
           type="submit"
           className={styles.btnPrimary}
@@ -93,7 +90,6 @@ export default function ResetConfirmPage() {
               ? t("Auth.resetConfirm.updated")
               : t("Auth.resetConfirm.confirm")}
           </span>
-
           {status === "loading" && (
             <span
               className={styles.spinner}
@@ -102,11 +98,9 @@ export default function ResetConfirmPage() {
             />
           )}
         </button>
-
         <Link href={`/${locale}/login`} className={styles.link}>
           {t("Auth.resetConfirm.back")}
         </Link>
-
         {msg && <p className={styles.message}>{msg}</p>}
       </form>
     </main>
