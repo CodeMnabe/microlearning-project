@@ -9,8 +9,10 @@ export function createClient() {
     {
       global: { fetch: fetch.bind(globalThis) },
       auth: {
-        flowType: "implicit",
+        flowType: "pkce",
         detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
       },
     }
   );
