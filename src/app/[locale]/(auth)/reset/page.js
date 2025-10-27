@@ -23,7 +23,7 @@ export default function ResetRequestPage() {
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/${locale}/reset/confirm`,
-      flowType: "pkce",
+      flowType: "implicit",
     });
 
     if (error) {

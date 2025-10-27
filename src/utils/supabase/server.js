@@ -20,7 +20,7 @@ export async function createClient() {
         },
       },
       auth: {
-        flowType: "pkce",
+        flowType: "implicit",
       },
     }
   );
