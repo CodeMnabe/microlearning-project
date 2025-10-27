@@ -18,17 +18,29 @@ export default function ResetConfirmPage() {
   const [status, setStatus] = useState("idle");
 
   useEffect(() => {
+    let unsub = () => {};
+
     (async () => {
-      // Converts ?code=... into a session cookie
-      const { error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      );
-      if (error) {
-        setMsg(error.message || t("Auth.resetConfirm.invalid"));
+      // Supabase parses #access_token when detectSessionInUrl: true
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
       }
-      setReady(true);
+
+      // Fallback: wait for auth event in case parsing is async
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_evt, sess) => {
+        if (sess) setReady(true);
+      });
+      unsub = () => subscription.unsubscribe();
     })();
-  }, [supabase, t]);
+
+    return () => unsub();
+  }, [supabase]);
 
   async function handleSubmit(e) {
     e.preventDefault();
