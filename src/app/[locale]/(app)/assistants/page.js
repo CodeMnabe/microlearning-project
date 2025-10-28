@@ -12,6 +12,8 @@ import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import Slider from "@/app/components/Slider/Slider";
 
+const STORAGE_BUCKET = "assistant-uploads";
+
 export default function AssistantsHub() {
   const translation = useTranslations();
   const confirm = useConfirm();
@@ -193,14 +195,34 @@ export default function AssistantsHub() {
     if (!vsName.trim() || vsFiles.length === 0) return;
 
     startLoading();
+    const supabase = createClient();
     try {
-      const fd = new FormData();
-      fd.append("storeName", vsName);
-      vsFiles.forEach((f) => fd.append("files", f));
+      const basePath = `${orgId}/${selected.id}/${Date.now()}`;
+      const uploaded = [];
+      for (const f of vsFiles) {
+        const path = `${basePath}-${f.name}`;
+        const { error } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(path, f, {
+            upsert: true,
+            contentType: f.type || "application/octet-stream",
+          });
+        if (error) {
+          alert("Erro no upload: " + error.message);
+          return;
+        }
+        uploaded.push({
+          bucket: STORAGE_BUCKET,
+          path,
+          name: f.name,
+          size: f.size,
+          type: f.type,
+        });
+      }
 
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
-        body: fd,
+        body: JSON.stringify({ storeName: vsName, files: uploaded }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

@@ -73,7 +73,7 @@ export async function GET(req) {
 
     const { data: allowedRows, error: dbErr } = await supabaseAdmin
       .from("whatsapp_templates")
-      .select("name, language")
+      .select("name, language, provider_template_id")
       .or(`org_id.eq.${orgId},org_id.is.null`)
       .eq("status", "ACTIVE");
 
@@ -83,6 +83,10 @@ export async function GET(req) {
       String(s ?? "")
         .trim()
         .toLowerCase();
+
+    const allowedIds = new Set(
+      (allowedRows ?? []).map((r) => r.provider_template_id).filter(Boolean)
+    );
     const allowedKey = new Set(
       (allowedRows ?? []).map((r) => `${norm(r.name)}__${norm(r.language)}`)
     );
@@ -161,7 +165,11 @@ export async function GET(req) {
 
     const filtered = best.filter((t) => {
       const k = `${norm(t.name)}__${norm(t.language)}`;
-      return allowedKey.has(k) || allowedNameOnly.has(norm(t.name));
+      return (
+        allowedIds.has(t.provider_template_id) ||
+        allowedKey.has(k) ||
+        allowedNameOnly.has(norm(t.name))
+      );
     });
 
     // 5) Return the list your UI expects
