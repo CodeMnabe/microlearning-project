@@ -18,7 +18,7 @@
     "messagebird": "^4.0.1",
     "next": "15.2.3",
     "next-intl": "^4.3.12",
-    "openai": "^4.89.1",
+    "openai": "^6.7.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

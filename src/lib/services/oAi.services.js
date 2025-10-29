@@ -1,135 +1,165 @@
-import fs from "fs";
+// src/lib/services/oAi.services.js
+import OpenAI from "openai";
 import { stripOpenAICitations } from "./removeOAiCitations";
-require("dotenv").config();
-const OpenAI = require("openai");
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Next.js loads env vars automatically; no dotenv/require here
+export const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/* ----------------------------- helpers ----------------------------- */
+
+function getVectorStoresAPI() {
+  // Support both shapes depending on SDK version
+  return client.beta?.vectorStores ?? client.vectorStores ?? null;
+}
+function getFileBatchesAPI() {
+  return (
+    client.beta?.vectorStores?.fileBatches ??
+    client.vectorStores?.fileBatches ??
+    null
+  );
+}
+
+/* --------------------------- Assistants CRUD --------------------------- */
 
 export async function createOAiAssistant(body) {
-  try {
-    const createdAssistant = await client.beta.assistants.create({
-      name: body.name,
-      description: body.description,
-      instructions: body.instructions,
-      model: body.model,
-      top_p: body.top_p,
-      temperature: body.temperature,
-      tools: [{ type: "file_search" }],
-    });
-
-    return createdAssistant;
-  } catch (err) {
-    console.error(err);
-  }
+  return client.beta.assistants.create({
+    name: body.name,
+    description: body.description,
+    instructions: body.instructions,
+    model: body.model,
+    top_p: body.top_p,
+    temperature: body.temperature,
+    tools: [{ type: "file_search" }],
+  });
 }
 
 export async function getOAiAssistantById(id) {
-  try {
-    const assistant = await client.beta.assistants.retrieve(`${id}`);
-    return assistant;
-  } catch (err) {
-    console.error(err.message);
-  }
+  return client.beta.assistants.retrieve(`${id}`);
 }
 
 export async function updateOAiAssistant(updates) {
-  try {
-    const myUpdatedAssistant = await client.beta.assistants.update(
-      `${updates.open_ai_id}`,
-      {
-        name: updates.name,
-        description: updates.description,
-        instructions: updates.instructions,
-        model: updates.model,
-        top_p: updates.top_p,
-        temperature: updates.temperature,
-      }
-    );
-
-    return myUpdatedAssistant;
-  } catch (error) {
-    console.error(error);
-  }
+  return client.beta.assistants.update(`${updates.open_ai_id}`, {
+    name: updates.name,
+    description: updates.description,
+    instructions: updates.instructions,
+    model: updates.model,
+    top_p: updates.top_p,
+    temperature: updates.temperature,
+  });
 }
 
 export async function deleteOAiAssistant(id) {
-  try {
-    const wasDeleted = await client.beta.assistants.del(`${id}`);
-
-    if (wasDeleted.deleted) {
-      console.log("Assistant Deleted with success");
-    } else {
-      console.log("Assistant was not deleted");
-    }
-  } catch (error) {
-    console.error(error);
-  }
+  return client.beta.assistants.del(`${id}`);
 }
 
+/* --------------------------- Files & Stores --------------------------- */
+
+/**
+ * Upload a real File/Blob/Buffer/ReadableStream to OpenAI.
+ * (Your API route converts Storage blobs via `toFile(blob, name)`.)
+ */
 export async function createOAiFile(file) {
   try {
-    const uploadedFile = await client.files.create({
-      file, // File → ReadableStream
-      purpose: "assistants", // correct purpose for retrieval
-    });
-
-    return uploadedFile;
+    return await client.files.create({ file, purpose: "assistants" });
   } catch (err) {
-    return console.error(err.message);
+    throw new Error(err?.message || "OpenAI file upload failed");
   }
 }
 
-export async function createOAiVectorStore(storeName, uploadedFiles) {
+/**
+ * Correct vector-store flow:
+ * 1) Create store
+ * 2) Attach files via fileBatches.create
+ */
+export async function createOAiVectorStore(storeName, fileIds = []) {
   try {
-    if (storeName.trim() === "" || !storeName) {
-      return console.alert("Name cannot be empty");
+    if (!storeName?.trim()) throw new Error("Name cannot be empty");
+
+    const vs = getVectorStoresAPI();
+    if (!vs?.create) {
+      throw new Error(
+        "Vector Stores API not available in your installed 'openai' package. Update to the latest version."
+      );
     }
 
-    if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
-      console.error("At least one file path must be supplied.");
-      return null;
+    const store = await vs.create({ name: storeName });
+
+    if (fileIds.length) {
+      const batches = getFileBatchesAPI();
+      if (!batches?.create) {
+        throw new Error(
+          "Your 'openai' SDK lacks vectorStores.fileBatches.create. Please upgrade."
+        );
+      }
+      await batches.create(store.id, { file_ids: fileIds });
     }
 
-    const fileIds = [];
-    uploadedFiles.forEach(async (file) => {
-      await fileIds.push(file);
-    });
-
-    const vectorStore = await client.vectorStores.create({
-      name: storeName,
-      file_ids: fileIds,
-    });
-    return vectorStore;
+    return store;
   } catch (err) {
-    console.error(err);
+    throw new Error(err?.message || "OpenAI vector store create failed");
   }
 }
 
 export async function associateStoreToAssistant(assistantId, store) {
   try {
-    const updatedAssistant = await client.beta.assistants.update(assistantId, {
+    return await client.beta.assistants.update(assistantId, {
       tool_resources: { file_search: { vector_store_ids: [store.id] } },
     });
+  } catch (err) {
+    throw new Error(err?.message || "Failed to associate store to assistant");
+  }
+}
 
-    if (!updatedAssistant) {
-      return console.error("Assistant wasn't updated");
+export async function deleteOAiVectorStoreAndFiles(storeId, fileIds = []) {
+  try {
+    // Delete files (support both method names)
+    for (const fid of fileIds) {
+      if (client.files?.del) {
+        await client.files.del(fid);
+      } else if (client.files?.delete) {
+        await client.files.delete(fid);
+      } else {
+        throw new Error(
+          "Your 'openai' SDK lacks files.del/delete. Please upgrade."
+        );
+      }
     }
 
-    return updatedAssistant;
+    // Delete vector store (support both method names)
+    const vs = client.beta?.vectorStores ?? client.vectorStores ?? null;
+    if (!vs)
+      throw new Error("Vector Stores API not available in this 'openai' SDK.");
+
+    if (vs.del) {
+      const res = await vs.del(storeId);
+      return res?.deleted ?? true;
+    } else if (vs.delete) {
+      const res = await vs.delete(storeId);
+      return res?.deleted ?? true;
+    } else {
+      throw new Error(
+        "Your 'openai' SDK lacks vectorStores.del/delete. Please upgrade."
+      );
+    }
   } catch (err) {
-    console.error(err.message);
+    throw new Error(err?.message || "Failed to delete store/files");
   }
+}
+
+/* ----------------------------- Messaging ----------------------------- */
+
+export async function createOAiThread() {
+  return client.beta.threads.create();
 }
 
 export async function sendMessageToAi(assistantId, input, threadId) {
   try {
-    //Todo Later it will have user verification and thread verification per user
-
     if (!threadId) {
-      const newThread = await client.beta.threads.create();
-      threadId = newThread.id;
+      const t = await client.beta.threads.create();
+      threadId = t.id;
     }
 
-    const newMessage = await client.beta.threads.messages.create(threadId, {
+    await client.beta.threads.messages.create(threadId, {
       role: "user",
       content: input,
     });
@@ -138,45 +168,27 @@ export async function sendMessageToAi(assistantId, input, threadId) {
       assistant_id: assistantId,
     });
 
-    let runStatus = "in_progress";
-    while (runStatus !== "completed") {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const runCheck = await client.beta.threads.runs.retrieve(
-        threadId,
-        run.id
-      );
-      runStatus = runCheck.status;
+    // simple poll
+    let status = "in_progress";
+    while (status !== "completed") {
+      await new Promise((r) => setTimeout(r, 1200));
+      const rcheck = await client.beta.threads.runs.retrieve(threadId, run.id);
+      status = rcheck.status;
+      if (
+        status === "failed" ||
+        status === "cancelled" ||
+        status === "expired"
+      ) {
+        throw new Error(`Run ended with status: ${status}`);
+      }
     }
 
     const messages = await client.beta.threads.messages.list(threadId);
-    const aiResponse = stripOpenAICitations(
-      messages.data[0].content[0].text.value
-    );
+    const text = messages.data?.[0]?.content?.[0]?.text?.value ?? "";
+    const aiResponse = stripOpenAICitations(text);
 
-    return {
-      threadId,
-      aiResponse,
-    };
+    return { threadId, aiResponse };
   } catch (err) {
-    console.error(err);
+    throw new Error(err?.message || "Failed to send message to assistant");
   }
-}
-
-export async function deleteOAiVectorStoreAndFiles(store, fileIds) {
-  try {
-    for (const fileId of fileIds) {
-      await client.files.del(fileId);
-    }
-
-    const deletedStore = await client.vectorStores.del(store);
-
-    return deletedStore.deleted;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-export async function createOAiThread() {
-  const aiThread = await client.beta.threads.create();
-  return aiThread;
 }
