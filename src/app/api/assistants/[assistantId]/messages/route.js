@@ -4,7 +4,10 @@ import OpenAI from "openai";
 import { getAssistantById } from "@/lib/repos/assistants.repo";
 import { getStoreById } from "@/lib/repos/store.repo";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  defaultHeaders: { "OpenAI-Beta": "assistants=v2" },
+});
 
 export async function POST(req, { params }) {
   try {

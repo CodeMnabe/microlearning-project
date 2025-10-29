@@ -3,7 +3,10 @@ import OpenAI from "openai";
 import { stripOpenAICitations } from "./removeOAiCitations";
 
 // Next.js loads env vars automatically; no dotenv/require here
-export const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  defaultHeaders: { "OpenAI-Beta": "assistants=v2" },
+});
 
 /* ----------------------------- helpers ----------------------------- */
 
