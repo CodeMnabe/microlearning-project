@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { sendMessageToAi } from "@/lib/services/oAi.services";
 
+import { oai as client } from "@/utils/oAi/oAi.client";
+
 require("dotenv").config();
 const OpenAI = require("openai");
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  defaultHeaders: { "OpenAI-Beta": "assistants=v2" },
-});
 
 export async function POST(req, { params }) {
   try {
