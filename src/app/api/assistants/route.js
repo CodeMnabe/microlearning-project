@@ -1,7 +1,3 @@
-// src/app/api/assistants/route.js
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import {
   createAssistant,
@@ -16,6 +12,7 @@ export async function GET(req) {
     if (!orgId) return NextResponse.json([], { status: 200 });
 
     const assistants = await getAssistantsInOrg(orgId);
+    // For the list view your UI doesn’t need mapping; return raw rows
     return NextResponse.json(assistants, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -26,7 +23,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const ai = await createOAiAssistant(body); // still fine to keep
+    const ai = await createOAiAssistant(body);
     if (!ai) {
       return NextResponse.json(
         { error: "Error creating assistant" },
@@ -45,6 +42,7 @@ export async function POST(req) {
       temperature: body.temperature,
     });
 
+    // Return the DB row (frontend reloads after modal closes)
     return NextResponse.json(row, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
