@@ -16,9 +16,9 @@ export default function CreateAssistantModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [model, setModel] = useState("gpt-3.5-turbo");
+  const [model, setModel] = useState("gpt-4.1");
   const modelOptions = [
-    { value: "gpt-3.5-turbo", label: "gpt-3.5-turbo" },
+    { value: "gpt-4.1", label: "gpt-4.1" },
     // { value: "gpt-4o", label: "gpt-4o" },
   ];
   const [topP, setTopP] = useState(0.5);

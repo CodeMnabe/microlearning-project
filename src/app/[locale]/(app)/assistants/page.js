@@ -461,10 +461,10 @@ export default function AssistantsHub() {
                   {isEditing ? (
                     <select
                       className={styles.select}
-                      value={read("model", "gpt-3.5-turbo")}
+                      value={read("model", "gpt-4.1")}
                       onChange={(e) => handleChange("model", e.target.value)}
                     >
-                      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                      <option value="gpt-4.1">gpt-4.1</option>
                     </select>
                   ) : (
                     <span className={styles.specValueBold}>
