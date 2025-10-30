@@ -48,8 +48,6 @@ export default function Navbar() {
   };
 
   async function handleSignOut() {
-    console.log("This is happening");
-
     // A) local signout (SDK may still 403 — ignore)
     try {
       await supabase.auth.signOut({ scope: "local" });

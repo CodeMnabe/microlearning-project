@@ -105,12 +105,6 @@ export async function POST(req) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
   const fullUrl = `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
 
-  console.log("MB webhook hit", {
-    url: fullUrl,
-    hasJwt: !!req.headers.get("messagebird-signature-jwt"),
-    hasLegacy: !!req.headers.get("messagebird-signature"),
-  });
-
   //Validating the request using HMAC signature
   const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
 
@@ -152,13 +146,6 @@ async function handleEvent(rawJSON) {
     console.warn("Webhook - bad JSON");
     return;
   }
-
-  console.log("MB evt", {
-    service: evt.service,
-    event: evt.event,
-    bodyType: evt.payload?.body?.type,
-    topKeys: Object.keys(evt.payload || {}),
-  });
 
   //Makes sure that this is a WhatsApp text message
   if (

@@ -15,7 +15,6 @@ export default function RouteLoader() {
   useEffect(() => {
     const onClick = (e) => {
       const a = e.target?.closest?.("a[href]");
-      console.log(a);
       if (!a) return;
 
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)

@@ -13,6 +13,26 @@ function Initial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }
 
+const NAME_KEYS = [
+  "name",
+  "nome",
+  "firstname",
+  "first_name",
+  "utilizador",
+  "user",
+];
+const COMPANY_KEYS = [
+  "empresa",
+  "company",
+  "organization",
+  "organização",
+  "organizacao",
+  "org",
+  "orgname",
+  "companyname",
+  "organizationname",
+];
+
 const STATUS_RANK = {
   ACTIVE: 4,
   PENDING: 3,
@@ -33,7 +53,10 @@ function interpolate(str, values) {
   if (!str) return "";
   return str.replace(/\{\{\s*([.\w-]+)\s*\}\}/g, (_, rawKey) => {
     const k = String(rawKey).toLowerCase();
-    if (k === "name" || k === "nome") return values.recipientName ?? "";
+    if (NAME_KEYS.includes(k))
+      return values.recipientName ?? values[rawKey] ?? values[k] ?? "";
+    if (COMPANY_KEYS.includes(k))
+      return values.orgName ?? values[rawKey] ?? values[k] ?? "";
     return values[rawKey] ?? values[k] ?? "";
   });
 }
@@ -332,10 +355,16 @@ export default function BroadcastPage() {
   const previewVars = useMemo(() => {
     const map = {};
     for (const v of varDefs) map[v.key] = varValues[v.key] ?? "";
+
     map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
+
+    // NEW: org name used by company/empresa/organization placeholders
+    map.orgName =
+      org?.name || map.empresa || map.company || map.organization || "";
+
     map.urlVar = tplUrlVar || "";
     return map;
-  }, [varDefs, varValues, sampleRecipient, tplUrlVar]);
+  }, [varDefs, varValues, sampleRecipient, tplUrlVar, org?.name]);
 
   const preview = useMemo(() => {
     if (!tplDetails) return { body: "", buttonText: "", buttonUrl: "" };
@@ -378,18 +407,23 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     if (varDefs.length === 0) return;
-    const nameField = varDefs.find(
-      (v) => v.key?.toLowerCase() === "name" || v.key?.toLowerCase() === "nome"
-    );
-    if (!nameField) return;
-    const [firstSel] = users.filter((u) => selected.has(u.id));
-    if (!firstSel) return;
-    setVarValues((prev) =>
-      prev[nameField.key]
-        ? prev
-        : { ...prev, [nameField.key]: firstSel.name || "" }
-    );
-  }, [selected, users, varDefs]);
+
+    setVarValues((prev) => {
+      const next = { ...prev };
+
+      const recName = sampleRecipient?.name || "";
+      for (const v of varDefs) {
+        const key = v.key || "";
+        const k = key.toLowerCase();
+
+        if (!next[key]) {
+          if (NAME_KEYS.includes(k)) next[key] = recName;
+          if (COMPANY_KEYS.includes(k)) next[key] = org?.name || "";
+        }
+      }
+      return next;
+    });
+  }, [varDefs, sampleRecipient?.name, org?.name]);
 
   const canSend =
     selected.size > 0 &&
@@ -820,7 +854,7 @@ export default function BroadcastPage() {
         </div>
       </div>
 
-      {result && (
+      {/* {result && (
         <div className={styles.resultWrap}>
           <div className={styles.resultSummary}>
             <strong>{translation("Broadcast.result")}</strong> {result.ok}{" "}
@@ -845,7 +879,7 @@ export default function BroadcastPage() {
           </div>
           <div className={styles.resultNote}>{result.note}</div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

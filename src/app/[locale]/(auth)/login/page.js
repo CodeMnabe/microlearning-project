@@ -20,7 +20,6 @@ export default function LoginPage() {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        console.log(session);
         startLoading();
         router.replace(`/${locale}/users`);
         return;
