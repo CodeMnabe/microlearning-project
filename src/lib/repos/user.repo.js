@@ -37,6 +37,30 @@ export async function createUser({
 }
 
 export async function deleteUser(userId) {
+  // 1) remove join rows
+  await supabase.from("user_tag").delete().eq("user_id", userId).throwOnError();
+
+  // 2) delete messages linked to the user's threads (if you have them)
+  const { data: threads } = await supabase
+    .from("thread")
+    .select("id")
+    .eq("user_id", userId);
+
+  const threadIds = (threads || []).map((t) => t.id);
+  if (threadIds.length) {
+    // if you have a message table referencing thread_id
+    await supabase
+      .from("message")
+      .delete()
+      .in("thread_id", threadIds)
+      .throwOnError?.();
+    // any other child tables that reference thread_id go here
+    await supabase.from("thread").delete().in("id", threadIds).throwOnError?.();
+  }
+
+  // other tables that reference the user directly (optional)
+  await supabase.from("pending_outreach").delete().eq("user_id", userId); // if exists
+
   const { error } = await supabase.from("user").delete().eq("id", userId);
   if (error) throw error;
   return true;

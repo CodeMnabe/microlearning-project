@@ -51,9 +51,10 @@ export async function POST(req) {
       );
     }
     console.error(error);
-    return NextResponse.json({
-      error: "Failed to create User:" + error.message,
-    });
+    return NextResponse.json(
+      { error: "Failed to create User: " + error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -100,13 +101,7 @@ export async function DELETE(req) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json(
-      {
-        error: error.message,
-      },
-      {
-        status: 500,
-      }
-    );
+    console.error(err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
