@@ -13,24 +13,42 @@ const supabaseAdmin = createClient(
   { auth: { persistSession: false } }
 );
 
+const NAME_KEYS = [
+  "name",
+  "nome",
+  "firstname",
+  "first_name",
+  "utilizador",
+  "user",
+];
+const COMPANY_KEYS = [
+  "empresa",
+  "company",
+  "organization",
+  "organização",
+  "organizacao",
+  "org",
+  "orgname",
+  "companyname",
+  "organizationname",
+];
+const isIn = (arr, k) => arr.includes(String(k || "").toLowerCase());
+
 function buildKvParamsForUser({
   varKeys = [],
   baseValues = [],
   manualParams,
   userName,
   urlVar,
+  orgName,
 }) {
   // If we have declared var keys, align them with values and override name/nome
   if (Array.isArray(varKeys) && varKeys.length) {
     return varKeys
       .map((k, i) => {
         let v = baseValues[i] ?? "";
-        if (
-          String(k).toLowerCase() === "name" ||
-          String(k).toLowerCase() === "nome"
-        ) {
-          v = userName ?? v ?? "";
-        }
+        if (isIn(NAME_KEYS, k)) v = userName ?? v ?? "";
+        if (isIn(COMPANY_KEYS, k)) v = orgName ?? v ?? "";
         return `${k}=${v}`;
       })
       .concat(urlVar ? [`url=${urlVar}`] : []);
@@ -45,8 +63,8 @@ function buildKvParamsForUser({
       const [k, ...rest] = kv.split("=");
       const key = (k || "").trim();
       let value = (rest.join("=") || "").trim();
-      if (["name", "nome"].includes(key.toLowerCase()))
-        value = userName || value;
+      if (isIn(NAME_KEYS, key)) value = userName || value;
+      if (isIn(COMPANY_KEYS, key)) value = orgName || value;
       return `${key}=${value}`;
     });
 
@@ -80,7 +98,7 @@ export async function POST(req) {
     // Load org/channel
     const { data: org, error } = await supabaseAdmin
       .from("organization")
-      .select("id, channel_id, waba_namespace")
+      .select("id, name, channel_id, waba_namespace")
       .eq("id", orgId)
       .single();
 
@@ -206,6 +224,7 @@ export async function POST(req) {
         baseValues: template.params || [],
         manualParams: template.manualParams,
         userName: user?.name || "",
+        orgName: org?.name || "",
         urlVar: template.urlVar || null,
       });
 

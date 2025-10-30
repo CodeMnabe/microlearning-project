@@ -33,6 +33,11 @@ const COMPANY_KEYS = [
   "organizationname",
 ];
 
+const isLockedVar = (key) => {
+  const k = String(key || "").toLowerCase();
+  return NAME_KEYS.includes(k) || COMPANY_KEYS.includes(k);
+};
+
 const STATUS_RANK = {
   ACTIVE: 4,
   PENDING: 3,
@@ -674,6 +679,16 @@ export default function BroadcastPage() {
                 {varDefs.length > 0 ? (
                   <div className={styles.grid}>
                     {varDefs.map((v) => {
+                      const kLower = String(v.key || "").toLowerCase();
+                      const locked = isLockedVar(kLower);
+
+                      // what to display in read-only
+                      let displayVal = varValues[v.key] ?? "";
+                      if (!displayVal && COMPANY_KEYS.includes(kLower))
+                        displayVal = org?.name || "";
+                      if (!displayVal && NAME_KEYS.includes(kLower))
+                        displayVal = sampleRecipient?.name || "";
+
                       const placeholder =
                         v.examplesLocale?.[tplLang]?.exampleValueStrings?.[0] ??
                         (v.examplesLocale
@@ -681,6 +696,7 @@ export default function BroadcastPage() {
                               ?.exampleValueStrings?.[0]
                           : "") ??
                         "";
+
                       return (
                         <div key={v.key} className={styles.fieldWide}>
                           <label className={styles.smallLabel}>
@@ -689,19 +705,54 @@ export default function BroadcastPage() {
                               ? ` · máx ${v.characterLimit}`
                               : ""}
                             {v.description ? ` — ${v.description}` : ""}
+                            {locked && (
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  fontSize: 11,
+                                  padding: "2px 6px",
+                                  borderRadius: 999,
+                                  background: "#F3F4F6",
+                                  color: "#374151",
+                                }}
+                              >
+                                auto
+                              </span>
+                            )}
                           </label>
-                          <input
-                            value={varValues[v.key] ?? ""}
-                            onChange={(e) =>
-                              setVarValues((prev) => ({
-                                ...prev,
-                                [v.key]: e.target.value,
-                              }))
-                            }
-                            placeholder={placeholder}
-                            maxLength={v.characterLimit || undefined}
-                            className={styles.input}
-                          />
+
+                          {locked ? (
+                            // READ-ONLY TEXT (no input)
+                            <div
+                              style={{
+                                padding: "10px 12px",
+                                border: "1px dashed #e5e7eb",
+                                borderRadius: 10,
+                                background: "#F9FAFB",
+                                color: "#111827",
+                                minHeight: 40,
+                                display: "flex",
+                                alignItems: "center",
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {displayVal || "—"}
+                            </div>
+                          ) : (
+                            // Editable for non-locked vars
+                            <input
+                              value={varValues[v.key] ?? ""}
+                              onChange={(e) =>
+                                setVarValues((prev) => ({
+                                  ...prev,
+                                  [v.key]: e.target.value,
+                                }))
+                              }
+                              placeholder={placeholder}
+                              maxLength={v.characterLimit || undefined}
+                              className={styles.input}
+                            />
+                          )}
                         </div>
                       );
                     })}
@@ -712,6 +763,7 @@ export default function BroadcastPage() {
                     )}
                   </div>
                 ) : (
+                  // manual mode unchanged
                   <div className={styles.fieldWide}>
                     <label className={styles.smallLabel}>
                       {translation("Broadcast.varKeyDesc")}
