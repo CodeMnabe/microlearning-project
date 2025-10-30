@@ -1,4 +1,4 @@
-require("dotenv").config();
+//require("dotenv").config();
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

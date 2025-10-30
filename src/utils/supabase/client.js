@@ -1,5 +1,5 @@
 "use client";
-require("dotenv").config();
+//require("dotenv").config();
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createClient() {
