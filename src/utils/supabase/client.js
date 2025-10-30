@@ -1,6 +1,8 @@
 "use client";
-//require("dotenv").config();
 import { createBrowserClient } from "@supabase/ssr";
+
+// DO NOT use require('dotenv') in the browser.
+// NEXT_PUBLIC_* vars are inlined at build.
 
 export function createClient() {
   return createBrowserClient(
@@ -17,3 +19,6 @@ export function createClient() {
     }
   );
 }
+
+// (optional) also export default
+export default createClient;

@@ -1,25 +1,28 @@
 // app/not-found.jsx
 import Link from "next/link";
 import { headers } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { createSupabaseServerClient } from "@/utils/supabase/server";
 
+// Reuse login styles
 import styles from "./[locale]/(auth)/login/login.module.css";
 
 export default async function NotFound() {
-  const supabase = await createClient();
+  // ✅ use the server helper you imported
+  const supabase = await createSupabaseServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Try to keep the current locale in the link
+  // Keep current locale in the link if present
   const h = await headers();
   const raw = h.get("x-next-url") || h.get("x-request-url") || "";
+
+  // Support both absolute and relative values in prod
+  const pathish = raw.startsWith("http") ? new URL(raw).pathname : raw || "/";
+
   let prefix = "";
-  try {
-    const pathname = new URL(raw).pathname || "/";
-    const segs = pathname.split("/").filter(Boolean);
-    if (segs.length && segs[0].length <= 5) prefix = `/${segs[0]}`;
-  } catch {}
+  const segs = pathish.split("/").filter(Boolean);
+  if (segs.length && segs[0].length <= 5) prefix = `/${segs[0]}`;
 
   const targetHref = `${prefix}${session ? "/users" : "/login"}`;
   const targetLabel = session ? "Ir para Utilizadores" : "Ir para Login";
@@ -41,10 +44,6 @@ export default async function NotFound() {
           <Link href={targetHref} className={styles.btnPrimary}>
             {targetLabel}
           </Link>
-          {/* Eventually there will be a button for the landing page part of the website */}
-          {/* <Link href={`${prefix}/`} className={styles.btnSecondary}>
-            Ir para Início
-          </Link> */}
         </div>
       </section>
     </main>
