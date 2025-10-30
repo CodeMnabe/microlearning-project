@@ -162,18 +162,61 @@ export async function sendMessageToAi(assistantId, input, threadId) {
   }
 }
 
-export async function deleteOAiVectorStoreAndFiles(store, fileIds) {
-  try {
-    for (const fileId of fileIds) {
-      await client.files.del(fileId);
-    }
-
-    const deletedStore = await client.vectorStores.del(store);
-
-    return deletedStore.deleted;
-  } catch (err) {
-    console.error(err);
+export async function deleteOAiVectorStoreAndFiles(storeId, fileIds = []) {
+  // delete files first
+  for (const fid of fileIds) {
+    await deleteFileCompat(fid);
   }
+  // then delete the vector store
+  if (storeId) await deleteVectorStoreCompat(storeId);
+}
+
+async function deleteFileCompat(fileId) {
+  if (!fileId) return;
+  if (client.files?.del) return client.files.del(fileId); // many 4.x builds
+  if (client.files?.delete) return client.files.delete(fileId); // some 4.x builds
+
+  // last resort: raw HTTP (works across versions)
+  const res = await client.core.fetch(
+    `https://api.openai.com/v1/files/${fileId}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!res.ok)
+    throw new Error(
+      `Failed to delete file ${fileId}: ${res.status} ${res.statusText}`
+    );
+  return res.json();
+}
+
+async function deleteVectorStoreCompat(vectorStoreId) {
+  if (!vectorStoreId) return;
+
+  // common 4.x name
+  if (client.vectorStores?.del) return client.vectorStores.del(vectorStoreId);
+  if (client.vectorStores?.delete)
+    return client.vectorStores.delete(vectorStoreId);
+
+  // some older/beta shapes
+  if (client.beta?.vectorStores?.del)
+    return client.beta.vectorStores.del(vectorStoreId);
+  if (client.beta?.vectorStores?.delete)
+    return client.beta.vectorStores.delete(vectorStoreId);
+
+  // raw HTTP fallback (needs Assistants beta header)
+  const res = await client.core.fetch(
+    `https://api.openai.com/v1/vector_stores/${vectorStoreId}`,
+    {
+      method: "DELETE",
+      headers: { "OpenAI-Beta": "assistants=v2" },
+    }
+  );
+  if (!res.ok)
+    throw new Error(
+      `Failed to delete vector store ${vectorStoreId}: ${res.status} ${res.statusText}`
+    );
+  return res.json();
 }
 
 export async function createOAiThread() {

@@ -11,6 +11,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import Slider from "@/app/components/Slider/Slider";
+import { createClient } from "@/utils/supabase/client";
 
 const STORAGE_BUCKET = "assistant-uploads";
 
@@ -222,6 +223,7 @@ export default function AssistantsHub() {
 
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storeName: vsName, files: uploaded }),
       });
       const data = await res.json().catch(() => ({}));

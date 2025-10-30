@@ -29,37 +29,45 @@ export async function GET(req, { params }) {
   }
 }
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, ctx) {
   try {
-    const { assistantId, storeId } = await params;
+    const { assistantId, storeId } = await ctx.params;
     const sId = Number(storeId);
     const aId = Number(assistantId);
 
     const store = await getStoreById(sId);
-    if (!store)
+    if (!store) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-    // Collect OpenAI file ids & store id
-    const openAiFileIds = (store.file || []).map((f) => f.open_ai_id);
-    const openAiStoreId = store.open_ai_id; // now populated
+    const openAiFileIds = (store.file ?? [])
+      .map((f) => f.open_ai_id)
+      .filter(Boolean);
+    const openAiStoreId = store.open_ai_id;
 
-    // 1) Delete from OpenAI
-    await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
+    // ✨ 0) Break the FK first to avoid FK violations
+    await nullifyVectorStoreToDbAssistant(aId);
 
-    // 2) Delete DB files + store
-    for (const f of store.file || []) {
+    // 1) Delete from OpenAI (best-effort)
+    try {
+      await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
+    } catch (e) {
+      // optional: log and continue or return a 502 if you want strictness
+      console.error("OpenAI delete failed:", e);
+    }
+
+    // 2) Delete DB (files then store) — or just store if you add CASCADE below
+    for (const f of store.file ?? []) {
       await deleteFileById(f.id);
     }
     await deleteStoreById(sId);
-
-    // 3) Clear assistant.vector_store_id
-    await nullifyVectorStoreToDbAssistant(aId);
 
     return NextResponse.json(
       { message: "Vector store and files deleted" },
       { status: 200 }
     );
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
