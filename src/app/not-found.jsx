@@ -1,14 +1,14 @@
 // app/not-found.jsx
 import Link from "next/link";
 import { headers } from "next/headers";
-import { createSupabaseServerClient } from "@/utils/supabase/server";
+import createSupabaseServerClient from "@/utils/supabase/server";
 
 // Reuse login styles
 import styles from "./[locale]/(auth)/login/login.module.css";
 
 export default async function NotFound() {
   // ✅ use the server helper you imported
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
