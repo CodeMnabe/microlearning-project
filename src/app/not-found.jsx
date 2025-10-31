@@ -3,9 +3,9 @@ import Link from "next/link";
 import { headers, cookies } from "next/headers";
 import styles from "./[locale]/(auth)/login/login.module.css";
 
-export default function NotFound() {
+export default async function NotFound() {
   // Get current path (works for both absolute and relative)
-  const h = headers();
+  const h = await headers();
   const raw = h.get("x-next-url") || h.get("x-request-url") || "";
   const pathish = raw.startsWith("http") ? new URL(raw).pathname : raw || "/";
 
@@ -14,7 +14,7 @@ export default function NotFound() {
   const locale = /^(pt|en)$/i.test(segs[0]) ? segs[0].toLowerCase() : "pt";
 
   // Consider user "authed" if Supabase cookies exist
-  const c = cookies();
+  const c = await cookies();
   const isAuthed = !!(c.get("sb-access-token") || c.get("sb:token"));
 
   const targetHref = `/${locale}${isAuthed ? "/users" : "/login"}`;
