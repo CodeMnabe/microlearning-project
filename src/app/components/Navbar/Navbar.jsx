@@ -1,4 +1,3 @@
-// src/app/components/Navbar/Navbar.jsx
 "use client";
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -17,6 +16,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
+import { useMobileNav } from "@/app/components/MobileNav/MobileNavContext";
 
 export default function Navbar() {
   const translation = useTranslations();
@@ -26,11 +26,14 @@ export default function Navbar() {
   const locale = useLocale();
   const pathName = usePathname();
 
+  const { open, close } = useMobileNav(); // <— new
+
   const pathNoLocale = pathName.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
   const [pendingHref, setPendingHref] = useState(null);
   const isAdmin = !!org && org.id === 1;
 
   useEffect(() => setPendingHref(null), [pathName]);
+  useEffect(() => close(), [pathName]); // close drawer after route changes
 
   const isActive = useCallback(
     (href) => {
@@ -45,146 +48,158 @@ export default function Navbar() {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
       return;
     setPendingHref(href);
+    close(); // close drawer on tap (mobile)
   };
 
   async function handleSignOut() {
-    // A) local signout (SDK may still 403 — ignore)
     try {
       await supabase.auth.signOut({ scope: "local" });
     } catch {}
-
-    // B) purge any lingering localStorage keys (older SDKs / racey tabs)
     try {
       for (const k of Object.keys(localStorage)) {
-        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+        if (k.startsWith("sb-") && k.endsWith("-auth-token"))
           localStorage.removeItem(k);
-        }
-        if (k.startsWith("sb-") && k.endsWith("-refresh-token")) {
+        if (k.startsWith("sb-") && k.endsWith("-refresh-token"))
           localStorage.removeItem(k);
-        }
       }
-      // Tell other tabs
       try {
         const bc = new BroadcastChannel("supabase.auth");
         bc.postMessage({ event: "SIGNED_OUT" });
         bc.close();
       } catch {}
     } catch {}
-
-    // C) clear HTTP-only cookies on the server (the real logout)
     await fetch("/api/auth/signout", {
       method: "POST",
       credentials: "same-origin",
       cache: "no-store",
     });
-
-    // D) reset app state & HARD reload to kill any in-memory session
     setUser(null);
     router.replace("/login");
     window.location.assign(`/${locale}/login`);
   }
 
   return (
-    <aside className={styles.sidebar}>
-      {!authLoading && user ? (
-        <>
-          <div className={styles.userBlock}>
-            <div className={styles.orgLine}>
-              {orgLoading ? "…" : org?.name ?? "—"}
+    <>
+      {/* Drawer */}
+      <aside
+        id="primary-nav"
+        className={`${styles.sidebar} ${open ? styles.open : ""}`}
+        aria-hidden={open ? "false" : "true"}
+        aria-label="Main navigation"
+      >
+        {!authLoading && user ? (
+          <>
+            <div className={styles.userBlock}>
+              <div className={styles.orgLine}>
+                {orgLoading ? "…" : org?.name ?? "—"}
+              </div>
+              <div className={styles.emailLine}>{user.email}</div>
             </div>
-            <div className={styles.emailLine}>{user.email}</div>
-          </div>
 
+            <nav className={styles.nav}>
+              {isAdmin && (
+                <Link
+                  href="/"
+                  onClick={onNavClick("/")}
+                  className={`${styles.navItem} ${
+                    isActive("/") ? styles.active : ""
+                  }`}
+                >
+                  <Home aria-hidden className={styles.icon} />
+                  <span>{translation("Nav.home")}</span>
+                </Link>
+              )}
+
+              <Link
+                href="/users"
+                onClick={onNavClick("/users")}
+                className={`${styles.navItem} ${
+                  isActive("/users") ? styles.active : ""
+                }`}
+              >
+                <Users aria-hidden className={styles.icon} />
+                <span>{translation("Nav.users")}</span>
+              </Link>
+
+              <Link
+                href="/assistants"
+                onClick={onNavClick("/assistants")}
+                className={`${styles.navItem} ${
+                  isActive("/assistants") ? styles.active : ""
+                }`}
+              >
+                <Bot aria-hidden className={styles.icon} />
+                <span>{translation("Nav.assistants")}</span>
+              </Link>
+
+              <Link
+                href="/broadcast"
+                onClick={onNavClick("/broadcast")}
+                className={`${styles.navItem} ${
+                  isActive("/broadcast") ? styles.active : ""
+                }`}
+              >
+                <MessageSquare aria-hidden className={styles.icon} />
+                <span>{translation("Nav.broadcast")}</span>
+              </Link>
+
+              {isAdmin && (
+                <Link
+                  href="/templates"
+                  onClick={onNavClick("/templates")}
+                  className={`${styles.navItem} ${
+                    isActive("/templates") ? styles.active : ""
+                  }`}
+                >
+                  <FileText aria-hidden className={styles.icon} />
+                  <span>{translation("Nav.templates")}</span>
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={onNavClick("/admin")}
+                  className={`${styles.navItem} ${
+                    isActive("/admin") ? styles.active : ""
+                  }`}
+                >
+                  <Settings aria-hidden className={styles.icon} />
+                  <span>{translation("Nav.admin")}</span>
+                </Link>
+              )}
+            </nav>
+
+            <button
+              onClick={handleSignOut}
+              className={`${styles.navItem} ${styles.signOut}`}
+            >
+              <LogOut aria-hidden className={styles.icon} />
+              <span>{translation("Nav.logout")}</span>
+            </button>
+          </>
+        ) : (
           <nav className={styles.nav}>
-            {isAdmin && (
-              <Link
-                href="/"
-                onClick={onNavClick("/")}
-                className={`${styles.navItem} ${
-                  isActive("/") ? styles.active : ""
-                }`}
-              >
-                <Home aria-hidden className={styles.icon} />
-                <span>{translation("Nav.home")}</span>
-              </Link>
-            )}
-
             <Link
-              href="/users"
-              onClick={onNavClick("/users")}
-              className={`${styles.navItem} ${
-                isActive("/users") ? styles.active : ""
-              }`}
+              className={styles.navItem}
+              href="/login"
+              onClick={() => close()}
             >
-              <Users aria-hidden className={styles.icon} />
-              <span>{translation("Nav.users")}</span>
+              <LogIn aria-hidden className={styles.icon} />
+              <span>{translation("Nav.login")}</span>
             </Link>
-
-            <Link
-              href="/assistants"
-              onClick={onNavClick("/assistants")}
-              className={`${styles.navItem} ${
-                isActive("/assistants") ? styles.active : ""
-              }`}
-            >
-              <Bot aria-hidden className={styles.icon} />
-              <span>{translation("Nav.assistants")}</span>
-            </Link>
-
-            <Link
-              href="/broadcast"
-              onClick={onNavClick("/broadcast")}
-              className={`${styles.navItem} ${
-                isActive("/broadcast") ? styles.active : ""
-              }`}
-            >
-              <MessageSquare aria-hidden className={styles.icon} />
-              <span>{translation("Nav.broadcast")}</span>
-            </Link>
-
-            {isAdmin && (
-              <Link
-                href="/templates"
-                onClick={onNavClick("/templates")}
-                className={`${styles.navItem} ${
-                  isActive("/templates") ? styles.active : ""
-                }`}
-              >
-                <FileText aria-hidden className={styles.icon} />
-                <span>{translation("Nav.templates")}</span>
-              </Link>
-            )}
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={onNavClick("/admin")}
-                className={`${styles.navItem} ${
-                  isActive("/admin") ? styles.active : ""
-                }`}
-              >
-                <Settings aria-hidden className={styles.icon} />
-                <span>{translation("Nav.admin")}</span>
-              </Link>
-            )}
           </nav>
+        )}
+      </aside>
 
-          <button
-            onClick={handleSignOut}
-            className={`${styles.navItem} ${styles.signOut}`}
-          >
-            <LogOut aria-hidden className={styles.icon} />
-            <span>{translation("Nav.logout")}</span>
-          </button>
-        </>
-      ) : (
-        <nav className={styles.nav}>
-          <Link className={styles.navItem} href="/login">
-            <LogIn aria-hidden className={styles.icon} />
-            <span>{translation("Nav.login")}</span>
-          </Link>
-        </nav>
-      )}
-    </aside>
+      {/* Backdrop (mobile only via CSS) */}
+      <button
+        className={styles.backdrop}
+        hidden={!open}
+        aria-hidden="true"
+        tabIndex={-1}
+        onClick={close}
+      />
+    </>
   );
 }

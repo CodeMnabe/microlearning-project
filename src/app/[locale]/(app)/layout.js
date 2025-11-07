@@ -2,10 +2,11 @@ import RouteLoader from "../../LoadingScreen/RouteLoader";
 import GlobalLoadingOverlay from "../../LoadingScreen/GlobalLoadingOverlay";
 import Navbar from "../../components/Navbar/Navbar";
 import TopBar from "../../components/TopBar/TopBar";
+import { MobileNavProvider } from "@/app/components/MobileNav/MobileNavContext";
 
 export default function AppLayout({ children }) {
   return (
-    <>
+    <MobileNavProvider>
       <RouteLoader />
       <TopBar />
       <div className="app-shell">
@@ -17,6 +18,6 @@ export default function AppLayout({ children }) {
           </div>
         </div>
       </div>
-    </>
+    </MobileNavProvider>
   );
 }

@@ -345,5 +345,25 @@
     "title": "Tem a certeza?",
     "namedTitle": "Tem a certeza que quer eliminar {name}?",
     "deleteMessage": "Esta ação não pode ser desfeita."
+  },
+
+  "QuickActions": {
+    "selected": "selecionados",
+    "clear": "Limpar",
+    "bulkLabel": "Definir Assistente",
+    "apply": "Aplicar",
+    "tag": "Adicionar/Remover Tags",
+    "add": "Adicionar",
+    "addTags": "Adiciona as tags selecionadas aos users",
+    "remove": "Remover",
+    "removeTags": "Remover Tags selecionadas aos users",
+    "delete": "Eliminar Utilizadores",
+    "deleteUsers": "Eliminar users selecionados",
+    "confirmUserDeletion": {
+      "title": "Apagar {number}  user(s)?",
+      "message": "Esta ação não pode ser desfeita",
+      "confirm": "Apagar",
+      "cancel": "Cancelar"
+    }
   }
 }

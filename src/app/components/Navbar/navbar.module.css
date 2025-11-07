@@ -1,9 +1,8 @@
 /* src/app/components/Navbar/navbar.module.css */
 .sidebar {
-  /* lives inside a flex/grid shell, so no fixed positioning needed */
   position: sticky;
-  top: var(--topbar-h); /* sit under the top bar */
-  height: calc(100vh - var(--topbar-h, 72px)); /* fill remaining height */
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h, 72px));
   flex: 0 0 var(--sidebar-w);
   width: var(--sidebar-w);
   background: var(--color-secondary);
@@ -14,6 +13,7 @@
   gap: 12px;
   padding: 16px;
   box-sizing: border-box;
+  z-index: 1; /* desktop layer under topbar */
 }
 .brand {
   font-weight: 700;
@@ -45,12 +45,12 @@
   margin-top: 8px;
 }
 .navItem {
-  display: flex; /* ← was block */
+  display: flex;
   align-items: center;
-  gap: 10px; /* space between icon and text */
+  gap: 10px;
   text-decoration: none;
   color: var(--sidebar-fg);
-  padding: 8px 10px;
+  padding: 10px 12px; /* a bit larger for touch */
   border-radius: 20px;
 }
 .navItem.active {
@@ -88,4 +88,52 @@
 .signOut:hover {
   opacity: 0.9;
   background: #d9534f;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed; /* take it out of flow */
+    left: 0;
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h, 56px));
+    width: min(88vw, 360px);
+    max-width: 92vw;
+    transform: translateX(-104%); /* hidden by default */
+    transition: transform 220ms ease, box-shadow 220ms ease;
+    z-index: 49; /* below the fixed topbar (z-index:50) */
+    box-shadow: none;
+  }
+  .open {
+    transform: translateX(0);
+    box-shadow: 0 20px 40px rgba(15, 28, 63, 0.25);
+  }
+  .backdrop {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(1px);
+    border: none;
+    margin: 0;
+    padding: 0;
+    z-index: 48; /* under the drawer */
+  }
+
+  /* beef up hit area a bit more on compact screens */
+  .navItem {
+    padding: 12px 14px;
+  }
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
 }

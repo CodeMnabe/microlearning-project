@@ -1,63 +1,133 @@
-.wrap {
-  position: fixed;
-  z-index: 60;
-}
-
-.pop {
-  background: #fff;
-  color: #0f1c3f;
+.bulkBar {
+  position: sticky;
+  top: 64px;
+  z-index: 5;
+  background: var(--surface, #fff);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 6px;
-  min-width: 160px;
-}
-
-.item {
+  padding: 12px 14px;
+  margin: 10px 0 14px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+
+  opacity: 0;
+  margin-top: -12px;
+  will-change: margin, opacity;
+}
+
+.bulkBarShow {
+  animation: qaSlideDown 220ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes qaSlideDown {
+  from {
+    opacity: 0;
+    margin-top: -12px;
+  }
+  to {
+    opacity: 1;
+    margin-top: 0;
+  }
+}
+
+.bulkLeft {
+  display: flex;
   gap: 10px;
-  width: 100%;
+  align-items: center;
+  font-size: 14px;
+}
+
+.bulkClear {
+  border: none;
   background: transparent;
-  border: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  text-decoration: underline;
   cursor: pointer;
-  font-weight: 500;
+  font-size: 13px;
+  opacity: 0.8;
 }
 
-.item,
-.item * {
-  color: #0f1c3f !important;
-  -webkit-text-fill-color: #0f1c3f;
+.bulkControls {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.bulkGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.bulkInline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.sep {
-  height: 1px;
-  background: rgba(0, 0, 0, 0.07);
-  margin: 4px 6px;
-}
-
-.icon {
-  width: 20px;
-  display: inline-flex;
-  justify-content: center;
-}
-
-.arrow {
-  position: absolute;
-  top: -6px;
-  left: 16px;
-  width: 12px;
-  height: 12px;
+.bulkSelect {
+  min-width: 180px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   background: #fff;
-  border-left: 1px solid rgba(0, 0, 0, 0.08);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  transform: rotate(45deg);
-  border-radius: 2px;
-  z-index: -1; /* keeps the arrow behind the card edge */
+}
+
+.bulkBtn,
+.bulkBtnPrimary,
+.bulkBtnDanger {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #f7f7f7;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.bulkBtnPrimary {
+  background: var(--primary, #30a9e0);
+  color: #fff;
+  border-color: transparent;
+}
+.bulkBtnDanger {
+  background-color: #fff0f0;
+  color: #b00020;
+  border-color: #ffd6d6;
+}
+.bulkBtn:disabled,
+.bulkBtnPrimary:disabled,
+.bulkBtnDanger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.popoverFooter {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .bulkBar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    top: auto;
+    z-index: 55;
+  }
+  .bulkControls {
+    width: 100%;
+    gap: 8px;
+  }
+  .bulkGroup {
+    flex: 1 1 100%;
+  }
+  .bulkBtn,
+  .bulkBtnPrimary,
+  .bulkBtnDanger {
+    width: 100%;
+  }
 }

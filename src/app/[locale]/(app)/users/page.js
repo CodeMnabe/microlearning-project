@@ -22,6 +22,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useAuth } from "@/app/AuthContext";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import FilterMenu from "./FilterMenu";
+import QuickActionsBar from "./QuickActions/QuickActions";
 
 function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
@@ -65,7 +66,7 @@ export default function UsersPage() {
     return localStorage.getItem("usersView") || "list";
   });
 
-  const { stopLoading } = useGlobalLoader();
+  const { startLoading, stopLoading } = useGlobalLoader();
   useEffect(() => {
     localStorage.setItem("usersView", view);
   }, [view]);
@@ -98,11 +99,13 @@ export default function UsersPage() {
   }, [orgId]);
 
   const refreshUsers = useCallback(async () => {
+    startLoading();
     if (!orgId) return;
     const res = await fetch(`/api/users?orgId=${orgId}`);
     const data = await res.json();
     setUsers(data);
-  }, [orgId]);
+    stopLoading();
+  }, [orgId, startLoading, stopLoading]);
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
@@ -220,6 +223,18 @@ export default function UsersPage() {
     await refreshUsers();
   }
 
+  const selectedCount = selected.size;
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  function clearSelection() {
+    setSelected(new Set());
+  }
+
+  const assistantsById = useMemo(() => {
+    const m = new Map();
+    (assistantsList || []).forEach((a) => m.set(String(a.id), a));
+    return m;
+  }, [assistantsList]);
+
   const activeFilterCount = selectedTagIds.length + selectedAssistantIds.length;
 
   return (
@@ -244,6 +259,7 @@ export default function UsersPage() {
             placeholder={translation("Users.searchPlaceholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            aria-label={translation("Users.searchPlaceholder")}
           />
         </div>
         <button
@@ -279,7 +295,17 @@ export default function UsersPage() {
           </button>
         </div>
       </div>
-
+      {selectedCount > 0 && (
+        <QuickActionsBar
+          count={selectedCount}
+          assistants={assistantsList}
+          tags={allTags}
+          selectedIds={selectedIds}
+          orgId={orgId}
+          onDone={refreshUsers}
+          clearSelection={clearSelection}
+        />
+      )}
       {/* Active filter chips */}
       {activeFilterCount > 0 && (
         <div className={styles.activeFilters}>
@@ -381,7 +407,11 @@ export default function UsersPage() {
                 </div>
 
                 {/* name */}
-                <div className={styles.cellName}>
+                <div
+                  className={styles.cellName}
+                  role="button"
+                  onClick={() => openViewFor(u)}
+                >
                   <div className={styles.avatar}>{initial(u.name)}</div>
                   <div className={styles.nameBlock}>
                     <div className={styles.name}>{u.name}</div>
@@ -515,6 +545,8 @@ export default function UsersPage() {
         <ManageTagsModal
           isOpen={isTagsOpen}
           orgId={org.id}
+          tags={allTags}
+          setTags={setAllTags}
           onClose={() => setIsTagsOpen(false)}
         />
       )}
@@ -548,6 +580,7 @@ export default function UsersPage() {
               setEditOpen(true);
             }
           }}
+          assistantsById={assistantsById}
         />
       )}
     </div>

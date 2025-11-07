@@ -143,3 +143,28 @@
   /* ...existing... */
   font-size: 30px; /* was: 30 */
 }
+
+.hamburger {
+  display: none; /* default hidden (desktop) */
+  border: 1px solid var(--topbar-border);
+  background: #fff;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .hamburger {
+    display: inline-flex;
+  }
+  .inner {
+    padding: 0 12px;
+    gap: 10px;
+  }
+  .brand {
+    font-size: 22px;
+  } /* slightly smaller on phones */
+}

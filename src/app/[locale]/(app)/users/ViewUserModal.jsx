@@ -8,7 +8,14 @@ function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
 }
 
-export default function ViewUserModal({ open, onClose, user, orgId, onEdit }) {
+export default function ViewUserModal({
+  open,
+  onClose,
+  user,
+  orgId,
+  onEdit,
+  assistantsById,
+}) {
   const [render, setRender] = useState(open);
 
   const [threads, setThreads] = useState([]);
@@ -146,6 +153,9 @@ export default function ViewUserModal({ open, onClose, user, orgId, onEdit }) {
     }
   }
 
+  const getAssistantName = (id) =>
+    (id == null ? null : assistantsById?.get(String(id))?.name) || "_";
+
   const stateClass = open ? styles.open : styles.closing;
   if (!render || !user) return null;
 
@@ -248,9 +258,7 @@ export default function ViewUserModal({ open, onClose, user, orgId, onEdit }) {
                           title={t.aiThreadId}
                         >
                           <div className={styles.threadTitle}>
-                            {t.assistantId
-                              ? `Assistente #${t.assistantId}`
-                              : "—"}
+                            {getAssistantName(t.assistantId)}
                           </div>
                           <div className={styles.threadMeta}>
                             {formatWhen(t.createdAt)}

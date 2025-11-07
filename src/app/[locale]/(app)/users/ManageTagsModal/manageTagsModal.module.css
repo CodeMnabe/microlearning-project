@@ -23,6 +23,10 @@
   /* match CreateUser starting pose */
   opacity: 0;
   transform: translateY(40vh) scale(0.98);
+
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ───────── animations (same feel as CreateUser modal) ───────── */
@@ -131,6 +135,7 @@
   grid-template-columns: 1fr 1px 360px;
   gap: 18px;
   align-items: start;
+  overflow: auto;
 }
 
 /* Left: chips cloud */
@@ -170,7 +175,7 @@
 }
 .chipClose {
   font-weight: 900;
-  padding: 0 4px;
+  padding: 2px 6px;
   border-radius: 6px;
   opacity: 0.6;
 }
@@ -257,4 +262,28 @@
 /* util */
 .muted {
   opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+  .card {
+    width: min(560px, 96vw);
+    padding: 14px;
+  }
+  .body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .divider {
+    display: none;
+  }
+  .rightCol {
+    grid-template-rows: auto auto 1fr auto;
+  }
+  .actions {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(#fff, #fff);
+    padding-top: 8px;
+  }
 }

@@ -15,6 +15,9 @@
   --col-assistant: minmax(240px, 0.9fr);
   /* make this wide enough to hold "Ver • Editar • Apagar" */
   --col-actions: 260px; /* try 240–300px depending on your labels */
+
+  --row-h: 56px;
+  --avatar: 32px;
 }
 
 /* ───────────────── Toolbar ───────────────── */
@@ -983,9 +986,6 @@
 .msgRole {
   font-weight: 700;
 }
-.msgWhen {
-}
-
 /* Empty/error notes */
 .emptyNote {
   color: var(--ui-muted);
@@ -1010,5 +1010,130 @@
   }
   .messagesScroll .msgBubble {
     max-width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .toolbarRow {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .searchWrap {
+    width: 100%;
+    height: 40px;
+  }
+  .toolbarRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+  /* Compact buttons: keep icons, hide long text */
+  .actionBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 40px;
+    padding: 0 10px;
+    justify-content: center;
+  }
+  .actionBtn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .actionBtnPrimary,
+  .actionBtnSecondary {
+    flex: 1 1 auto; /* spread “Gerir Tags” / “Novo” evenly */
+  }
+  .filterBadge {
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  .table {
+    overflow: visible; /* let rows grow naturally */
+    max-height: none; /* no constrained pane on phones */
+    border: 0;
+  }
+  .header {
+    display: none;
+  } /* hide desktop header */
+
+  .row {
+    grid-template-columns: 42px 1fr auto; /* [checkbox] [content] [… ] */
+    grid-template-areas:
+      "chk   name   more"
+      "chk   phone  more"
+      "chk   tags   more"
+      "chk   asst   more";
+    row-gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ui-border);
+    border-radius: 12px;
+    background: #f7fbff; /* subtle card feel */
+    margin: 8px 10px;
+  }
+
+  .cellChk {
+    grid-area: chk;
+    align-self: start;
+  }
+  .cellName {
+    grid-area: name;
+  }
+  .cellPhone {
+    grid-area: phone;
+  }
+  .cellTags {
+    grid-area: tags;
+  }
+  .cellAssistant {
+    grid-area: asst;
+    min-width: 0;
+  }
+  .cellKebab {
+    grid-area: more;
+    align-self: start;
+  }
+
+  /* Avatar a bit smaller; tighten name/email */
+  .avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+  .name {
+    font-size: 0.95rem;
+  }
+  .subline {
+    font-size: 11px;
+  }
+
+  /* Tags wrap nicely */
+  .cellTags {
+    gap: 6px;
+  }
+  .chip {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+  .chipDark {
+    height: 24px;
+  }
+
+  /* Assistant select should fill the line */
+  .cellAssistant > * {
+    width: 100%;
+  }
+
+  /* Make the default kebab always visible on mobile,
+     and disable the “show on hover” inline actions. */
+  .rowActions {
+    display: none !important;
+  }
+  .kebabDefault {
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 }

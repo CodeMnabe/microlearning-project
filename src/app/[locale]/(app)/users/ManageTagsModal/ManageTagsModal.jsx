@@ -1,22 +1,26 @@
+// src/app/[locale]/(app)/users/ManageTagsModal/ManageTagsModal.jsx
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./manageTagsModal.module.css";
 import { useTranslations } from "next-intl";
 
-export default function ManageTagsModal({ isOpen, onClose, orgId }) {
+export default function ManageTagsModal({
+  isOpen,
+  onClose,
+  orgId,
+  tags = [],
+  setTags,
+}) {
   const translation = useTranslations();
-  const [loading, setLoading] = useState(false);
-  const [tags, setTags] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [nameInput, setNameInput] = useState("");
 
-  // ───────── same mount/unmount animation pattern as CreateUser ─────────
+  // mount/unmount animation
   const [render, setRender] = useState(isOpen);
   useEffect(() => {
     if (isOpen) setRender(true);
   }, [isOpen]);
 
-  // ESC to close (only while rendered)
   useEffect(() => {
     if (!render) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -26,42 +30,19 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
 
   const stateClass = isOpen ? styles.open : styles.closing;
 
-  // ---------- API helpers ----------
-  async function fetchTags() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/tags?orgId=${orgId}`);
-      if (!res.ok) {
-        console.error("GET /api/tags failed:", await res.text());
-        setTags([]);
-        setSelectedId(null);
-        setNameInput("");
-        return;
-      }
-      const data = await res.json();
-      const arr = Array.isArray(data) ? data : [];
-      setTags(arr);
-      if (arr.length) {
-        setSelectedId(arr[0].id);
-        setNameInput(arr[0].name || "");
-      } else {
-        setSelectedId(null);
-        setNameInput("");
-      }
-    } catch (e) {
-      console.error(e);
-      setTags([]);
-      setSelectedId(null);
-      setNameInput("");
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // When modal opens or tags change, pick a sensible selection
   useEffect(() => {
     if (!isOpen) return;
-    fetchTags(orgId);
-  }, [isOpen, orgId]);
+    const first = tags?.[0];
+    if (first && !tags.find((t) => t.id === selectedId)) {
+      setSelectedId(first.id);
+      setNameInput(first.name || "");
+    }
+    if (!tags?.length) {
+      setSelectedId(null);
+      setNameInput("");
+    }
+  }, [isOpen, tags, selectedId]);
 
   const selectedTag = useMemo(
     () =>
@@ -72,7 +53,7 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
   );
 
   async function createTag() {
-    const base = nameInput.trim() || `Grupo ${tags.length + 1}`;
+    const base = (nameInput || "").trim() || `Grupo ${tags.length + 1}`;
     const res = await fetch("/api/tags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -80,36 +61,37 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
     });
     if (!res.ok) return;
     const t = await res.json();
-    setTags((prev) => [t, ...prev]);
+    setTags?.((prev) => [t, ...(prev || [])]);
     setSelectedId(t.id);
-    setNameInput(t.name);
+    setNameInput(t.name || "");
   }
 
   async function saveRename() {
     if (!selectedTag) return;
-    const next = nameInput.trim();
+    const next = (nameInput || "").trim();
     if (!next || next === selectedTag.name) return;
     await fetch("/api/tags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: selectedTag.id, name: next }),
     });
-    setTags((prev) =>
-      prev.map((t) => (t.id === selectedTag.id ? { ...t, name: next } : t))
+    setTags?.((prev) =>
+      (prev || []).map((t) =>
+        t.id === selectedTag.id ? { ...t, name: next } : t
+      )
     );
   }
 
   async function removeTag(id) {
     await fetch(`/api/tags?id=${id}`, { method: "DELETE" });
-    setTags((prev) => prev.filter((t) => t.id !== id));
+    setTags?.((prev) => (prev || []).filter((t) => t.id !== id));
     if (id === selectedId) {
-      const next = tags.find((t) => t.id !== id);
+      const next = (tags || []).find((t) => t.id !== id);
       setSelectedId(next?.id ?? null);
       setNameInput(next?.name ?? "");
     }
   }
 
-  // ---------- UI ----------
   if (!render) return null;
 
   return (
@@ -121,7 +103,6 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
         if (!isOpen && e.target === e.currentTarget) setRender(false);
       }}
       onClick={(e) => {
-        // click outside (negative space) closes
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
@@ -133,52 +114,44 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
         <div className={styles.body}>
           {/* LEFT: chips */}
           <div className={styles.leftCol}>
-            {loading ? (
-              <div className={styles.muted}>
-                {translation("ManageTagsModal.loading")}
-              </div>
-            ) : (
-              <div className={styles.chipsArea}>
-                {Array.isArray(tags) && tags.length ? (
-                  tags.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`${styles.chip} ${
-                        t.id === selectedId ? styles.chipActive : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedId(t.id);
-                        setNameInput(t.name || "");
+            <div className={styles.chipsArea}>
+              {Array.isArray(tags) && tags.length ? (
+                tags.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`${styles.chip} ${
+                      t.id === selectedId ? styles.chipActive : ""
+                    }`}
+                    onClick={() => {
+                      setSelectedId(t.id);
+                      setNameInput(t.name || "");
+                    }}
+                  >
+                    <span className={styles.chipLabel}>{t.name}</span>
+                    <span
+                      className={styles.chipClose}
+                      role="button"
+                      aria-label={translation("ManageTagsModal.removeLabel", {
+                        name: t.name,
+                      })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTag(t.id);
                       }}
                     >
-                      <span className={styles.chipLabel}>{t.name}</span>
-                      <span
-                        className={styles.chipClose}
-                        role="button"
-                        aria-label={translation(
-                          "ManageTagsModal.removeLabel",
-                          t.name
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeTag(t.id);
-                        }}
-                      >
-                        ×
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className={styles.muted}>
-                    {translation("ManageTagsModal.none")}
-                  </div>
-                )}
-              </div>
-            )}
+                      ×
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className={styles.muted}>
+                  {translation("ManageTagsModal.none")}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* DIVIDER */}
           <div className={styles.divider} />
 
           {/* RIGHT: editor */}
@@ -206,7 +179,6 @@ export default function ManageTagsModal({ isOpen, onClose, orgId }) {
               <button
                 type="button"
                 className={styles.btnPrimary}
-                title={translation("ManageTagsModal.add")}
                 onClick={createTag}
               >
                 {translation("ManageTagsModal.add")}

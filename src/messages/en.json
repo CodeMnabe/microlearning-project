@@ -348,5 +348,25 @@
     "title": "Are you sure?",
     "namedTitle": "Are you sure you want to delete {name}?",
     "deleteMessage": "This action cannot be undone."
+  },
+
+  "QuickActions": {
+    "selected": "selected",
+    "clear": "Clear",
+    "bulkLabel": "Set Assistant",
+    "apply": "Apply",
+    "tag": "Add/Remove Tags",
+    "add": "Add",
+    "addTags": "Add selected tags to users",
+    "remove": "Remove",
+    "removeTags": "Remove selected tags from users",
+    "delete": "Delete Users",
+    "deleteUsers": "Delete selected users",
+    "confirmUserDeletion": {
+      "title": "Delete {number}  user(s)?",
+      "message": "This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    }
   }
 }
