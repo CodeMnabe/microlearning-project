@@ -11,6 +11,10 @@ const PUBLIC = [
   /^\/(pt|en)\/login$/,
   /^\/(pt|en)\/reset\/confirm$/,
   /^\/(pt|en)\/reset(\/request)?$/,
+  /^\/(pt|en)\/privacy(?:\/.*)?$/,
+  /^\/(pt|en)\/terms(?:\/.*)?$/,
+  /^\/(pt|en)\/security(?:\/.*)?$/,
+
   /^\/$/,
   /^\/(pt|en)$/,
 ];
