@@ -367,6 +367,22 @@
   color: #0f1c3f;
   margin-top: 2px;
 }
+.phoneRow {
+  display: flex;
+  gap: 8px;
+}
+
+.phoneCodeSelect {
+  min-width: 110px;
+}
+
+.phoneRow .phoneCodeSelect {
+  min-width: 120px; /* whatever width you like */
+  height: 40px; /* match your input height */
+  padding: 0 12px; /* similar horizontal padding as the input */
+  font-size: 14px; /* match input font size */
+  box-sizing: border-box;
+}
 .flag {
   width: 28px;
   height: 28px;

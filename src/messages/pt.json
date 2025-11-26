@@ -257,6 +257,7 @@
     "instructionsHelp": "Instruções que o Assistant vai seguir.",
     "model": "Modelo",
     "modelHelp": "Modelo de Inteligência Artificial que o Assistant vai utilizar.",
+    "modelPlaceholder": "Seleciona um modelo",
     "creativity": "Criatividade",
     "creativityHelp": "Controla a variedade das respostas: com o valor 0.5, o Assistant escolhe entre as opções com maior probabilidade, limitando-se às mais relevantes.",
     "variety": "Variedade",

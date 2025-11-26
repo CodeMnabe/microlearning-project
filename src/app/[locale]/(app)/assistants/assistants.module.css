@@ -589,3 +589,58 @@ body.modalOpen {
   text-align: right;
   font-weight: 700;
 }
+
+.infoIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  cursor: help;
+}
+
+.infoIcon svg {
+  display: block;
+}
+
+/* Hidden by default */
+.infoIcon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: 125%;
+  transform: translateX(-50%);
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #1f2933;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 10000;
+}
+
+/* Little arrow */
+.infoIcon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 115%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #1f2933 transparent transparent transparent;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+/* Show on hover */
+.infoIcon:hover::after,
+.infoIcon:hover::before {
+  opacity: 1;
+}

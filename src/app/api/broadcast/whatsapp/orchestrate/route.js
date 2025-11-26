@@ -2,7 +2,7 @@ require("dotenv").config();
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isSessionOpen } from "@/lib/whatsapp/whatsapp-session";
-import { toE164 } from "@/lib/whatsapp/toE164";
+import { toE164 } from "@/lib/whatsapp/E164";
 import { getUserByNumber } from "@/lib/repos/user.repo";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 

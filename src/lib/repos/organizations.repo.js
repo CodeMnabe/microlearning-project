@@ -41,3 +41,14 @@ export async function getOrganization(orgId) {
   if (error) throw error;
   return data;
 }
+
+export async function getOrganizationByTeamsTenantId(tenantId) {
+  const { data, error } = await sb
+    .from("organization")
+    .select("*")
+    .eq("teams_tenant_id", tenantId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}

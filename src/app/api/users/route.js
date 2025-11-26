@@ -24,22 +24,55 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { name, phoneNumber, organizationId, assistantId, email } =
-      await req.json();
+    const {
+      name,
+      phoneNumber, // optional legacy full number
+      phoneCountryCode, // "+351"
+      phoneNational, // "912345678"
+      organizationId,
+      assistantId,
+      email,
+    } = await req.json();
 
-    if (!name || !phoneNumber || !organizationId) {
+    if (!name || !organizationId) {
       return NextResponse.json(
-        { error: "Missing required fields: name, phoneNumber, organizationId" },
+        { error: "Missing required fields: name, organizationId" },
+        { status: 400 }
+      );
+    }
+
+    // Normalize
+    const normalizedNational =
+      typeof phoneNational === "string"
+        ? phoneNational.replace(/\s+/g, "")
+        : "";
+
+    const normalizedCode =
+      typeof phoneCountryCode === "string" && phoneCountryCode.trim()
+        ? phoneCountryCode.trim()
+        : null;
+
+    const fullPhone =
+      phoneNumber ??
+      (normalizedCode && normalizedNational
+        ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
+        : null);
+
+    if (!fullPhone) {
+      return NextResponse.json(
+        { error: "Missing phone number" },
         { status: 400 }
       );
     }
 
     const _newUser = await createUser({
       organizationId,
-      phoneNumber,
       name,
       email,
       assistantId: assistantId ?? null,
+      phoneNumber: fullPhone,
+      phoneCountryCode: normalizedCode,
+      phoneNational: normalizedNational,
     });
 
     return NextResponse.json(_newUser, { status: 201 });
@@ -61,8 +94,17 @@ export async function POST(req) {
 // src/app/api/users/route.js  (PATCH)
 export async function PATCH(req) {
   try {
-    const { id, name, phoneNumber, email, assistantId, tagIds } =
-      await req.json();
+    const {
+      id,
+      name,
+      phoneNumber, // optional full number
+      phoneCountryCode, // "+351"
+      phoneNational, // "912345678"
+      email,
+      assistantId,
+      tagIds,
+    } = await req.json();
+
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
@@ -70,16 +112,38 @@ export async function PATCH(req) {
       );
     }
 
+    const normalizedNational =
+      typeof phoneNational === "string"
+        ? phoneNational.replace(/\s+/g, "")
+        : undefined; // undefined means "don't touch" in updateUser
+
+    const normalizedCode =
+      typeof phoneCountryCode === "string" && phoneCountryCode.trim()
+        ? phoneCountryCode.trim()
+        : typeof phoneCountryCode === "string"
+        ? "" // allow clearing
+        : undefined;
+
+    const fullPhone =
+      typeof phoneNumber === "string" && phoneNumber.trim()
+        ? phoneNumber.trim()
+        : normalizedCode && normalizedNational
+        ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
+        : undefined;
+
     const updatedUser = await updateUser(id, {
       name,
-      phoneNumber,
       email,
-      assistantId, // ← new
-      tagIds, // ← new (array of numbers)
+      assistantId,
+      tagIds,
+      phoneNumber: fullPhone,
+      phoneCountryCode: normalizedCode,
+      phoneNational: normalizedNational,
     });
 
     return NextResponse.json(updatedUser);
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

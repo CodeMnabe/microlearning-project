@@ -62,7 +62,7 @@ export default function PillSelect({
     if (!open || !triggerRef.current) return;
 
     const r = triggerRef.current.getBoundingClientRect();
-    const width = menuWidth ?? Math.max(220, r.width);
+    const width = menuWidth ?? r.width;
     const left = Math.max(12, Math.min(window.innerWidth - width - 12, r.left));
 
     // Provisional place (down) to measure height

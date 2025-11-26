@@ -4,7 +4,6 @@ DO NOT TOUCH
 ----------------------*/
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-//require("dotenv").config();
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
@@ -25,6 +24,7 @@ import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
 } from "@/lib/repos/pendingOutreach.repo";
+import { splitE164 } from "@/lib/whatsapp/E164";
 
 /* --------------------
 Needed to check if the key we have is the
@@ -87,7 +87,7 @@ export async function GET() {
 }
 
 /**
- * Handles the incoming POSt webhook request from Bird
+ * Handles the incoming POST webhook request from Bird
  * Verifies the authenticity of the request using the HMAC signature and,
  * if valid, triggers asynchronous processing of the webhook event.
  *
@@ -216,77 +216,13 @@ async function handleEvent(rawJSON) {
     const pendingMessages = await getAllPendingOutreachByUser(user.id);
 
     if (pendingMessages.length) {
-      // 1) log the user's inbound ack message
-      await createMessage({
-        threadId: null,
-        userId: user.id,
-        messageId: inboundMsgId,
-        whatsAppId: contactId,
-        content: text,
-        role: "user",
-      });
-
-      // 2) prepare send endpoint once
-      const organization = await getOrganization(user.organization_id);
-      const sendPoint = `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`;
-
-      // 3) send each pending payload, log, then mark row as replied
-      for (const row of pendingMessages) {
-        const p = row.payload || {};
-
-        const body =
-          Array.isArray(p.imageUrls) && p.imageUrls.length
-            ? {
-                type: "image",
-                image: {
-                  images: p.imageUrls.map((u) => ({
-                    altText: "image",
-                    mediaUrl: u,
-                  })),
-                  ...(p.message ? { text: p.message } : {}),
-                },
-              }
-            : {
-                type: "text",
-                text: { text: p.message || "" },
-              };
-
-        const res = await fetch(sendPoint, {
-          method: "POST",
-          headers: {
-            Authorization: `AccessKey ${process.env.BIRD_API_KEY}`, // keep consistent with your Bird setup
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            receiver: { contacts: [{ id: contactId }] },
-            body,
-          }),
-        });
-
-        let outboundId = null;
-        try {
-          const outJson = await res.json();
-          outboundId = outJson?.id ?? outJson?.message?.id ?? null;
-        } catch {
-          // swallow parse errors; we'll still mark and log the attempt
-        }
-
-        // Log what we actually sent to the user (as a system message)
-        await createMessage({
-          threadId: null,
-          userId: user.id,
-          messageId: outboundId,
-          whatsAppId: contactId,
-          content: p.message || "",
-          role: "system",
-        });
-
-        // Mark this pending row as handled
-        await markPendingOutreachReplied(row.id, inboundMsgId);
-      }
-
-      // 4) Stop here – do not pass the reply to the assistant
-      return NextResponse.json({ ok: true });
+      handlePendingMessages(
+        user,
+        inboundMsgId,
+        contactId,
+        text,
+        pendingMessages
+      );
     }
 
     //Fetch user's organization and Assistants
@@ -380,34 +316,78 @@ async function handleEvent(rawJSON) {
   return NextResponse.json({ ok: true });
 }
 
-/**
- * Splits a valid E.164 phone number into its country code and national number
- *
- * @param {string} e164 - A phone number in the E.164 format
- * @returns {{ countryCode: string, nationalNumber: string}} Parsed country code and national number
- * @throws {Error} If the input is not a valid E.164 number or cannot be split
- */
-export function splitE164(e164) {
-  // Validate that the input matches the E.164 format
-  if (!/^\+\d{6,15}$/.test(e164)) {
-    throw new Error("Invalid E.164 number: " + e164);
-  }
+async function handlePendingMessages(
+  user,
+  inboundMsgId,
+  contactId,
+  text,
+  pendingMessages
+) {
+  await createMessage({
+    threadId: null,
+    userId: user.id,
+    messageId: inboundMsgId,
+    whatsAppId: contactId,
+    content: text,
+    role: "user",
+  });
 
-  // Try to extract the country code and national number
-  // Country codes are between 1 and 3 digits long (e.g., +1, +44, +351)
-  // The national number must be at least 6 digits long
-  for (let ccLen = 3; ccLen >= 1; ccLen--) {
-    // Slice out the potential country code from the start
-    const countryCode = e164.slice(0, 1 + ccLen);
-    // Slice the rest as the national number
-    const national = e164.slice(1 + ccLen);
+  const organization = await getOrganization(user.organization_id);
+  const sendPoint = `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${organization.channel_id}/messages`;
 
-    // Ensure the remaining number is at least 6 digits
-    if (national.length >= 6) {
-      return { countryCode, nationalNumber: national };
+  for (const row of pendingMessages) {
+    const p = row.payload || {};
+
+    const body =
+      Array.isArray(p.imageUrls) && p.imageUrls.length
+        ? {
+            type: "image",
+            image: {
+              images: p.imageUrls.map(
+                (u) => ({
+                  altText: "image",
+                  mediaUrl: u,
+                }),
+                ...(p.message ? { text: p.message } : {})
+              ),
+            },
+          }
+        : {
+            type: "text",
+            text: { text: p.message || "" },
+          };
+
+    const res = await fetch(sendPoint, {
+      method: "POST",
+      headers: {
+        Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        receiver: { contacts: [{ id: contactId }] },
+        body,
+      }),
+    });
+
+    let outboundId = null;
+    try {
+      const outJson = await res.json();
+      outboundId = outJson?.id ?? outJson?.message?.id ?? null;
+    } catch {
+      // swallow parse errors; we'll still mark and log the attempt
     }
+
+    await createMessage({
+      threadId: null,
+      userId: user.id,
+      messageId: outboundId,
+      whatsAppId: contactId,
+      content: p.message || "",
+      role: "system",
+    });
+
+    await markPendingOutreachReplied(row.id, inboundMsgId);
   }
 
-  // Should never reach here if input passed the regex
-  throw new Error("Unable to split E.164 number: " + e164);
+  return NextResponse.json({ ok: true });
 }

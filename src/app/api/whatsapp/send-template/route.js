@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { toE164 } from "@/lib/whatsapp/toE164";
+import { toE164 } from "@/lib/whatsapp/E164";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,

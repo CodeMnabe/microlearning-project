@@ -8,30 +8,50 @@ const supabase = createSupabaseAdmin(
 );
 
 function cleanMsisdn(n) {
-  return String(n).replace(/\D/g, "").slice(-9);
+  return String(n).replace(/\D/g, "");
 }
 
 export async function createUser({
   organizationId,
-  phoneNumber,
+  phoneNumber, // full E.164, e.g. "+351912345678"
+  phoneCountryCode, // e.g. "+351"
+  phoneNational, // e.g. "912345678"
   name,
   email = null,
   assistantId,
 }) {
+  const row = {
+    organization_id: organizationId,
+    name,
+    email,
+    assistant_id: assistantId ?? null,
+  };
+
+  // full E.164 as-is (no digit stripping)
+  if (phoneNumber !== undefined) {
+    row.phone_number = phoneNumber === null ? null : String(phoneNumber).trim();
+  }
+
+  // new code column
+  if (phoneCountryCode !== undefined) {
+    row.phone_country_code =
+      phoneCountryCode === null ? null : String(phoneCountryCode).trim();
+  }
+
+  // new national column (digits only)
+  if (phoneNational !== undefined) {
+    const digits = cleanMsisdn(phoneNational);
+    row.phone_national = digits || null;
+  }
+
   const { data, error } = await supabase
     .from("user")
-    .insert([
-      {
-        organization_id: organizationId,
-        phone_number: cleanMsisdn(phoneNumber),
-        name,
-        email,
-        assistant_id: assistantId,
-      },
-    ])
-    .select()
+    .insert([row])
+    .select("id")
     .single();
+
   if (error) throw error;
+
   // return in the same enriched shape as list
   return await getUserById(data.id);
 }
@@ -76,11 +96,29 @@ export async function deleteUser(userId) {
 export async function updateUser(userId, updates) {
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name;
-  if (updates.phoneNumber !== undefined)
-    patch.phone_number = cleanMsisdn(updates.phoneNumber);
   if (updates.email !== undefined) patch.email = updates.email;
   if (updates.assistantId !== undefined)
     patch.assistant_id = updates.assistantId;
+
+  // full E.164
+  if (updates.phoneNumber !== undefined) {
+    patch.phone_number =
+      updates.phoneNumber === null ? null : String(updates.phoneNumber).trim();
+  }
+
+  // country code
+  if (updates.phoneCountryCode !== undefined) {
+    patch.phone_country_code =
+      updates.phoneCountryCode === null
+        ? null
+        : String(updates.phoneCountryCode).trim();
+  }
+
+  // national (digits only)
+  if (updates.phoneNational !== undefined) {
+    const digits = cleanMsisdn(updates.phoneNational);
+    patch.phone_national = digits || null;
+  }
 
   if (Object.keys(patch).length) {
     const { error: upErr } = await supabase
@@ -128,12 +166,19 @@ export async function updateUser(userId, updates) {
 }
 
 export async function getUserById(userId) {
-  // include tags via the join table
   const { data, error } = await supabase
     .from("user")
     .select(
       `
-      id, organization_id, phone_number, name, assistant_id, created_at,
+      id,
+      organization_id,
+      phone_number,
+      phone_country_code,
+      phone_national,
+      name,
+      email,
+      assistant_id,
+      created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
       )
@@ -141,6 +186,7 @@ export async function getUserById(userId) {
     )
     .eq("id", userId)
     .maybeSingle();
+
   if (error) throw error;
   if (!data) return null;
 
@@ -150,29 +196,41 @@ export async function getUserById(userId) {
     id: data.id,
     organization_id: data.organization_id,
     phone_number: data.phone_number,
+    phone_country_code: data.phone_country_code,
+    phone_national: data.phone_national,
     name: data.name,
+    email: data.email,
     assistant_id: data.assistant_id,
     created_at: data.created_at,
-    // convenient shapes for the UI:
-    tags, // [{id,name,slug,color}]
-    tag_ids: tags.map((t) => t.id), // [number]
-    tag_names: tags.map((t) => t.name), // [string]
+    tags,
+    tag_ids: tags.map((t) => t.id),
+    tag_names: tags.map((t) => t.name),
   };
 }
 
 export async function getUserByNumber(phoneNumber) {
   const digits = cleanMsisdn(phoneNumber);
 
-  // exact
+  // 1) primary: exact match on phone_national (new column)
   let { data, error } = await supabase
+    .from("user")
+    .select("id")
+    .eq("phone_national", digits)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (data) return await getUserById(data.id);
+
+  // 2) legacy: exact match on phone_number (old behaviour where we stored only national)
+  const legacy = await supabase
     .from("user")
     .select("id")
     .eq("phone_number", digits)
     .maybeSingle();
-  if (error) throw error;
-  if (data) return await getUserById(data.id);
 
-  // trailing match
+  if (legacy.data) return await getUserById(legacy.data.id);
+
+  // 3) trailing match on phone_number (handles cases where phone_number is full E.164)
   const alt = await supabase
     .from("user")
     .select("id")
@@ -187,7 +245,14 @@ export async function getUsersInOrg(orgId) {
     .from("user")
     .select(
       `
-      id, name, phone_number, email, assistant_id, created_at,
+      id,
+      name,
+      phone_number,
+      phone_country_code,
+      phone_national,
+      email,
+      assistant_id,
+      created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
       )
@@ -195,6 +260,7 @@ export async function getUsersInOrg(orgId) {
     )
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
+
   if (error) throw error;
 
   return (data || []).map((u) => {
@@ -203,12 +269,27 @@ export async function getUsersInOrg(orgId) {
       id: u.id,
       name: u.name,
       phone_number: u.phone_number,
+      phone_country_code: u.phone_country_code,
+      phone_national: u.phone_national,
       email: u.email,
       assistant_id: u.assistant_id,
       created_at: u.created_at,
-      tags, // objects
+      tags,
       tag_ids: tags.map((t) => t.id),
       tag_names: tags.map((t) => t.name),
     };
   });
+}
+
+export async function getUserByAadObjectId(aadObjectId) {
+  if (!aadObjectId) return null;
+
+  const { data, error } = await supabase
+    .from("user")
+    .select("*")
+    .eq("teams_aad_object_id", aadObjectId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }

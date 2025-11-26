@@ -72,6 +72,7 @@ export default function UsersPage() {
   }, [view]);
 
   const orgId = org?.id;
+  const defaultPhoneCode = org?.default_phone_country_code || "+351";
 
   // assistants
   useEffect(() => {
@@ -117,7 +118,11 @@ export default function UsersPage() {
       users.map((u) => ({
         id: u.id,
         name: u.name,
+        // legacy full phone
         phone: u.phone_number ?? u.phoneNumber ?? "",
+        // new fields from DB (if present)
+        phoneCountryCode: u.phone_country_code ?? "",
+        phoneNational: u.phone_national ?? "",
         email: u.email ?? "",
         tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
         tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
@@ -131,7 +136,15 @@ export default function UsersPage() {
   // Apply text + Tag + Assistant filters
   const visible = useMemo(() => {
     return normalized.filter((u) => {
-      const textOk = (u.name + " " + u.phone + " " + u.email)
+      const textOk = (
+        u.name +
+        " " +
+        (u.phone || "") +
+        " " +
+        [u.phoneCountryCode, u.phoneNational].join(" ") +
+        " " +
+        (u.email || "")
+      )
         .toLowerCase()
         .includes(q.toLowerCase());
 
@@ -170,7 +183,8 @@ export default function UsersPage() {
 
   async function handleCreateUser({
     userName,
-    phoneNumber,
+    phoneCode,
+    phoneNational,
     email,
     assistantId,
   }) {
@@ -179,10 +193,11 @@ export default function UsersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         organizationId: org.id,
-        phoneNumber,
         name: userName,
         email: email || null,
         assistantId,
+        phoneCountryCode: phoneCode,
+        phoneNational,
       }),
     });
     if (!res.ok) {
@@ -420,7 +435,9 @@ export default function UsersPage() {
                 </div>
 
                 {/* phone */}
-                <div className={styles.cellPhone}>{u.phone || "—"}</div>
+                <div className={styles.cellPhone}>
+                  {u.phoneNational || u.phone_national || u.phone || "—"}
+                </div>
 
                 {/* tags */}
                 <div className={styles.cellTags}>
@@ -539,6 +556,7 @@ export default function UsersPage() {
         onClose={() => setIsCreateOpen(false)}
         onCreateUser={handleCreateUser}
         assistants={assistantsList}
+        defaultPhoneCode={defaultPhoneCode}
       />
 
       {orgId && (
@@ -562,6 +580,7 @@ export default function UsersPage() {
           onSaved={async () => {
             await refreshUsers();
           }}
+          defaultPhoneCode={defaultPhoneCode}
         />
       )}
 

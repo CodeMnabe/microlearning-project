@@ -4,23 +4,34 @@ import { useState, useEffect } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useTranslations } from "next-intl";
+import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
+
+const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
+  value: c.code, // "+351"
+  label: `${c.code} (${c.iso2})`, // "+351 (PT)"
+}));
 
 export default function CreateUserModal({
   isOpen,
   onClose,
   onCreateUser,
   assistants = [],
+  defaultPhoneCode = "+351",
 }) {
   const translation = useTranslations();
   const [userName, setUserName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneCode, setPhoneCode] = useState(defaultPhoneCode);
+  const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null); // number | null
 
   // Keep the modal mounted while running the closing animation
   const [render, setRender] = useState(isOpen);
   useEffect(() => {
-    if (isOpen) setRender(true);
+    if (isOpen) {
+      setRender(true);
+      setPhoneCode(defaultPhoneCode || "+351");
+    }
   }, [isOpen]);
 
   // ESC to close (only when open)
@@ -35,12 +46,14 @@ export default function CreateUserModal({
     e.preventDefault();
     onCreateUser({
       userName,
-      phoneNumber,
+      phoneCode,
+      phoneNational,
       email,
-      assistantId: assistantId ?? null, // already numeric
+      assistantId: assistantId ?? null,
     });
     setUserName("");
-    setPhoneNumber("");
+    setPhoneCode(defaultPhoneCode || "+351");
+    setPhoneNational("");
     setEmail("");
     setAssistantId(null);
   };
@@ -86,13 +99,25 @@ export default function CreateUserModal({
             <label htmlFor="telefone">
               {translation("CreateUserModal.phone")}
             </label>
-            <input
-              id="telefone"
-              type="text"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-            />
+            <div className={styles.phoneRow}>
+              <PillSelect
+                options={PHONE_CODE_OPTIONS}
+                value={phoneCode}
+                onChange={(val) => setPhoneCode(val)}
+                className={styles.phoneCodeSelect}
+                portalToBody
+                menuWidth={135}
+              />
+              <input
+                id="telefone"
+                type="text"
+                value={phoneNational}
+                onChange={(e) => setPhoneNational(e.target.value)}
+                required
+                // you can add a translation key for this placeholder
+                placeholder="912 345 678"
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>

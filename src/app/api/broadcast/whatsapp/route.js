@@ -1,7 +1,7 @@
 // /api/broadcast/whatsapp/route.js
 require("dotenv").config();
 import { NextResponse } from "next/server";
-import { toE164 } from "@/lib/whatsapp/toE164";
+import { toE164 } from "@/lib/whatsapp/E164";
 import { createClient } from "@supabase/supabase-js";
 import { getUserByNumber } from "@/lib/repos/user.repo";
 import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
@@ -98,7 +98,9 @@ export async function POST(req) {
     // Load org/channel
     const { data: org, error } = await supabaseAdmin
       .from("organization")
-      .select("id, name, channel_id, waba_namespace")
+      .select(
+        "id, name, channel_id, waba_namespace, default_phone_country_code"
+      )
       .eq("id", orgId)
       .single();
 
@@ -112,7 +114,10 @@ export async function POST(req) {
     const WORKSPACE_ID = process.env.WORKSPACE_ID;
     const CHANNEL_ID = org.channel_id;
     const ACCESS_KEY = process.env.BIRD_API_KEY;
-    const DEFAULT_CC = process.env.DEFAULT_COUNTRY_CODE || "+351";
+    const DEFAULT_CC =
+      org.default_phone_country_code ||
+      process.env.DEFAULT_COUNTRY_CODE ||
+      "+351";
 
     if (!WORKSPACE_ID || !CHANNEL_ID || !ACCESS_KEY) {
       return NextResponse.json(
@@ -195,21 +200,43 @@ export async function POST(req) {
     }
 
     async function handleOne(rawPhone) {
-      // Find user and window status
-      const user = await getUserByNumber(String(rawPhone).replace(/\D/g, "")); // your repo expects national number
-      // If somehow not found, still attempt freeform (or you can skip)
-      const to = await toE164(rawPhone, DEFAULT_CC);
+      const digits = String(rawPhone).replace(/\D/g, "");
+
+      // 1) Look up the user by NATIONAL number (phone_national)
+      const user = await getUserByNumber(digits);
+
+      // 2) Decide the E.164 destination
+      let to;
+      if (user) {
+        // Prefer the full phone_number if you stored E.164 there
+        if (user.phone_number) {
+          to = user.phone_number;
+        } else if (user.phone_country_code && user.phone_national) {
+          // Fallback in case phone_number is empty but split fields exist
+          to = `${user.phone_country_code}${String(user.phone_national).replace(
+            /\D/g,
+            ""
+          )}`;
+        } else {
+          // Very old rows – we have no split info, so fall back to org default
+          to = await toE164(rawPhone, DEFAULT_CC);
+        }
+      } else {
+        // Not in DB: assume this is either E.164 or a national number,
+        // and use the org's default CC as a fallback
+        to = await toE164(rawPhone, DEFAULT_CC);
+      }
 
       const windowOpen = user ? await isWindowOpenForUser(user.id) : false;
 
       if (windowOpen) {
+        // Inside 24h window -> send your freeform message
         const r = await sendFreeform(to);
         return { to, kind: "freeform", ...r };
       }
 
       // Window closed and we have a picked template
       if (!template?.projectId) {
-        // No template provided -> fail this recipient gracefully
         return {
           to,
           kind: "freeform",
