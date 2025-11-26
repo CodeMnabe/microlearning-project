@@ -261,6 +261,7 @@
     "instructionsHelp": "Instructions the Assistant will follow.",
     "model": "Model",
     "modelHelp": "AI model the Assistant will use.",
+    "modelPlaceholder": "Select a model",
     "creativity": "Creativity",
     "creativityHelp": "Controls diversity of answers: at 0.5, the Assistant picks among higher-probability options, keeping to the most relevant ones.",
     "variety": "Variety",

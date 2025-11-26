@@ -5,6 +5,18 @@ import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { useTranslations } from "next-intl";
+import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
+
+function stripPrefixFromPhone(full, code) {
+  if (!full) return "";
+  if (code && full.startsWith(code)) return full.slice(code.length);
+  return full.replace(/^\+/, "");
+}
+
+const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
+  value: c.code,
+  label: `${c.code} (${c.iso2})`,
+}));
 
 export default function EditUserModal({
   open,
@@ -14,12 +26,14 @@ export default function EditUserModal({
   assistants = [],
   onDelete,
   onSaved,
+  defaultPhoneCode = "+351",
 }) {
   const translation = useTranslations();
   const confirm = useConfirm();
 
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState(defaultPhoneCode);
+  const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -40,11 +54,26 @@ export default function EditUserModal({
   useEffect(() => {
     if (!open || !user) return;
     setName(user.name || "");
-    setPhone(user.phone || user.phone_number || "");
+
+    const code =
+      user.phoneCountryCode ||
+      user.phone_country_code ||
+      defaultPhoneCode ||
+      "";
+
+    const full = user.phone || user.phone_number || "";
+
+    setPhoneCode(code);
+    setPhoneNational(
+      user.phoneNational ||
+        user.phone_national ||
+        stripPrefixFromPhone(full, code)
+    );
+
     setEmail(user.email || "");
     setAssistantId(user.assistantId ?? null);
     setSelectedTagIds(user.tagIds || user.tag_ids || []);
-  }, [open, user]);
+  }, [open, user, defaultPhoneCode]);
 
   // Load tags when opened
   useEffect(() => {
@@ -80,16 +109,23 @@ export default function EditUserModal({
   async function save() {
     setIsSaving(true);
     try {
+      const fullPhone =
+        phoneCode && phoneNational
+          ? `${phoneCode}${phoneNational.replace(/\D/g, "")}`
+          : user.phone || user.phone_number || null;
+
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: user.id,
           name,
-          phoneNumber: phone,
           email,
           assistantId,
           tagIds: selectedTagIds,
+          phoneCountryCode: phoneCode,
+          phoneNational,
+          phoneNumber: fullPhone,
         }),
       });
       if (!res.ok) {
@@ -156,11 +192,22 @@ export default function EditUserModal({
 
           <div className={styles.formGroup}>
             <label>{translation("EditUserModal.phone")}</label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={translation("EditUserModal.phone")}
-            />
+            <div className={styles.phoneRow}>
+              <PillSelect
+                options={PHONE_CODE_OPTIONS}
+                value={phoneCode}
+                onChange={(val) => setPhoneCode(val)}
+                className={styles.phoneCodeSelect}
+                portalToBody
+                menuWidth={135}
+              />
+              <input
+                type="text"
+                value={phoneNational}
+                onChange={(e) => setPhoneNational(e.target.value)}
+                placeholder="912 345 678"
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>

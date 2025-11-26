@@ -194,9 +194,7 @@ export default function CreateAssistantModal({
               options={modelOptions}
               value={model}
               onChange={setModel}
-              placeholder={translation("CreateAssistant.modelPlaceholder", {
-                default: "Select a model",
-              })}
+              placeholder={translation("CreateAssistant.modelPlaceholder")}
               fullWidth
               className={styles.input} // keeps same width/spacing as your inputs
             />

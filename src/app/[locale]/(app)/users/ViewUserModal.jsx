@@ -8,6 +8,13 @@ function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
 }
 
+function formatPhoneDisplay(user) {
+  const code = user.phoneCountryCode || user.phone_country_code || "";
+  const nat = user.phoneNational || user.phone_national || "";
+  if (code || nat) return `${code} ${nat}`.trim();
+  return user.phone || user.phone_national || "—";
+}
+
 export default function ViewUserModal({
   open,
   onClose,
@@ -183,8 +190,7 @@ export default function ViewUserModal({
             <div className={styles.viewTitleBlock}>
               <div className={styles.viewTitle}>{user.name || "—"}</div>
               <div className={styles.viewSubtitle}>
-                {user.email || "—"} &middot;{" "}
-                {user.phone || user.phone_number || "—"}
+                {user.email || "—"} &middot; {formatPhoneDisplay(user)}
               </div>
               {!!(user.tags && user.tags.length) && (
                 <div className={styles.viewTagsRow}>
