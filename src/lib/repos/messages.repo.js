@@ -12,8 +12,8 @@ const supabase = createServiceClient(
 export async function createMessage({
   threadId,
   userId,
-  messageId = null, // provider message id from Bird
-  whatsAppId = null, // Bird contact id (or channel msg id if you prefer)
+  messageId = null, // provider message / activity id (Bird, Teams, etc.)
+  externalContactId = null, // WhatsApp contact id, Teams user id, etc.
   content = "",
   role = "user",
 }) {
@@ -24,10 +24,10 @@ export async function createMessage({
         thread_id: threadId ?? null,
         user_id: userId ?? null,
         message_id: messageId,
-        whatsapp_id: whatsAppId,
+        contact_id: externalContactId, // reuse existing column
         content,
-        role, // "user" | "assistant"
-        // created_at handled by DB default NOW()
+        role,
+        // created_at: DB default
       },
     ])
     .select()
