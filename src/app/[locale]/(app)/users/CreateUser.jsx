@@ -7,8 +7,8 @@ import { useTranslations } from "next-intl";
 import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
 
 const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
-  value: c.code, // "+351"
-  label: `${c.code} (${c.iso2})`, // "+351 (PT)"
+  value: c.code,
+  label: `${c.code} (${c.iso2})`,
 }));
 
 export default function CreateUserModal({
@@ -23,7 +23,16 @@ export default function CreateUserModal({
   const [phoneCode, setPhoneCode] = useState(defaultPhoneCode);
   const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
-  const [assistantId, setAssistantId] = useState(null); // number | null
+  const [assistantId, setAssistantId] = useState(null);
+
+  const [teamsAadObjectId, setTeamsAadObjectId] = useState("");
+  const [teamsFromId, setTeamsFromId] = useState("");
+
+  const [whatsAppStatus, setWhatsAppStatus] = useState("enabled");
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+  const [teamsOpen, setTeamsOpen] = useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Keep the modal mounted while running the closing animation
   const [render, setRender] = useState(isOpen);
@@ -32,7 +41,7 @@ export default function CreateUserModal({
       setRender(true);
       setPhoneCode(defaultPhoneCode || "+351");
     }
-  }, [isOpen]);
+  }, [isOpen, defaultPhoneCode]);
 
   // ESC to close (only when open)
   useEffect(() => {
@@ -42,20 +51,37 @@ export default function CreateUserModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [render, onClose]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onCreateUser({
-      userName,
-      phoneCode,
-      phoneNational,
-      email,
-      assistantId: assistantId ?? null,
-    });
-    setUserName("");
-    setPhoneCode(defaultPhoneCode || "+351");
-    setPhoneNational("");
-    setEmail("");
-    setAssistantId(null);
+    setIsSubmitting(true);
+    try {
+      const ok = await onCreateUser({
+        userName,
+        phoneCode,
+        phoneNational,
+        email,
+        assistantId: assistantId ?? null,
+        teamsAadObjectId: teamsAadObjectId || null,
+        teamsFromId: teamsFromId || null,
+      });
+
+      if (ok) {
+        // only clear if the API call succeeded
+        setUserName("");
+        setPhoneCode(defaultPhoneCode || "+351");
+        setPhoneNational("");
+        setEmail("");
+        setAssistantId(null);
+        setTeamsAadObjectId("");
+        setTeamsFromId("");
+        setWhatsAppStatus("enabled");
+        setWhatsAppOpen(false);
+        setTeamsOpen(false);
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!render) return null;
@@ -96,31 +122,6 @@ export default function CreateUserModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="telefone">
-              {translation("CreateUserModal.phone")}
-            </label>
-            <div className={styles.phoneRow}>
-              <PillSelect
-                options={PHONE_CODE_OPTIONS}
-                value={phoneCode}
-                onChange={(val) => setPhoneCode(val)}
-                className={styles.phoneCodeSelect}
-                portalToBody
-                menuWidth={135}
-              />
-              <input
-                id="telefone"
-                type="text"
-                value={phoneNational}
-                onChange={(e) => setPhoneNational(e.target.value)}
-                required
-                // you can add a translation key for this placeholder
-                placeholder="912 345 678"
-              />
-            </div>
-          </div>
-
-          <div className={styles.formGroup}>
             <label htmlFor="email">
               {translation("CreateUserModal.email")}
             </label>
@@ -137,18 +138,144 @@ export default function CreateUserModal({
             <PillSelect
               options={assistants.map((a) => ({ value: a.id, label: a.name }))}
               value={assistantId ?? ""}
-              onChange={(val) => setAssistantId(val)} // val is the selected id (number)
+              onChange={(val) => setAssistantId(val)}
               placeholder={translation("CreateUserModal.chooseAssistant")}
-              fullWidth // ⟵ stretch to the form width
+              fullWidth
               portalToBody
             />
           </div>
 
+          {/* ───── Canais de Comunicação (accordion) ───── */}
+          <div className={styles.sectionDivider}>
+            <span className={styles.sectionDividerLabel}>
+              Canais de Comunicação
+            </span>
+          </div>
+
+          <div className={styles.channelList}>
+            {/* WhatsApp row */}
+            <div className={styles.channelRow}>
+              <button
+                type="button"
+                className={styles.channelMain}
+                onClick={() => setWhatsAppOpen((v) => !v)}
+              >
+                <div className={styles.channelMainLeft}>
+                  <span className={styles.channelLabel}>WhatsApp</span>
+                </div>
+                <div className={styles.channelMainRight}>
+                  <span
+                    className={`${styles.channelChevron} ${
+                      whatsAppOpen ? styles.channelChevronOpen : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+
+              {whatsAppOpen && (
+                <div className={styles.channelFields}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="telefone">
+                      {translation("CreateUserModal.phone")}
+                    </label>
+                    <div className={styles.phoneRow}>
+                      <PillSelect
+                        options={PHONE_CODE_OPTIONS}
+                        value={phoneCode}
+                        onChange={(val) => setPhoneCode(val)}
+                        className={styles.phoneCodeSelect}
+                        portalToBody
+                        menuWidth={135}
+                      />
+                      <input
+                        id="telefone"
+                        type="text"
+                        value={phoneNational}
+                        onChange={(e) => setPhoneNational(e.target.value)}
+                        required
+                        placeholder="912 345 678"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Microsoft Teams row */}
+            <div className={styles.channelRow}>
+              <button
+                type="button"
+                className={styles.channelMain}
+                onClick={() => setTeamsOpen((v) => !v)}
+              >
+                <div className={styles.channelMainLeft}>
+                  <span className={styles.channelLabel}>Microsoft Teams</span>
+                </div>
+                <div className={styles.channelMainRight}>
+                  <span
+                    className={`${styles.channelChevron} ${
+                      teamsOpen ? styles.channelChevronOpen : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+
+              {teamsOpen && (
+                <div className={styles.channelFields}>
+                  <div className={styles.formGroup}>
+                    <label>Teams Aad Object ID</label>
+                    <input
+                      value={teamsAadObjectId}
+                      onChange={(e) => setTeamsAadObjectId(e.target.value)}
+                      placeholder="00000000-0000-0000-0000-000000000000"
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>Teams From Id</label>
+                    <input
+                      value={teamsFromId}
+                      onChange={(e) => setTeamsFromId(e.target.value)}
+                      placeholder="29:XXXXXXXXXXXX"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* ───────────────────────── */}
+
           <div className={styles.buttonGroup}>
-            <button type="submit">
-              {translation("CreateUserModal.create")}
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? translation("CreateUserModal.creating")
+                : translation("CreateUserModal.create")}
             </button>
-            <button type="button" onClick={onClose}>
+            <button type="button" onClick={onClose} disabled={isSubmitting}>
               {translation("CreateUserModal.cancel")}
             </button>
           </div>

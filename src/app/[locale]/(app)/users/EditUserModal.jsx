@@ -36,9 +36,15 @@ export default function EditUserModal({
   const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
+  const [teamsAadObjectId, setTeamsAadObjectId] = useState("");
+  const [teamsFromId, setTeamsFromId] = useState("");
   const [saving, setSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // accordion open/closed
+  const [whatsAppOpen, setWhatsAppOpen] = useState(true);
+  const [teamsOpen, setTeamsOpen] = useState(false);
 
   // tags
   const [allTags, setAllTags] = useState([]);
@@ -53,6 +59,7 @@ export default function EditUserModal({
   // Prefill fields when opening
   useEffect(() => {
     if (!open || !user) return;
+
     setName(user.name || "");
 
     const code =
@@ -71,8 +78,17 @@ export default function EditUserModal({
     );
 
     setEmail(user.email || "");
-    setAssistantId(user.assistantId ?? null);
+    setAssistantId(user.assistantId ?? user.assistant_id ?? null);
+
+    setTeamsAadObjectId(
+      user.teamsAadObjectId ?? user.teams_aad_object_id ?? ""
+    );
+    setTeamsFromId(user.teamsFromId ?? user.teams_from_id ?? "");
     setSelectedTagIds(user.tagIds || user.tag_ids || []);
+
+    // accordion defaults
+    setWhatsAppOpen(false);
+    setTeamsOpen(false);
   }, [open, user, defaultPhoneCode]);
 
   // Load tags when opened
@@ -190,7 +206,7 @@ export default function EditUserModal({
             />
           </div>
 
-          <div className={styles.formGroup}>
+          {/* <div className={styles.formGroup}>
             <label>{translation("EditUserModal.phone")}</label>
             <div className={styles.phoneRow}>
               <PillSelect
@@ -208,7 +224,7 @@ export default function EditUserModal({
                 placeholder="912 345 678"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className={styles.formGroup}>
             <label>E-mail</label>
@@ -231,6 +247,156 @@ export default function EditUserModal({
               portalToBody
             />
           </div>
+
+          {/* ───── Teams section ───── */}
+          {/* <div className={styles.sectionDivider}>
+            <span className={styles.sectionDividerLabel}>
+              Canais de Comunicação
+            </span>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Teams Aad Object ID</label>
+            <input
+              value={teamsAadObjectId ?? ""}
+              onChange={(e) => setTeamsAadObjectId(e.target.value)}
+              placeholder="00000000-0000-0000-0000-000000000000"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Teams From Id</label>
+            <input
+              value={teamsFromId ?? ""}
+              onChange={(e) => setTeamsFromId(e.target.value)}
+              placeholder="29:XXXXXXXXXXXX"
+            />
+          </div>
+
+          <div className={styles.sectionDivider} /> */}
+          {/* ───────────────────────── */}
+
+          {/* ───── Canais de Comunicação (accordion) ───── */}
+          <div className={styles.sectionDivider}>
+            <span className={styles.sectionDividerLabel}>
+              Canais de Comunicação
+            </span>
+          </div>
+
+          <div className={styles.channelList}>
+            {/* WhatsApp row */}
+            <div className={styles.channelRow}>
+              <button
+                type="button"
+                className={styles.channelMain}
+                onClick={() => setWhatsAppOpen((v) => !v)}
+              >
+                <div className={styles.channelMainLeft}>
+                  <span className={styles.channelLabel}>WhatsApp</span>
+                </div>
+                <div className={styles.channelMainRight}>
+                  <span
+                    className={`${styles.channelChevron} ${
+                      whatsAppOpen ? styles.channelChevronOpen : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+
+              {whatsAppOpen && (
+                <div className={styles.channelFields}>
+                  <div className={styles.formGroup}>
+                    <label>{translation("EditUserModal.phone")}</label>
+                    <div className={styles.phoneRow}>
+                      <PillSelect
+                        options={PHONE_CODE_OPTIONS}
+                        value={phoneCode}
+                        onChange={(val) => setPhoneCode(val)}
+                        className={styles.phoneCodeSelect}
+                        portalToBody
+                        menuWidth={135}
+                      />
+                      <input
+                        type="text"
+                        value={phoneNational}
+                        onChange={(e) => setPhoneNational(e.target.value)}
+                        placeholder="912 345 678"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Microsoft Teams row */}
+            <div className={styles.channelRow}>
+              <button
+                type="button"
+                className={styles.channelMain}
+                onClick={() => setTeamsOpen((v) => !v)}
+              >
+                <div className={styles.channelMainLeft}>
+                  <span className={styles.channelLabel}>Microsoft Teams</span>
+                </div>
+                <div className={styles.channelMainRight}>
+                  <span
+                    className={`${styles.channelChevron} ${
+                      teamsOpen ? styles.channelChevronOpen : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path
+                        d="M9 6l6 6-6 6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </button>
+
+              {teamsOpen && (
+                <div className={styles.channelFields}>
+                  <div className={styles.formGroup}>
+                    <label>Teams Aad Object ID</label>
+                    <input
+                      value={teamsAadObjectId ?? ""}
+                      onChange={(e) => setTeamsAadObjectId(e.target.value)}
+                      placeholder="00000000-0000-0000-0000-000000000000"
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>Teams From Id</label>
+                    <input
+                      value={teamsFromId ?? ""}
+                      onChange={(e) => setTeamsFromId(e.target.value)}
+                      placeholder="29:XXXXXXXXXXXX"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.sectionDivider} />
+          {/* ───────────────────────── */}
 
           <div className={styles.formGroup}>
             <label>{translation("EditUserModal.tags")}</label>

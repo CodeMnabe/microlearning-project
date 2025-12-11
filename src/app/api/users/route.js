@@ -26,12 +26,14 @@ export async function POST(req) {
   try {
     const {
       name,
-      phoneNumber, // optional legacy full number
-      phoneCountryCode, // "+351"
-      phoneNational, // "912345678"
+      phoneNumber,
+      phoneCountryCode,
+      phoneNational,
       organizationId,
       assistantId,
       email,
+      teamsAadObjectId,
+      teamsFromId,
     } = await req.json();
 
     if (!name || !organizationId) {
@@ -73,6 +75,8 @@ export async function POST(req) {
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
       phoneNational: normalizedNational,
+      teamsAadObjectId: teamsAadObjectId ?? null,
+      teamsFromId: teamsFromId ?? null,
     });
 
     return NextResponse.json(_newUser, { status: 201 });
