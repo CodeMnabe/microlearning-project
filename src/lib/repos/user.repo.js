@@ -19,6 +19,8 @@ export async function createUser({
   name,
   email = null,
   assistantId,
+  teamsAadObjectId,
+  teamsFromId,
 }) {
   const row = {
     organization_id: organizationId,
@@ -32,17 +34,29 @@ export async function createUser({
     row.phone_number = phoneNumber === null ? null : String(phoneNumber).trim();
   }
 
-  // new code column
+  // country code column
   if (phoneCountryCode !== undefined) {
     row.phone_country_code =
       phoneCountryCode === null ? null : String(phoneCountryCode).trim();
   }
 
-  // new national column (digits only)
+  // national number (digits only)
   if (phoneNational !== undefined) {
     const digits = cleanMsisdn(phoneNational);
     row.phone_national = digits || null;
   }
+
+  // ─── NEW: Teams fields ───
+  if (teamsAadObjectId !== undefined) {
+    row.teams_aad_object_id =
+      teamsAadObjectId === null ? null : String(teamsAadObjectId).trim();
+  }
+
+  if (teamsFromId !== undefined) {
+    row.teams_from_id =
+      teamsFromId === null ? null : String(teamsFromId).trim();
+  }
+  // ─────────────────────────
 
   const { data, error } = await supabase
     .from("user")
@@ -252,6 +266,8 @@ export async function getUsersInOrg(orgId) {
       phone_national,
       email,
       assistant_id,
+      teams_aad_object_id,
+      teams_from_id,
       created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
@@ -273,6 +289,8 @@ export async function getUsersInOrg(orgId) {
       phone_national: u.phone_national,
       email: u.email,
       assistant_id: u.assistant_id,
+      teams_aad_object_id: u.teams_aad_object_id,
+      teams_from_id: u.teams_from_id,
       created_at: u.created_at,
       tags,
       tag_ids: tags.map((t) => t.id),

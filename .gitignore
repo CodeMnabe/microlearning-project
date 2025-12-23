@@ -35,3 +35,5 @@ src/lib/sendToAi.js
 /src/generated/
 seed.mjs
 src.zip
+testJson.json
+src/app/api/teams/messages/_route(deprecated).js

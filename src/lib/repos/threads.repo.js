@@ -1,5 +1,5 @@
 // /lib/repos/threads.repo.js
-require("dotenv").config();
+//require("dotenv").config();
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 const supabase = createServiceClient(
@@ -8,51 +8,119 @@ const supabase = createServiceClient(
   { auth: { persistSession: false } }
 );
 
-/**
- * Table: thread
- * cols: id (int4), user_id (int4), assistant_id (int4),
- *       ai_thread_id (text UNIQUE), created_at (timestamp)
- */
-const SELECT_COLS = "id, user_id, assistant_id, ai_thread_id, created_at";
+const SELECT_COLS = `
+  id,
+  user_id,
+  assistant_id,
+  ai_thread_id,
+  channel,
+  scope,
+  external_conversation_id,
+  created_at,
+  last_message_at,
+  is_active
+`;
 
-export async function createThread({ userId, assistantId, aiThreadId }) {
-  if (!userId || !assistantId || !aiThreadId) {
-    throw new Error("createThread requires userId, assistantId and aiThreadId");
+function nowIso() {
+  return new Date().toISOString();
+}
+
+/**
+ * Create a new thread row.
+ */
+export async function createThread({
+  userId,
+  assistantId,
+  aiThreadId,
+  channel,
+  scope,
+  externalConversationId = null,
+}) {
+  if (!assistantId || !aiThreadId || !channel || !scope) {
+    throw new Error(
+      "createThread requires assistantId, aiThreadId, channel and scope"
+    );
   }
+
+  const payload = {
+    user_id: userId ?? null,
+    assistant_id: assistantId,
+    ai_thread_id: aiThreadId,
+    channel,
+    scope,
+    external_conversation_id: externalConversationId,
+    last_message_at: nowIso(),
+  };
+
   const { data, error } = await supabase
     .from("thread")
-    .insert([
-      { user_id: userId, assistant_id: assistantId, ai_thread_id: aiThreadId },
-    ])
+    .insert([payload])
     .select(SELECT_COLS)
     .single();
+
   if (error) throw error;
   return data;
 }
 
 /**
- * getOrCreateThread:
- * - If a row with this ai_thread_id exists, return it.
- * - Otherwise create it with (userId, assistantId, aiThreadId).
- *   (Safer than upsert to avoid null-overwrites.)
+ * Update last_message_at whenever we get/send a message.
  */
-export async function getOrCreateThread({ userId, assistantId, aiThreadId }) {
-  if (!aiThreadId) throw new Error("getOrCreateThread requires aiThreadId");
+export async function touchThread(threadId) {
+  const { data, error } = await supabase
+    .from("thread")
+    .update({ last_message_at: nowIso() })
+    .eq("id", threadId)
+    .select(SELECT_COLS)
+    .single();
 
-  // 1) try to find existing by ai_thread_id
-  const { data: existing, error: selErr } = await supabase
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Personal (DM) thread for a user on a given channel.
+ */
+export async function getUserThreadForChannel({
+  userId,
+  assistantId,
+  channel,
+}) {
+  const { data, error } = await supabase
     .from("thread")
     .select(SELECT_COLS)
-    .eq("ai_thread_id", aiThreadId)
+    .eq("user_id", userId)
+    .eq("assistant_id", assistantId)
+    .eq("channel", channel)
+    .eq("scope", "user")
+    .order("created_at", { ascending: false })
     .maybeSingle();
-  if (selErr) throw selErr;
-  if (existing) {
-    return existing;
-  }
 
-  // 2) create new
-  return await createThread({ userId, assistantId, aiThreadId });
+  if (error) throw error;
+  return data ?? null;
 }
+
+/**
+ * Group/channel thread identified by external_conversation_id (Teams).
+ */
+export async function getGroupThreadForConversation({
+  assistantId,
+  channel,
+  externalConversationId,
+}) {
+  const { data, error } = await supabase
+    .from("thread")
+    .select(SELECT_COLS)
+    .eq("assistant_id", assistantId)
+    .eq("channel", channel)
+    .eq("scope", "group")
+    .eq("external_conversation_id", externalConversationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+/* ---------- Legacy helpers you already had ---------- */
 
 export async function getThreadsForUser(userId) {
   const { data, error } = await supabase
@@ -62,27 +130,6 @@ export async function getThreadsForUser(userId) {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data || [];
-}
-
-// Keeping your originals for completeness/back-compat:
-export async function ensureThreadByAiId({ userId, assistantId, aiThreadId }) {
-  // Upsert in case callers still rely on it.
-  const { data, error } = await supabase
-    .from("thread")
-    .upsert(
-      [
-        {
-          user_id: userId ?? null,
-          assistant_id: assistantId ?? null,
-          ai_thread_id: aiThreadId,
-        },
-      ],
-      { onConflict: "ai_thread_id" }
-    )
-    .select(SELECT_COLS)
-    .single();
-  if (error) throw error;
-  return data;
 }
 
 export async function getThreadById(threadId) {
@@ -103,4 +150,30 @@ export async function getThreadByAiId(aiThreadId) {
     .maybeSingle();
   if (error) throw error;
   return data ?? null;
+}
+
+/**
+ * Backwards-compatible: find by ai_thread_id, else create.
+ * (Used if anything else in the code still calls getOrCreateThread.)
+ */
+export async function getOrCreateThread({
+  userId,
+  assistantId,
+  aiThreadId,
+  channel = "whatsapp",
+  scope = "user",
+  externalConversationId = null,
+}) {
+  if (!aiThreadId) throw new Error("getOrCreateThread requires aiThreadId");
+  const existing = await getThreadByAiId(aiThreadId);
+  if (existing) return existing;
+
+  return createThread({
+    userId,
+    assistantId,
+    aiThreadId,
+    channel,
+    scope,
+    externalConversationId,
+  });
 }

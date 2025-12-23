@@ -10,8 +10,7 @@ import crypto from "crypto";
 import { getUserByNumber } from "@/lib/repos/user.repo";
 import {
   createThread,
-  getOrCreateThread,
-  getThreadsForUser,
+  getUserThreadForChannel,
 } from "@/lib/repos/threads.repo";
 import {
   getAssistantById,
@@ -236,16 +235,25 @@ async function handleEvent(rawJSON) {
       return NextResponse.json({ error: "no assistants" }, { status: 400 });
     }
 
-    //Check if user has any Threads already
-    let thread = (await getThreadsForUser(user.id))[0];
+    const channel = "whatsapp";
 
+    // Check if user already has a WhatsApp DM thread for this assistant
+    let thread = await getUserThreadForChannel({
+      userId: user.id,
+      assistantId: assistantRow.id,
+      channel,
+    });
+
+    // If not, create OpenAI thread + DB row
     if (!thread) {
-      const aiThread = await createOAiThread(); // create OpenAI thread
-      thread = await getOrCreateThread({
-        // insert a DB row
+      const aiThread = await createOAiThread(); // OpenAI thread
+      thread = await createThread({
         userId: user.id,
         assistantId: assistantRow.id,
         aiThreadId: aiThread.id,
+        channel,
+        scope: "user",
+        externalConversationId: null, // not needed for WhatsApp
       });
     }
 
@@ -255,7 +263,7 @@ async function handleEvent(rawJSON) {
       threadId: thread?.id ?? null,
       userId: user.id,
       messageId: inboundMsgId,
-      whatsAppId: contactId,
+      externalContactId: contactId,
       content: text,
       role: "user",
     });
@@ -306,7 +314,7 @@ async function handleEvent(rawJSON) {
       threadId: thread?.id ?? null,
       userId: user.id,
       messageId: outboundId,
-      whatsAppId: contactId,
+      externalContactId: contactId,
       content: aiResponse.aiResponse,
       role: "assistant",
     });
@@ -327,7 +335,7 @@ async function handlePendingMessages(
     threadId: null,
     userId: user.id,
     messageId: inboundMsgId,
-    whatsAppId: contactId,
+    externalContactId: contactId,
     content: text,
     role: "user",
   });
@@ -381,7 +389,7 @@ async function handlePendingMessages(
       threadId: null,
       userId: user.id,
       messageId: outboundId,
-      whatsAppId: contactId,
+      externalContactId: contactId,
       content: p.message || "",
       role: "system",
     });

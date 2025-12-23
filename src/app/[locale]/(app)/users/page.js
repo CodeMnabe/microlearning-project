@@ -127,6 +127,8 @@ export default function UsersPage() {
         tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
         tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
         assistantId: u.assistant_id ?? null,
+        teamsAadObjectId: u.teams_aad_object_id,
+        teamsFromId: u.teams_from_id,
         assistantName: u.assistantName ?? "—",
         organization_id: u.organization_id,
       })),
@@ -187,6 +189,8 @@ export default function UsersPage() {
     phoneNational,
     email,
     assistantId,
+    teamsAadObjectId,
+    teamsFromId,
   }) {
     const res = await fetch("/api/users", {
       method: "POST",
@@ -198,15 +202,18 @@ export default function UsersPage() {
         assistantId,
         phoneCountryCode: phoneCode,
         phoneNational,
+        teamsAadObjectId: teamsAadObjectId || null,
+        teamsFromId: teamsFromId || null,
       }),
     });
     if (!res.ok) {
       const err = await res.json();
       console.error(`Error creating user: ${err.error}`);
-      return;
+      return false;
     }
     await refreshUsers();
     setIsCreateOpen(false);
+    return true;
   }
 
   function openEditFor(u) {

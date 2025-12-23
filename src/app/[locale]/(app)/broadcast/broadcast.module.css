@@ -502,6 +502,31 @@
   min-height: 120px;
 } /* was 160px */
 
+.channelSwitch {
+  display: inline-flex;
+  height: 45px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--ui-pill);
+  border: 1px solid var(--ui-border);
+  gap: 2px;
+}
+
+.channelBtn {
+  border: 0;
+  background: transparent;
+  padding: 4px 18px;
+  border-radius: 999px;
+  font-size: 16px;
+  cursor: pointer;
+  color: #4b5563;
+}
+
+.channelBtnActive {
+  background: #1f6fff;
+  color: #fff;
+}
+
 @media (max-width: 1100px) {
   .templateGrid {
     padding-right: 0;

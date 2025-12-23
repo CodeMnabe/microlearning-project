@@ -121,6 +121,9 @@ export default function BroadcastPage() {
   const [tplUrlVar, setTplUrlVar] = useState("");
   const [tplParamsManual, setTplParamsManual] = useState("");
 
+  //TODO: DO THIS PART
+  const [channel, setChannel] = useState("whatsapp");
+
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
     const res = await fetch(`/api/users?orgId=${org.id}`);
@@ -162,13 +165,15 @@ export default function BroadcastPage() {
     let alive = true;
     (async () => {
       await getUsers();
-      await loadTemplates();
+      if (channel === "whatsapp") {
+        await loadTemplates();
+      }
       if (alive) stopLoading();
     })();
     return () => {
       alive = false;
     };
-  }, [org?.id, getUsers, loadTemplates, startLoading, stopLoading]);
+  }, [org?.id, channel, getUsers, loadTemplates, startLoading, stopLoading]);
 
   // group & choose template
   const templatesByName = useMemo(() => {
@@ -236,7 +241,7 @@ export default function BroadcastPage() {
       setVarValues({});
       setNeedsUrlVar(false);
       setTplUrlVar("");
-      if (!org?.id || !chosenTemplate) return;
+      if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
       try {
         const res = await fetch(
           `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`
@@ -267,7 +272,7 @@ export default function BroadcastPage() {
       }
     })();
     return () => (alive = false);
-  }, [org?.id, chosenTemplate, tplLang]);
+  }, [org?.id, chosenTemplate, tplLang, channel]);
 
   // recipients filter
   const filtered = useMemo(() => {
@@ -306,19 +311,41 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (files) => {
-    const bucket = "whatsapp-broadcasts";
+    const bucket = "images";
     const newUrls = [];
+
+    const makeSafeName = (name) => {
+      // remove accents
+      let safe = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      // keep only letters, numbers, dot, dash, underscore
+      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+      // fallback just in case
+      if (!safe) safe = "file";
+
+      return safe;
+    };
+
     for (const file of files) {
+      const safeName = makeSafeName(file.name);
       const key = `broadcasts/${Date.now()}-${Math.random()
         .toString(36)
-        .slice(2)}-${file.name}`;
+        .slice(2)}-${safeName}`;
+
       const { error: upErr } = await supabase.storage
         .from(bucket)
         .upload(key, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
+
+      if (upErr) {
+        console.error("Supabase upload error:", upErr);
+        throw upErr;
+      }
+
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
       if (pub?.publicUrl) newUrls.push(pub.publicUrl);
     }
+
     return newUrls;
   };
   async function handlePickFiles(e) {
@@ -432,47 +459,102 @@ export default function BroadcastPage() {
 
   const canSend =
     selected.size > 0 &&
-    ((tplName && tplLang && paramsComplete) ||
-      message.trim().length > 0 ||
-      imageUrls.length > 0);
+    (channel === "whatsapp"
+      ? (tplName && tplLang && paramsComplete) ||
+        message.trim().length > 0 ||
+        imageUrls.length > 0
+      : message.trim().length > 0 || imageUrls.length > 0);
 
   async function handleSend() {
     const chosen = users.filter((u) => selected.has(u.id));
     if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
+
+    console.log("[Broadcast] channel =", channel);
+    console.log("[Broadcast] chosen users =", chosen);
+    console.log("[Broadcast] message =", message);
+
     setSending(true);
     setResult(null);
+
     try {
-      const payload = {
-        orgId: org?.id,
-        message,
-        imageUrls,
-        recipients: chosen.map((u) => u.phone_number),
-        template:
-          tplName && tplLang && paramsComplete
-            ? {
-                projectId: chosenTemplate?.projectId,
-                name: tplName.trim(),
-                languageCode: (tplLang || "pt-PT").trim(),
-                params: orderedParamValues,
-                varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
-                manualParams: varDefs.length ? undefined : tplParamsManual,
-                urlVar: needsUrlVar ? tplUrlVar.trim() || null : null,
-              }
-            : null,
-      };
-      const res = await fetch("/api/broadcast/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      setResult(data);
-      if (!res.ok) {
-        console.error("Broadcast error", data);
-        alert(translation("Common.error"));
+      if (channel === "whatsapp") {
+        const payload = {
+          orgId: org?.id,
+          message,
+          imageUrls,
+          recipients: chosen.map((u) => u.phone_number),
+          template:
+            tplName && tplLang && paramsComplete
+              ? {
+                  projectId: chosenTemplate?.projectId,
+                  name: tplName.trim(),
+                  languageCode: (tplLang || "pt-PT").trim(),
+                  params: orderedParamValues,
+                  varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
+                  manualParams: varDefs.length ? undefined : tplParamsManual,
+                  urlVar: needsUrlVar ? tplUrlVar.trim() || null : null,
+                }
+              : null,
+        };
+
+        console.log("[Broadcast] WHATSAPP payload ->", payload);
+
+        const res = await fetch("/api/broadcast/whatsapp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+
+        console.log("[Broadcast] WHATSAPP response", res.status, data);
+        setResult(data);
+
+        if (!res.ok) {
+          console.error("Broadcast error", data);
+          alert(translation("Common.error"));
+        }
+      } else {
+        // TEAMS
+        const payload = {
+          orgId: org?.id,
+          userIds: chosen.map((u) => u.id),
+          message,
+          imageUrls, // 👈 send images to backend too
+        };
+
+        console.log("[Broadcast] TEAMS payload ->", payload);
+
+        const res = await fetch("/api/broadcast/teams", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+
+        console.log("[Broadcast] TEAMS response", res.status, data);
+        setResult(data);
+
+        if (!res.ok) {
+          console.error("Teams broadcast error", data);
+          alert(translation("Common.error"));
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error("[Broadcast] handleSend error", err);
       alert(translation("Common.error") + ": " + err.message);
     } finally {
       setSending(false);
@@ -548,7 +630,37 @@ export default function BroadcastPage() {
   return (
     <div className={styles.screen}>
       <div className={styles.headerRow}>
-        <h1>{translation("Broadcast.title")}</h1>
+        <div className={styles.channelSwitch}>
+          <button
+            type="button"
+            className={`${styles.channelBtn} ${
+              channel === "whatsapp" ? styles.channelBtnActive : ""
+            }`}
+            onClick={() => setChannel("whatsapp")}
+          >
+            WhatsApp
+          </button>
+          <button
+            type="button"
+            className={`${styles.channelBtn} ${
+              channel === "teams" ? styles.channelBtnActive : ""
+            }`}
+            onClick={() => setChannel("teams")}
+          >
+            Teams
+          </button>
+          {/* <button
+            type="button"
+            className={`${styles.channelBtn} ${
+              channel === "app" ? styles.channelBtnActive : ""
+            }`}
+            onClick={() => setChannel("app")}
+          >
+            App
+          </button> */}
+        </div>
+
+        {/* right side: selected + send */}
         <div className={styles.actionsRight}>
           <div className={styles.selectedLabel}>
             {translation("Broadcast.selected")} <strong>{selected.size}</strong>
@@ -562,18 +674,6 @@ export default function BroadcastPage() {
               ? translation("Broadcast.sending")
               : translation("Broadcast.send")}
           </button>
-          {/* <button
-            onClick={handleSendTemplateOnly}
-            disabled={
-              sending ||
-              selected.size === 0 ||
-              !tplName.trim() ||
-              !paramsComplete
-            }
-            className={styles.ghostBtn}
-          >
-            {sending ? translation("Broadcast.sending") : "Enviar só template"}
-          </button> */}
         </div>
       </div>
 
@@ -585,6 +685,7 @@ export default function BroadcastPage() {
             <div className={styles.panelTitle}>
               {translation("Broadcast.message")}
             </div>
+
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -592,8 +693,12 @@ export default function BroadcastPage() {
               placeholder={translation("Broadcast.messagePlaceholder")}
               className={styles.textarea}
             />
-            {/* <div className={styles.imagesRow}>
-              <label className={styles.label}>Imagens</label>
+
+            {/* Image picker — used for BOTH channels */}
+            <div className={styles.imagesRow}>
+              <label className={styles.label}>
+                Imagens ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
+              </label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -601,12 +706,13 @@ export default function BroadcastPage() {
                 multiple
                 onChange={handlePickFiles}
               />
-            </div> */}
+            </div>
+
             {imageUrls.length > 0 && (
               <div className={styles.thumbStrip}>
                 {imageUrls.map((u) => (
                   <div key={u} className={styles.thumbWrap}>
-                    <Image
+                    <img
                       src={u}
                       alt="upload"
                       width={120}
@@ -630,222 +736,227 @@ export default function BroadcastPage() {
           </div>
 
           {/* Template — compact */}
-          <div className={`${styles.panel} ${styles.panelSlim}`}>
-            <div className={styles.panelTitle}>
-              {translation("Broadcast.templatePreview")}
-            </div>
-            {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
+          {channel === "whatsapp" && (
+            <div className={`${styles.panel} ${styles.panelSlim}`}>
+              <div className={styles.panelTitle}>
+                {translation("Broadcast.templatePreview")}
+              </div>
+              {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
 
-            {/* 2-column layout: LEFT = select + fields, RIGHT = preview */}
-            <div className={styles.templateGrid}>
-              <div className={styles.templateFormCol}>
-                <div className={styles.templateRow}>
-                  <div className={styles.field}>
-                    <div className={styles.label}>
-                      {translation("Broadcast.template")}
-                    </div>
-                    <select
-                      disabled={tplLoading || nameOptions.length === 0}
-                      value={tplName}
-                      onChange={(e) => setTplName(e.target.value)}
-                      className={styles.select}
-                    >
-                      {nameOptions.length === 0 ? (
-                        <option value="">
-                          {translation("Broadcast.noTemplates")}
-                        </option>
-                      ) : (
-                        nameOptions.map((n) => (
-                          <option key={n} value={n}>
-                            {n}
+              {/* 2-column layout: LEFT = select + fields, RIGHT = preview */}
+              <div className={styles.templateGrid}>
+                <div className={styles.templateFormCol}>
+                  <div className={styles.templateRow}>
+                    <div className={styles.field}>
+                      <div className={styles.label}>
+                        {translation("Broadcast.template")}
+                      </div>
+                      <select
+                        disabled={tplLoading || nameOptions.length === 0}
+                        value={tplName}
+                        onChange={(e) => setTplName(e.target.value)}
+                        className={styles.select}
+                      >
+                        {nameOptions.length === 0 ? (
+                          <option value="">
+                            {translation("Broadcast.noTemplates")}
                           </option>
-                        ))
-                      )}
-                    </select>
+                        ) : (
+                          nameOptions.map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {chosenTemplate && (
+                      <div className={styles.meta}>
+                        <span className={styles.metaItem}>
+                          <span className={`${styles.pill} ${styles.pillSoft}`}>
+                            {/* {chosenTemplate.status} */}
+                          </span>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {chosenTemplate && (
-                    <div className={styles.meta}>
-                      <span className={styles.metaItem}>
-                        <span className={`${styles.pill} ${styles.pillSoft}`}>
-                          {/* {chosenTemplate.status} */}
-                        </span>
-                      </span>
+                  {/* Variable fields */}
+                  {varDefs.length > 0 ? (
+                    <div className={styles.grid}>
+                      {varDefs.map((v) => {
+                        const kLower = String(v.key || "").toLowerCase();
+                        const locked = isLockedVar(kLower);
+
+                        // what to display in read-only
+                        let displayVal = varValues[v.key] ?? "";
+                        if (!displayVal && COMPANY_KEYS.includes(kLower))
+                          displayVal = org?.name || "";
+                        if (!displayVal && NAME_KEYS.includes(kLower))
+                          displayVal = sampleRecipient?.name || "";
+
+                        const placeholder =
+                          v.examplesLocale?.[tplLang]
+                            ?.exampleValueStrings?.[0] ??
+                          (v.examplesLocale
+                            ? v.examplesLocale[Object.keys(v.examplesLocale)[0]]
+                                ?.exampleValueStrings?.[0]
+                            : "") ??
+                          "";
+
+                        return (
+                          <div key={v.key} className={styles.fieldWide}>
+                            <label className={styles.smallLabel}>
+                              {v.key}
+                              {v.characterLimit
+                                ? ` · máx ${v.characterLimit}`
+                                : ""}
+                              {v.description ? ` — ${v.description}` : ""}
+                              {locked && (
+                                <span
+                                  style={{
+                                    marginLeft: 8,
+                                    fontSize: 11,
+                                    padding: "2px 6px",
+                                    borderRadius: 999,
+                                    background: "#F3F4F6",
+                                    color: "#374151",
+                                  }}
+                                >
+                                  auto
+                                </span>
+                              )}
+                            </label>
+
+                            {locked ? (
+                              // READ-ONLY TEXT (no input)
+                              <div
+                                style={{
+                                  padding: "10px 12px",
+                                  border: "1px dashed #e5e7eb",
+                                  borderRadius: 10,
+                                  background: "#F9FAFB",
+                                  color: "#111827",
+                                  minHeight: 40,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  whiteSpace: "pre-wrap",
+                                }}
+                              >
+                                {displayVal || "—"}
+                              </div>
+                            ) : (
+                              // Editable for non-locked vars
+                              <input
+                                value={varValues[v.key] ?? ""}
+                                onChange={(e) =>
+                                  setVarValues((prev) => ({
+                                    ...prev,
+                                    [v.key]: e.target.value,
+                                  }))
+                                }
+                                placeholder={placeholder}
+                                maxLength={v.characterLimit || undefined}
+                                className={styles.input}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                      {!paramsComplete && (
+                        <div className={styles.helpDanger}>
+                          {translation("Common.error")}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // manual mode unchanged
+                    <div className={styles.fieldWide}>
+                      <label className={styles.smallLabel}>
+                        {translation("Broadcast.varKeyDesc")}
+                      </label>
+                      <input
+                        value={tplParamsManual}
+                        onChange={(e) => setTplParamsManual(e.target.value)}
+                        placeholder="name=Gaspar,url=?session=123"
+                        className={styles.input}
+                      />
+                    </div>
+                  )}
+
+                  {needsUrlVar && (
+                    <div className={styles.fieldWide}>
+                      <label className={styles.smallLabel}>
+                        {translation("Broadcast.urlVar")}
+                      </label>
+                      <input
+                        value={tplUrlVar}
+                        onChange={(e) => setTplUrlVar(e.target.value)}
+                        placeholder="session-12345"
+                        className={styles.input}
+                      />
                     </div>
                   )}
                 </div>
 
-                {/* Variable fields */}
-                {varDefs.length > 0 ? (
-                  <div className={styles.grid}>
-                    {varDefs.map((v) => {
-                      const kLower = String(v.key || "").toLowerCase();
-                      const locked = isLockedVar(kLower);
-
-                      // what to display in read-only
-                      let displayVal = varValues[v.key] ?? "";
-                      if (!displayVal && COMPANY_KEYS.includes(kLower))
-                        displayVal = org?.name || "";
-                      if (!displayVal && NAME_KEYS.includes(kLower))
-                        displayVal = sampleRecipient?.name || "";
-
-                      const placeholder =
-                        v.examplesLocale?.[tplLang]?.exampleValueStrings?.[0] ??
-                        (v.examplesLocale
-                          ? v.examplesLocale[Object.keys(v.examplesLocale)[0]]
-                              ?.exampleValueStrings?.[0]
-                          : "") ??
-                        "";
-
-                      return (
-                        <div key={v.key} className={styles.fieldWide}>
-                          <label className={styles.smallLabel}>
-                            {v.key}
-                            {v.characterLimit
-                              ? ` · máx ${v.characterLimit}`
-                              : ""}
-                            {v.description ? ` — ${v.description}` : ""}
-                            {locked && (
-                              <span
-                                style={{
-                                  marginLeft: 8,
-                                  fontSize: 11,
-                                  padding: "2px 6px",
-                                  borderRadius: 999,
-                                  background: "#F3F4F6",
-                                  color: "#374151",
-                                }}
-                              >
-                                auto
-                              </span>
-                            )}
-                          </label>
-
-                          {locked ? (
-                            // READ-ONLY TEXT (no input)
-                            <div
-                              style={{
-                                padding: "10px 12px",
-                                border: "1px dashed #e5e7eb",
-                                borderRadius: 10,
-                                background: "#F9FAFB",
-                                color: "#111827",
-                                minHeight: 40,
-                                display: "flex",
-                                alignItems: "center",
-                                whiteSpace: "pre-wrap",
-                              }}
-                            >
-                              {displayVal || "—"}
+                {/* RIGHT: preview */}
+                <aside className={styles.previewCol}>
+                  {preview.body || preview.buttonText || preview.buttonUrl ? (
+                    <>
+                      <div
+                        className={`${styles.waFrame} ${styles.waFrameSmall}`}
+                      >
+                        <div className={styles.waHeader}>
+                          <div className={styles.waAvatar}>U</div>
+                          <div className={styles.waHeaderText}>
+                            <div className={styles.waTitle}>
+                              {sampleRecipient?.name ||
+                                translation("Common.none")}
                             </div>
-                          ) : (
-                            // Editable for non-locked vars
-                            <input
-                              value={varValues[v.key] ?? ""}
-                              onChange={(e) =>
-                                setVarValues((prev) => ({
-                                  ...prev,
-                                  [v.key]: e.target.value,
-                                }))
-                              }
-                              placeholder={placeholder}
-                              maxLength={v.characterLimit || undefined}
-                              className={styles.input}
-                            />
+                            <div className={styles.waSubtitle}>online</div>
+                          </div>
+                          <div className={styles.waIcons}>⋯</div>
+                        </div>
+                        <div className={styles.waChat}>
+                          <div className={styles.waRowOut}>
+                            <div className={styles.waBubbleOut}>
+                              <span className={styles.waText}>
+                                {preview.body || "—"}
+                              </span>
+                              <span className={styles.waMeta}>
+                                {new Date().toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}{" "}
+                                ✓✓
+                              </span>
+                            </div>
+                          </div>
+                          {(preview.buttonText || preview.buttonUrl) && (
+                            <div className={styles.waRowOut}>
+                              <button className={styles.waCtaBtn} type="button">
+                                {preview.buttonText || "Abrir"}
+                              </button>
+                            </div>
                           )}
                         </div>
-                      );
-                    })}
-                    {!paramsComplete && (
-                      <div className={styles.helpDanger}>
-                        {translation("Common.error")}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  // manual mode unchanged
-                  <div className={styles.fieldWide}>
-                    <label className={styles.smallLabel}>
-                      {translation("Broadcast.varKeyDesc")}
-                    </label>
-                    <input
-                      value={tplParamsManual}
-                      onChange={(e) => setTplParamsManual(e.target.value)}
-                      placeholder="name=Gaspar,url=?session=123"
-                      className={styles.input}
-                    />
-                  </div>
-                )}
-
-                {needsUrlVar && (
-                  <div className={styles.fieldWide}>
-                    <label className={styles.smallLabel}>
-                      {translation("Broadcast.urlVar")}
-                    </label>
-                    <input
-                      value={tplUrlVar}
-                      onChange={(e) => setTplUrlVar(e.target.value)}
-                      placeholder="session-12345"
-                      className={styles.input}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* RIGHT: preview */}
-              <aside className={styles.previewCol}>
-                {preview.body || preview.buttonText || preview.buttonUrl ? (
-                  <>
-                    <div className={`${styles.waFrame} ${styles.waFrameSmall}`}>
-                      <div className={styles.waHeader}>
-                        <div className={styles.waAvatar}>U</div>
-                        <div className={styles.waHeaderText}>
-                          <div className={styles.waTitle}>
-                            {sampleRecipient?.name ||
-                              translation("Common.none")}
-                          </div>
-                          <div className={styles.waSubtitle}>online</div>
+                      {preview.buttonUrl && (
+                        <div className={styles.previewUrlHint}>
+                          URL: {preview.buttonUrl}
                         </div>
-                        <div className={styles.waIcons}>⋯</div>
-                      </div>
-                      <div className={styles.waChat}>
-                        <div className={styles.waRowOut}>
-                          <div className={styles.waBubbleOut}>
-                            <span className={styles.waText}>
-                              {preview.body || "—"}
-                            </span>
-                            <span className={styles.waMeta}>
-                              {new Date().toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}{" "}
-                              ✓✓
-                            </span>
-                          </div>
-                        </div>
-                        {(preview.buttonText || preview.buttonUrl) && (
-                          <div className={styles.waRowOut}>
-                            <button className={styles.waCtaBtn} type="button">
-                              {preview.buttonText || "Abrir"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className={styles.previewPlaceholder}>
+                      {translation("Common.noResults")}
                     </div>
-                    {preview.buttonUrl && (
-                      <div className={styles.previewUrlHint}>
-                        URL: {preview.buttonUrl}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className={styles.previewPlaceholder}>
-                    {translation("Common.noResults")}
-                  </div>
-                )}
-              </aside>
+                  )}
+                </aside>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* RIGHT: Recipients */}
@@ -891,7 +1002,9 @@ export default function BroadcastPage() {
                       <div className={styles.name}>
                         {u.name || translation("Common.none")}
                       </div>
-                      <div className={styles.subline}>{u.phone_number}</div>
+                      <div className={styles.subline}>
+                        {channel === "whatsapp" ? u.phone_number : u.email}
+                      </div>
                     </div>
                   </label>
                 );

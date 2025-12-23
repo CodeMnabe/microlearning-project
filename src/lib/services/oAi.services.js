@@ -121,44 +121,59 @@ export async function associateStoreToAssistant(assistantId, store) {
 }
 
 export async function sendMessageToAi(assistantId, input, threadId) {
+  // 🔒 Do not allow undefined/null thread ids anymore
+  if (!threadId) {
+    throw new Error(
+      `sendMessageToAi: threadId is required but got "${threadId}"`
+    );
+  }
+
   try {
-    //Todo Later it will have user verification and thread verification per user
+    console.log("[sendMessageToAi] using threadId:", threadId);
 
-    if (!threadId) {
-      const newThread = await client.beta.threads.create();
-      threadId = newThread.id;
-    }
-
-    const newMessage = await client.beta.threads.messages.create(threadId, {
+    // 1) Add user message to the thread
+    await client.beta.threads.messages.create(threadId, {
       role: "user",
       content: input,
     });
 
+    // 2) Start a run
     const run = await client.beta.threads.runs.create(threadId, {
       assistant_id: assistantId,
     });
 
-    let runStatus = "in_progress";
-    while (runStatus !== "completed") {
+    // 3) Poll until the run finishes
+    let runStatus = run.status;
+    while (runStatus === "queued" || runStatus === "in_progress") {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const runCheck = await client.beta.threads.runs.retrieve(
-        threadId,
-        run.id
-      );
+      const runCheck = await client.beta.threads.runs.retrieve(run.id, {
+        thread_id: threadId,
+      });
       runStatus = runCheck.status;
     }
 
-    const messages = await client.beta.threads.messages.list(threadId);
-    const aiResponse = stripOpenAICitations(
-      messages.data[0].content[0].text.value
-    );
+    if (runStatus !== "completed") {
+      throw new Error(`Run ended with status "${runStatus}"`);
+    }
+
+    // 4) Get latest assistant message
+    const messages = await client.beta.threads.messages.list(threadId, {
+      order: "desc",
+      limit: 1,
+    });
+
+    const latest = messages.data[0];
+    const textPart = latest.content.find((c) => c.type === "text");
+    const aiResponse = stripOpenAICitations(textPart.text.value);
 
     return {
       threadId,
       aiResponse,
     };
   } catch (err) {
-    console.error(err);
+    console.error("[sendMessageToAi] error:", err);
+    // ⛔ Do NOT swallow errors; rethrow so caller sees them
+    throw err;
   }
 }
 
