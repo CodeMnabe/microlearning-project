@@ -1,4 +1,14 @@
 {
+  "LandingPage": {
+    "Nav": {
+      "learn": "Learn",
+      "product": "Product",
+      "pricing": "Prices",
+      "support": "Support",
+      "company": "Company",
+      "blog": "Blog"
+    }
+  },
   "Nav": {
     "home": "Home",
     "users": "Users",
@@ -7,6 +17,7 @@
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
+    "options": "Options",
     "logout": "Sign out"
   },
   "Common": {

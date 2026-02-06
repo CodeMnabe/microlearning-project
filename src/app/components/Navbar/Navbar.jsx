@@ -41,7 +41,7 @@ export default function Navbar() {
       if (href === "/") return current === "/";
       return current === href || current.startsWith(href + "/");
     },
-    [pendingHref, pathNoLocale]
+    [pendingHref, pathNoLocale],
   );
 
   const onNavClick = (href) => (e) => {
@@ -91,7 +91,7 @@ export default function Navbar() {
           <>
             <div className={styles.userBlock}>
               <div className={styles.orgLine}>
-                {orgLoading ? "…" : org?.name ?? "—"}
+                {orgLoading ? "…" : (org?.name ?? "—")}
               </div>
               <div className={styles.emailLine}>{user.email}</div>
             </div>
@@ -169,6 +169,15 @@ export default function Navbar() {
                 </Link>
               )}
             </nav>
+
+            <Link
+              href="/options"
+              onClick={onNavClick("/options")}
+              className={`${styles.navItem} ${styles.options}`}
+            >
+              <Settings aria-hidden className={styles.icon} />
+              <span>{translation("Nav.options")}</span>
+            </Link>
 
             <button
               onClick={handleSignOut}

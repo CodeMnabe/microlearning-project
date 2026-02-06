@@ -3,7 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false } },
 );
 
 /**
@@ -43,6 +43,11 @@ export async function upsertUserTeamsConversation({
     last_seen_at: new Date().toISOString(),
   };
 
+  const { dataUser, errorUser } = await sb
+    .from("user")
+    .update({ teams_from_id: teamsUserId })
+    .eq("id", userId);
+
   const { data, error } = await sb
     .from("user_teams_conversation")
     .upsert(row, { onConflict: "user_id, conversation_type" })
@@ -55,7 +60,7 @@ export async function upsertUserTeamsConversation({
 
 export async function getUserTeamsConversation(
   userId,
-  conversationType = "personal"
+  conversationType = "personal",
 ) {
   const { data, error } = await sb
     .from("user_teams_conversation")
@@ -70,7 +75,7 @@ export async function getUserTeamsConversation(
 
 export async function deleteUserTeamsConversation(
   userId,
-  conversation_type = "personal"
+  conversation_type = "personal",
 ) {
   const { error } = await sb
     .from("user_teams_conversation")

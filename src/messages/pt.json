@@ -1,4 +1,14 @@
 {
+  "LandingPage": {
+    "Nav": {
+      "learn": "Aprender",
+      "product": "Produto",
+      "pricing": "Preços",
+      "support": "Suporte",
+      "company": "Empresa",
+      "blog": "Blog"
+    }
+  },
   "Nav": {
     "home": "Início",
     "users": "Colaboradores",
@@ -7,6 +17,7 @@
     "templates": "Templates",
     "admin": "Administração",
     "login": "Login",
+    "options": "Definições",
     "logout": "Sair"
   },
   "Common": {

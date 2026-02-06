@@ -5,7 +5,13 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.js");
 
 const nextConfig = {
   images: {
-    domains: ["ztxzlixcprexbhdmqpkj.supabase.co"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ztxzlixcprexbhdmqpkj.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
   },
 };
 

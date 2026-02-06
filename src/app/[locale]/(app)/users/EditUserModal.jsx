@@ -74,14 +74,14 @@ export default function EditUserModal({
     setPhoneNational(
       user.phoneNational ||
         user.phone_national ||
-        stripPrefixFromPhone(full, code)
+        stripPrefixFromPhone(full, code),
     );
 
     setEmail(user.email || "");
     setAssistantId(user.assistantId ?? user.assistant_id ?? null);
 
     setTeamsAadObjectId(
-      user.teamsAadObjectId ?? user.teams_aad_object_id ?? ""
+      user.teamsAadObjectId ?? user.teams_aad_object_id ?? "",
     );
     setTeamsFromId(user.teamsFromId ?? user.teams_from_id ?? "");
     setSelectedTagIds(user.tagIds || user.tag_ids || []);
@@ -118,7 +118,7 @@ export default function EditUserModal({
 
   function toggleTag(id) {
     setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 
@@ -142,6 +142,8 @@ export default function EditUserModal({
           phoneCountryCode: phoneCode,
           phoneNational,
           phoneNumber: fullPhone,
+          teamsAadObjectId,
+          teamsFromId,
         }),
       });
       if (!res.ok) {

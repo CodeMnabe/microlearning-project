@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -11,14 +11,15 @@ export default function LoginPage() {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
-  const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoader();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     (async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+
       if (session) {
         startLoading();
         router.replace(`/${locale}/users`);
@@ -26,7 +27,7 @@ export default function LoginPage() {
       }
       stopLoading?.();
     })();
-  }, [supabase, router, startLoading, stopLoading, locale]);
+  }, [router, startLoading, stopLoading, locale, supabase]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,8 +67,11 @@ export default function LoginPage() {
       <form className={styles.card} onSubmit={handleAuth}>
         <h1 className={styles.title}>{t("Auth.login.title")}</h1>
 
-        <label className={styles.label}>{t("Auth.login.email")}</label>
+        <label className={styles.label} htmlFor="email">
+          {t("Auth.login.email")}
+        </label>
         <input
+          id="email"
           className={styles.input}
           type="email"
           placeholder={t("Auth.example", { default: "exemplo@exemplo.com" })}
@@ -77,8 +81,11 @@ export default function LoginPage() {
           disabled={disabled}
         />
 
-        <label className={styles.label}>{t("Auth.login.password")}</label>
+        <label className={styles.label} htmlFor="password">
+          {t("Auth.login.password")}
+        </label>
         <input
+          id="password"
           className={styles.input}
           type="password"
           placeholder="••••••••"

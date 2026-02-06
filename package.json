@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:file": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
@@ -24,8 +27,15 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9",
-    "eslint-config-next": "15.2.3"
+    "eslint-config-next": "15.2.3",
+    "jsdom": "^26.1.0",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^4.0.18"
   }
 }

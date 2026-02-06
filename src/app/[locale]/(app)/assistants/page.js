@@ -1,4 +1,4 @@
-// /app/assistants/page.js
+// /app/[locale]/(app)/assistants/page.js
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -81,7 +81,7 @@ export default function AssistantsHub() {
 
         if (data && data.vectorStoreId) {
           const r = await fetch(
-            `/api/assistants/${id}/vector-store/${data.vectorStoreId}`
+            `/api/assistants/${id}/vector-store/${data.vectorStoreId}`,
           );
           const store = await r.json();
           if (!alive) return;
@@ -93,7 +93,7 @@ export default function AssistantsHub() {
         if (alive) stopLoading();
       }
     },
-    [startLoading, stopLoading]
+    [startLoading, stopLoading],
   );
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export default function AssistantsHub() {
     try {
       const res = await fetch(
         `/api/assistants/${selected.id}/vector-store/${selected.vectorStoreId}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -345,7 +345,7 @@ export default function AssistantsHub() {
                       handleChange("description", e.target.value)
                     }
                     placeholder={translation(
-                      "Assistants.details.descriptionPlaceholder"
+                      "Assistants.details.descriptionPlaceholder",
                     )}
                   />
                   <textarea
@@ -355,7 +355,7 @@ export default function AssistantsHub() {
                       handleChange("instructions", e.target.value)
                     }
                     placeholder={translation(
-                      "Assistants.details.instructionsPlaceholder"
+                      "Assistants.details.instructionsPlaceholder",
                     )}
                   />
                 </>
@@ -425,7 +425,7 @@ export default function AssistantsHub() {
                         onChange={(e) =>
                           handleChange(
                             "temperature",
-                            parseFloat(e.target.value)
+                            parseFloat(e.target.value),
                           )
                         }
                       />
@@ -551,7 +551,7 @@ export default function AssistantsHub() {
                     value={vsName}
                     onChange={(e) => setVsName(e.target.value)}
                     placeholder={`${translation(
-                      "Assistants.vector.collectionNamePlaceholder"
+                      "Assistants.vector.collectionNamePlaceholder",
                     )} ${selected.name}`}
                   />
                   <label className={styles.label}>

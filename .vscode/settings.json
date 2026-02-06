@@ -5,7 +5,9 @@
     "autoincrement",
     "Chatbox",
     "conv",
+    "ilike",
     "messagebird",
+    "microlearning",
     "Msisdn",
     "PENDINGREVIEW",
     "pkce",
@@ -13,6 +15,7 @@
     "SUPABASE",
     "supadb",
     "topbar",
+    "unstub",
     "unsub",
     "waba"
   ]

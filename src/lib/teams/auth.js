@@ -1,21 +1,22 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const BOT_TENANT_ID = process.env.AZURE_TENANT_ID?.trim();
 const APP_ID = process.env.BOT_APP_ID?.trim();
 const APP_PASSWORD = process.env.BOT_APP_PASSWORD?.trim();
 const BF_SCOPE = "https://api.botframework.com/.default";
 
-export async function getBotToken(tenantHint) {
+export async function getBotToken() {
   if (!APP_ID || !APP_PASSWORD) {
     throw new Error("Missing BOT_APP_ID or BOT_APP_PASSWORD");
   }
 
-  const order = [tenantHint, "botframework.com"].filter(Boolean);
+  const order = [BOT_TENANT_ID, "botframework.com"].filter(Boolean);
 
   let lastErr;
-  for (const t of order) {
+  for (const authority of order) {
     try {
-      return await fetchTokenAuthority(t);
+      return await fetchTokenAuthority(authority);
     } catch (err) {
       lastErr = err;
       console.warn(`[TOKEN FAIL via ${t}]`, err.message);
@@ -38,7 +39,7 @@ async function fetchTokenAuthority(authorityTenant) {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
-    }
+    },
   );
   const json = await res.json();
   if (!res.ok) throw new Error(`${res.status} ${JSON.stringify(json)}`);

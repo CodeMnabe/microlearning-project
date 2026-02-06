@@ -4,7 +4,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 const supabase = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY, // service role => bypasses RLS
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false } },
 );
 
 function cleanMsisdn(n) {
@@ -134,6 +134,18 @@ export async function updateUser(userId, updates) {
     patch.phone_national = digits || null;
   }
 
+  if (updates.teamsAadObjectId !== undefined) {
+    patch.teams_aad_object_id =
+      updates.teamsAadObjectId === null
+        ? null
+        : String(updates.teamsAadObjectId).trim();
+  }
+
+  if (updates.teamsFromId !== undefined) {
+    patch.teams_from_id =
+      updates.teamsFromId === null ? null : String(updates.teamsFromId).trim();
+  }
+
   if (Object.keys(patch).length) {
     const { error: upErr } = await supabase
       .from("user")
@@ -196,7 +208,7 @@ export async function getUserById(userId) {
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
       )
-    `
+    `,
     )
     .eq("id", userId)
     .maybeSingle();
@@ -254,6 +266,39 @@ export async function getUserByNumber(phoneNumber) {
   return alt.data ? await getUserById(alt.data.id) : null;
 }
 
+export async function getUserByEmail(email, tenant) {
+  console.log("It got here");
+  const _email = String(email || "")
+    .trim()
+    .toLowerCase();
+
+  if (!_email || !tenant) return null;
+
+  const { data, error } = await supabase
+    .from("user")
+    .select("id, organization:organization_id (id, teams_tenant_id)")
+    .ilike("email", _email);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+
+  const matches = data.filter(
+    (r) => r.organization?.teams_tenant_id === tenant,
+  );
+
+  if (matches.length === 0) return null;
+
+  if (matches.length > 1) {
+    const err = new Error("Multiple users match this email in this tenant");
+    err.code = "AMBIGUOUS_EMAIL_TENANT";
+    throw err;
+  }
+
+  console.log("User was found");
+
+  return matches[0].id;
+}
+
 export async function getUsersInOrg(orgId) {
   const { data, error } = await supabase
     .from("user")
@@ -272,7 +317,7 @@ export async function getUsersInOrg(orgId) {
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
       )
-    `
+    `,
     )
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });

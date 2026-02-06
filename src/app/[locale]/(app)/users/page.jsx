@@ -19,7 +19,7 @@ import {
   Filter,
 } from "lucide-react";
 import useOrganization from "@/app/hooks/useOrganization";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/AuthContext.jsx";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import FilterMenu from "./FilterMenu";
 import QuickActionsBar from "./QuickActions/QuickActions";
@@ -82,7 +82,7 @@ export default function UsersPage() {
       const data = await res.json();
       setAssistantsList(data || []);
     })().catch(console.error);
-  }, [authLoading, orgLoading, orgId, users]);
+  }, [authLoading, orgLoading, orgId]);
 
   // tags for filter
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function UsersPage() {
         assistantName: u.assistantName ?? "—",
         organization_id: u.organization_id,
       })),
-    [users]
+    [users],
   );
 
   // Apply text + Tag + Assistant filters
@@ -356,7 +356,7 @@ export default function UsersPage() {
                 className={styles.filterChip}
                 onClick={() =>
                   setSelectedAssistantIds((prev) =>
-                    prev.filter((x) => x !== id)
+                    prev.filter((x) => x !== id),
                   )
                 }
                 title={translation("Users.filters.remove")}
@@ -482,7 +482,7 @@ export default function UsersPage() {
                           const err = await res.json();
                           console.error(
                             "Falha ao atualizar assistente:",
-                            err.error
+                            err.error,
                           );
                         } else {
                           await refreshUsers();

@@ -1,0 +1,69 @@
+.chipsViewport {
+  margin-top: 16px;
+  overflow: hidden;
+
+  /* center the marquee area like Outseta */
+  max-width: 900px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+
+  /* stronger + wider fades */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+.chipsTrack {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+
+  animation: chipsMarquee var(--marquee-duration, 12s) linear infinite;
+}
+
+.chipsSet {
+  display: flex;
+  gap: 10px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+@keyframes chipsMarquee {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(calc(-1 * var(--marquee-distance)));
+  }
+}
+
+.chip {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chipsTrack {
+    animation: none;
+    transform: none;
+  }
+}

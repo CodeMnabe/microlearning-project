@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import styles from "./chatbox.module.css";
-import ui from "../assistants.module.css"; // 👈 import shared button style
+import ui from "../assistants.module.css";
 import { useTranslations } from "next-intl";
 
 export default function ChatSandbox({ assistant }) {

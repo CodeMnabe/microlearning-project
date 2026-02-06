@@ -1,0 +1,80 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  margin: 10px;
+  padding-bottom: 140px;
+}
+
+.navRow {
+  position: relative;
+  padding: 10px 32px 0;
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--ink), var(--brand-2));
+  height: 70vh;
+  border-radius: 24px;
+  margin: 0 16px;
+}
+
+.container {
+  position: relative;
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.headline {
+  position: relative;
+  text-align: center;
+  color: aliceblue;
+  padding-top: 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(42px, 5vw, 78px);
+  line-height: 0.95;
+}
+
+.subhead {
+  margin: 12px auto 0;
+  max-width: 760px;
+  font-size: 16px;
+}
+
+.actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  color: white;
+  background: rgba(190, 60, 190, 0.92);
+  box-shadow: 0 10px 25px rgba(190, 60, 190, 0.25);
+}
+
+.secondaryBtn {
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+}
