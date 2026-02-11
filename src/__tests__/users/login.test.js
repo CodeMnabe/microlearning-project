@@ -23,14 +23,6 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("next-intl", () => ({
-  useLocale: () => "pt",
-  useTranslations: () => (key, vars) =>
-    vars && Object.prototype.hasOwnProperty.call(vars, "default")
-      ? vars.default
-      : key,
-}));
-
 // No JSX here either
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }) =>

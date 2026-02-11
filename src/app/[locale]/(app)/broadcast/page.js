@@ -7,7 +7,6 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 function Initial(name = "") {
@@ -123,7 +122,7 @@ export default function BroadcastPage() {
   const [tplParamsManual, setTplParamsManual] = useState("");
 
   //TODO: DO THIS PART
-  const [channel, setChannel] = useState("whatsapp");
+  const [channel, setChannel] = useState("teams");
 
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
@@ -189,12 +188,12 @@ export default function BroadcastPage() {
 
   const nameOptions = useMemo(
     () => Array.from(templatesByName.keys()).sort((a, b) => a.localeCompare(b)),
-    [templatesByName]
+    [templatesByName],
   );
 
   const languagesForChosenName = useMemo(
     () => (tplName ? templatesByName.get(tplName) || [] : []),
-    [tplName, templatesByName]
+    [tplName, templatesByName],
   );
 
   // on name change, lock language to pt-PT when present, else best available
@@ -202,7 +201,7 @@ export default function BroadcastPage() {
     if (!tplName) return;
     const list = templatesByName.get(tplName) || [];
     const pt = list.find((t) =>
-      (t.language || "").toLowerCase().startsWith("pt")
+      (t.language || "").toLowerCase().startsWith("pt"),
     );
     setTplLang(pt?.language || list[0]?.language || "pt-PT");
   }, [tplName, templatesByName]);
@@ -245,7 +244,7 @@ export default function BroadcastPage() {
       if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
       try {
         const res = await fetch(
-          `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`
+          `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
         );
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to fetch template");
@@ -264,7 +263,7 @@ export default function BroadcastPage() {
 
         const blocksForLocale =
           (data.platformContent || []).find(
-            (pc) => (pc.locale || data.defaultLocale) === tplLang
+            (pc) => (pc.locale || data.defaultLocale) === tplLang,
           ) || (data.platformContent || [])[0];
 
         setNeedsUrlVar(blocksHaveUrlVariable(blocksForLocale?.blocks || []));
@@ -286,7 +285,7 @@ export default function BroadcastPage() {
           .includes(term) ||
         String(u.phone_number || "")
           .toLowerCase()
-          .includes(term)
+          .includes(term),
     );
   }, [q, users]);
 
@@ -373,7 +372,7 @@ export default function BroadcastPage() {
           .map((kv) => {
             const [k, ...rest] = kv.split("=");
             return [k.trim(), rest.join("=").trim()];
-          })
+          }),
       );
       return Array.from(map.values());
     }
@@ -382,7 +381,7 @@ export default function BroadcastPage() {
 
   const sampleRecipient = useMemo(
     () => users.find((u) => selected.has(u.id)) || null,
-    [users, selected]
+    [users, selected],
   );
 
   const previewVars = useMemo(() => {
@@ -403,7 +402,7 @@ export default function BroadcastPage() {
     if (!tplDetails) return { body: "", buttonText: "", buttonUrl: "" };
     const pc =
       (tplDetails.platformContent || []).find(
-        (x) => (x.locale || tplDetails.defaultLocale) === tplLang
+        (x) => (x.locale || tplDetails.defaultLocale) === tplLang,
       ) || (tplDetails.platformContent || [])[0];
 
     const blocks = pc?.blocks?.length
@@ -573,7 +572,7 @@ export default function BroadcastPage() {
       const nameIdx = varDefs.findIndex(
         (v) =>
           (v.key || "").toLowerCase() === "name" ||
-          (v.key || "").toLowerCase() === "nome"
+          (v.key || "").toLowerCase() === "nome",
       );
       const results = await Promise.all(
         chosen.map(async (u) => {
@@ -604,7 +603,7 @@ export default function BroadcastPage() {
           });
           const data = await res.json().catch(() => ({}));
           return { to: u.phone_number, ok: res.ok, status: res.status, data };
-        })
+        }),
       );
       setResult({
         ok: results.filter((r) => r.ok).length,
@@ -635,21 +634,22 @@ export default function BroadcastPage() {
           <button
             type="button"
             className={`${styles.channelBtn} ${
-              channel === "whatsapp" ? styles.channelBtnActive : ""
-            }`}
-            onClick={() => setChannel("whatsapp")}
-          >
-            WhatsApp
-          </button>
-          <button
-            type="button"
-            className={`${styles.channelBtn} ${
               channel === "teams" ? styles.channelBtnActive : ""
             }`}
             onClick={() => setChannel("teams")}
           >
             Teams
           </button>
+          <button
+            type="button"
+            className={`${styles.channelBtn} ${
+              channel === "whatsapp" ? styles.channelBtnActive : ""
+            }`}
+            onClick={() => setChannel("whatsapp")}
+          >
+            WhatsApp
+          </button>
+
           {/* <button
             type="button"
             className={`${styles.channelBtn} ${

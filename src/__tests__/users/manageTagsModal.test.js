@@ -11,13 +11,6 @@ const mocks = vi.hoisted(() => ({
   setTags: vi.fn(),
 }));
 
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key, vars) =>
-    vars && Object.prototype.hasOwnProperty.call(vars, "name")
-      ? `${key}:${vars.name}`
-      : key,
-}));
-
 function makeResponse(data, ok = true) {
   return Promise.resolve({
     ok,
@@ -49,7 +42,7 @@ beforeEach(() => {
       return makeResponse({});
     }
 
-    if (url === "/api/tags" && method === "DELETE") {
+    if (url.startsWith("/api/tags?id=") && method === "DELETE") {
       return makeResponse({});
     }
 

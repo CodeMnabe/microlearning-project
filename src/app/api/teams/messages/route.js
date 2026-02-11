@@ -4,7 +4,10 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 
-import { getAssistantById } from "@/lib/repos/assistants.repo";
+import {
+  getAssistantById,
+  getFirstAssistantInOrg,
+} from "@/lib/repos/assistants.repo";
 import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
 import {
   getOrganization,
@@ -13,6 +16,7 @@ import {
 import { createMessage } from "@/lib/repos/messages.repo";
 
 import {
+  createUser,
   getUserByAadObjectId,
   getUserByEmail,
   getUserById,
@@ -167,7 +171,7 @@ async function cmdReconnect(arg, activity) {
   return `Linked Teams to ${arg}`;
 }
 
-async function cmdRegister(arg, activity) {
+async function cmdCreateUser(arg, activity) {
   const tenant = activity?.conversation?.tenantId || null;
   const aadObjectId = activity?.from?.aadObjectId || null;
   const fromId = activity?.from?.id || null;
@@ -178,11 +182,29 @@ async function cmdRegister(arg, activity) {
     return `Something went wrong and I don't have access to your IDs, try again later or contact MyDigitalBot support.`;
   }
 
-  let org = getOrganizationByTeamsTenantId(tenant);
+  let org = await getOrganizationByTeamsTenantId(tenant);
 
   if (!org) {
     return `Couldn't find an organization with this Tenant ID, try again after contacting your admin or contact MyDigitalBot support.`;
   }
+
+  const assistant = await getFirstAssistantInOrg(org.id);
+
+  const newUser = await createUser({
+    organizationId: org.id,
+    phoneNumber: null,
+    phoneCountryCode: null,
+    phoneNational: null,
+    name: activity?.from?.name,
+    email: arg[0],
+    assistantId: assistant.id,
+    teamsAadObjectId: aadObjectId,
+    teamsFromId: fromId,
+  });
+
+  await cmdConnect(activity);
+
+  return `You were successfully registered using the email ${newUser.email}`;
 }
 
 async function CheckForCommandMessage(activity) {
@@ -200,17 +222,16 @@ async function CheckForCommandMessage(activity) {
   const argString = (hasCommand[3] ?? hasCommand[4] ?? "").trim();
   const args = argString ? argString.split(/\s+/) : [];
 
-  console.log(`Name: ${name} \nArgString: ${argString} \nArgs: ${args}`);
-
   return { isCommand: true, command: name, argString, args };
 }
 
 async function CheckCommands(cmd, activity) {
   let text;
+  console.log(activity);
   switch (cmd.command) {
     case "help":
-      text = `--help: Check the list for the commands<br>--status: Check the status of the bot<br>--whoami: show your IDs<br>--reconnect: Remake the connection to the database<br>--register [email@example.com]: Type in your email associated with your MyDigitalBot user to register your id.`;
-      console.log(text);
+      text = `--help: Check the list for the commands<br>--status: Check the status of the bot<br>--whoami: show your IDs<br>--reconnect: Remake the connection to the database<br>--register email@example.com: Type in your email associated with your MyDigitalBot user to register your id.`;
+
       return text;
     case "status":
       text = "Bot is active";
@@ -223,7 +244,7 @@ async function CheckCommands(cmd, activity) {
     case "reconnect":
       return await cmdReconnect(cmd.args, activity);
     case "register":
-      return await cmdRegister(cmd.args, activity);
+      return await cmdCreateUser(cmd.args, activity);
     default:
       return `Unknown Command: ${cmd.command}<br>Try --help`;
   }
@@ -438,7 +459,6 @@ async function handleUserInstallation(activity) {
     ).catch((e) => console.error("sendReply error: ", e));
     return;
   }
-  console.log(tenantId);
   const org = await getOrganizationByTeamsTenantId(tenantId);
   if (!org) {
     await sendReply(

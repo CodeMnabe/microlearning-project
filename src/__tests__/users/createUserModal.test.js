@@ -5,17 +5,12 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import CreateUserModal from "@/app/[locale]/(app)/users/CreateUser";
 
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key, vars) =>
-    vars && Object.prototype.hasOwnProperty.call(vars, "default")
-      ? vars.default
-      : key,
+vi.mock("../../messages/phoneCountryCodes.json", () => ({
+  default: [
+    { code: "+351", iso2: "pt" },
+    { code: "+34", iso2: "es" },
+  ],
 }));
-
-vi.mock("../../messages/phoneCountryCodes.json", () => [
-  { code: "+351", iso2: "pt" },
-  { code: "+34", iso2: "es" },
-]);
 
 vi.mock("@/app/components/PillSelect/PillSelect", () => ({
   default: ({ value, options = [], onChange, placeholder }) =>

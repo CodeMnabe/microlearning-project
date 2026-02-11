@@ -17,13 +17,6 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
 }));
 
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key, vars) =>
-    vars && Object.prototype.hasOwnProperty.call(vars, "default")
-      ? vars.default
-      : key,
-}));
-
 vi.mock("@/app/LoadingScreen/GlobalLoaderContext", () => ({
   useGlobalLoader: () => ({
     startLoading: mocks.startLoading,
