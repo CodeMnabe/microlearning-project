@@ -28,6 +28,7 @@ import {
   getUserThreadForChannel,
   getGroupThreadForConversation,
 } from "@/lib/repos/threads.repo";
+import { upsertTeamsInstallation } from "@/lib/repos/teamsInstallations.repo";
 import { getBotToken } from "@/lib/teams/auth";
 
 async function sendReply(activity, text, opts = {}) {
@@ -93,8 +94,6 @@ async function cmdConnect(activity) {
   const conversationId = activity?.conversation?.id;
   const serviceUrl = activity?.serviceUrl;
   const conversationType = await GetConversationType(activity);
-
-  console.log(`Tenant ID: ${tenantId}`);
 
   if (!tenantId) {
     return "The Tenant Id couldn't be detected. Please try again or contact support.";
@@ -230,7 +229,7 @@ async function CheckCommands(cmd, activity) {
   console.log(activity);
   switch (cmd.command) {
     case "help":
-      text = `--help: Check the list for the commands<br>--status: Check the status of the bot<br>--whoami: show your IDs<br>--reconnect: Remake the connection to the database<br>--register email@example.com: Type in your email associated with your MyDigitalBot user to register your id.`;
+      text = `--help: Check the list for the commands<br>--status: Check the status of the bot<br>--whoami: Show your IDs<br>--reconnect: Remake the connection to the database<br>--register email@example.com: Type in your email associated with your MyDigitalBot user to register your id.`;
 
       return text;
     case "status":
@@ -502,6 +501,82 @@ async function handleUserInstallation(activity) {
   );
 }
 
+async function handleGroupInstallation(activity) {
+  console.log(activity);
+  const tenantId = GetTenantId(activity);
+  const serviceUrl = activity?.serviceUrl || null;
+  const conversationId = activity?.conversation?.id || null;
+  const conversationType = GetConversationType(activity); // channel | groupChat
+
+  // Team/channel metadata (only present for "channel")
+  const teamAadGroupId = activity?.channelData?.team?.aadGroupId || null;
+  const teamId = activity?.channelData?.team?.id || null;
+  const channelId = activity?.channelData?.channel?.id || null;
+
+  if (!tenantId || !serviceUrl || !conversationId) {
+    console.warn("[TEAMS group install] Missing fields:", {
+      tenantId,
+      serviceUrl,
+      conversationId,
+      conversationType,
+    });
+    return;
+  }
+
+  const org = await getOrganizationByTeamsTenantId(tenantId);
+  if (!org) {
+    await sendReply(
+      activity,
+      "This tenant isn't registered in MyDigitalBot.com yet. Ask your admin to register it.",
+    );
+    return;
+  }
+
+  const defaultAssistant = getFirstAssistantInOrg(org.id);
+
+  await upsertTeamsInstallation({
+    organization_id: org.id,
+    assistant_id: defaultAssistant.id,
+    scope: "group",
+    user_id: null,
+    tenant_id: tenantId,
+    service_url: serviceUrl,
+    conversation_id: conversationId,
+    conversation_type: conversationType,
+    teams_user_id: null,
+    team_aad_group_id: teamAadGroupId,
+    team_id: teamId,
+    channel_id: channelId,
+    last_seen_at: new Date().toISOString(),
+  });
+
+  const channel = "teams";
+  let thread = await getGroupThreadForConversation({
+    assistantId: defaultAssistant.id,
+    channel,
+    externalConversationId: conversationId,
+  });
+
+  if (!thread) {
+    const aiThread = await createOAiThread();
+    thread = await createThread({
+      userId: null,
+      assistantId: defaultAssistant.id,
+      aiThreadId: aiThread.id,
+      channel,
+      scope: "group",
+      externalConversationId: conversationId,
+    });
+  }
+
+  await sendReply(
+    activity,
+    conversationType === "channel"
+      ? "Installed in this channel. Mention me (@MyDigitalBot) to talk."
+      : "Installed in this group chat. Mention me (@MyDigitalBot) to talk.",
+  );
+}
+
 export async function POST(req) {
   const activity = await req.json();
 
@@ -509,6 +584,7 @@ export async function POST(req) {
     // sendReply(activity, `Echo: ${activity.text}`).catch((e) =>
     //   console.error("sendReply error: ", e)
     // );
+
     await handleUserInteraction(activity);
   }
 
@@ -517,7 +593,11 @@ export async function POST(req) {
   // }
 
   if (activity.type === "installationUpdate" && activity.action === "add") {
-    await handleUserInstallation(activity);
+    if (activity.conversation?.isGroup) {
+      await handleGroupInstallation(activity);
+    } else {
+      await handleUserInstallation(activity);
+    }
   }
 
   if (activity.type === "installationUpdate" && activity.action === "remove") {

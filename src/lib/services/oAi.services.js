@@ -42,7 +42,7 @@ export async function updateOAiAssistant(updates) {
         model: updates.model,
         top_p: updates.top_p,
         temperature: updates.temperature,
-      }
+      },
     );
 
     return myUpdatedAssistant;
@@ -124,13 +124,11 @@ export async function sendMessageToAi(assistantId, input, threadId) {
   // 🔒 Do not allow undefined/null thread ids anymore
   if (!threadId) {
     throw new Error(
-      `sendMessageToAi: threadId is required but got "${threadId}"`
+      `sendMessageToAi: threadId is required but got "${threadId}"`,
     );
   }
 
   try {
-    console.log("[sendMessageToAi] using threadId:", threadId);
-
     // 1) Add user message to the thread
     await client.beta.threads.messages.create(threadId, {
       role: "user",
@@ -146,9 +144,10 @@ export async function sendMessageToAi(assistantId, input, threadId) {
     let runStatus = run.status;
     while (runStatus === "queued" || runStatus === "in_progress") {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const runCheck = await client.beta.threads.runs.retrieve(run.id, {
-        thread_id: threadId,
-      });
+      const runCheck = await client.beta.threads.runs.retrieve(
+        threadId,
+        run.id,
+      );
       runStatus = runCheck.status;
     }
 
@@ -196,11 +195,11 @@ async function deleteFileCompat(fileId) {
     `https://api.openai.com/v1/files/${fileId}`,
     {
       method: "DELETE",
-    }
+    },
   );
   if (!res.ok)
     throw new Error(
-      `Failed to delete file ${fileId}: ${res.status} ${res.statusText}`
+      `Failed to delete file ${fileId}: ${res.status} ${res.statusText}`,
     );
   return res.json();
 }
@@ -225,11 +224,11 @@ async function deleteVectorStoreCompat(vectorStoreId) {
     {
       method: "DELETE",
       headers: { "OpenAI-Beta": "assistants=v2" },
-    }
+    },
   );
   if (!res.ok)
     throw new Error(
-      `Failed to delete vector store ${vectorStoreId}: ${res.status} ${res.statusText}`
+      `Failed to delete vector store ${vectorStoreId}: ${res.status} ${res.statusText}`,
     );
   return res.json();
 }
