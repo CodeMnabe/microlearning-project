@@ -45,6 +45,7 @@ const STATUS_RANK = {
   DRAFT: 2,
   INACTIVE: 1,
 };
+
 const byBestStatus = (a, b) => {
   const ra = STATUS_RANK[a.status] || 0;
   const rb = STATUS_RANK[b.status] || 0;
@@ -65,6 +66,7 @@ function interpolate(str, values) {
     return values[rawKey] ?? values[k] ?? "";
   });
 }
+
 function extractText(node, out = []) {
   if (!node) return out;
   if (Array.isArray(node)) {
@@ -84,6 +86,25 @@ function extractText(node, out = []) {
   return out;
 }
 
+function isImageContentType(ct = "") {
+  return String(ct).toLowerCase().startsWith("image/");
+}
+function isVideoContentType(ct = "") {
+  return String(ct).toLowerCase().startsWith("video/");
+}
+function guessContentTypeFromName(name = "") {
+  const n = String(name || "").toLowerCase();
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".gif")) return "image/gif";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".pdf")) return "application/pdf";
+  if (n.endsWith(".mp4")) return "video/mp4";
+  if (n.endsWith(".mov")) return "video/quicktime";
+  if (n.endsWith(".webm")) return "video/webm";
+  return "application/octet-stream";
+}
+
 export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
@@ -95,11 +116,15 @@ export default function BroadcastPage() {
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
-  const fileInputRef = useRef(null);
 
-  // message & images
+  // pickers
+  const fileInputRef = useRef(null);
+  const thumbInputRef = useRef(null);
+  const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
+
+  // message & files
   const [message, setMessage] = useState("");
-  const [imageUrls, setImageUrls] = useState([]);
+  const [files, setFiles] = useState([]); // [{ url, name, contentType, thumbnailUrl? }]
 
   // sending
   const [sending, setSending] = useState(false);
@@ -111,7 +136,7 @@ export default function BroadcastPage() {
   const [tplErr, setTplErr] = useState(null);
 
   const [tplName, setTplName] = useState("");
-  const [tplLang, setTplLang] = useState("pt-PT"); // ← fixed language (hidden in UI)
+  const [tplLang, setTplLang] = useState("pt-PT");
 
   // template details / variables
   const [tplDetails, setTplDetails] = useState(null);
@@ -121,8 +146,29 @@ export default function BroadcastPage() {
   const [tplUrlVar, setTplUrlVar] = useState("");
   const [tplParamsManual, setTplParamsManual] = useState("");
 
-  //TODO: DO THIS PART
+  // channel switch
   const [channel, setChannel] = useState("teams");
+
+  // derived lists for UI
+  const imageFiles = useMemo(
+    () => files.filter((f) => isImageContentType(f.contentType)),
+    [files],
+  );
+  const videoFiles = useMemo(
+    () => files.filter((f) => isVideoContentType(f.contentType)),
+    [files],
+  );
+  const otherFiles = useMemo(
+    () =>
+      files.filter(
+        (f) =>
+          !isImageContentType(f.contentType) &&
+          !isVideoContentType(f.contentType),
+      ),
+    [files],
+  );
+
+  const imageUrls = useMemo(() => imageFiles.map((f) => f.url), [imageFiles]);
 
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
@@ -139,6 +185,7 @@ export default function BroadcastPage() {
       const res = await fetch(`/api/template/list?orgId=${org.id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to fetch templates");
+
       const items = (data.items || []).map((t) => ({
         ...t,
         createdAt: t.createdAt || null,
@@ -146,7 +193,6 @@ export default function BroadcastPage() {
       }));
       setTemplates(items);
 
-      // preselect best and lock to pt-PT if available
       const best = [...items].sort(byBestStatus)[0];
       if (best) {
         setTplName(best.name);
@@ -196,7 +242,6 @@ export default function BroadcastPage() {
     [tplName, templatesByName],
   );
 
-  // on name change, lock language to pt-PT when present, else best available
   useEffect(() => {
     if (!tplName) return;
     const list = templatesByName.get(tplName) || [];
@@ -242,6 +287,7 @@ export default function BroadcastPage() {
       setNeedsUrlVar(false);
       setTplUrlVar("");
       if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
+
       try {
         const res = await fetch(
           `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
@@ -289,9 +335,6 @@ export default function BroadcastPage() {
     );
   }, [q, users]);
 
-  function removeImage(url) {
-    setImageUrls((prev) => prev.filter((u) => u !== url));
-  }
   function toggleOne(id) {
     setSelected((s) => {
       const n = new Set(s);
@@ -299,6 +342,7 @@ export default function BroadcastPage() {
       return n;
     });
   }
+
   function toggleAllCurrent() {
     setSelected((s) => {
       const n = new Set(s);
@@ -310,32 +354,31 @@ export default function BroadcastPage() {
     });
   }
 
-  const supabaseUpload = async (files) => {
-    const bucket = "images";
-    const newUrls = [];
+  function removeFile(url) {
+    setFiles((prev) => prev.filter((f) => f.url !== url));
+  }
+
+  // Upload helper
+  const supabaseUpload = async (pickedFiles) => {
+    const bucket = "images"; // keeping your existing bucket
+    const uploaded = [];
 
     const makeSafeName = (name) => {
-      // remove accents
       let safe = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-      // keep only letters, numbers, dot, dash, underscore
       safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-      // fallback just in case
       if (!safe) safe = "file";
-
       return safe;
     };
 
-    for (const file of files) {
+    for (const file of pickedFiles) {
       const safeName = makeSafeName(file.name);
-      const key = `broadcasts/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}-${safeName}`;
+      const key = `broadcasts/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
+
+      const ct = file.type || guessContentTypeFromName(file.name);
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
-        .upload(key, file, { upsert: true, contentType: file.type });
+        .upload(key, file, { upsert: true, contentType: ct });
 
       if (upErr) {
         console.error("Supabase upload error:", upErr);
@@ -343,22 +386,73 @@ export default function BroadcastPage() {
       }
 
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
-      if (pub?.publicUrl) newUrls.push(pub.publicUrl);
+      if (pub?.publicUrl) {
+        uploaded.push({
+          url: pub.publicUrl,
+          name: file.name || safeName,
+          contentType: ct || "application/octet-stream",
+        });
+      }
     }
 
-    return newUrls;
+    return uploaded;
   };
+
   async function handlePickFiles(e) {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+    const picked = Array.from(e.target.files || []);
+    if (!picked.length) return;
+
     try {
-      const urls = await supabaseUpload(files);
-      setImageUrls((prev) => [...prev, ...urls]);
+      const uploaded = await supabaseUpload(picked);
+      setFiles((prev) => [...prev, ...uploaded]);
     } catch (err) {
       alert(translation("Common.error") + ": " + err.message);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  // Thumbnail picking for a given video
+  function openThumbnailPicker(videoUrl) {
+    setThumbForVideoUrl(videoUrl);
+    // trigger hidden picker
+    setTimeout(() => {
+      thumbInputRef.current?.click?.();
+    }, 0);
+  }
+
+  async function handlePickThumbnail(e) {
+    const picked = Array.from(e.target.files || []);
+    if (!picked.length || !thumbForVideoUrl) {
+      if (thumbInputRef.current) thumbInputRef.current.value = "";
+      return;
+    }
+
+    try {
+      // only first image
+      const img = picked[0];
+      const uploaded = await supabaseUpload([img]);
+      const thumb = uploaded[0];
+
+      if (thumb?.url) {
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.url === thumbForVideoUrl ? { ...f, thumbnailUrl: thumb.url } : f,
+          ),
+        );
+      }
+    } catch (err) {
+      alert(translation("Common.error") + ": " + err.message);
+    } finally {
+      setThumbForVideoUrl(null);
+      if (thumbInputRef.current) thumbInputRef.current.value = "";
+    }
+  }
+
+  function removeThumbnail(videoUrl) {
+    setFiles((prev) =>
+      prev.map((f) => (f.url === videoUrl ? { ...f, thumbnailUrl: null } : f)),
+    );
   }
 
   // ordered param values
@@ -387,13 +481,9 @@ export default function BroadcastPage() {
   const previewVars = useMemo(() => {
     const map = {};
     for (const v of varDefs) map[v.key] = varValues[v.key] ?? "";
-
     map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
-
-    // NEW: org name used by company/empresa/organization placeholders
     map.orgName =
       org?.name || map.empresa || map.company || map.organization || "";
-
     map.urlVar = tplUrlVar || "";
     return map;
   }, [varDefs, varValues, sampleRecipient, tplUrlVar, org?.name]);
@@ -442,12 +532,11 @@ export default function BroadcastPage() {
 
     setVarValues((prev) => {
       const next = { ...prev };
-
       const recName = sampleRecipient?.name || "";
+
       for (const v of varDefs) {
         const key = v.key || "";
         const k = key.toLowerCase();
-
         if (!next[key]) {
           if (NAME_KEYS.includes(k)) next[key] = recName;
           if (COMPANY_KEYS.includes(k)) next[key] = org?.name || "";
@@ -462,26 +551,24 @@ export default function BroadcastPage() {
     (channel === "whatsapp"
       ? (tplName && tplLang && paramsComplete) ||
         message.trim().length > 0 ||
-        imageUrls.length > 0
-      : message.trim().length > 0 || imageUrls.length > 0);
+        files.length > 0
+      : message.trim().length > 0 || files.length > 0);
 
   async function handleSend() {
     const chosen = users.filter((u) => selected.has(u.id));
     if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
-
-    console.log("[Broadcast] channel =", channel);
-    console.log("[Broadcast] chosen users =", chosen);
-    console.log("[Broadcast] message =", message);
 
     setSending(true);
     setResult(null);
 
     try {
       if (channel === "whatsapp") {
+        // Backwards compatible: send imageUrls (old) + files (new)
         const payload = {
           orgId: org?.id,
           message,
-          imageUrls,
+          imageUrls, // ✅ for your existing WhatsApp route
+          files, // ✅ for future route upgrades
           recipients: chosen.map((u) => u.phone_number),
           template:
             tplName && tplLang && paramsComplete
@@ -497,8 +584,6 @@ export default function BroadcastPage() {
               : null,
         };
 
-        console.log("[Broadcast] WHATSAPP payload ->", payload);
-
         const res = await fetch("/api/broadcast/whatsapp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -513,7 +598,6 @@ export default function BroadcastPage() {
           data = text;
         }
 
-        console.log("[Broadcast] WHATSAPP response", res.status, data);
         setResult(data);
 
         if (!res.ok) {
@@ -526,10 +610,8 @@ export default function BroadcastPage() {
           orgId: org?.id,
           userIds: chosen.map((u) => u.id),
           message,
-          imageUrls, // 👈 send images to backend too
+          files, // ✅ includes thumbnailUrl for videos
         };
-
-        console.log("[Broadcast] TEAMS payload ->", payload);
 
         const res = await fetch("/api/broadcast/teams", {
           method: "POST",
@@ -545,7 +627,6 @@ export default function BroadcastPage() {
           data = text;
         }
 
-        console.log("[Broadcast] TEAMS response", res.status, data);
         setResult(data);
 
         if (!res.ok) {
@@ -561,71 +642,8 @@ export default function BroadcastPage() {
     }
   }
 
-  async function handleSendTemplateOnly() {
-    const chosen = users.filter((u) => selected.has(u.id));
-    if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
-    if (!tplName.trim() || !paramsComplete)
-      return alert(translation("Common.error"));
-    setSending(true);
-    setResult(null);
-    try {
-      const nameIdx = varDefs.findIndex(
-        (v) =>
-          (v.key || "").toLowerCase() === "name" ||
-          (v.key || "").toLowerCase() === "nome",
-      );
-      const results = await Promise.all(
-        chosen.map(async (u) => {
-          const kvParams =
-            varDefs.length > 0
-              ? varDefs.map((v, idx) => {
-                  const baseVal = orderedParamValues[idx] ?? "";
-                  const val = idx === nameIdx ? (u.name || "").trim() : baseVal;
-                  return `${v.key}=${val}`;
-                })
-              : tplParamsManual
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-
-          const res = await fetch("/api/whatsapp/send-template", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orgId: org.id,
-              to: u.phone_number,
-              projectId: chosenTemplate?.projectId,
-              templateName: tplName.trim(),
-              languageCode: (tplLang || "pt-PT").trim(),
-              params: kvParams,
-              urlVar: needsUrlVar ? tplUrlVar.trim() || undefined : undefined,
-            }),
-          });
-          const data = await res.json().catch(() => ({}));
-          return { to: u.phone_number, ok: res.ok, status: res.status, data };
-        }),
-      );
-      setResult({
-        ok: results.filter((r) => r.ok).length,
-        failed: results.filter((r) => !r.ok).length,
-        results,
-        note: "send-template results",
-      });
-    } catch (err) {
-      console.error(err);
-      alert(translation("Common.error") + ": " + err.message);
-    } finally {
-      setSending(false);
-    }
-  }
-
   const allOnPageSelected =
     filtered.length > 0 && filtered.every((u) => selected.has(u.id));
-
-  // softer status pill
-  const StatusPill = ({ s }) => (
-    <span className={`${styles.pill} ${styles.pillSoft}`}>{s}</span>
-  );
 
   return (
     <div className={styles.screen}>
@@ -633,35 +651,20 @@ export default function BroadcastPage() {
         <div className={styles.channelSwitch}>
           <button
             type="button"
-            className={`${styles.channelBtn} ${
-              channel === "teams" ? styles.channelBtnActive : ""
-            }`}
+            className={`${styles.channelBtn} ${channel === "teams" ? styles.channelBtnActive : ""}`}
             onClick={() => setChannel("teams")}
           >
             Teams
           </button>
           <button
             type="button"
-            className={`${styles.channelBtn} ${
-              channel === "whatsapp" ? styles.channelBtnActive : ""
-            }`}
+            className={`${styles.channelBtn} ${channel === "whatsapp" ? styles.channelBtnActive : ""}`}
             onClick={() => setChannel("whatsapp")}
           >
             WhatsApp
           </button>
-
-          {/* <button
-            type="button"
-            className={`${styles.channelBtn} ${
-              channel === "app" ? styles.channelBtnActive : ""
-            }`}
-            onClick={() => setChannel("app")}
-          >
-            App
-          </button> */}
         </div>
 
-        {/* right side: selected + send */}
         <div className={styles.actionsRight}>
           <div className={styles.selectedLabel}>
             {translation("Broadcast.selected")} <strong>{selected.size}</strong>
@@ -679,9 +682,8 @@ export default function BroadcastPage() {
       </div>
 
       <div className={styles.columns}>
-        {/* LEFT: Message + Template */}
+        {/* LEFT */}
         <div className={styles.leftCol}>
-          {/* Message */}
           <div className={styles.panel}>
             <div className={styles.panelTitle}>
               {translation("Broadcast.message")}
@@ -695,40 +697,184 @@ export default function BroadcastPage() {
               className={styles.textarea}
             />
 
-            {/* Image picker — used for BOTH channels */}
+            {/* FILE picker */}
             <div className={styles.imagesRow}>
               <label className={styles.label}>
-                Imagens ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
+                Anexos ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
               </label>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="*/*"
                 multiple
                 onChange={handlePickFiles}
               />
             </div>
 
-            {imageUrls.length > 0 && (
-              <div className={styles.thumbStrip}>
-                {imageUrls.map((u) => (
-                  <div key={u} className={styles.thumbWrap}>
-                    <img
-                      src={u}
-                      alt="upload"
-                      width={120}
-                      height={120}
+            {/* hidden thumbnail picker (used per-video) */}
+            <input
+              ref={thumbInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handlePickThumbnail}
+            />
+
+            {/* Images */}
+            {imageFiles.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div className={styles.label}>Imagens</div>
+                <div className={styles.thumbStrip}>
+                  {imageFiles.map((f) => (
+                    <div key={f.url} className={styles.thumbWrap}>
+                      <img
+                        src={f.url}
+                        alt={f.name || "upload"}
+                        width={120}
+                        height={120}
+                        style={{
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                        }}
+                      />
+                      <button
+                        onClick={() => removeFile(f.url)}
+                        className={styles.thumbClose}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Videos */}
+            {videoFiles.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <div className={styles.label}>Vídeos (Teams: card + botão)</div>
+                {videoFiles.map((f) => (
+                  <div
+                    key={f.url}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "8px 0",
+                      borderBottom: "1px solid #f0f0f0",
+                    }}
+                  >
+                    {/* thumb preview */}
+                    <div
                       style={{
-                        objectFit: "cover",
+                        width: 72,
+                        height: 44,
                         borderRadius: 8,
+                        overflow: "hidden",
                         border: "1px solid #eee",
+                        background: "#fafafa",
                       }}
-                    />
-                    <button
-                      onClick={() => removeImage(u)}
-                      className={styles.thumbClose}
                     >
-                      ✕
+                      {f.thumbnailUrl ? (
+                        <img
+                          src={f.thumbnailUrl}
+                          alt="thumb"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 12,
+                            opacity: 0.7,
+                          }}
+                        >
+                          sem thumb
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>{f.name || "video"}</div>
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>
+                        {f.contentType}
+                      </div>
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 12 }}
+                      >
+                        abrir link
+                      </a>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => openThumbnailPicker(f.url)}
+                        className={styles.kbdBtn}
+                      >
+                        Adicionar thumbnail
+                      </button>
+                      {f.thumbnailUrl && (
+                        <button
+                          type="button"
+                          onClick={() => removeThumbnail(f.url)}
+                          className={styles.kbdBtn}
+                        >
+                          Remover thumb
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(f.url)}
+                        className={styles.kbdBtn}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Other files */}
+            {otherFiles.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <div className={styles.label}>Ficheiros</div>
+                {otherFiles.map((f) => (
+                  <div
+                    key={f.url}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "6px 0",
+                      borderBottom: "1px solid #f0f0f0",
+                    }}
+                  >
+                    <a href={f.url} target="_blank" rel="noreferrer">
+                      {f.name || "file"}
+                    </a>
+                    <span style={{ fontSize: 12, opacity: 0.7 }}>
+                      {f.contentType}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(f.url)}
+                      className={styles.kbdBtn}
+                    >
+                      Remover
                     </button>
                   </div>
                 ))}
@@ -736,7 +882,7 @@ export default function BroadcastPage() {
             )}
           </div>
 
-          {/* Template — compact */}
+          {/* Template section (kept as-is in your version) */}
           {channel === "whatsapp" && (
             <div className={`${styles.panel} ${styles.panelSlim}`}>
               <div className={styles.panelTitle}>
@@ -744,7 +890,6 @@ export default function BroadcastPage() {
               </div>
               {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
 
-              {/* 2-column layout: LEFT = select + fields, RIGHT = preview */}
               <div className={styles.templateGrid}>
                 <div className={styles.templateFormCol}>
                   <div className={styles.templateRow}>
@@ -776,21 +921,19 @@ export default function BroadcastPage() {
                       <div className={styles.meta}>
                         <span className={styles.metaItem}>
                           <span className={`${styles.pill} ${styles.pillSoft}`}>
-                            {/* {chosenTemplate.status} */}
+                            {/* status */}
                           </span>
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Variable fields */}
                   {varDefs.length > 0 ? (
                     <div className={styles.grid}>
                       {varDefs.map((v) => {
                         const kLower = String(v.key || "").toLowerCase();
                         const locked = isLockedVar(kLower);
 
-                        // what to display in read-only
                         let displayVal = varValues[v.key] ?? "";
                         if (!displayVal && COMPANY_KEYS.includes(kLower))
                           displayVal = org?.name || "";
@@ -831,7 +974,6 @@ export default function BroadcastPage() {
                             </label>
 
                             {locked ? (
-                              // READ-ONLY TEXT (no input)
                               <div
                                 style={{
                                   padding: "10px 12px",
@@ -848,7 +990,6 @@ export default function BroadcastPage() {
                                 {displayVal || "—"}
                               </div>
                             ) : (
-                              // Editable for non-locked vars
                               <input
                                 value={varValues[v.key] ?? ""}
                                 onChange={(e) =>
@@ -872,7 +1013,6 @@ export default function BroadcastPage() {
                       )}
                     </div>
                   ) : (
-                    // manual mode unchanged
                     <div className={styles.fieldWide}>
                       <label className={styles.smallLabel}>
                         {translation("Broadcast.varKeyDesc")}
@@ -901,7 +1041,6 @@ export default function BroadcastPage() {
                   )}
                 </div>
 
-                {/* RIGHT: preview */}
                 <aside className={styles.previewCol}>
                   {preview.body || preview.buttonText || preview.buttonUrl ? (
                     <>
@@ -960,7 +1099,7 @@ export default function BroadcastPage() {
           )}
         </div>
 
-        {/* RIGHT: Recipients */}
+        {/* RIGHT */}
         <div className={styles.rightCol}>
           <div className={styles.panel}>
             <div className={styles.panelTitleRow}>
@@ -989,9 +1128,7 @@ export default function BroadcastPage() {
                 return (
                   <label
                     key={u.id}
-                    className={`${styles.row} ${i % 2 ? styles.rowAlt : ""} ${
-                      isSel ? styles.rowSel : ""
-                    }`}
+                    className={`${styles.row} ${i % 2 ? styles.rowAlt : ""} ${isSel ? styles.rowSel : ""}`}
                   >
                     <input
                       type="checkbox"
@@ -1019,33 +1156,6 @@ export default function BroadcastPage() {
           </div>
         </div>
       </div>
-
-      {/* {result && (
-        <div className={styles.resultWrap}>
-          <div className={styles.resultSummary}>
-            <strong>{translation("Broadcast.result")}</strong> {result.ok}{" "}
-            {translation("Broadcast.sent")}, {result.failed}{" "}
-            {translation("Broadcast.failed")}
-          </div>
-          <div className={styles.resultBox}>
-            {Array.isArray(result.results) &&
-              result.results.map((r, idx) => (
-                <div key={idx} className={styles.resultRow}>
-                  <div>{String(r.to || "")}</div>
-                  <div className={r.ok ? styles.ok : styles.bad}>
-                    {r.ok
-                      ? translation("Common.ok")
-                      : translation("Common.error")}
-                  </div>
-                  <pre className={styles.resultPre}>
-                    {JSON.stringify(r.data, null, 2)}
-                  </pre>
-                </div>
-              ))}
-          </div>
-          <div className={styles.resultNote}>{result.note}</div>
-        </div>
-      )} */}
     </div>
   );
 }

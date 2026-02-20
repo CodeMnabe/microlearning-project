@@ -19,7 +19,7 @@ export async function getBotToken() {
       return await fetchTokenAuthority(authority);
     } catch (err) {
       lastErr = err;
-      console.warn(`[TOKEN FAIL via ${t}]`, err.message);
+      console.warn(`[TOKEN FAIL via ${authority}]`, err.message);
     }
   }
   throw lastErr || new Error("Unable to get bot token");

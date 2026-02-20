@@ -22,13 +22,15 @@ import {
   getUserById,
   updateUser,
 } from "@/lib/repos/user.repo";
-import { upsertUserTeamsConversation } from "@/lib/repos/teamConversations.repo";
 import {
   createThread,
   getUserThreadForChannel,
   getGroupThreadForConversation,
 } from "@/lib/repos/threads.repo";
-import { upsertTeamsInstallation } from "@/lib/repos/teamsInstallations.repo";
+import {
+  upsertTeamsInstallation,
+  getTeamsInstallationByConversation,
+} from "@/lib/repos/teamsInstallations.repo";
 import { getBotToken } from "@/lib/teams/auth";
 
 async function sendReply(activity, text, opts = {}) {
@@ -124,14 +126,20 @@ async function cmdConnect(activity) {
     ].join("<br>");
   }
 
-  await upsertUserTeamsConversation({
-    userId: user.id,
-    teamsUserId: fromId,
-    conversationId,
-    serviceUrl,
-    tenantId,
-    conversationType,
+  await upsertTeamsInstallation({
+    organization_id: org.id,
+    assistant_id: user.assistant_id,
+    scope: "user",
+    user_id: user.id,
+    tenant_id: tenantId,
+    service_url: serviceUrl,
+    conversation_id: conversationId,
+    conversation_type: conversationType,
+    teams_user_id: fromId,
+    last_seen_at: new Date().toISOString(),
   });
+
+  await updateUser(user.id, { teamsFromId: fromId }).catch(() => {});
 
   return "Connected! You can now use the bot normally";
 }
