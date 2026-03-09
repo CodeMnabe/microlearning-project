@@ -145,56 +145,169 @@ async function cmdConnect(activity) {
 }
 
 //TODO: Make the user register their AAD OBJECT ID with the email address
-async function cmdReconnect(arg, activity) {
-  const tenant = activity?.conversation?.tenantId || null;
-  const aadObjectId = activity?.from?.aadObjectId || null;
-  const fromId = activity?.from?.id || null;
+async function cmdReconnect(args, activity) {
+  const tenantId = GetTenantId(activity);
+  const aadObjectId = GetAadObjectId(activity);
+  const fromId = GetFromId(activity);
 
-  if (!tenant)
-    return `Couldn't read the Tenant ID from this message, try again later or contact MyDigitalBot support.`;
-  if (!aadObjectId || !fromId) {
-    return `Something went wrong and I don't have access to your IDs, try again later or contact MyDigitalBot support.`;
-  }
+  const conversationId = activity?.conversation?.id || null;
+  const serviceUrl = activity?.serviceUrl || null;
+  const conversationType = GetConversationType(activity);
 
-  let userId;
+  const email = Array.isArray(args)
+    ? (args[0] || "").trim()
+    : String(args || "").trim();
+
+  if (!tenantId) return `Couldn't read the Tenant ID from this message.`;
+  if (!email) return `Usage: --reconnect email@example.com`;
+  if (!aadObjectId || !fromId)
+    return `I don't have access to your Teams IDs right now.`;
+  if (!conversationId || !serviceUrl)
+    return `Missing conversationId/serviceUrl. Try again in a 1:1 chat.`;
+
+  // Find the target user by email
+  let userRef;
   try {
-    userId = await getUserByEmail(arg, tenant);
+    userRef = await getUserByEmail(email, tenantId);
   } catch (err) {
     if (err.code === "AMBIGUOUS_EMAIL_TENANT") {
-      return `That email exists in multiple times in this tenant. Ask your admin to fix the duplicates.`;
+      return `That email exists multiple times in this tenant. Ask your admin to fix duplicates.`;
     }
     throw err;
   }
 
-  if (!userId) {
-    return `No user found for ${arg} in this tenant. Ask your admin to create the user first.`;
+  const userId = typeof userRef === "object" ? userRef?.id : userRef;
+  if (!userId) return `No user found for ${email} in this tenant.`;
+
+  // SAFETY: if this AAD is already linked to another user, don't overwrite
+  const alreadyLinked = await getUserByAadObjectId(aadObjectId);
+  if (alreadyLinked && alreadyLinked.id !== userId) {
+    return `This Teams account is already linked to another user in MyDigitalBot. Ask your admin to fix it.`;
   }
 
+  // Update user link (safe now)
   await updateUser(userId, {
     teamsAadObjectId: aadObjectId,
     teamsFromId: fromId,
   });
 
-  return `Linked Teams to ${arg}`;
+  // Get org for installation upsert
+  const org = await getOrganizationByTeamsTenantId(tenantId);
+  if (!org) return `Your organization isn't registered in MyDigitalBot.com.`;
+
+  const fullUser = await getUserById(userId);
+
+  // ✅ New source of truth
+  await upsertTeamsInstallation({
+    organization_id: org.id,
+    assistant_id: fullUser.assistant_id,
+    scope: "user",
+    user_id: userId,
+    tenant_id: tenantId,
+    service_url: serviceUrl,
+    conversation_id: conversationId,
+    conversation_type: conversationType,
+    teams_user_id: fromId,
+    last_seen_at: new Date().toISOString(),
+  });
+
+  // Optional: if you still keep legacy user_teams_conversation
+  // await upsertUserTeamsConversation({
+  //   userId,
+  //   teamsUserId: fromId,
+  //   conversationId,
+  //   serviceUrl,
+  //   tenantId,
+  //   conversationType,
+  // });
+
+  return `Linked Teams to ${email} and connected this conversation ✅`;
 }
 
-async function cmdCreateUser(arg, activity) {
-  const tenant = activity?.conversation?.tenantId || null;
-  const aadObjectId = activity?.from?.aadObjectId || null;
-  const fromId = activity?.from?.id || null;
+async function cmdCreateUser(args, activity) {
+  const tenantId = GetTenantId(activity);
+  const aadObjectId = GetAadObjectId(activity);
+  const fromId = GetFromId(activity);
 
-  if (!tenant)
-    return `Couldn't read the Tenant ID from this message, try again later or contact MyDigitalBot support.`;
-  if (!aadObjectId || !fromId) {
-    return `Something went wrong and I don't have access to your IDs, try again later or contact MyDigitalBot support.`;
+  const conversationId = activity?.conversation?.id || null;
+  const serviceUrl = activity?.serviceUrl || null;
+  const conversationType = GetConversationType(activity);
+
+  const email = Array.isArray(args)
+    ? (args[0] || "").trim()
+    : String(args || "").trim();
+
+  if (!tenantId) return `Couldn't read the Tenant ID from this message.`;
+  if (!email) return `Usage: --register email@example.com`;
+  if (!aadObjectId || !fromId)
+    return `I don't have access to your Teams IDs right now.`;
+  if (!conversationId || !serviceUrl)
+    return `Missing conversationId/serviceUrl. Try again in a 1:1 chat.`;
+
+  const org = await getOrganizationByTeamsTenantId(tenantId);
+  if (!org)
+    return `Your organization isn't registered in MyDigitalBot.com. Ask your admin.`;
+
+  // 1) If this Teams account is already linked, just connect (DON'T create)
+  const existingByAad = await getUserByAadObjectId(aadObjectId);
+  if (existingByAad) {
+    await upsertTeamsInstallation({
+      organization_id: org.id,
+      assistant_id: existingByAad.assistant_id,
+      scope: "user",
+      user_id: existingByAad.id,
+      tenant_id: tenantId,
+      service_url: serviceUrl,
+      conversation_id: conversationId,
+      conversation_type: conversationType,
+      teams_user_id: fromId,
+      last_seen_at: new Date().toISOString(),
+    });
+
+    await updateUser(existingByAad.id, { teamsFromId: fromId }).catch(() => {});
+    return `Obrigado por se registar na MyDigitalBot.<br>Agora poderás receber comunicações da Empresa e interagir com o teu Assistente Virtual.`;
   }
 
-  let org = await getOrganizationByTeamsTenantId(tenant);
-
-  if (!org) {
-    return `Couldn't find an organization with this Tenant ID, try again after contacting your admin or contact MyDigitalBot support.`;
+  // 2) If the email already exists in this tenant, link it (register behaves like reconnect)
+  let userRefByEmail = null;
+  try {
+    userRefByEmail = await getUserByEmail(email, tenantId);
+  } catch (err) {
+    if (err.code === "AMBIGUOUS_EMAIL_TENANT") {
+      return `Este email: ${email} já existe em duplicado na aplicação, por favor pede ao administrador para remover os duplicados.`;
+    }
+    throw err;
   }
 
+  const userIdByEmail =
+    typeof userRefByEmail === "object" ? userRefByEmail?.id : userRefByEmail;
+
+  if (userIdByEmail) {
+    // link Teams IDs
+    await updateUser(userIdByEmail, {
+      teamsAadObjectId: aadObjectId,
+      teamsFromId: fromId,
+    });
+
+    const fullUser = await getUserById(userIdByEmail);
+
+    await upsertTeamsInstallation({
+      organization_id: org.id,
+      assistant_id: fullUser.assistant_id,
+      scope: "user",
+      user_id: userIdByEmail,
+      tenant_id: tenantId,
+      service_url: serviceUrl,
+      conversation_id: conversationId,
+      conversation_type: conversationType,
+      teams_user_id: fromId,
+      last_seen_at: new Date().toISOString(),
+    });
+
+    return `Conta encontrada para ${email} ✅ Teams ligado e conversa conectada.`;
+  }
+
+  // 3) Otherwise create a brand new user (safe: no AAD conflict)
   const assistant = await getFirstAssistantInOrg(org.id);
 
   const newUser = await createUser({
@@ -203,15 +316,26 @@ async function cmdCreateUser(arg, activity) {
     phoneCountryCode: null,
     phoneNational: null,
     name: activity?.from?.name,
-    email: arg[0],
+    email,
     assistantId: assistant.id,
     teamsAadObjectId: aadObjectId,
     teamsFromId: fromId,
   });
 
-  await cmdConnect(activity);
+  await upsertTeamsInstallation({
+    organization_id: org.id,
+    assistant_id: newUser.assistant_id,
+    scope: "user",
+    user_id: newUser.id,
+    tenant_id: tenantId,
+    service_url: serviceUrl,
+    conversation_id: conversationId,
+    conversation_type: conversationType,
+    teams_user_id: fromId,
+    last_seen_at: new Date().toISOString(),
+  });
 
-  return `You were successfully registered using the email ${newUser.email}`;
+  return `Obrigado por se registar na MyDigitalBot.<br>Agora poderás receber comunicações da Empresa e interagir com o teu Assistente Virtual.`;
 }
 
 async function CheckForCommandMessage(activity) {
@@ -237,7 +361,7 @@ async function CheckCommands(cmd, activity) {
   console.log(activity);
   switch (cmd.command) {
     case "help":
-      text = `--help: Check the list for the commands<br>--status: Check the status of the bot<br>--whoami: Show your IDs<br>--reconnect: Remake the connection to the database<br>--register email@example.com: Type in your email associated with your MyDigitalBot user to register your id.`;
+      text = `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
 
       return text;
     case "status":
@@ -252,8 +376,11 @@ async function CheckCommands(cmd, activity) {
       return await cmdReconnect(cmd.args, activity);
     case "register":
       return await cmdCreateUser(cmd.args, activity);
+    case "send":
+      text = `Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br>Para mais opções, escreve --help`;
+      return text;
     default:
-      return `Unknown Command: ${cmd.command}<br>Try --help`;
+      return `Comando desconhecido: ${cmd.command}<br>Tenta --help`;
   }
 }
 
@@ -279,7 +406,7 @@ async function handleUserInteraction(activity) {
 
     const payload = {
       type: "message",
-      text: "It seems you're tenant is not registered and thus not able to use this service, please go to MyDigitalBot.com and register there",
+      text: "Parece que o teu tenant não está registado e por causa disso não consegues utilizar este serviço.<br>Por favor vai a MyDigitalBot.com e regista a tua organização.",
       replyToId: activity.id,
     };
 
@@ -308,7 +435,7 @@ async function handleUserInteraction(activity) {
 
   //If we don't find a user we'll send a reply back saying the user wasn't found
   if (!user) {
-    text = "No User found!";
+    text = `De momento não estás inscrito na aplicação.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email. <br>Exemplo: --register nome@email.pt<br><br>Para mais opções, escreve: --help`;
   } else {
     const assistant = await getAssistantById(user.assistant_id);
     const channel = "teams";
@@ -470,7 +597,7 @@ async function handleUserInstallation(activity) {
   if (!org) {
     await sendReply(
       activity,
-      "This Microsoft Teams Tenant is not registered for MyDigitalBot yet. Please ask your admin to register the organization at MyDigitalBot.com. Also you can type --help for more help.",
+      "Este Tenant da Microsoft Teams não está registado em MyDigitalBot. Por favor contacta o teu administrador para registar esta Organização em MyDigitalBot.com.<br>Para mais ajuda escreve --help.",
     );
     return;
   }
@@ -482,7 +609,7 @@ async function handleUserInstallation(activity) {
     //TODO: Send message to user that their ID hasn't been added to MyDigitalBot and give out the conversationID
     sendReply(
       activity,
-      `Your ID was not found on any of MyDigitalBot's users, please contact your admin so they can make the link manually or retry after making sure the ID is set. Your ID:${aadObjectId}, Conversation ID:${conversationId}, From ID:${teamsUserId}`,
+      `Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo:<br>--register nome@email.pt<br><br>Para mais opções, escreve:<br>--help`,
     ).catch((e) => console.error("sendReply error: ", e));
     return;
   }

@@ -1,0 +1,84 @@
+{
+  "eyebrowKey": "eyebrow",
+  "headingKey": "heading",
+  "subheadingKey": "subheading",
+  "tiles": [
+    {
+      "id": "payments",
+      "titleKey": "tiles.payments.title",
+      "descriptionKey": "tiles.payments.description",
+      "bulletsKeys": [
+        "tiles.payments.bullets.0",
+        "tiles.payments.bullets.1",
+        "tiles.payments.bullets.2",
+        "tiles.payments.bullets.3"
+      ],
+      "image": {
+        "src": null,
+        "altKey": "tiles.payments.alt"
+      },
+      "colSpan": 6,
+      "rowSpan": 1,
+      "split": "cols",
+      "mediaPosition": "right"
+    },
+    {
+      "id": "crm",
+      "titleKey": "tiles.crm.title",
+      "descriptionKey": "tiles.crm.description",
+      "image": { "src": null, "altKey": "tiles.crm.alt" },
+      "colSpan": 3,
+      "split": "rows",
+      "mediaPosition": "top"
+    },
+    {
+      "id": "email",
+      "titleKey": "tiles.email.title",
+      "descriptionKey": "tiles.email.description",
+      "image": { "src": null, "altKey": "tiles.email.alt" },
+      "colSpan": 3,
+      "split": "rows",
+      "mediaPosition": "bottom"
+    },
+    {
+      "id": "users",
+      "titleKey": "tiles.users.title",
+      "descriptionKey": "tiles.users.description",
+      "image": {
+        "src": "/images/user_telemovel.png",
+        "altKey": "tiles.users.alt"
+      },
+      "colSpan": 3,
+      "rowSpan": 1,
+      "mediaPosition": "bottom",
+      "mediaRatio": "1 / 1"
+    },
+    {
+      "id": "assistants",
+      "titleKey": "tiles.assistants.title",
+      "descriptionKey": "tiles.assistants.description",
+      "image": {
+        "src": "/images/computador.png",
+        "altKey": "tiles.assistants.alt"
+      },
+      "colSpan": 6,
+      "rowSpan": 1,
+      "mediaPosition": "bottom",
+      "split": "cols",
+      "mediaRatio": "1 / 1"
+    },
+    {
+      "id": "messages",
+      "titleKey": "tiles.messages.title",
+      "descriptionKey": "tiles.messages.description",
+      "image": {
+        "src": "/images/computador_mensagens_cortado.png",
+        "altKey": "tiles.messages.alt"
+      },
+      "colSpan": 3,
+      "rowSpan": 1,
+      "mediaPosition": "top",
+      "mediaRatio": "1 / 1"
+    }
+  ]
+}

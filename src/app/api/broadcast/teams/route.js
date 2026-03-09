@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBotToken } from "@/lib/teams/auth";
-import { getUserTeamsConversation } from "@/lib/repos/teamConversations.repo";
 import { getOrganization } from "@/lib/repos/organizations.repo";
+import { getTeamsUserInstallation } from "@/lib/repos/teamsInstallations.repo";
 
 function isImageType(ct = "") {
   return String(ct).toLowerCase().startsWith("image/");
@@ -65,7 +65,7 @@ export async function POST(req) {
         url: f.url,
         name: f.name || filenameFromUrl(f.url),
         contentType: f.contentType || guessContentTypeFromUrl(f.url),
-        thumbnailUrl: f.thumbnailUrl || null, // for videos
+        thumbnailUrl: f.thumbnailUrl || null,
       }));
 
     if (!String(message || "").trim() && normalizedFiles.length === 0) {
@@ -86,20 +86,33 @@ export async function POST(req) {
     const results = [];
 
     for (const userId of userIds) {
-      const conv = await getUserTeamsConversation(userId);
-      if (!conv) {
+      // ✅ NEW: read from teams_installation (scope=user, personal)
+      const install = await getTeamsUserInstallation({
+        userId,
+        conversationType: "personal",
+      });
+
+      if (
+        !install ||
+        !install?.tenant_id ||
+        !install?.service_url ||
+        !install?.conversation_id
+      ) {
         results.push({
           userId,
           ok: false,
-          error: "No Teams conversation found for this user.",
+          error: "No Teams installation found for this user (personal).",
         });
         continue;
       }
 
       try {
-        const token = await getBotToken(conv.tenant_id);
+        const token = await getBotToken(install.tenant_id);
 
-        const endpoint = `${conv.service_url.replace(/\/$/, "")}/v3/conversations/${conv.conversation_id}/activities`;
+        const endpoint = `${String(install.service_url).replace(
+          /\/$/,
+          "",
+        )}/v3/conversations/${install.conversation_id}/activities`;
 
         const imageFiles = normalizedFiles.filter((f) =>
           isImageType(f.contentType),
@@ -119,7 +132,6 @@ export async function POST(req) {
         }));
 
         // 2) video cards (Option B)
-        // Works even without thumbnailUrl (card will just show title + button)
         const videoCardAttachments = videoFiles.map((f) => {
           const hasThumb = Boolean(f.thumbnailUrl);
           return {
@@ -140,14 +152,12 @@ export async function POST(req) {
 
         // 3) other files as clean links (no bullets, no “Files:”)
         let text = String(message || "").trim();
-
         if (otherFiles.length) {
           const links = otherFiles
             .map((f) => `[${f.name || "file"}](${f.url})`)
             .join("\n");
           text = [text, links].filter(Boolean).join("\n\n");
         }
-
         if (!text) text = " ";
 
         const payload = {

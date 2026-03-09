@@ -8,8 +8,13 @@
 
   /* brand & ink */
   --brand-1: #30a9e0; /* light blue */
+  --brand-1-rgb: 48, 169, 224;
   --brand-2: #7cc2ff; /* gradient end */
+  --brand-2-rgb: 124, 194, 255;
   --ink: #191e3b; /* navy text */
+  --ink-rgb: 25, 30, 59;
+  --ink-secondary: #34d7b6;
+  --ink-secondary-rgb: 52, 215, 182;
 
   /* gradients & shared theme helpers */
   --btn-gradient: linear-gradient(135deg, var(--brand-1), var(--brand-2));

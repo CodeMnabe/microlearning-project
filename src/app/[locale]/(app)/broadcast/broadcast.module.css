@@ -2,7 +2,11 @@
   display: grid;
   gap: var(--gutter-y);
   padding: var(--gutter-y) var(--gutter-x);
+  padding-bottom: 0;
   width: 100%;
+
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 /* header bar */
@@ -383,7 +387,8 @@
 .waChat {
   padding: 12px;
   min-height: 160px;
-  background: radial-gradient(
+  background:
+    radial-gradient(
         circle at 10px 10px,
         rgba(255, 255, 255, 0.25) 2px,
         transparent 2px
@@ -525,6 +530,70 @@
 .channelBtnActive {
   background: #1f6fff;
   color: #fff;
+}
+
+/* filter button + chips */
+.panelTitleActions {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filterBtn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filterBadge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #1f6fff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 10px;
+}
+
+.filterChip {
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filterClearAll {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 6px 4px;
+}
+
+.recipientsHeader {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.recipientsActionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ✅ filter left, select all right */
+  gap: 8px;
 }
 
 @media (max-width: 1100px) {

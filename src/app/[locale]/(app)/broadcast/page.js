@@ -8,6 +8,8 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useTranslations } from "next-intl";
+import { Filter } from "lucide-react";
+import FilterMenu from "@/app/[locale]/(app)/users/FilterMenu";
 
 function Initial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
@@ -117,6 +119,15 @@ export default function BroadcastPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
 
+  // filters (tags + assistants like UsersPage)
+  const [allTags, setAllTags] = useState([]);
+  const [assistantsList, setAssistantsList] = useState([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterBtnRef = useRef(null);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedAssistantIds, setSelectedAssistantIds] = useState([]);
+  const activeFilterCount = selectedTagIds.length + selectedAssistantIds.length;
+
   // pickers
   const fileInputRef = useRef(null);
   const thumbInputRef = useRef(null);
@@ -177,6 +188,34 @@ export default function BroadcastPage() {
     setUsers(Array.isArray(data) ? data : data?.users || []);
   }, [org?.id]);
 
+  // fetch tags + assistants for filter
+  useEffect(() => {
+    if (!org?.id) return;
+    let alive = true;
+
+    (async () => {
+      try {
+        const [a, t] = await Promise.all([
+          fetch(`/api/assistants?orgId=${org.id}`).then((r) => r.json()),
+          fetch(`/api/tags?orgId=${org.id}`).then((r) => r.json()),
+        ]);
+
+        if (!alive) return;
+        setAssistantsList(Array.isArray(a) ? a : []);
+        setAllTags(Array.isArray(t) ? t : []);
+      } catch (e) {
+        console.error(e);
+        if (!alive) return;
+        setAssistantsList([]);
+        setAllTags([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [org?.id]);
+
   const loadTemplates = useCallback(async () => {
     if (!org?.id) return;
     setTplLoading(true);
@@ -220,6 +259,20 @@ export default function BroadcastPage() {
       alive = false;
     };
   }, [org?.id, channel, getUsers, loadTemplates, startLoading, stopLoading]);
+
+  // normalize users so filters always work the same way
+  const normalizedUsers = useMemo(() => {
+    return (users || []).map((u) => ({
+      ...u,
+      id: u.id,
+      name: u.name,
+      phone_number: u.phone_number ?? u.phoneNumber ?? "",
+      email: u.email ?? "",
+      tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
+      tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
+      assistantId: u.assistant_id ?? null,
+    }));
+  }, [users]);
 
   // group & choose template
   const templatesByName = useMemo(() => {
@@ -320,20 +373,29 @@ export default function BroadcastPage() {
     return () => (alive = false);
   }, [org?.id, chosenTemplate, tplLang, channel]);
 
-  // recipients filter
+  // recipients filter (text + tags + assistant + whatsapp phone guard)
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter(
-      (u) =>
-        String(u.name || "")
-          .toLowerCase()
-          .includes(term) ||
-        String(u.phone_number || "")
-          .toLowerCase()
-          .includes(term),
-    );
-  }, [q, users]);
+
+    return normalizedUsers.filter((u) => {
+      const textHay =
+        (u.name || "") + " " + (u.phone_number || "") + " " + (u.email || "");
+      const textOk = !term || textHay.toLowerCase().includes(term);
+
+      const tagsOk =
+        selectedTagIds.length === 0 ||
+        selectedTagIds.every((id) => (u.tagIds || []).includes(id));
+
+      const assistantOk =
+        selectedAssistantIds.length === 0 ||
+        selectedAssistantIds.includes(u.assistantId);
+
+      // WhatsApp requires phone
+      const channelOk = channel !== "whatsapp" || !!u.phone_number;
+
+      return channelOk && textOk && tagsOk && assistantOk;
+    });
+  }, [normalizedUsers, q, selectedTagIds, selectedAssistantIds, channel]);
 
   function toggleOne(id) {
     setSelected((s) => {
@@ -347,7 +409,7 @@ export default function BroadcastPage() {
     setSelected((s) => {
       const n = new Set(s);
       const ids = filtered.map((u) => u.id);
-      const allSel = ids.every((id) => n.has(id));
+      const allSel = ids.length > 0 && ids.every((id) => n.has(id));
       (allSel ? ids : []).forEach((id) => n.delete(id));
       (!allSel ? ids : []).forEach((id) => n.add(id));
       return n;
@@ -415,7 +477,6 @@ export default function BroadcastPage() {
   // Thumbnail picking for a given video
   function openThumbnailPicker(videoUrl) {
     setThumbForVideoUrl(videoUrl);
-    // trigger hidden picker
     setTimeout(() => {
       thumbInputRef.current?.click?.();
     }, 0);
@@ -429,7 +490,6 @@ export default function BroadcastPage() {
     }
 
     try {
-      // only first image
       const img = picked[0];
       const uploaded = await supabaseUpload([img]);
       const thumb = uploaded[0];
@@ -474,8 +534,8 @@ export default function BroadcastPage() {
   }, [varDefs, varValues, tplParamsManual]);
 
   const sampleRecipient = useMemo(
-    () => users.find((u) => selected.has(u.id)) || null,
-    [users, selected],
+    () => normalizedUsers.find((u) => selected.has(u.id)) || null,
+    [normalizedUsers, selected],
   );
 
   const previewVars = useMemo(() => {
@@ -555,7 +615,7 @@ export default function BroadcastPage() {
       : message.trim().length > 0 || files.length > 0);
 
   async function handleSend() {
-    const chosen = users.filter((u) => selected.has(u.id));
+    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
     if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
 
     setSending(true);
@@ -563,13 +623,12 @@ export default function BroadcastPage() {
 
     try {
       if (channel === "whatsapp") {
-        // Backwards compatible: send imageUrls (old) + files (new)
         const payload = {
           orgId: org?.id,
           message,
-          imageUrls, // ✅ for your existing WhatsApp route
-          files, // ✅ for future route upgrades
-          recipients: chosen.map((u) => u.phone_number),
+          imageUrls, // old route compatibility
+          files,
+          recipients: chosen.map((u) => u.phone_number).filter(Boolean),
           template:
             tplName && tplLang && paramsComplete
               ? {
@@ -610,7 +669,7 @@ export default function BroadcastPage() {
           orgId: org?.id,
           userIds: chosen.map((u) => u.id),
           message,
-          files, // ✅ includes thumbnailUrl for videos
+          files, // includes thumbnailUrl for videos
         };
 
         const res = await fetch("/api/broadcast/teams", {
@@ -651,14 +710,18 @@ export default function BroadcastPage() {
         <div className={styles.channelSwitch}>
           <button
             type="button"
-            className={`${styles.channelBtn} ${channel === "teams" ? styles.channelBtnActive : ""}`}
+            className={`${styles.channelBtn} ${
+              channel === "teams" ? styles.channelBtnActive : ""
+            }`}
             onClick={() => setChannel("teams")}
           >
             Teams
           </button>
           <button
             type="button"
-            className={`${styles.channelBtn} ${channel === "whatsapp" ? styles.channelBtnActive : ""}`}
+            className={`${styles.channelBtn} ${
+              channel === "whatsapp" ? styles.channelBtnActive : ""
+            }`}
             onClick={() => setChannel("whatsapp")}
           >
             WhatsApp
@@ -1102,15 +1165,30 @@ export default function BroadcastPage() {
         {/* RIGHT */}
         <div className={styles.rightCol}>
           <div className={styles.panel}>
-            <div className={styles.panelTitleRow}>
-              <div className={styles.panelTitle}>
-                {translation("Broadcast.recipients")}
+            <div className={styles.recipientsHeader}>
+              <div className={styles.recipientsActionsRow}>
+                <button
+                  type="button"
+                  ref={filterBtnRef}
+                  className={`${styles.kbdBtn} ${styles.filterBtn}`}
+                  onClick={() => setFilterOpen((v) => !v)}
+                  title={translation("Common.filter")}
+                >
+                  <Filter size={16} />
+                  <span>{translation("Common.filter")}</span>
+                  {activeFilterCount > 0 && (
+                    <span className={styles.filterBadge}>
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                <button onClick={toggleAllCurrent} className={styles.kbdBtn}>
+                  {allOnPageSelected
+                    ? translation("Broadcast.deselectAll")
+                    : translation("Broadcast.selectAll")}
+                </button>
               </div>
-              <button onClick={toggleAllCurrent} className={styles.kbdBtn}>
-                {allOnPageSelected
-                  ? translation("Broadcast.deselectAll")
-                  : translation("Broadcast.selectAll")}
-              </button>
             </div>
 
             <div className={styles.searchWrap}>
@@ -1122,13 +1200,68 @@ export default function BroadcastPage() {
               />
             </div>
 
+            {/* Active filter chips */}
+            {activeFilterCount > 0 && (
+              <div className={styles.activeFilters}>
+                {selectedTagIds.map((id) => {
+                  const t = allTags.find((x) => x.id === id);
+                  if (!t) return null;
+                  return (
+                    <button
+                      key={`t${id}`}
+                      className={styles.filterChip}
+                      onClick={() =>
+                        setSelectedTagIds((prev) =>
+                          prev.filter((x) => x !== id),
+                        )
+                      }
+                      title={translation("Users.filters.remove")}
+                    >
+                      {t.name} ×
+                    </button>
+                  );
+                })}
+
+                {selectedAssistantIds.map((id) => {
+                  const a = assistantsList.find((x) => x.id === id);
+                  if (!a) return null;
+                  return (
+                    <button
+                      key={`a${id}`}
+                      className={styles.filterChip}
+                      onClick={() =>
+                        setSelectedAssistantIds((prev) =>
+                          prev.filter((x) => x !== id),
+                        )
+                      }
+                      title={translation("Users.filters.remove")}
+                    >
+                      {a.name} ×
+                    </button>
+                  );
+                })}
+
+                <button
+                  className={styles.filterClearAll}
+                  onClick={() => {
+                    setSelectedTagIds([]);
+                    setSelectedAssistantIds([]);
+                  }}
+                >
+                  {translation("Common.clearAll")}
+                </button>
+              </div>
+            )}
+
             <div className={styles.listBox}>
               {filtered.map((u, i) => {
                 const isSel = selected.has(u.id);
                 return (
                   <label
                     key={u.id}
-                    className={`${styles.row} ${i % 2 ? styles.rowAlt : ""} ${isSel ? styles.rowSel : ""}`}
+                    className={`${styles.row} ${i % 2 ? styles.rowAlt : ""} ${
+                      isSel ? styles.rowSel : ""
+                    }`}
                   >
                     <input
                       type="checkbox"
@@ -1156,6 +1289,25 @@ export default function BroadcastPage() {
           </div>
         </div>
       </div>
+
+      {/* Popover filter */}
+      <FilterMenu
+        side="left"
+        open={filterOpen}
+        anchorEl={filterBtnRef.current}
+        tags={allTags}
+        assistants={assistantsList}
+        selectedTagIds={selectedTagIds}
+        setSelectedTagIds={setSelectedTagIds}
+        selectedAssistantIds={selectedAssistantIds}
+        setSelectedAssistantIds={setSelectedAssistantIds}
+        onClose={() => setFilterOpen(false)}
+        onClear={() => {
+          setSelectedTagIds([]);
+          setSelectedAssistantIds([]);
+          setFilterOpen(false);
+        }}
+      />
     </div>
   );
 }

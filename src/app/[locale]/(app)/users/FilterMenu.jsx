@@ -15,6 +15,7 @@ export default function FilterMenu({
   setSelectedAssistantIds,
   onClose,
   onClear,
+  side = "right",
 }) {
   const translation = useTranslations();
   const ref = useRef(null);
@@ -48,29 +49,38 @@ export default function FilterMenu({
   // position next to the button
   useLayoutEffect(() => {
     if (!open || !anchorEl) return;
+
     const btn = anchorEl.getBoundingClientRect();
     const menuW = 360;
     const gap = 8;
+
+    const desiredLeft =
+      side === "left"
+        ? btn.left - menuW - gap // ✅ open to the left of the button
+        : btn.left; // current behavior
+
     const left = Math.min(
-      Math.max(12, btn.left),
-      window.innerWidth - menuW - 12
+      Math.max(12, desiredLeft),
+      window.innerWidth - menuW - 12,
     );
+
     const top = Math.min(btn.bottom + gap, window.innerHeight - 12);
+
     setPos({ top, left });
-  }, [open, anchorEl]);
+  }, [open, anchorEl, side]);
 
   if (!open || !anchorEl) return null;
 
   const fTags = tags.filter(
-    (t) => !q.trim() || t.name.toLowerCase().includes(q.toLowerCase())
+    (t) => !q.trim() || t.name.toLowerCase().includes(q.toLowerCase()),
   );
   const fAssistants = assistants.filter(
-    (a) => !q.trim() || a.name.toLowerCase().includes(q.toLowerCase())
+    (a) => !q.trim() || a.name.toLowerCase().includes(q.toLowerCase()),
   );
 
   function toggle(setter, id) {
     setter((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 

@@ -5,69 +5,58 @@ import MarketingNavbar from "./Navbar/Navbar";
 import Chips from "./Chips/Chips";
 import Cards from "./Cards/Cards";
 
-const CHIPS = [
-  "Membership sites",
-  "SaaS products",
-  "Clubs",
-  "Associations",
-  "Courses",
-  "Communities",
-];
-
-const CARDS = [
-  {
-    id: 1,
-    title: "Show Them",
-    meta: "COURSE • BUILT ON WEBFLOW",
-    screenshot: null,
-  },
-
-  {
-    id: 2,
-    title: "Making UX Decisions",
-    meta: "COURSE • BUILT ON FRAMER",
-    screenshot: null,
-  },
-
-  {
-    id: 3,
-    title: "Dev Toolkit",
-    meta: "COURSE/BOOK • BUILT ON WEBFLOW",
-    screenshot: null,
-  },
-];
+import content from "./hero.json";
 
 export default function Hero() {
+  const t = useTranslations("LandingPage.Hero");
+
+  const chips = content.chipsKeys.map((k) => t(k));
+  const cards = content.cards.map((c) => ({
+    ...c,
+    title: t(c.titleKey),
+    meta: t(c.metaKey),
+  }));
+
   return (
     <section className={styles.hero}>
       <div className={styles.background} aria-hidden="true" />
       <div className={styles.navRow}>
         <MarketingNavbar />
       </div>
+
       <div className={styles.container}>
-        {/* Hero content later, style is only so on the website we can see the background */}
         <div className={styles.headline}>
-          <h1 className={styles.title}>
-            Launch and Scale <br />
-            Your Membership
-          </h1>
+          <h2 className={styles.title}>
+            {t(content.titleLines[0])}
+            <br />
+            {t(content.titleLines[1])}
+          </h2>
+
           <p className={styles.subhead}>
-            Everything you need to grow, from <u>payments</u> and{" "}
-            <u>protected content</u> to <u>CRM</u> and <u>email</u>.
+            {t(content.subheadLines[0])}
+            <br />
+            {t(content.subheadLines[1])}
           </p>
 
           <div className={styles.actions}>
-            <Link href="/signup" className={styles.primaryBtn}>
-              Sign up for free
+            <Link href={content.primaryCta.href} className={styles.primaryBtn}>
+              {t(content.primaryCta.labelKey)}
             </Link>
-            <Link href="/product" className={styles.secondaryBtn}>
-              Is MyDigitalBot for me?
+            <Link
+              href={content.secondaryCta.href}
+              className={styles.secondaryBtn}
+            >
+              {t(content.secondaryCta.labelKey)}
             </Link>
           </div>
-          {/* CHIPS SECTION OF THE LANDING PAGE */}
-          <Chips items={CHIPS} />
-          {/* CARDS SECTION OF THE LANDING PAGE */}
-          <Cards items={CARDS} />
+
+          <div className={styles.chipsWrap}>
+            <Chips items={chips} />
+          </div>
+
+          <div className={styles.cardsWrap}>
+            <Cards items={cards} />
+          </div>
         </div>
       </div>
     </section>

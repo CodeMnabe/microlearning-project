@@ -62,12 +62,15 @@ export async function getUserTeamsConversation(
   userId,
   conversationType = "personal",
 ) {
+  console.log(`[TEAMS REPO]: ${userId}`);
   const { data, error } = await sb
     .from("user_teams_conversation")
     .select("*")
     .eq("user_id", userId)
     .eq("conversation_type", conversationType)
     .maybeSingle();
+
+  console.log(JSON.parse(data));
 
   if (error) throw error;
   return data;

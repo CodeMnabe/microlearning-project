@@ -1,12 +1,163 @@
 {
   "LandingPage": {
-    "Nav": {
-      "learn": "Aprender",
-      "product": "Produto",
-      "pricing": "Preços",
-      "support": "Suporte",
-      "company": "Empresa",
-      "blog": "Blog"
+    "Hero": {
+      "title": {
+        "line1": "Microlearning no dia a dia.",
+        "line2": "Feedback imediato. Impacto real."
+      },
+      "subhead": {
+        "line1": "Microdoses personalizadas com feedback imediato,",
+        "line2": "nos canais onde as equipas já trabalham."
+      },
+      "cta": {
+        "primary": "Pedir demonstração",
+        "secondary": "O MyDigitalBot é para mim?"
+      },
+      "chips": {
+        "0": "Onboarding",
+        "1": "Vendas & Produto",
+        "2": "Atendimento ao Cliente",
+        "3": "Operações",
+        "4": "Marketing Interno",
+        "5": "Sustentabilidade & Compliance",
+        "6": "RGPD & Segurança",
+        "7": "Soft skills (com IA)"
+      },
+      "cards": {
+        "1": {
+          "title": "Onboarding em 7 dias",
+          "meta": "MICRO-PROGRAMA • WHATSAPP / TEAMS"
+        },
+        "2": {
+          "title": "Toda a Comunicação da sua empresa",
+          "meta": "MICRODOSES • FEEDBACK IMEDIATO"
+        },
+        "3": {
+          "title": "Microlearning com AI",
+          "meta": "MICROLEARNING • QUIZZES + IA COACH"
+        }
+      },
+      "Nav": {
+        "learn": "Aprender",
+        "product": "Produto",
+        "pricing": "Preços",
+        "support": "Suporte",
+        "company": "Empresa",
+        "blog": "Blog",
+        "login": "Entrar",
+        "book": "Pedir demonstração"
+      }
+    },
+
+    "FeatureGrid": {
+      "eyebrow": "COMO FUNCIONA",
+      "heading": "Aprender sem sair do fluxo de trabalho",
+      "subheading": "Microdoses curtas, IA como mentor e métricas claras - no WhatsApp, Teams e (em breve) Zoom.",
+      "tiles": {
+        "payments": {
+          "title": "Nos canais que a equipa já usa",
+          "description": "Leva a aprendizagem para o WhatsApp e Microsoft Teams - sem novas ferramentas e sem fricção.",
+          "alt": "Integrações WhatsApp e Teams",
+          "bullets": {
+            "0": "Adoção rápida e natural",
+            "1": "Sem instalar novas apps",
+            "2": "Plug & play",
+            "3": "Experiência de chat familiar"
+          }
+        },
+        "crm": {
+          "title": "Coach virtual com IA",
+          "description": "A IA explica, corrige e recomenda - com feedback imediato e suporte em tempo real.",
+          "alt": "Mentor com IA"
+        },
+        "email": {
+          "title": "Impacto real e mensurável",
+          "description": "Acompanha adesão, evolução e progresso por equipa - com relatórios úteis para RH e liderança.",
+          "alt": "Métricas e relatórios"
+        },
+        "users": {
+          "title": "Utilizadores",
+          "description": "Gere utilizadores por organização e equipa, com perfis e permissões.",
+          "alt": "Gestão de utilizadores"
+        },
+        "assistants": {
+          "title": "Assistentes",
+          "description": "Cria assistentes de IA para cada área, com conteúdos e objetivos definidos.",
+          "alt": "Criação de assistentes"
+        },
+        "messages": {
+          "title": "Mensagens",
+          "description": "Acompanha conversas, respostas e desempenho para melhorar a experiência.",
+          "alt": "Histórico de mensagens"
+        }
+      }
+    },
+
+    "Pricing": {
+      "eyebrow": "PREÇOS",
+      "heading": "Escolhe o plano ideal",
+      "subheading": "Começa com um piloto e escala por equipas - sem fricção e com impacto mensurável.",
+      "comparison": "Ver todas as comparações",
+      "unit": { "month": "mês" },
+      "benefits": {
+        "0": "Alta adesão (sem novas apps).",
+        "1": "Microlearning diário com feedback imediato.",
+        "2": "Mais retenção e aplicação no desempenho.",
+        "3": "Métricas e relatórios claros para RH.",
+        "4": "Sem LMS complexo nem infraestruturas pesadas."
+      },
+      "plans": {
+        "popular": { "name": "Pilot", "tagline": "Para validar com 1 equipa" },
+        "pro": {
+          "name": "Growth",
+          "tagline": "Para escalar por equipas e áreas"
+        },
+        "advanced": {
+          "name": "Enterprise",
+          "tagline": "Para necessidades avançadas e integrações"
+        }
+      }
+    },
+
+    "BeforeAfter": {
+      "heading": "Formação que acontece no trabalho",
+      "subheading": "Menos fricção, mais adesão - e resultados que se medem.",
+      "before": {
+        "label": "Antes",
+        "alt": "Formação tradicional",
+        "bullets": {
+          "0": "Plataformas e-learning com baixa adesão",
+          "1": "Cursos longos e pouco práticos",
+          "2": "Pouca personalização e pouco retorno visível",
+          "3": "Cansaço e desmotivação com formação tradicional",
+          "4": "Mudança difícil de hábitos e ferramentas"
+        }
+      },
+      "after": {
+        "label": "Agora",
+        "alt": "Microlearning com IA no chat",
+        "bullets": {
+          "0": "Microdoses no WhatsApp/Teams",
+          "1": "IA como mentor e suporte de conteúdos",
+          "2": "Feedback imediato alinhado com o trabalho real",
+          "3": "Sem barreiras tecnológicas (flow of work)",
+          "4": "Métricas claras de progresso e impacto"
+        }
+      }
+    },
+
+    "Footer": {
+      "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
+      "cols": { "product": "Produto" },
+      "links": {
+        "payments": "Integrações",
+        "auth": "Segurança",
+        "crm": "IA Coach",
+        "email": "Métricas",
+        "help": "Ajuda",
+        "pricing": "Preços"
+      },
+      "badges": { "gdpr": "Conforme RGPD", "status": "Estado" }
     }
   },
   "Nav": {
@@ -34,7 +185,7 @@
     "deleting": "A eliminar…",
     "cancel": "Cancelar",
     "loading": "A carregar…",
-    "none": "—",
+    "none": "-",
     "yes": "Sim",
     "no": "Não",
     "actions": "Ações",
@@ -65,7 +216,7 @@
     "cancel": "Cancelar"
   },
   "Navbar": {
-    "orgUnknown": "—"
+    "orgUnknown": "-"
   },
   "Users": {
     "title": "Utilizadores",
