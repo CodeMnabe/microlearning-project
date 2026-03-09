@@ -1,4 +1,162 @@
 {
+  "LandingPage": {
+    "Hero": {
+      "title": {
+        "line1": "Bite-sized learning.",
+        "line2": "Instant feedback. Real impact."
+      },
+      "subhead": {
+        "line1": "Deliver personalized micro-lessons with instant feedback,",
+        "line2": "directly where your teams already work."
+      },
+      "cta": {
+        "primary": "Book a demo",
+        "secondary": "Is MyDigitalBot for me?"
+      },
+      "chips": {
+        "0": "Onboarding",
+        "1": "Sales & Product",
+        "2": "Customer Support",
+        "3": "Operations",
+        "4": "Internal Communications",
+        "5": "Sustainability & Compliance",
+        "6": "GDPR & Security",
+        "7": "Soft skills (with AI)"
+      },
+      "cards": {
+        "1": {
+          "title": "7-day Onboarding",
+          "meta": "MICRO-PROGRAM • WHATSAPP / TEAMS"
+        },
+        "2": {
+          "title": "Sales Product Sprint",
+          "meta": "MICRO-LESSONS • INSTANT FEEDBACK"
+        },
+        "3": {
+          "title": "GDPR Micro-Campaign",
+          "meta": "COMPLIANCE • QUIZZES + AI COACH"
+        }
+      },
+      "Nav": {
+        "learn": "Learn",
+        "product": "Product",
+        "pricing": "Pricing",
+        "support": "Support",
+        "company": "Company",
+        "blog": "Blog",
+        "login": "Log in",
+        "book": "Book a demo"
+      }
+    },
+
+    "FeatureGrid": {
+      "eyebrow": "HOW IT WORKS",
+      "heading": "Learn without leaving the flow of work",
+      "subheading": "Short micro-lessons, an AI coach, and clear analytics - inside WhatsApp, Teams, and (soon) Zoom.",
+      "tiles": {
+        "payments": {
+          "title": "Inside the tools your team already uses",
+          "description": "Bring learning to WhatsApp and Microsoft Teams - no new platforms, no friction.",
+          "alt": "WhatsApp and Teams integrations",
+          "bullets": {
+            "0": "Fast, natural adoption",
+            "1": "No new apps to install",
+            "2": "Plug & play setup",
+            "3": "Familiar chat experience"
+          }
+        },
+        "crm": {
+          "title": "An AI coach that guides and corrects",
+          "description": "Instant explanations, corrections, and recommendations - right when people need them.",
+          "alt": "AI coach"
+        },
+        "email": {
+          "title": "Measurable learning outcomes",
+          "description": "Track engagement, progress, and impact across teams with clear reporting.",
+          "alt": "Analytics and reports"
+        },
+        "users": {
+          "title": "Users",
+          "description": "Manage users by organization and team, with profiles and permissions.",
+          "alt": "User management"
+        },
+        "assistants": {
+          "title": "Assistants",
+          "description": "Create AI assistants for each area, with defined content and goals.",
+          "alt": "Assistant creation"
+        },
+        "messages": {
+          "title": "Messages",
+          "description": "Track conversations, responses, and performance to improve the experience.",
+          "alt": "Message history"
+        }
+      }
+    },
+
+    "Pricing": {
+      "eyebrow": "PRICING",
+      "heading": "Choose the right plan",
+      "subheading": "Start with a pilot, then scale across teams - with measurable impact.",
+      "comparison": "See all comparisons",
+      "unit": { "month": "month" },
+      "benefits": {
+        "0": "High adoption (no new apps).",
+        "1": "Daily microlearning with instant feedback.",
+        "2": "Better retention and real-world application.",
+        "3": "Clear analytics and reporting for HR.",
+        "4": "No complex LMS or heavy infrastructure."
+      },
+      "plans": {
+        "popular": { "name": "Pilot", "tagline": "Validate with one team" },
+        "pro": { "name": "Growth", "tagline": "Scale across teams and areas" },
+        "advanced": {
+          "name": "Enterprise",
+          "tagline": "Advanced needs and integrations"
+        }
+      }
+    },
+
+    "BeforeAfter": {
+      "heading": "Training that happens at work",
+      "subheading": "Less friction, higher adoption - and results you can measure.",
+      "before": {
+        "label": "Before",
+        "alt": "Traditional training",
+        "bullets": {
+          "0": "Low adoption in traditional e-learning platforms",
+          "1": "Long courses with little day-to-day relevance",
+          "2": "Limited personalization and unclear ROI",
+          "3": "Training fatigue and low motivation",
+          "4": "Hard to change tools and habits"
+        }
+      },
+      "after": {
+        "label": "After",
+        "alt": "AI-powered microlearning in chat",
+        "bullets": {
+          "0": "Micro-lessons in WhatsApp/Teams",
+          "1": "AI as a coach and content support",
+          "2": "Instant feedback aligned with real work",
+          "3": "No tech barriers (flow of work)",
+          "4": "Clear progress and impact analytics"
+        }
+      }
+    },
+
+    "Footer": {
+      "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
+      "cols": { "product": "Product" },
+      "links": {
+        "payments": "Integrations",
+        "auth": "Security",
+        "crm": "AI Coach",
+        "email": "Analytics",
+        "help": "Help",
+        "pricing": "Pricing"
+      },
+      "badges": { "gdpr": "GDPR compliant", "status": "Status" }
+    }
+  },
   "Nav": {
     "home": "Home",
     "users": "Users",
@@ -7,6 +165,7 @@
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
+    "options": "Options",
     "logout": "Sign out"
   },
   "Common": {
@@ -23,7 +182,7 @@
     "deleting": "Deleting…",
     "cancel": "Cancel",
     "loading": "Loading…",
-    "none": "—",
+    "none": "-",
     "yes": "Yes",
     "no": "No",
     "actions": "Actions",
@@ -54,7 +213,7 @@
     "cancel": "Cancel"
   },
   "Navbar": {
-    "orgUnknown": "—"
+    "orgUnknown": "-"
   },
 
   "Users": {

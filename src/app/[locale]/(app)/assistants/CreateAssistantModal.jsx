@@ -19,6 +19,7 @@ export default function CreateAssistantModal({
   const [model, setModel] = useState("gpt-4.1");
   const modelOptions = [
     { value: "gpt-4.1", label: "gpt-4.1" },
+    // { value: "gpt-5.2", label: "gpt-5.2" },
     // { value: "gpt-4o", label: "gpt-4o" },
   ];
   const [topP, setTopP] = useState(0.5);
@@ -283,6 +284,6 @@ export default function CreateAssistantModal({
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

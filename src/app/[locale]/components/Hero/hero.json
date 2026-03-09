@@ -1,0 +1,42 @@
+{
+  "titleLines": ["title.line1", "title.line2"],
+  "subheadLines": ["subhead.line1", "subhead.line2"],
+
+  "primaryCta": { "href": "/signup", "labelKey": "cta.primary" },
+  "secondaryCta": { "href": "/product", "labelKey": "cta.secondary" },
+
+  "chipsKeys": [
+    "chips.0",
+    "chips.1",
+    "chips.2",
+    "chips.3",
+    "chips.4",
+    "chips.5",
+    "chips.6",
+    "chips.7"
+  ],
+
+  "cards": [
+    {
+      "id": 1,
+      "titleKey": "cards.1.title",
+      "metaKey": "cards.1.meta",
+      "screenshot": "/images/onboarding.png",
+      "video": "/videos/onboarding.mp4"
+    },
+    {
+      "id": 2,
+      "titleKey": "cards.2.title",
+      "metaKey": "cards.2.meta",
+      "screenshot": "/images/microlearning.png",
+      "video": "/videos/microlearning.mp4"
+    },
+    {
+      "id": 3,
+      "titleKey": "cards.3.title",
+      "metaKey": "cards.3.meta",
+      "screenshot": "/images/ai.png",
+      "video": "/videos/ai.mp4"
+    }
+  ]
+}

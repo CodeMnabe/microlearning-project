@@ -1,0 +1,89 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  margin: 10px;
+  padding-bottom: 140px;
+}
+
+.navRow {
+  position: relative;
+  padding: 10px 32px 0;
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--ink), var(--brand-1));
+  height: 70vh;
+  border-radius: 24px;
+  margin: 0 16px;
+}
+
+.container {
+  position: relative;
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.headline {
+  position: relative;
+  text-align: center;
+  color: aliceblue;
+  padding-top: 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(38px, 4vw, 65px);
+  line-height: 0.95;
+}
+
+.subhead {
+  margin: 40px auto 0;
+  max-width: 760px;
+  font-size: 16px;
+}
+
+.actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 15px 24px;
+  border-radius: 999px;
+  /* stroke: var(--ink); */
+
+  color: white;
+  background: var(--brand-1);
+  box-shadow: 0px 10px 125px var(--ink);
+}
+
+.secondaryBtn {
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 15px 24px;
+  border-radius: 999px;
+
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.chipsWrap {
+  margin-top: 30px;
+}
+
+.cardsWrap {
+  margin-top: -15px;
+}

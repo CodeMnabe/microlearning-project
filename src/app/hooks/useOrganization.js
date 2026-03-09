@@ -19,7 +19,9 @@ export default function useOrganization(user) {
       setLoading(true);
       const { data, error } = await supabase
         .from("organization")
-        .select("id, name, logo_url, theme, channel_id, waba_id")
+        .select(
+          "id, name, logo_url, theme, channel_id, waba_id, waba_namespace, teams_tenant_id, default_phone_country_code",
+        )
         .eq("owner_user_id", user.id)
         .single();
 

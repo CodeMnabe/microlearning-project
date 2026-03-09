@@ -1,0 +1,111 @@
+.navWrap {
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.navbar {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.logoMark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brandText {
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.navLinks {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.navLink {
+  text-decoration: none;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.navLink:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.loginLink {
+  text-decoration: none;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 6px 8px;
+  border-radius: 10px;
+
+  border: 1px solid rgba(0, 0, 0, 0.35);
+}
+
+.loginLink:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.signupBtn {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+
+  padding: 8px 12px;
+  border-radius: 999px;
+
+  color: white;
+  background: var(--brand-1);
+  box-shadow: 0px 10px 125px var(--ink);
+}
+
+.navPill {
+  text-decoration: none;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.8);
+
+  padding: 8px 12px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+}

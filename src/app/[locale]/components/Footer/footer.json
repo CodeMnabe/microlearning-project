@@ -1,0 +1,30 @@
+{
+  "brand": "MyDigitalBot",
+  "socials": [
+    { "href": "https://x.com", "labelKey": "socials.x", "icon": "x" },
+    {
+      "href": "https://linkedin.com",
+      "labelKey": "socials.linkedin",
+      "icon": "linkedin"
+    },
+    {
+      "href": "https://youtube.com",
+      "labelKey": "socials.youtube",
+      "icon": "youtube"
+    }
+  ],
+  "columns": [
+    {
+      "titleKey": "cols.product",
+      "links": [
+        { "labelKey": "links.payments", "href": "#" },
+        { "labelKey": "links.auth", "href": "#" },
+        { "labelKey": "links.crm", "href": "#" },
+        { "labelKey": "links.email", "href": "#" },
+        { "labelKey": "links.help", "href": "#" },
+        { "labelKey": "links.pricing", "href": "#" }
+      ]
+    }
+  ],
+  "badgesKeys": ["badges.gdpr", "badges.status"]
+}

@@ -1,0 +1,160 @@
+.wrap {
+  /* background: #fff; */
+  padding: 56px 18px 26px;
+}
+
+.inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.brandCol {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoMark {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #7c3aed, #111827);
+}
+
+.brandName {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+.socials {
+  display: flex;
+  gap: 10px;
+}
+
+.iconText {
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.socialBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  color: rgba(15, 23, 42, 0.75);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.socialBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.colTile {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+.links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.link {
+  text-decoration: none;
+  font-size: 13px;
+  color: rgba(15, 23, 42, 0.62);
+}
+
+.link:hover {
+  color: rgba(15, 23, 42, 0.9);
+}
+
+.divider {
+  margin: 32px 0 18px;
+  height: 1px;
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.copy {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+
+  font-size: 12px;
+  font-weight: 650;
+  color: rgba(15, 23, 42, 0.62);
+}
+
+@media (max-width: 980px) {
+  .top {
+    grid-template-columns: 1fr;
+  }
+
+  .cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .badges {
+    justify-content: flex-start;
+  }
+}

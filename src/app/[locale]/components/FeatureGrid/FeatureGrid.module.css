@@ -1,0 +1,203 @@
+.wrap {
+  padding: 72px 18px;
+  /* background:
+    radial-gradient(
+      1200px 500px at 20% 10%,
+      rgba(var(--brand-2-rgb), 0.22) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 400px at 85% 15%,
+      rgba(var(--brand-1-rgb), 0.16) 0%,
+      transparent 55%
+    ),
+    var(--background); */
+}
+
+.header {
+  max-width: 1120px;
+  margin: 0 auto 34px;
+  text-align: center;
+  padding: 0 6px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(var(--ink-rgb), 0.55);
+}
+
+.heading {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 750;
+  color: rgba(var(--ink-rgb), 0.95);
+}
+
+.subheading {
+  margin: 14px auto 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(var(--ink-rgb), 0.68);
+}
+
+.grid {
+  max-width: 1120px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+
+  grid-auto-rows: minmax(260px, auto);
+}
+
+.tile {
+  grid-column: span var(--col-span);
+  grid-row: span var(--row-span);
+
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--ui-border);
+  border-radius: 22px;
+  overflow: hidden;
+
+  box-shadow:
+    0 16px 40px rgba(var(--ink-rgb), 0.08),
+    0 2px 8px rgba(var(--ink-rgb), 0.05);
+}
+
+.inner {
+  height: 100%;
+  display: grid;
+  gap: 18px;
+  padding: 26px;
+}
+
+.cols {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  align-items: stretch;
+}
+
+.rows {
+  grid-template-columns: 1fr;
+  align-content: start;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: rgba(var(--ink-rgb), 0.95);
+}
+
+.desc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: rgba(var(--ink-rgb), 0.68);
+  max-width: 40ch;
+}
+
+.bullets {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+
+  display: grid;
+  gap: 8px;
+}
+
+.bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  font-size: 14px;
+  color: rgba(var(--ink-rgb), 0.75);
+}
+
+.bullets li::before {
+  content: "✓";
+  display: inline-block;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 2px;
+  color: rgba(var(--brand-1-rgb), 0.95);
+}
+
+.media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mediaFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--media-ratio);
+  border-radius: 16px;
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--brand-2-rgb), 0.18),
+      rgba(var(--brand-2-rgb), 0.06)
+    ),
+    #ffffff;
+  border: 1px solid rgba(var(--brand-2-rgb), 0.35);
+}
+
+.mediaImg {
+  object-fit: cover;
+}
+
+/* Make big-tile media feel like the reference (smaller, squarer block) */
+.cols .mediaFrame {
+  width: 100%;
+  margin-left: auto;
+}
+
+/* Small tiles: media often looks nicer a bit shorter */
+.rows .mediaFrame {
+  width: 100%;
+}
+
+/* responsive: stack cards to avoid awkward squeezed layouts */
+@media (max-width: 900px) {
+  .grid {
+    grid-auto-rows: auto;
+  }
+
+  .tile {
+    grid-column: 1 / -1;
+  }
+
+  .cols {
+    grid-template-columns: 1fr;
+  }
+
+  .inner {
+    grid-template-areas: "content" "media" !important;
+  }
+
+  .cols .mediaFrame {
+    width: 100%;
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "eyebrowKey": "eyebrow",
+  "headingKey": "heading",
+  "subheadingKey": "subheading",
+
+  "benefitsKeys": [
+    "benefits.0",
+    "benefits.1",
+    "benefits.2",
+    "benefits.3",
+    "benefits.4"
+  ],
+
+  "comparisonLink": {
+    "href": "/pricing",
+    "labelKey": "comparison"
+  },
+
+  "defaultPlanId": "popular",
+
+  "plans": [
+    {
+      "id": "popular",
+      "nameKey": "plans.popular.name",
+      "taglineKey": "plans.popular.tagline",
+      "price": "€40",
+      "unitKey": "unit.month",
+      "popular": true
+    },
+    {
+      "id": "pro",
+      "nameKey": "plans.pro.name",
+      "taglineKey": "plans.pro.tagline",
+      "price": "€50",
+      "unitKey": "unit.month"
+    },
+    {
+      "id": "advanced",
+      "nameKey": "plans.advanced.name",
+      "taglineKey": "plans.advanced.tagline",
+      "price": "€60",
+      "unitKey": "unit.month"
+    }
+  ]
+}

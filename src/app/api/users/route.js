@@ -39,7 +39,7 @@ export async function POST(req) {
     if (!name || !organizationId) {
       return NextResponse.json(
         { error: "Missing required fields: name, organizationId" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -63,7 +63,7 @@ export async function POST(req) {
     if (!fullPhone) {
       return NextResponse.json(
         { error: "Missing phone number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,13 +84,13 @@ export async function POST(req) {
     if (error.code === "23505") {
       return NextResponse.json(
         { error: "User already exists (duplicate key)." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     console.error(error);
     return NextResponse.json(
       { error: "Failed to create User: " + error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,6 +105,8 @@ export async function PATCH(req) {
       phoneCountryCode, // "+351"
       phoneNational, // "912345678"
       email,
+      teamsAadObjectId,
+      teamsFromId,
       assistantId,
       tagIds,
     } = await req.json();
@@ -112,7 +114,7 @@ export async function PATCH(req) {
     if (!id) {
       return NextResponse.json(
         { error: "Missing required field: id" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -125,15 +127,15 @@ export async function PATCH(req) {
       typeof phoneCountryCode === "string" && phoneCountryCode.trim()
         ? phoneCountryCode.trim()
         : typeof phoneCountryCode === "string"
-        ? "" // allow clearing
-        : undefined;
+          ? "" // allow clearing
+          : undefined;
 
     const fullPhone =
       typeof phoneNumber === "string" && phoneNumber.trim()
         ? phoneNumber.trim()
         : normalizedCode && normalizedNational
-        ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
-        : undefined;
+          ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
+          : undefined;
 
     const updatedUser = await updateUser(id, {
       name,
@@ -143,6 +145,8 @@ export async function PATCH(req) {
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
       phoneNational: normalizedNational,
+      teamsAadObjectId,
+      teamsFromId,
     });
 
     return NextResponse.json(updatedUser);
@@ -161,7 +165,7 @@ export async function DELETE(req) {
         {
           error: "Missing UserId",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
