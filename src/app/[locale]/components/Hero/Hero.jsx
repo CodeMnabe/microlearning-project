@@ -35,7 +35,7 @@ export default function Hero() {
           <p className={styles.subhead}>
             {t(content.subheadLines[0])}
             <br />
-            {t(content.subheadLines[1])}
+            {/* {t(content.subheadLines[1])} */}
           </p>
 
           <div className={styles.actions}>

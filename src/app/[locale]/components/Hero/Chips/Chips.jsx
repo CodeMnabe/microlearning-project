@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./chip.module.css";
 
-export default function Chips({ items, repeat = 4, speed = 80 }) {
+export default function Chips({ items, repeat = 4, speed = 60 }) {
   const viewportRef = useRef(null);
   const set1Ref = useRef(null);
   const set2Ref = useRef(null);
