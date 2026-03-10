@@ -87,3 +87,15 @@
 .cardsWrap {
   margin-top: -20px;
 }
+
+@media (max-width: 960px) {
+  .navRow {
+    padding: 10px 16px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .navRow {
+    padding: 8px 8px 0;
+  }
+}
