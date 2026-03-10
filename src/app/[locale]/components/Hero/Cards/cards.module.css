@@ -95,8 +95,4 @@
   .card {
     width: 100%;
   }
-
-  .cardMedia {
-    aspect-ratio: 4 / 3;
-  }
 }

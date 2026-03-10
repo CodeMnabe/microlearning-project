@@ -2,26 +2,28 @@
   padding-top: 10px;
   display: flex;
   justify-content: center;
+  position: relative;
+  z-index: 20;
 }
 
 .navbar {
+  position: relative;
   width: 100%;
   max-width: 1500px;
-  margin: 0;
-
-  display: flex;
-  align-items: center;
-
-  gap: 16px;
-
   padding: 10px 14px;
-  border-radius: 999px;
+  border-radius: 28px;
 
   border: 1px solid rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(12px);
-
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .brand {
@@ -30,25 +32,34 @@
   gap: 10px;
   text-decoration: none;
   flex: 0 0 auto;
+  min-width: 0;
 }
 
 .logoMark {
   width: 28px;
   height: 28px;
   object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .brandText {
   font-weight: 900;
   color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
 
-.navLinks {
-  display: flex;
+.menuButton {
+  display: none;
+  align-items: center;
   justify-content: center;
-  gap: 14px;
-  flex: 1;
-  min-width: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  cursor: pointer;
+  flex: 0 0 auto;
 }
 
 .navLink {
@@ -57,17 +68,11 @@
   color: rgba(255, 255, 255, 0.75);
   padding: 6px 8px;
   border-radius: 10px;
+  transition: background 0.2s ease;
 }
 
 .navLink:hover {
   background: rgba(255, 255, 255, 0.25);
-}
-
-.navActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
 }
 
 .loginLink {
@@ -76,8 +81,8 @@
   color: rgba(255, 255, 255, 0.8);
   padding: 6px 8px;
   border-radius: 10px;
-
   border: 1px solid rgba(0, 0, 0, 0.35);
+  transition: background 0.2s ease;
 }
 
 .loginLink:hover {
@@ -88,24 +93,133 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
-
   padding: 8px 12px;
   border-radius: 999px;
-
   color: white;
   background: var(--brand-1);
   box-shadow: 0px 10px 125px var(--ink);
+  text-align: center;
 }
 
-.navPill {
-  text-decoration: none;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.8);
+/* Desktop */
+@media (min-width: 961px) {
+  .navbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-  padding: 8px 12px;
-  border-radius: 999px;
+  .topBar {
+    flex: 0 0 auto;
+  }
 
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(12px);
+  .navContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navLinks {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .navActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+}
+
+/* Mobile / tablet */
+@media (max-width: 960px) {
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .navContent {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 24px;
+
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(var(--ink-rgb), 0.95);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    z-index: 30;
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-12px) scale(0.98);
+    transform-origin: top center;
+
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease,
+      visibility 0.22s ease;
+  }
+
+  .open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .navLinks,
+  .navActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .navLinks {
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .navLink,
+  .loginLink,
+  .signupBtn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 12px 14px;
+  }
+
+  .signupBtn {
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 10px 12px;
+    border-radius: 22px;
+  }
+
+  .brandText {
+    font-size: 16px;
+  }
+
+  .logoMark {
+    width: 24px;
+    height: 24px;
+  }
 }
