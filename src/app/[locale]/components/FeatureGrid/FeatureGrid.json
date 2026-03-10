@@ -14,19 +14,22 @@
         "tiles.payments.bullets.3"
       ],
       "image": {
-        "src": null,
+        "src": "/images/whatsapp_mockup_2.png",
         "altKey": "tiles.payments.alt"
       },
       "colSpan": 6,
       "rowSpan": 1,
       "split": "cols",
-      "mediaPosition": "right"
+      "mediaPosition": "right",
+      "mediaRatio": "2 / 4",
+      "mediaMaxWidth": "190px",
+      "mediaJustify": "center"
     },
     {
       "id": "crm",
       "titleKey": "tiles.crm.title",
       "descriptionKey": "tiles.crm.description",
-      "image": { "src": null, "altKey": "tiles.crm.alt" },
+      "image": { "src": "/images/teams_mockup.png", "altKey": "tiles.crm.alt" },
       "colSpan": 3,
       "split": "rows",
       "mediaPosition": "top"
@@ -35,7 +38,10 @@
       "id": "email",
       "titleKey": "tiles.email.title",
       "descriptionKey": "tiles.email.description",
-      "image": { "src": null, "altKey": "tiles.email.alt" },
+      "image": {
+        "src": "/images/relatorio_mockup.png",
+        "altKey": "tiles.email.alt"
+      },
       "colSpan": 3,
       "split": "rows",
       "mediaPosition": "bottom"

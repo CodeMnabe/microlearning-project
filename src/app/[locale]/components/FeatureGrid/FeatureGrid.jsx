@@ -26,6 +26,9 @@ function Tile({ tile }) {
         "--col-span": tile.colSpan ?? 4,
         "--row-span": tile.rowSpan ?? 1,
         "--media-ratio": tile.mediaRatio || defaultRatio,
+        "--media-max-width": tile.mediaMaxWidth || "100%",
+        "--media-justify": tile.mediaJustify || "center",
+        "--media-fit": tile.mediaFit || "cover",
       }}
     >
       <div

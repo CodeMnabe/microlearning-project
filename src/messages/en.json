@@ -6,7 +6,7 @@
         "line2": "Instant feedback. Real impact."
       },
       "subhead": {
-        "line1": "Deliver personalized micro-lessons with instant feedback,",
+        "line1": "Deliver micro-lessons directly where your teams already work.",
         "line2": "directly where your teams already work."
       },
       "cta": {
@@ -52,7 +52,7 @@
     "FeatureGrid": {
       "eyebrow": "HOW IT WORKS",
       "heading": "Learn without leaving the flow of work",
-      "subheading": "Short micro-lessons, an AI coach, and clear analytics - inside WhatsApp, Teams, and (soon) Zoom.",
+      "subheading": "Short micro-lessons, an AI coach, and clear analytics.",
       "tiles": {
         "payments": {
           "title": "Inside the tools your team already uses",

@@ -113,7 +113,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 650;
-  background: rgba(var(--ink-rgb), 0.92);
+  background: var(--brand-1);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.14);
 }

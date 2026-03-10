@@ -52,7 +52,7 @@
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 22px;
-  align-items: center;
+  align-items: stretch;
 }
 
 /* Left benefits card */
@@ -68,6 +68,10 @@
   border: 1px solid var(--ui-border);
   border-radius: 22px;
   padding: 26px;
+
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 
   box-shadow:
     0 16px 40px rgba(var(--ink-rgb), 0.08),
@@ -106,7 +110,7 @@
 
 .compareLink {
   display: inline-block;
-  margin-top: 18px;
+  margin-top: auto;
   font-size: 13px;
   color: rgba(var(--ink-rgb), 0.75);
   text-decoration: none;
@@ -228,7 +232,7 @@
   border: 1px solid rgba(var(--brand-1-rgb), 0.18);
 }
 
-.planTagline {
+.planTagLine {
   margin: 6px 0 0;
   font-size: 13px;
   color: rgba(var(--ink-rgb), 0.62);

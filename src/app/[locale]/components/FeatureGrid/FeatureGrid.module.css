@@ -143,12 +143,12 @@
 .media {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: var(--media-justify);
 }
 
 .mediaFrame {
   position: relative;
-  width: 100%;
+  width: min(100%, var(--media-max-width));
   aspect-ratio: var(--media-ratio);
   border-radius: 16px;
   overflow: hidden;
@@ -164,13 +164,11 @@
 }
 
 .mediaImg {
-  object-fit: cover;
+  object-fit: var(--media-fit);
 }
 
-/* Make big-tile media feel like the reference (smaller, squarer block) */
 .cols .mediaFrame {
-  width: 100%;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 /* Small tiles: media often looks nicer a bit shorter */
