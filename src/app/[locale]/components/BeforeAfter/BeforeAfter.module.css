@@ -109,7 +109,7 @@
 
 /* pill is now normal flow (no absolute positioning) */
 .pill {
-  padding: 6px 12px;
+  padding: 8px 18px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 650;
