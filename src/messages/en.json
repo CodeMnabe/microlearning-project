@@ -186,7 +186,7 @@
         "submit": "Send message",
         "sending": "Sending...",
         "helper": "You can connect this later to email, Supabase, or your CRM.",
-        "success": "Thanks — your message was sent successfully.",
+        "success": "Thanks - your message was sent successfully.",
         "errors": {
           "generic": "Something went wrong. Please try again."
         }

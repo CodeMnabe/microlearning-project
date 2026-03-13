@@ -189,7 +189,7 @@
         "submit": "Enviar mensagem",
         "sending": "A enviar...",
         "helper": "Mais tarde podes ligar isto ao email, Supabase ou ao teu CRM.",
-        "success": "Obrigado — a tua mensagem foi enviada com sucesso.",
+        "success": "Obrigado - a tua mensagem foi enviada com sucesso.",
         "errors": {
           "generic": "Algo correu mal. Tenta novamente."
         }
