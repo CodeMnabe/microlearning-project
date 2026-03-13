@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import styles from "./topLoader.module.css";
 
 let startLoaderGlobal = null;
+let doneLoaderGlobal = null;
 
 export function startTopLoader() {
   startLoaderGlobal?.();
+}
+
+export function doneTopLoader() {
+  doneLoaderGlobal?.();
 }
 
 export default function TopLoader() {
@@ -18,33 +23,43 @@ export default function TopLoader() {
   const [progress, setProgress] = useState(0);
 
   const timerRef = useRef(null);
+  const fallbackRef = useRef(null);
   const firstRenderRef = useRef(true);
 
-  function clearTimer() {
+  function clearTimers() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+
+    if (fallbackRef.current) {
+      clearTimeout(fallbackRef.current);
+      fallbackRef.current = null;
+    }
   }
 
   function start() {
-    clearTimer();
+    clearTimers();
     setVisible(true);
     setProgress(12);
 
     timerRef.current = setInterval(() => {
-      setProgree((current) => {
+      setProgress((current) => {
         if (current >= 85) return current;
         return current + Math.max((90 - current) * 0.12, 2);
       });
     }, 140);
+
+    fallbackRef.current = setTimeout(() => {
+      done();
+    }, 900);
   }
 
   function done() {
-    clearTimer();
+    clearTimers();
     setProgress(100);
 
-    window.setTimeout(() => {
+    setTimeout(() => {
       setVisible(false);
       setProgress(0);
     }, 220);
@@ -52,9 +67,12 @@ export default function TopLoader() {
 
   useEffect(() => {
     startLoaderGlobal = start;
+    doneLoaderGlobal = done;
+
     return () => {
       if (startLoaderGlobal === start) startLoaderGlobal = null;
-      clearTimer();
+      if (doneLoaderGlobal === done) doneLoaderGlobal = null;
+      clearTimers();
     };
   }, []);
 
