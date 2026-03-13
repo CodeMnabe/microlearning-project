@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
+import LoaderLink from "../../TopLoader/LoaderLink";
 import styles from "./navbar.module.css";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
@@ -28,7 +29,7 @@ export default function MarketingNavbar() {
     <header className={styles.navWrap}>
       <nav className={styles.navbar}>
         <div className={styles.topBar}>
-          <Link href="/" className={styles.brand} onClick={closeMenu}>
+          <LoaderLink href="/" className={styles.brand} onClick={closeMenu}>
             <Image
               src="/images/logo-03.png"
               alt="MyDigitalBot logo"
@@ -37,7 +38,7 @@ export default function MarketingNavbar() {
               className={styles.logoMark}
             />
             <span className={styles.brandText}>MyDigitalBot</span>
-          </Link>
+          </LoaderLink>
 
           <button
             type="button"
@@ -57,32 +58,32 @@ export default function MarketingNavbar() {
         >
           <div className={styles.navLinks}>
             {NAV.map((item) => (
-              <Link
+              <LoaderLink
                 key={item.href}
                 href={item.href}
                 className={styles.navLink}
                 onClick={closeMenu}
               >
                 {translation(item.key)}
-              </Link>
+              </LoaderLink>
             ))}
           </div>
 
           <div className={styles.navActions}>
-            <Link
+            <LoaderLink
               href="/login"
               className={styles.loginLink}
               onClick={closeMenu}
             >
               {translation("login")}
-            </Link>
-            <Link
-              href="/signup"
+            </LoaderLink>
+            <LoaderLink
+              href="/contact"
               className={styles.signupBtn}
               onClick={closeMenu}
             >
               {translation("book")}
-            </Link>
+            </LoaderLink>
           </div>
         </div>
       </nav>

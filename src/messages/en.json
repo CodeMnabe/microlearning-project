@@ -155,6 +155,42 @@
         "pricing": "Pricing"
       },
       "badges": { "gdpr": "GDPR compliant", "status": "Status" }
+    },
+    "Contact": {
+      "eyebrow": "Contact",
+      "title": "Tell us what you need",
+      "subhead": "Share a bit about your company and what you want to build. We’ll get back to you with the best next step.",
+      "backHome": "Back to homepage",
+      "info": {
+        "eyebrow": "Let's talk",
+        "title": "A quick conversation, no pressure",
+        "description": "Use this form to ask for a demo, pricing details, or help choosing the right setup.",
+        "points": {
+          "one": "Get a reply tailored to your use case",
+          "two": "Understand which channels fit your team",
+          "three": "See what setup makes sense for your company"
+        }
+      },
+      "form": {
+        "eyebrow": "Start here",
+        "title": "Send us a message",
+        "subhead": "We usually reply with the best next step for your team.",
+        "name": "Name",
+        "namePlaceholder": "Your name",
+        "email": "Work email",
+        "emailPlaceholder": "name@company.com",
+        "company": "Company",
+        "companyPlaceholder": "Your company",
+        "message": "Message",
+        "messagePlaceholder": "Tell us what you need, what channels you want, or what kind of setup you’re looking for.",
+        "submit": "Send message",
+        "sending": "Sending...",
+        "helper": "You can connect this later to email, Supabase, or your CRM.",
+        "success": "Thanks — your message was sent successfully.",
+        "errors": {
+          "generic": "Something went wrong. Please try again."
+        }
+      }
     }
   },
   "Nav": {

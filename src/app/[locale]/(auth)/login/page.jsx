@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+import LoaderLink from "../../components/TopLoader/LoaderLink";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "./login.module.css";
@@ -123,9 +123,9 @@ export default function LoginPage() {
           )}
         </button>
 
-        <Link href={`/${locale}/reset`} className={styles.link}>
+        <LoaderLink href={`/${locale}/reset`} className={styles.link}>
           {t("Auth.login.forgot")}
-        </Link>
+        </LoaderLink>
 
         {errorMsg && <p className={styles.message}>{errorMsg}</p>}
       </form>

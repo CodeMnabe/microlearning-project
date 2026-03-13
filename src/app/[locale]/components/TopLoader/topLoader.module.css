@@ -1,0 +1,23 @@
+.wrap {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 4px;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transform: opacity 160ms ease;
+}
+
+.wrapVisible {
+  opacity: 1;
+}
+
+.bar {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 180ms ease-out;
+  background: linear-gradient(90deg, var(--brand-2), var(--brand-1));
+  box-shadow: 0 0 16px rgba(var(--brand-1-rgb), 0.45);
+}

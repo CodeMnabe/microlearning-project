@@ -67,7 +67,7 @@
   font-size: 14px;
   color: rgba(255, 255, 255, 0.75);
   padding: 6px 8px;
-  border-radius: 10px;
+  border-radius: 999px;
   transition: background 0.2s ease;
 }
 
@@ -78,27 +78,36 @@
 .loginLink {
   text-decoration: none;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.35);
+  background: #fff;
+  color: var(--brand-1);
+  padding: 10px 16px;
+  border-radius: 999px;
   transition: background 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .loginLink:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--brand-1);
+  color: #fff;
 }
 
 .signupBtn {
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 999px;
   color: white;
   background: var(--brand-1);
   box-shadow: 0px 10px 125px var(--ink);
   text-align: center;
+  transition: background 0.2s ease;
+  transition: color 0.2s ease;
+}
+
+.signupBtn:hover {
+  background: #fff;
+  color: var(--brand-1);
 }
 
 /* Desktop */

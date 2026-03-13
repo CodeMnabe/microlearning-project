@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import LoaderLink from "../TopLoader/LoaderLink";
 import { useTranslations } from "next-intl";
 import styles from "./hero.module.css";
 import MarketingNavbar from "./Navbar/Navbar";
@@ -39,15 +40,18 @@ export default function Hero() {
           </p>
 
           <div className={styles.actions}>
-            <Link href={content.primaryCta.href} className={styles.primaryBtn}>
+            <LoaderLink
+              href={content.primaryCta.href}
+              className={styles.primaryBtn}
+            >
               {t(content.primaryCta.labelKey)}
-            </Link>
-            <Link
+            </LoaderLink>
+            <LoaderLink
               href={content.secondaryCta.href}
               className={styles.secondaryBtn}
             >
               {t(content.secondaryCta.labelKey)}
-            </Link>
+            </LoaderLink>
           </div>
 
           <div className={styles.chipsWrap}>

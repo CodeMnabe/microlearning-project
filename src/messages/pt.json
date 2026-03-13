@@ -6,7 +6,7 @@
         "line2": "Feedback imediato. Impacto real."
       },
       "subhead": {
-        "line1": "Microdoses nos canais onde as equipas já trabalham.",
+        "line1": "Microdoses nos canais onde as equipas já trabalham",
         "line2": "nos canais onde as equipas já trabalham."
       },
       "cta": {
@@ -158,6 +158,42 @@
         "pricing": "Preços"
       },
       "badges": { "gdpr": "Conforme RGPD", "status": "Estado" }
+    },
+    "Contact": {
+      "eyebrow": "Contacto",
+      "title": "Diz-nos o que precisas",
+      "subhead": "Partilha um pouco sobre a tua empresa e sobre o que queres criar. Vamos responder-te com o melhor próximo passo.",
+      "backHome": "Voltar à página inicial",
+      "info": {
+        "eyebrow": "Vamos falar",
+        "title": "Uma conversa rápida, sem pressão",
+        "description": "Usa este formulário para pedir uma demonstração, esclarecer preços ou perceber qual é a melhor configuração para a tua equipa.",
+        "points": {
+          "one": "Recebe uma resposta ajustada ao teu caso",
+          "two": "Percebe que canais fazem mais sentido para a tua equipa",
+          "three": "Descobre a melhor configuração para a tua empresa"
+        }
+      },
+      "form": {
+        "eyebrow": "Começa aqui",
+        "title": "Envia-nos uma mensagem",
+        "subhead": "Normalmente respondemos com o melhor próximo passo para a tua equipa.",
+        "name": "Nome",
+        "namePlaceholder": "O teu nome",
+        "email": "Email profissional",
+        "emailPlaceholder": "nome@empresa.com",
+        "company": "Empresa",
+        "companyPlaceholder": "A tua empresa",
+        "message": "Mensagem",
+        "messagePlaceholder": "Diz-nos o que precisas, que canais queres usar ou que tipo de solução procuras.",
+        "submit": "Enviar mensagem",
+        "sending": "A enviar...",
+        "helper": "Mais tarde podes ligar isto ao email, Supabase ou ao teu CRM.",
+        "success": "Obrigado — a tua mensagem foi enviada com sucesso.",
+        "errors": {
+          "generic": "Algo correu mal. Tenta novamente."
+        }
+      }
     }
   },
   "Nav": {
