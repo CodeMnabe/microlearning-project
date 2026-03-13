@@ -65,6 +65,14 @@
   color: white;
   background: var(--brand-1);
   box-shadow: 0px 10px 125px var(--ink);
+
+  transition: background 0.2s ease;
+  transition: color 0.2s ease;
+}
+
+.primaryBtn:hover {
+  background: #fff;
+  color: var(--brand-1);
 }
 
 .secondaryBtn {
@@ -78,6 +86,12 @@
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
+
+  transition: background 0.2s ease;
+}
+
+.secondaryBtn:hover {
+  background: var(--brand-1);
 }
 
 .chipsWrap {

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import LoaderLink from "../TopLoader/LoaderLink";
 import styles from "./pricing.module.css";
 import content from "./pricing.json";
 
@@ -99,12 +100,12 @@ export default function Pricing({ onPlanChange }) {
           </ul>
 
           {content.comparisonLink?.href ? (
-            <Link
+            <LoaderLink
               className={styles.compareLink}
               href={content.comparisonLink.href}
             >
               {t(content.comparisonLink.labelKey)}
-            </Link>
+            </LoaderLink>
           ) : null}
         </aside>
 
