@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import LoaderLink from "../components/TopLoader/LoaderLink";
 import MarketingNavbar from "../components/Hero/Navbar/Navbar";
+import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 import Footer from "../components/Footer/Footer";
 import ContactForm from "./ContactForm.jsx";
 import styles from "./contact.module.css";
@@ -18,6 +19,10 @@ export default function ContactPage() {
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
 
+        <div className={styles.lang}>
+          <LanguageSwitch />
+        </div>
+
         <div className={styles.navRow}>
           <MarketingNavbar />
         </div>
@@ -28,7 +33,7 @@ export default function ContactPage() {
             <p className={styles.subhead}>{t("subhead")}</p>
           </header>
           <div className={styles.grid}>
-            <aside className={styles.infoCard}>
+            {/* <aside className={styles.infoCard}>
               <p className={styles.cardEyebrow}>{t("info.eyebrow")}</p>
               <h2 className={styles.cardTitle}>{t("info.title")}</h2>
               <p className={styles.cardText}>{t("info.description")}</p>
@@ -42,13 +47,16 @@ export default function ContactPage() {
               <LoaderLink href="/" className={styles.backLink}>
                 {t("backHome")}
               </LoaderLink>
-            </aside>
+            </aside> */}
 
             <section className={styles.formCard}>
               <div className={styles.formTop}>
                 <p className={styles.formEyebrow}>{t("form.eyebrow")}</p>
                 <h2 className={styles.formTitle}>{t("form.title")}</h2>
-                <p className={styles.formText}>{t("form.subhead")}</p>
+                <div className={styles.formText}>
+                  <p >{t("form.subhead")}</p>
+                  <p >{t("form.secondSubhead")}</p>
+                </div>
               </div>
 
               <ContactForm />

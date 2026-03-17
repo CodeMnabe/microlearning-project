@@ -1,11 +1,13 @@
 .wrap {
   /* background: #fff; */
-  padding: 56px 18px 26px;
+  padding: 100px 18px 50px;
+  background: white;
 }
 
 .inner {
   max-width: 1120px;
   margin: 0 auto;
+
 }
 
 .top {

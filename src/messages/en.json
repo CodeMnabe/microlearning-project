@@ -174,7 +174,8 @@
       "form": {
         "eyebrow": "Start here",
         "title": "Send us a message",
-        "subhead": "We usually reply with the best next step for your team.",
+        "subhead": "Understand which channels fit your team",
+        "secondSubhead": "Share a bit about your company and what you want to build. We’ll get back to you with the best next step.",
         "name": "Name",
         "namePlaceholder": "Your name",
         "email": "Work email",
@@ -191,6 +192,157 @@
           "generic": "Something went wrong. Please try again."
         }
       }
+    }
+  },
+  "PricingPage": {
+    "hero": {
+      "eyebrow": "Pricing",
+      "title": "Choose the setup that matches your growth stage",
+      "subhead": "This page is built as a guided pricing explorer instead of a simple pricing table, so visitors can understand what changes from one plan to the next."
+    },
+    "explorer": {
+      "eyebrow": "Plan explorer",
+      "title": "Start with the stage you are in",
+      "subhead": "Pick the option that feels closest to your current team. You can replace all of this placeholder text later.",
+      "bestFor": "Best for",
+      "outcomes": "What this includes",
+      "secondaryCta": "Talk to us"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "save": "Save 20%",
+      "unit": "/month"
+    },
+    "metrics": {
+      "assistants": "Assistants",
+      "messages": "Messages",
+      "channels": "Channels",
+      "users": "Users"
+    },
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "badge": "Simple start",
+        "tagline": "For small teams testing their first assistant flows.",
+        "summary": "A lighter entry point with the essentials you need to launch, validate, and learn what your users actually need.",
+        "idealFor": "Teams that want a simple pilot with a small number of users and a very clear scope.",
+        "cta": "Start with Starter",
+        "highlights": [
+          "Launch one assistant quickly",
+          "Cover a small team or pilot group",
+          "Validate use cases before scaling"
+        ],
+        "included": [
+          "Basic assistant setup",
+          "Core analytics",
+          "Email support",
+          "Simple channel connections"
+        ]
+      },
+      "growth": {
+        "name": "Growth",
+        "badge": "Best fit",
+        "tagline": "For companies turning one use case into a real internal product.",
+        "summary": "This is the main plan for teams that already see value and now want better automation, broader access, and more room to grow.",
+        "idealFor": "Teams that want a stronger operational setup and expect more users, messages, and workflows.",
+        "cta": "Choose Growth",
+        "highlights": [
+          "Expand to more assistants and channels",
+          "Add stronger automations and reporting",
+          "Support more teams with less manual work"
+        ],
+        "included": [
+          "Everything in Starter",
+          "Higher limits across the board",
+          "Better automation options",
+          "Priority support"
+        ]
+      },
+      "scale": {
+        "name": "Scale",
+        "badge": "Custom",
+        "tagline": "For larger rollouts, advanced governance, and tailored setups.",
+        "summary": "Built for companies that need broader control, more integrations, and pricing adapted to their structure and volume.",
+        "idealFor": "Organizations with multiple teams, more stakeholders, and a need for custom limits or rollout planning.",
+        "cta": "Contact sales",
+        "highlights": [
+          "Custom rollout and governance",
+          "Advanced channels and integrations",
+          "Flexible limits and tailored support"
+        ],
+        "included": [
+          "Everything in Growth",
+          "Custom implementation path",
+          "Advanced permissions and governance",
+          "Dedicated planning support"
+        ]
+      }
+    },
+    "included": {
+      "eyebrow": "Included",
+      "title": "What comes with this plan"
+    },
+    "billingInfo": {
+      "eyebrow": "Billing",
+      "title": "Simple placeholder billing logic",
+      "text": "For now this is fake content only. Later you can replace it with exact billing rules, annual discounts, usage details, and add-on pricing."
+    },
+    "bands": {
+      "feature": "Feature area",
+      "setup": {
+        "title": "Setup and rollout",
+        "description": "Use these rows to explain onboarding, implementation, and configuration differences.",
+        "rows": ["Initial setup", "Custom branding", "Migration help"]
+      },
+      "automation": {
+        "title": "Automation and AI",
+        "description": "Use this area to show what becomes more powerful as plans grow.",
+        "rows": ["Automated flows", "Usage reporting", "Advanced logic"]
+      },
+      "governance": {
+        "title": "Governance and control",
+        "description": "This is useful later when you add permissions, audit needs, or enterprise requirements.",
+        "rows": [
+          "Roles and permissions",
+          "Approval flows",
+          "Enterprise controls"
+        ]
+      }
+    },
+    "states": {
+      "included": "Included",
+      "limited": "Limited",
+      "custom": "Custom"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Pricing FAQs",
+      "items": [
+        {
+          "question": "Can I change plans later?",
+          "answer": "Yes. This is placeholder text, but this area is perfect for upgrade, downgrade, and migration explanations."
+        },
+        {
+          "question": "Are there setup fees?",
+          "answer": "You can later explain setup fees, onboarding packages, or implementation costs here."
+        },
+        {
+          "question": "Do you offer annual billing?",
+          "answer": "Yes. This section can later describe annual discounts, invoice terms, and contract logic."
+        },
+        {
+          "question": "What happens if I need something custom?",
+          "answer": "Use this answer to explain enterprise requests, custom integrations, or special rollout needs."
+        }
+      ]
+    },
+    "finalCta": {
+      "eyebrow": "Still unsure?",
+      "title": "Let’s find the right plan together",
+      "text": "Keep this as your closing section with one direct CTA and one lower-friction secondary option.",
+      "primary": "Book a conversation",
+      "secondary": "Back to homepage"
     }
   },
   "Nav": {
