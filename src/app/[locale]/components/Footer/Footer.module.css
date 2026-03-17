@@ -79,6 +79,10 @@
   gap: 28px;
 }
 
+.cols p {
+  margin-bottom: 10px;
+}
+
 .colTile {
   margin: 0 0 10px;
   font-size: 13px;

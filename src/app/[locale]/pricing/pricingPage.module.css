@@ -120,7 +120,7 @@
 }
 
 .sectionText {
-  margin: 14px auto 0;
+  margin: 14px auto 50px;
   max-width: 58ch;
   font-size: 15px;
   line-height: 1.7;
@@ -371,9 +371,10 @@
 
 .canvasHead {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: start;
+  gap: 30px;
+  align-items: center;
+  justify-content: center;
+  margin: 15px;
 }
 
 .canvasPrice {
@@ -385,6 +386,7 @@
 }
 
 .canvasSummary {
+  text-align: center;
   margin: 18px 0 0;
   font-size: 16px;
   line-height: 1.7;
@@ -437,7 +439,6 @@
 }
 
 .canvasInfoBlock {
-  display: grid;
   align-items: start;
   min-height: 150px;
 }
@@ -478,8 +479,9 @@
 }
 
 .canvasActions {
-  margin-top: 24px;
   display: flex;
+  justify-content: center;
+  margin: 28px 0 14px;
   gap: 14px;
   flex-wrap: wrap;
 }
@@ -532,17 +534,21 @@
 }
 
 .bandGrid {
-  margin-top: 25px;
+  margin-top: 45px;
   display: grid;
   gap: 25px;
 }
 
 .bandCard {
   padding: 45px;
+  margin: 20px 0;
 }
 
 .bandTop {
-  margin-bottom: 18px;
+  display: grid;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 50px;
 }
 
 .bandTitle {
@@ -585,7 +591,7 @@
 
 .bandBody {
   display: grid;
-  gap: 10px;
+  gap: 20px;
 }
 
 .bandFeatureCol {
@@ -647,11 +653,11 @@
 .faqGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 30px;
 }
 
 .faqCard {
-  padding: 22px;
+  padding: 35px;
 }
 
 .faqQuestion {
@@ -664,7 +670,7 @@
 }
 
 .finalCtaCard {
-  padding: 30px;
+  padding: 50px;
   text-align: center;
   background:
     linear-gradient(135deg,
