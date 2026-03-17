@@ -4,7 +4,7 @@
   "before": {
     "labelKey": "before.label",
     "tone": "bad",
-    "image": { "src": "/images/before.jpg", "altKey": "before.alt" },
+    "image": { "src": "/images/antes.png", "altKey": "before.alt" },
     "bulletsKeys": [
       "before.bullets.0",
       "before.bullets.1",
@@ -16,7 +16,7 @@
   "after": {
     "labelKey": "after.label",
     "tone": "good",
-    "image": { "src": "/images/after.jpg", "altKey": "after.alt" },
+    "image": { "src": "/images/depois.png", "altKey": "after.alt" },
     "bulletsKeys": [
       "after.bullets.0",
       "after.bullets.1",
