@@ -177,7 +177,8 @@
       "form": {
         "eyebrow": "Começa aqui",
         "title": "Envia-nos uma mensagem",
-        "subhead": "Normalmente respondemos com o melhor próximo passo para a tua equipa.",
+        "subhead": "Percebe que canais fazem mais sentido para a tua equipa",
+        "secondSubhead": "Partilha um pouco sobre a tua empresa e sobre o que queres criar. Vamos responder-te com o melhor próximo passo.",
         "name": "Nome",
         "namePlaceholder": "O teu nome",
         "email": "Email profissional",
@@ -194,6 +195,165 @@
           "generic": "Algo correu mal. Tenta novamente."
         }
       }
+    }
+  },
+  "PricingPage": {
+    "hero": {
+      "eyebrow": "Preços",
+      "title": "Escolhe a configuração que acompanha a tua fase de crescimento",
+      "subhead": "Esta página foi pensada como um explorador de preços guiado em vez de uma tabela simples, para ajudar o visitante a perceber o que muda de plano para plano."
+    },
+    "explorer": {
+      "eyebrow": "Explorador de planos",
+      "title": "Começa pela fase em que estás",
+      "subhead": "Escolhe a opção que mais se aproxima da tua equipa atual. Depois podes trocar todo este texto fictício por informação real.",
+      "bestFor": "Melhor para",
+      "outcomes": "O que inclui",
+      "secondaryCta": "Falar connosco"
+    },
+    "billing": {
+      "monthly": "Mensal",
+      "yearly": "Anual",
+      "save": "Poupa 20%",
+      "unit": "/mês"
+    },
+    "metrics": {
+      "assistants": "Assistentes",
+      "messages": "Mensagens",
+      "channels": "Canais",
+      "users": "Utilizadores"
+    },
+    "plans": {
+      "starter": {
+        "name": "Starter",
+        "badge": "Início simples",
+        "tagline": "Para equipas pequenas a testar os primeiros fluxos com assistentes.",
+        "summary": "Um ponto de entrada mais leve com o essencial para lançar, validar e perceber o que os utilizadores realmente precisam.",
+        "idealFor": "Equipas que querem um piloto simples com poucos utilizadores e um âmbito muito claro.",
+        "cta": "Começar com Starter",
+        "highlights": [
+          "Lançar um assistente rapidamente",
+          "Cobrir uma equipa pequena ou grupo piloto",
+          "Validar casos de uso antes de escalar"
+        ],
+        "included": [
+          "Configuração base do assistente",
+          "Analytics essenciais",
+          "Suporte por email",
+          "Ligações simples a canais"
+        ]
+      },
+      "growth": {
+        "name": "Growth",
+        "badge": "Melhor escolha",
+        "tagline": "Para empresas que estão a transformar um caso de uso num produto interno real.",
+        "summary": "Este é o plano principal para equipas que já veem valor e agora querem mais automação, mais alcance e mais espaço para crescer.",
+        "idealFor": "Equipas que querem uma operação mais forte e esperam mais utilizadores, mensagens e fluxos.",
+        "cta": "Escolher Growth",
+        "highlights": [
+          "Expandir para mais assistentes e canais",
+          "Adicionar automações e reporting melhores",
+          "Apoiar mais equipas com menos trabalho manual"
+        ],
+        "included": [
+          "Tudo do Starter",
+          "Limites mais altos",
+          "Melhores opções de automação",
+          "Suporte prioritário"
+        ]
+      },
+      "scale": {
+        "name": "Scale",
+        "badge": "Personalizado",
+        "tagline": "Para rollouts maiores, governação avançada e configurações à medida.",
+        "summary": "Pensado para empresas que precisam de mais controlo, mais integrações e preços adaptados à sua estrutura e volume.",
+        "idealFor": "Organizações com várias equipas, mais stakeholders e necessidade de limites ou rollout personalizados.",
+        "cta": "Contactar vendas",
+        "highlights": [
+          "Rollout e governação personalizados",
+          "Canais e integrações avançadas",
+          "Limites flexíveis e suporte ajustado"
+        ],
+        "included": [
+          "Tudo do Growth",
+          "Caminho de implementação personalizado",
+          "Permissões e governação avançadas",
+          "Apoio dedicado ao planeamento"
+        ]
+      }
+    },
+    "included": {
+      "eyebrow": "Incluído",
+      "title": "O que vem com este plano"
+    },
+    "billingInfo": {
+      "eyebrow": "Faturação",
+      "title": "Lógica de faturação fictícia",
+      "text": "Para já este conteúdo é apenas ilustrativo. Mais tarde podes trocar por regras reais de faturação, descontos anuais, detalhes de uso e preços de add-ons."
+    },
+    "bands": {
+      "feature": "Área",
+      "setup": {
+        "title": "Setup e rollout",
+        "description": "Usa estas linhas para explicar diferenças de onboarding, implementação e configuração.",
+        "rows": [
+          "Configuração inicial",
+          "Branding personalizado",
+          "Ajuda na migração"
+        ]
+      },
+      "automation": {
+        "title": "Automação e IA",
+        "description": "Usa esta área para mostrar o que fica mais forte à medida que o plano cresce.",
+        "rows": [
+          "Fluxos automáticos",
+          "Reporting de utilização",
+          "Lógica avançada"
+        ]
+      },
+      "governance": {
+        "title": "Governação e controlo",
+        "description": "Isto será útil quando adicionares permissões, auditoria ou requisitos enterprise.",
+        "rows": [
+          "Papéis e permissões",
+          "Fluxos de aprovação",
+          "Controlos enterprise"
+        ]
+      }
+    },
+    "states": {
+      "included": "Incluído",
+      "limited": "Limitado",
+      "custom": "Personalizado"
+    },
+    "faq": {
+      "eyebrow": "Perguntas",
+      "title": "FAQs de preços",
+      "items": [
+        {
+          "question": "Posso mudar de plano mais tarde?",
+          "answer": "Sim. Este texto é fictício, mas esta área é ideal para explicar upgrades, downgrades e mudanças entre planos."
+        },
+        {
+          "question": "Existem custos de setup?",
+          "answer": "Aqui podes explicar mais tarde custos de setup, onboarding ou implementação."
+        },
+        {
+          "question": "Têm faturação anual?",
+          "answer": "Sim. Esta secção pode depois explicar descontos anuais, termos de faturação e lógica contratual."
+        },
+        {
+          "question": "E se eu precisar de algo personalizado?",
+          "answer": "Usa esta resposta para explicar pedidos enterprise, integrações personalizadas ou necessidades especiais de rollout."
+        }
+      ]
+    },
+    "finalCta": {
+      "eyebrow": "Ainda tens dúvidas?",
+      "title": "Vamos encontrar o plano certo contigo",
+      "text": "Mantém esta secção como fecho da página com um CTA direto e uma opção secundária mais leve.",
+      "primary": "Marcar uma conversa",
+      "secondary": "Voltar à homepage"
     }
   },
   "Nav": {

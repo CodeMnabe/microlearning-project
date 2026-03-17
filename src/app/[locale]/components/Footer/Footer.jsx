@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import styles from "./Footer.module.css";
 import content from "./footer.json";
 
@@ -38,7 +39,12 @@ export default function Footer() {
         <div className={styles.top}>
           <div className={styles.brandCol}>
             <div className={styles.brandRow}>
-              <div className={styles.logoMark} aria-hidden="true" />
+              <Image
+                src="/images/logo-03.png"
+                alt="MyDigitalBot logo"
+                width={28}
+                height={28}
+              />
               <span className={styles.brandName}>{content.brand}</span>
             </div>
 

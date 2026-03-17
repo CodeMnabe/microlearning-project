@@ -10,8 +10,8 @@ export default function NavCursor() {
   const start = () => {
     if (activeRef.current) return;
     activeRef.current = true;
-    document.documentElement.style.cursor = "progress";
-    document.body.style.cursor = "progress";
+    // document.documentElement.style.cursor = "progress";
+    // document.body.style.cursor = "progress";
   };
 
   const stop = () => {

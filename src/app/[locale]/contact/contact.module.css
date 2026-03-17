@@ -2,6 +2,13 @@
   min-height: 100vh;
 }
 
+.lang {
+  position: fixed;
+  top: 10px;
+  right: var(--content-gutter, 24px);
+  z-index: 60;
+}
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -66,7 +73,7 @@
   max-width: 1120px;
   margin: 42px auto 0;
   display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
+  /* grid-template-columns: 0.92fr 1.08fr; */
   gap: 22px;
   align-items: start;
 }
@@ -87,11 +94,9 @@
   flex-direction: column;
   border-radius: 15px;
   background:
-    linear-gradient(
-      135deg,
+    linear-gradient(135deg,
       rgba(var(--brand-2-rgb), 0.2),
-      rgba(var(--brand-2-rgb), 0.06)
-    ),
+      rgba(var(--brand-2-rgb), 0.06)),
     rgba(255, 255, 255, 0.93);
 }
 
@@ -175,11 +180,12 @@
 
 .formCard {
   padding: 28px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 1);
 }
 
 .formTop {
-  margin-bottom: 22px;
+  margin: 20px 10px 40px;
+  text-align: center;
 }
 
 .form {
@@ -195,7 +201,7 @@
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: 15px;
 }
 
 .label {
@@ -209,7 +215,7 @@
   width: 100%;
   border-radius: 16px;
   border: 1px solid var(--ui-border);
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(224, 224, 224, 0.4);
   padding: 14px 16px;
   font: inherit;
   color: rgba(var(--ink-rgb), 0.95);
