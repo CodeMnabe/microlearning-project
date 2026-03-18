@@ -3,13 +3,13 @@
   min-height: 100vh;
   align-items: center;
   justify-content: center;
-  flex-direction: column; /* ⬅️ stack brand over form */
-  gap: 1.25rem; /* space between brand and card */
-  background: radial-gradient(
-      1200px 520px at 50% -220px,
+  flex-direction: column;
+  /* ⬅️ stack brand over form */
+  gap: 1.25rem;
+  /* space between brand and card */
+  background: radial-gradient(1200px 520px at 50% -220px,
       #eef8ff 0%,
-      transparent 70%
-    ),
+      transparent 70%),
     #f4f8fc;
   padding: 1.25rem;
   font-family: var(--font-inter, system-ui), system-ui, sans-serif;
@@ -30,6 +30,15 @@
   background-clip: text;
   color: transparent;
 }
+
+.logoMark {
+  display: block;
+  width: 550px;
+  height: auto;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 
 /* Card */
 .card {
@@ -71,9 +80,11 @@
   border-radius: 10px;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
+
 .input::placeholder {
   color: var(--ui-muted);
 }
+
 .input:focus {
   outline: none;
   border-color: var(--brand-2);
@@ -105,9 +116,11 @@
   color: #fff;
   box-shadow: 0 10px 22px rgba(14, 165, 233, 0.25);
 }
+
 .btnPrimary:hover {
   filter: brightness(0.98);
 }
+
 .btnPrimary:active {
   transform: translateY(1px);
 }
@@ -117,6 +130,7 @@
   color: var(--ink);
   border: 1px solid var(--ui-border);
 }
+
 .btnSecondary:hover {
   filter: brightness(0.98);
 }
@@ -129,6 +143,7 @@
   font-size: 0.9rem;
   color: var(--brand-1);
 }
+
 .link:hover {
   text-decoration: underline;
 }
@@ -138,8 +153,10 @@
   margin-top: 0.5rem;
   text-align: center;
   font-size: 0.95rem;
-  color: #ef4444; /* error */
+  color: #ef4444;
+  /* error */
 }
+
 /* keep your quick success trick if you like */
 .message:has(+ .btnPrimary) {
   color: #22c55e;
@@ -149,6 +166,7 @@
   line-height: 1;
   transition: opacity 120ms ease;
 }
+
 .btnPrimary[data-state="loading"] .btnLabel,
 .btnPrimary[data-state="success"] .btnLabel {
   opacity: 0;
@@ -200,6 +218,7 @@
   filter: grayscale(0.1) brightness(0.92);
   opacity: 0.9;
 }
+
 .input:disabled {
   opacity: 0.65;
   cursor: not-allowed;

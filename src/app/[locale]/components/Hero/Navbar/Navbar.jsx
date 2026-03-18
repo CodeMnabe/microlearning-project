@@ -31,13 +31,15 @@ export default function MarketingNavbar() {
         <div className={styles.topBar}>
           <LoaderLink href="/" className={styles.brand} onClick={closeMenu}>
             <Image
-              src="/images/logo-03.png"
+              src="/images/Logos/Logo cor e branco.png"
               alt="MyDigitalBot logo"
-              width={28}
-              height={28}
+              width={2047}
+              height={276}
               className={styles.logoMark}
+              priority
+              unoptimized
             />
-            <span className={styles.brandText}>MyDigitalBot</span>
+            {/* <span className={styles.brandText}>MyDigitalBot</span> */}
           </LoaderLink>
 
           <button

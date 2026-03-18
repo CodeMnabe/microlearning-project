@@ -20,6 +20,9 @@ export const metadata = {
   title: "MyDigitalBot",
   description:
     "Send any type of messages to your employees or let them have a chat on WhatsApp with a Virtual Assistant powered by AI",
+  // icons: {
+  //   icon: "/favicon.png"
+  // }
 };
 
 export default async function RootLayout({ children }) {

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useLocale, useTranslations } from "next-intl";
+import Image from "next/image";
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -62,7 +63,15 @@ export default function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.brand}>{t("Auth.brand")}</h1>
+      <LoaderLink href="/" className={styles.brand}>
+        <Image src="/images/Logos/Logo cores.png"
+          alt="MyDigitalBot logo"
+          width={2047}
+          height={276}
+          className={styles.logoMark}
+          priority
+          unoptimized />
+      </LoaderLink>
 
       <form className={styles.card} onSubmit={handleAuth}>
         <h1 className={styles.title}>{t("Auth.login.title")}</h1>
