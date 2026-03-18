@@ -40,9 +40,9 @@ export default function Footer() {
           <div className={styles.brandCol}>
             <div className={styles.brandRow}>
               <Image
-                src="/images/logo-03.png"
+                src="/images/Logos/Logo.png"
                 alt="MyDigitalBot logo"
-                width={28}
+                width={45}
                 height={28}
               />
               <span className={styles.brandName}>{content.brand}</span>
