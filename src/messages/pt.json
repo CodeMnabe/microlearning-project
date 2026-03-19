@@ -632,6 +632,147 @@
     "errorReply": "Erro na resposta",
     "errorApi": "Erro ao comunicar com a API."
   },
+  "Reports": {
+    "eyebrow": "Métricas e relatórios",
+    "title": "Vê adoção, atividade e uso dos assistentes num só sítio",
+    "subtitle": "Esta primeira versão usa apenas dados que a app já guarda hoje: utilizadores, assistentes, threads, canais e mensagens.",
+    "trailing30": "Últimos 30 dias",
+    "updated": "Atualizado",
+    "loading": "A carregar relatório…",
+    "noOrg": "Ainda não foi encontrada uma organização para esta conta.",
+    "sections": {
+      "snapshot": "Resumo",
+      "activity": "Atividade diária",
+      "activitySubtitle": "Os últimos 14 dias ajudam a perceber mudanças de ritmo sem abrir threads individuais.",
+      "channels": "Distribuição por canal",
+      "channelsSubtitle": "Serve para perceber se a adoção está a acontecer mais por WhatsApp ou por Teams.",
+      "assistants": "Uso dos assistentes",
+      "assistantsSubtitle": "Uma leitura rápida de que assistentes estão mesmo atribuídos, ativos e a suportar volume de conversas.",
+      "watchouts": "Sinais para agir",
+      "ideas": "Próximos relatórios que fazem sentido",
+      "ideasSubtitle": "Estes encaixam bem na direção do produto, mas alguns precisam de eventos extra para que os números sejam fiáveis."
+    },
+    "cards": {
+      "users": {
+        "title": "Utilizadores",
+        "hint": "Novos em 30d"
+      },
+      "activeUsers": {
+        "title": "Utilizadores ativos",
+        "hint": "Base ativa em 30d"
+      },
+      "messages": {
+        "title": "Mensagens",
+        "hint": "Entrada / assistente em 30d"
+      },
+      "threads": {
+        "title": "Threads ativas",
+        "hint": "Ativas em 30d / total"
+      },
+      "coverage": {
+        "title": "Cobertura de assistente",
+        "hint": "Utilizadores atribuídos a um assistente"
+      },
+      "whatsapp": {
+        "title": "Cobertura WhatsApp",
+        "hint": "Utilizadores com nº de telemóvel"
+      },
+      "teams": {
+        "title": "Cobertura Teams",
+        "hint": "Utilizadores ligados ao Teams"
+      },
+      "quiet": {
+        "title": "Utilizadores sem atividade",
+        "hint": "Sem thread ainda"
+      }
+    },
+    "charts": {
+      "messages": {
+        "title": "Mensagens por dia",
+        "subtitle": "Últimos 14 dias",
+        "footer": "Total de mensagens no gráfico",
+        "empty": "Ainda não há atividade de mensagens."
+      },
+      "users": {
+        "title": "Novos utilizadores por dia",
+        "subtitle": "Últimos 14 dias",
+        "footer": "Novos utilizadores no gráfico",
+        "empty": "Sem novos utilizadores neste período."
+      }
+    },
+    "channels": {
+      "whatsapp": "WhatsApp",
+      "teams": "Teams",
+      "unknown": "Outro / desconhecido",
+      "reachable": "Utilizadores contactáveis",
+      "activeThreads": "Threads ativas (30d)",
+      "messages": "Mensagens (30d)",
+      "split": "Entrada / assistente",
+      "lastActivity": "Última atividade"
+    },
+    "assistants": {
+      "empty": "Ainda não há assistentes.",
+      "columns": {
+        "assistant": "Assistente",
+        "users": "Utilizadores",
+        "coverage": "Cobertura",
+        "threads": "Threads",
+        "messages30d": "Msgs 30d",
+        "messagesAll": "Msgs total",
+        "lastActivity": "Última atividade"
+      }
+    },
+    "watchouts": {
+      "noIssues": {
+        "title": "Sem bloqueios óbvios neste resumo",
+        "text": "Nada urgente salta à vista nestas métricas base neste momento."
+      },
+      "unassigned": {
+        "title": "Utilizadores sem assistente",
+        "text": "Existem utilizadores sem assistente associado, o que pode partir a experiência de onboarding ou a consistência da automação."
+      },
+      "quiet": {
+        "title": "Utilizadores sem atividade",
+        "text": "Estes utilizadores ainda não têm histórico de threads, por isso ainda não interagiram realmente com o produto."
+      },
+      "idleAssistants": {
+        "title": "Assistentes sem uso",
+        "text": "Alguns assistentes existem mas ainda não têm tráfego de mensagens. Normalmente isto significa rollout incompleto ou pouca descoberta."
+      }
+    },
+    "roadmap": [
+      {
+        "title": "Performance de broadcasts",
+        "label": "Precisa de eventos de campanha",
+        "text": "Entrega, uso de template, taxa de resposta e opt-out por mensagem ou campanha."
+      },
+      {
+        "title": "Resultados de aprendizagem",
+        "label": "Precisa de eventos de lição",
+        "text": "Conclusão, resultados de quizzes e progressão por assistente, equipa ou segmento."
+      },
+      {
+        "title": "Coortes de retenção",
+        "label": "Precisa de lógica de retorno",
+        "text": "Quantos utilizadores que começam na semana 1 continuam ativos nas semanas 2, 4 e 8."
+      },
+      {
+        "title": "Sinais de qualidade da IA",
+        "label": "Precisa de tracking de outcomes",
+        "text": "Taxa de fallback, intenções sem resposta, momentos de handoff e qualidade de resposta ao longo do tempo."
+      }
+    ],
+    "misc": {
+      "last30Users": "utilizadores",
+      "messagesPerActiveUser": "msgs por utilizador ativo",
+      "avgMessagesPerThread": "média msgs / thread",
+      "noData": "Sem dados ainda.",
+      "percentSuffix": "%",
+      "todayRange": "Últimos 14 dias",
+      "multiChannel": "Utilizadores multi-canal",
+      "assistantsCount": "Assistentes"
+    }
+  },
   "Admin": {
     "title": "Admin",
     "newOrg": "Nova organização",
