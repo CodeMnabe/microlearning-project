@@ -35,6 +35,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
     "jsdom": "^26.1.0",
+    "prettier": "^3.8.1",
     "vite-tsconfig-paths": "^6.0.5",
     "vitest": "^4.0.18"
   }

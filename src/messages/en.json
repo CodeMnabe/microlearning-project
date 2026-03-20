@@ -625,7 +625,147 @@
     "errorReply": "Error in reply",
     "errorApi": "Error communicating with the API."
   },
-
+  "Reports": {
+    "eyebrow": "Metrics and reports",
+    "title": "See adoption, activity, and assistant usage in one place",
+    "subtitle": "This first version is grounded in the data the app already stores today: users, assistants, threads, channels, and messages.",
+    "trailing30": "Trailing 30 days",
+    "updated": "Updated",
+    "loading": "Loading report…",
+    "noOrg": "We could not find an organization for this account yet.",
+    "sections": {
+      "snapshot": "Snapshot",
+      "activity": "Daily activity",
+      "activitySubtitle": "The last 14 days help you spot momentum changes quickly without opening individual user threads.",
+      "channels": "Channel breakdown",
+      "channelsSubtitle": "Use this to see whether adoption is happening more through WhatsApp or Teams.",
+      "assistants": "Assistant usage",
+      "assistantsSubtitle": "A quick read on which assistants are actually assigned, active, and carrying conversation volume.",
+      "watchouts": "Signals to act on",
+      "ideas": "Good next reports to add",
+      "ideasSubtitle": "These fit the product direction well, but some of them need extra event tracking before the numbers become trustworthy."
+    },
+    "cards": {
+      "users": {
+        "title": "Users",
+        "hint": "New in 30d"
+      },
+      "activeUsers": {
+        "title": "Active users",
+        "hint": "User base active in 30d"
+      },
+      "messages": {
+        "title": "Messages",
+        "hint": "Inbound / assistant in 30d"
+      },
+      "threads": {
+        "title": "Active threads",
+        "hint": "Active in 30d / total"
+      },
+      "coverage": {
+        "title": "Assistant coverage",
+        "hint": "Users assigned to an assistant"
+      },
+      "whatsapp": {
+        "title": "WhatsApp reach",
+        "hint": "Users with a phone number"
+      },
+      "teams": {
+        "title": "Teams reach",
+        "hint": "Users linked to Teams"
+      },
+      "quiet": {
+        "title": "Quiet users",
+        "hint": "Users with no thread yet"
+      }
+    },
+    "charts": {
+      "messages": {
+        "title": "Messages per day",
+        "subtitle": "Last 14 days",
+        "footer": "Total messages in chart",
+        "empty": "No message activity yet."
+      },
+      "users": {
+        "title": "New users per day",
+        "subtitle": "Last 14 days",
+        "footer": "New users in chart",
+        "empty": "No new users in this period."
+      }
+    },
+    "channels": {
+      "whatsapp": "WhatsApp",
+      "teams": "Teams",
+      "unknown": "Other / unknown",
+      "reachable": "Reachable users",
+      "activeThreads": "Active threads (30d)",
+      "messages": "Messages (30d)",
+      "split": "Inbound / assistant",
+      "lastActivity": "Last activity"
+    },
+    "assistants": {
+      "empty": "No assistants yet.",
+      "columns": {
+        "assistant": "Assistant",
+        "users": "Users",
+        "coverage": "Coverage",
+        "threads": "Threads",
+        "messages30d": "Msgs 30d",
+        "messagesAll": "All msgs",
+        "lastActivity": "Last activity"
+      }
+    },
+    "watchouts": {
+      "noIssues": {
+        "title": "No obvious blockers in this snapshot",
+        "text": "Nothing urgent stands out from these baseline metrics right now."
+      },
+      "unassigned": {
+        "title": "Unassigned users",
+        "text": "Users exist without an assistant attached, which can break onboarding or automation consistency."
+      },
+      "quiet": {
+        "title": "Users with no activity",
+        "text": "These users have no thread history yet, so they have not actually engaged with the product."
+      },
+      "idleAssistants": {
+        "title": "Idle assistants",
+        "text": "Some assistants exist but still have no message traffic. This usually means rollout is incomplete or discoverability is weak."
+      }
+    },
+    "roadmap": [
+      {
+        "title": "Broadcast performance",
+        "label": "Needs campaign events",
+        "text": "Delivery, template usage, reply rate, and opt-out rate by message or campaign."
+      },
+      {
+        "title": "Learning outcomes",
+        "label": "Needs lesson events",
+        "text": "Completion, quiz scores, and progression by assistant, team, or user segment."
+      },
+      {
+        "title": "Retention cohorts",
+        "label": "Needs return-visit logic",
+        "text": "How many users who start in week 1 are still active in weeks 2, 4, and 8."
+      },
+      {
+        "title": "AI quality signals",
+        "label": "Needs outcome tracking",
+        "text": "Fallback rate, unanswered intents, handoff moments, and response quality over time."
+      }
+    ],
+    "misc": {
+      "last30Users": "users",
+      "messagesPerActiveUser": "msgs per active user",
+      "avgMessagesPerThread": "avg msgs / thread",
+      "noData": "No data yet.",
+      "percentSuffix": "%",
+      "todayRange": "Last 14 days",
+      "multiChannel": "Multi-channel users",
+      "assistantsCount": "Assistants"
+    }
+  },
   "Admin": {
     "title": "Admin",
     "newOrg": "New organization",
