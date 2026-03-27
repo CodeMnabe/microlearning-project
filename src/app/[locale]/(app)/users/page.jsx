@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import styles from "./users.module.css";
 import CreateUserModal from "./CreateUser";
+import ImportUsersModal from "./ImportUsersModal/ImportUsersModal";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import ManageTagsModal from "./ManageTagsModal/ManageTagsModal";
 import EditUserModal from "./EditUserModal";
@@ -17,6 +18,8 @@ import {
   Plus,
   Tag,
   Filter,
+  Upload,
+  ChevronDown,
 } from "lucide-react";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useAuth } from "@/app/AuthContext.jsx";
@@ -45,20 +48,31 @@ export default function UsersPage() {
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [selectedAssistantIds, setSelectedAssistantIds] = useState([]);
 
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const createMenuRef = useRef(null);
+
   // UI state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isTagsOpen, setIsTagsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
   // NEW: view modal state
   const [viewOpen, setViewOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   const confirm = useConfirm();
 
   // how many tags to show before "+n"
   const MAX_TAGS = 6;
+
+  const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
 
   // list | grid (persisted)
   const [view, setView] = useState(() => {
@@ -99,19 +113,49 @@ export default function UsersPage() {
     })();
   }, [orgId]);
 
+  useEffect(() => {
+    if (!createMenuOpen) return;
+
+    function handleClickOutside(e) {
+      if (!createMenuRef.current?.contains(e.target)) {
+        setCreateMenuOpen(false);
+      }
+    }
+
+    function handleEsc(e) {
+      if (e.key === "Escape") setCreateMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [createMenuOpen]);
+
   const refreshUsers = useCallback(async () => {
-    startLoading();
     if (!orgId) return;
-    const res = await fetch(`/api/users?orgId=${orgId}`);
-    const data = await res.json();
-    setUsers(data);
-    stopLoading();
-  }, [orgId, startLoading, stopLoading]);
+
+    startLoading();
+    try {
+      const res = await fetch(
+        `/api/users?orgId=${orgId}&page=${page}&pageSize=${pageSize}`,
+      );
+      const data = await res.json();
+
+      setUsers(Array.isArray(data?.items) ? data.items : []);
+      setTotalUsers(Number(data?.total || 0));
+    } finally {
+      stopLoading();
+    }
+  }, [orgId, page, pageSize, startLoading, stopLoading]);
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
-    refreshUsers().finally(stopLoading);
-  }, [authLoading, orgLoading, orgId, refreshUsers, stopLoading]);
+    refreshUsers();
+  }, [authLoading, orgLoading, orgId, refreshUsers]);
 
   const normalized = useMemo(
     () =>
@@ -307,14 +351,50 @@ export default function UsersPage() {
           >
             <Tag size={16} /> <span>{translation("Users.manageTags")}</span>
           </button>
-          <button
-            type="button"
-            className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
-            onClick={() => setIsCreateOpen(true)}
-            title={translation("Users.newUser")}
-          >
-            <Plus size={16} /> <span>{translation("Users.newUser")}</span>
-          </button>
+          <div className={styles.createMenuWrap} ref={createMenuRef}>
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+              onClick={() => setCreateMenuOpen((v) => !v)}
+              title={translation("Users.newUser")}
+              aria-haspopup="menu"
+              aria-expanded={createMenuOpen}
+            >
+              <Plus size={16} />
+              <span>{translation("Users.newUser")}</span>
+              <ChevronDown size={16} />
+            </button>
+
+            {createMenuOpen && (
+              <div className={styles.createMenu} role="menu">
+                <button
+                  type="button"
+                  className={styles.createMenuItem}
+                  role="menuitem"
+                  onClick={() => {
+                    setCreateMenuOpen(false);
+                    setIsCreateOpen(true);
+                  }}
+                >
+                  <Plus size={16} />
+                  <span>{translation("Users.newUser")}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.createMenuItem}
+                  role="menuitem"
+                  onClick={() => {
+                    setCreateMenuOpen(false);
+                    setIsImportOpen(true);
+                  }}
+                >
+                  <Upload size={16} />
+                  <span>Import CSV</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {selectedCount > 0 && (
@@ -379,164 +459,202 @@ export default function UsersPage() {
 
       {/* LIST VIEW */}
       {view === "list" && (
-        <div className={styles.table}>
-          <div className={`${styles.row} ${styles.header}`}>
-            <div className={styles.cellChk}>
-              <label className={styles.chkWrap}>
-                <input
-                  type="checkbox"
-                  checked={allChecked}
-                  onChange={toggleAll}
-                />
-                <span className={styles.chkFake} />
-              </label>
-            </div>
-            <div className={styles.cellHead}>
-              {translation("Users.list.name")}
-            </div>
-            <div className={styles.cellHead}>
-              {translation("Users.list.phone")}
-            </div>
-            <div className={styles.cellHead}>
-              {translation("Users.list.tags")}
-            </div>
-            <div className={styles.cellHead}>
-              {translation("Users.list.assistant")}
-            </div>
-            <div className={styles.cellHeadRight} />
-          </div>
-
-          {visible.map((u, i) => {
-            const all = Array.isArray(u.tags) ? u.tags : [];
-            const shown = all.slice(0, MAX_TAGS);
-            const extra = all.length - shown.length;
-
-            return (
-              <div
-                key={u.id}
-                className={`${styles.row} ${i % 2 ? styles.rowAlt : ""}`}
-              >
-                {/* checkbox */}
-                <div className={styles.cellChk}>
-                  <label className={styles.chkWrap}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(u.id)}
-                      onChange={() => toggleOne(u.id)}
-                    />
-                    <span className={styles.chkFake} />
-                  </label>
-                </div>
-
-                {/* name */}
-                <div
-                  className={styles.cellName}
-                  role="button"
-                  onClick={() => openViewFor(u)}
-                >
-                  <div className={styles.avatar}>{initial(u.name)}</div>
-                  <div className={styles.nameBlock}>
-                    <div className={styles.name}>{u.name}</div>
-                    <div className={styles.subline}>{u.email || ""}</div>
-                  </div>
-                </div>
-
-                {/* phone */}
-                <div className={styles.cellPhone}>
-                  {u.phoneNational || u.phone_national || u.phone || "—"}
-                </div>
-
-                {/* tags */}
-                <div className={styles.cellTags}>
-                  {shown.map((t) => (
-                    <span key={t} className={styles.chip}>
-                      {t}
-                    </span>
-                  ))}
-                  {extra > 0 && (
-                    <span className={`${styles.chip} ${styles.chipDark}`}>
-                      +{extra}
-                    </span>
-                  )}
-                </div>
-
-                {/* assistant */}
-                <div className={styles.cellAssistant}>
-                  <PillSelect
-                    value={u.assistantId}
-                    options={assistantsList.map((a) => ({
-                      value: a.id,
-                      label: a.name,
-                    }))}
-                    onChange={async (newAssistantId) => {
-                      try {
-                        const res = await fetch("/api/users", {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            id: u.id,
-                            assistantId: newAssistantId,
-                          }),
-                        });
-                        if (!res.ok) {
-                          const err = await res.json();
-                          console.error(
-                            "Falha ao atualizar assistente:",
-                            err.error,
-                          );
-                        } else {
-                          await refreshUsers();
-                        }
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
+        <div className={styles.tableCard}>
+          <div className={styles.table}>
+            <div className={`${styles.row} ${styles.header}`}>
+              <div className={styles.cellChk}>
+                <label className={styles.chkWrap}>
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={toggleAll}
                   />
-                </div>
+                  <span className={styles.chkFake} />
+                </label>
+              </div>
+              <div className={styles.cellHead}>
+                {translation("Users.list.name")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("Users.list.phone")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("Users.list.tags")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("Users.list.assistant")}
+              </div>
+              <div className={styles.cellHeadRight} />
+            </div>
 
-                {/* tail actions */}
-                <div className={styles.cellKebab}>
-                  <button
-                    className={`${styles.iconBtn} ${styles.kebabDefault}`}
-                    aria-label={translation("Users.row.more")}
-                    onClick={() => openEditFor(u)}
-                  >
-                    <MoreHorizontal size={18} />
-                  </button>
+            {visible.map((u, i) => {
+              const all = Array.isArray(u.tags) ? u.tags : [];
+              const shown = all.slice(0, MAX_TAGS);
+              const extra = all.length - shown.length;
+
+              return (
+                <div
+                  key={u.id}
+                  className={`${styles.row} ${i % 2 ? styles.rowAlt : ""}`}
+                >
+                  <div className={styles.cellChk}>
+                    <label className={styles.chkWrap}>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(u.id)}
+                        onChange={() => toggleOne(u.id)}
+                      />
+                      <span className={styles.chkFake} />
+                    </label>
+                  </div>
 
                   <div
-                    className={styles.rowActions}
-                    aria-label={translation("Common.actions")}
+                    className={styles.cellName}
+                    role="button"
+                    onClick={() => openViewFor(u)}
                   >
+                    <div className={styles.avatar}>{initial(u.name)}</div>
+                    <div className={styles.nameBlock}>
+                      <div className={styles.name}>{u.name}</div>
+                      <div className={styles.subline}>{u.email || ""}</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.cellPhone}>
+                    {u.phoneNational || u.phone || "—"}
+                  </div>
+
+                  <div className={styles.cellTags}>
+                    {shown.map((t) => (
+                      <span key={t} className={styles.chip}>
+                        {t}
+                      </span>
+                    ))}
+                    {extra > 0 && (
+                      <span className={`${styles.chip} ${styles.chipDark}`}>
+                        +{extra}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.cellAssistant}>
+                    <PillSelect
+                      value={u.assistantId}
+                      options={assistantsList.map((a) => ({
+                        value: a.id,
+                        label: a.name,
+                      }))}
+                      onChange={async (newAssistantId) => {
+                        try {
+                          const res = await fetch("/api/users", {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              id: u.id,
+                              assistantId: newAssistantId,
+                            }),
+                          });
+
+                          if (!res.ok) {
+                            const err = await res.json();
+                            console.error(
+                              "Falha ao atualizar assistente:",
+                              err.error,
+                            );
+                          } else {
+                            await refreshUsers();
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className={styles.cellKebab}>
                     <button
-                      className={styles.rowActBtn}
-                      onClick={() => openViewFor(u)} // ← NEW
-                      title={translation("Users.row.view")}
-                    >
-                      <Eye size={16} />{" "}
-                      <span>{translation("Users.row.view")}</span>
-                    </button>
-                    <button
-                      className={styles.rowActBtn}
+                      className={`${styles.iconBtn} ${styles.kebabDefault}`}
+                      aria-label={translation("Users.row.more")}
                       onClick={() => openEditFor(u)}
-                      title={translation("Users.row.edit")}
                     >
-                      <Pencil size={16} />{" "}
-                      <span>{translation("Users.row.edit")}</span>
+                      <MoreHorizontal size={18} />
                     </button>
-                    <button
-                      className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
-                      onClick={() => deleteUserById(u)}
-                      title={translation("Users.row.delete")}
+
+                    <div
+                      className={styles.rowActions}
+                      aria-label={translation("Common.actions")}
                     >
-                      <Trash2 size={16} />{" "}
-                      <span>{translation("Users.row.delete")}</span>
-                    </button>
+                      <button
+                        className={styles.rowActBtn}
+                        onClick={() => openViewFor(u)}
+                        title={translation("Users.row.view")}
+                      >
+                        <Eye size={16} />{" "}
+                        <span>{translation("Users.row.view")}</span>
+                      </button>
+                      <button
+                        className={styles.rowActBtn}
+                        onClick={() => openEditFor(u)}
+                        title={translation("Users.row.edit")}
+                      >
+                        <Pencil size={16} />{" "}
+                        <span>{translation("Users.row.edit")}</span>
+                      </button>
+                      <button
+                        className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
+                        onClick={() => deleteUserById(u)}
+                        title={translation("Users.row.delete")}
+                      >
+                        <Trash2 size={16} />{" "}
+                        <span>{translation("Users.row.delete")}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          <div className={styles.pagination}>
+            <div className={styles.paginationLeft}>
+              <span>
+                Page {page} of {totalPages} · {totalUsers} users
+              </span>
+            </div>
+
+            <div className={styles.paginationRight}>
+              <PillSelect
+                value={pageSize}
+                options={[
+                  { value: 50, label: "50 / page" },
+                  { value: 100, label: "100 / page" },
+                  { value: 200, label: "200 / page" },
+                ]}
+                onChange={(newValue) => {
+                  setPageSize(Number(newValue));
+                  setPage(1);
+                }}
+              />
+
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -564,6 +682,17 @@ export default function UsersPage() {
         onCreateUser={handleCreateUser}
         assistants={assistantsList}
         defaultPhoneCode={defaultPhoneCode}
+      />
+
+      <ImportUsersModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        orgId={orgId}
+        assistants={assistantsList}
+        defaultPhoneCode={defaultPhoneCode}
+        onImported={async () => {
+          await refreshUsers();
+        }}
       />
 
       {orgId && (

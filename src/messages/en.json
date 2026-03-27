@@ -45,7 +45,8 @@
         "company": "Company",
         "blog": "Blog",
         "login": "Log in",
-        "book": "Book a demo"
+        "book": "Book a demo",
+        "dashboard": "Go to dashboard"
       }
     },
 

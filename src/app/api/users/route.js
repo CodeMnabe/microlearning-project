@@ -9,13 +9,20 @@ import {
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = Number(searchParams.get("orgId"));
 
-    if (!id)
+    const orgId = Number(searchParams.get("orgId"));
+    const page = Math.max(1, Number(searchParams.get("page") || 1));
+    const pageSize = Math.min(
+      200,
+      Math.max(1, Number(searchParams.get("pageSize") || 100)),
+    );
+
+    if (!orgId) {
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+    }
 
-    const users = await getUsersInOrg(Number(id));
-    return NextResponse.json(users);
+    const result = await getUsersInOrg(orgId, { page, pageSize });
+    return NextResponse.json(result);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -614,14 +614,34 @@ async function handleUserInstallation(activity) {
     return;
   }
 
-  await upsertUserTeamsConversation({
-    userId: user.id,
-    teamsUserId,
-    conversationId,
-    serviceUrl,
-    tenantId,
-    conversationType,
+  await upsertTeamsInstallation({
+    organization_id: org.id,
+    assistant_id: user.assistant_id,
+    scope: "user",
+    user_id: user.id,
+    tenant_id: tenantId,
+    service_url: serviceUrl,
+    conversation_id: conversationId,
+    conversation_type: conversationType,
+    teams_user_id: teamsUserId,
+    last_seen_at: new Date().toISOString(),
   });
+
+  try {
+    if (user.teams_from_id !== teamsUserId) {
+      await updateUser(user.id, { teamsFromId: teamsUserId });
+    }
+  } catch (err) {
+    console.error(
+      "[TEAMS] Failed to sync teamsFromId after installation upsert",
+      {
+        userId: user.id,
+        teamsUserId,
+        installationId: installation?.id,
+        err,
+      },
+    );
+  }
 
   console.log("[TEAMS install] Conversation linked:", {
     userId: user.id,
@@ -637,7 +657,7 @@ async function handleUserInstallation(activity) {
 }
 
 async function handleGroupInstallation(activity) {
-  console.log(activity);
+  // console.log(activity);
   const tenantId = GetTenantId(activity);
   const serviceUrl = activity?.serviceUrl || null;
   const conversationId = activity?.conversation?.id || null;
@@ -667,7 +687,7 @@ async function handleGroupInstallation(activity) {
     return;
   }
 
-  const defaultAssistant = getFirstAssistantInOrg(org.id);
+  const defaultAssistant = await getFirstAssistantInOrg(org.id);
 
   await upsertTeamsInstallation({
     organization_id: org.id,
@@ -736,7 +756,7 @@ export async function POST(req) {
   }
 
   if (activity.type === "installationUpdate" && activity.action === "remove") {
-    console.log("[UNINSTALL] ", activity);
+    // console.log("[UNINSTALL] ", activity);
   }
 
   return NextResponse.json({ ok: true }, { status: 200 });

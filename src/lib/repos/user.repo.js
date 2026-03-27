@@ -299,33 +299,27 @@ export async function getUserByEmail(email, tenant) {
   return matches[0].id;
 }
 
-export async function getUsersInOrg(orgId) {
-  const { data, error } = await supabase
+export async function getUsersInOrg(orgId, { page = 1, pageSize = 100 } = {}) {
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
     .from("user")
     .select(
-      `
-      id,
-      name,
-      phone_number,
-      phone_country_code,
-      phone_national,
-      email,
-      assistant_id,
-      teams_aad_object_id,
-      teams_from_id,
-      created_at,
-      user_tag:user_tag (
+      `id,name,phone_number,phone_country_code,phone_national,email,assistant_id,teams_aad_object_id,teams_from_id,created_at,user_tag:user_tag (
         tag:tags ( id, name, slug, color )
-      )
-    `,
+      )`,
+      { count: "exact" },
     )
     .eq("organization_id", orgId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (error) throw error;
 
-  return (data || []).map((u) => {
+  const items = (data || []).map((u) => {
     const tags = (u.user_tag || []).map((ut) => ut.tag).filter(Boolean);
+
     return {
       id: u.id,
       name: u.name,
@@ -342,6 +336,13 @@ export async function getUsersInOrg(orgId) {
       tag_names: tags.map((t) => t.name),
     };
   });
+
+  return {
+    items,
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
 }
 
 export async function getUserByAadObjectId(aadObjectId) {

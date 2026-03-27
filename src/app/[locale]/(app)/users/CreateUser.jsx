@@ -94,7 +94,7 @@ export default function CreateUserModal({
       onAnimationEnd={(e) => {
         if (!isOpen && e.target === e.currentTarget) setRender(false);
       }}
-      onClick={(e) => {
+      onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >

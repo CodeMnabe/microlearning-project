@@ -85,20 +85,20 @@ export default function QuickActionsBar({
     () =>
       (assistants || [])
         .filter((x) =>
-          x.name?.toLowerCase().includes(aSearch.toLowerCase().trim())
+          x.name?.toLowerCase().includes(aSearch.toLowerCase().trim()),
         )
         .map((x) => ({ value: x.id, label: x.name })),
-    [assistants, aSearch]
+    [assistants, aSearch],
   );
 
   const tagOptions = useMemo(
     () =>
       (tags || [])
         .filter((x) =>
-          x.name?.toLowerCase().includes(tagSearch.toLowerCase().trim())
+          x.name?.toLowerCase().includes(tagSearch.toLowerCase().trim()),
         )
         .map((x) => ({ value: x.id, label: x.name })),
-    [tags, tagSearch]
+    [tags, tagSearch],
   );
 
   async function bulkSetAssistant() {
@@ -129,6 +129,7 @@ export default function QuickActionsBar({
 
   async function bulkDelete() {
     if (!canAct) return;
+
     const ok = await confirm({
       title: t("QuickActions.confirmUserDeletion.title", {
         number: selectedIds.length,
@@ -138,13 +139,26 @@ export default function QuickActionsBar({
       cancelText: t("QuickActions.confirmUserDeletion.cancel"),
       tone: "danger",
     });
+
     if (!ok) return;
+
     const res = await fetch("/api/users/bulk", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: selectedIds, orgId }),
     });
-    if (!res.ok) console.error(await res.text());
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error(data.error || data);
+      return;
+    }
+
+    if (data.failedCount > 0) {
+      console.error("Some users failed to delete:", data.failed);
+    }
+
     await onDone?.();
     clearSelection?.();
   }
@@ -304,7 +318,7 @@ export default function QuickActionsBar({
                             setTagIds((prev) =>
                               e.target.checked
                                 ? [...prev, opt.value]
-                                : prev.filter((id) => id !== opt.value)
+                                : prev.filter((id) => id !== opt.value),
                             );
                           }}
                         />

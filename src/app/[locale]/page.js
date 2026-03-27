@@ -17,7 +17,7 @@ export default async function LocaleIndex({ params }) {
   const { locale } = await params;
   const c = await cookies();
   const isAuthed = !!(c.get("sb-access-token") || c.get("sb:token"));
-  if (isAuthed) redirect(`/${locale}/users`);
+  // if (isAuthed) redirect(`/${locale}/users`);
 
   return (
     <main>
