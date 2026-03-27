@@ -7,11 +7,14 @@ const sb = createServiceClient(
 );
 
 export async function upsertTeamsInstallation(row) {
+  console.log("It reached here");
   const { data, error } = await sb
     .from("teams_installation")
     .upsert(row, { onConflict: "tenant_id,conversation_id" })
     .select()
     .single();
+
+  console.log(data);
 
   if (error) throw error;
   return data;

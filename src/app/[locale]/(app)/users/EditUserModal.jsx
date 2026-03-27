@@ -189,7 +189,7 @@ export default function EditUserModal({
       onAnimationEnd={(e) => {
         if (!open && e.target === e.currentTarget) setRender(false);
       }}
-      onClick={(e) => {
+      onPointerDown={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { useState, useMemo, useEffect } from "react";
 import LoaderLink from "../../TopLoader/LoaderLink";
 import styles from "./navbar.module.css";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
+import createClient from "@/utils/supabase/client";
 
 const NAV = [
   { href: "/learn", key: "learn" },
@@ -20,6 +20,34 @@ const NAV = [
 export default function MarketingNavbar() {
   const translation = useTranslations("LandingPage.Hero.Nav");
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setIsAuthed(!!session);
+      }
+    }
+
+    checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session);
+    });
+
+    return () => {
+      mounted: (false, subscription.unsubscribe());
+    };
+  }, [supabase]);
 
   function closeMenu() {
     setIsOpen(false);
@@ -72,20 +100,34 @@ export default function MarketingNavbar() {
           </div>
 
           <div className={styles.navActions}>
-            <LoaderLink
-              href="/login"
-              className={styles.loginLink}
-              onClick={closeMenu}
-            >
-              {translation("login")}
-            </LoaderLink>
-            <LoaderLink
-              href="/contact"
-              className={styles.signupBtn}
-              onClick={closeMenu}
-            >
-              {translation("book")}
-            </LoaderLink>
+            {isAuthed === null ? (
+              <div className={styles.actionsPlaceholder} />
+            ) : isAuthed ? (
+              <LoaderLink
+                href="/users"
+                className={styles.userPill}
+                onClick={closeMenu}
+              >
+                {translation("dashboard")}
+              </LoaderLink>
+            ) : (
+              <>
+                <LoaderLink
+                  href="/login"
+                  className={styles.loginLink}
+                  onClick={closeMenu}
+                >
+                  {translation("login")}
+                </LoaderLink>
+                <LoaderLink
+                  href="/contact"
+                  className={styles.signupBtn}
+                  onClick={closeMenu}
+                >
+                  {translation("book")}
+                </LoaderLink>
+              </>
+            )}
           </div>
         </div>
       </nav>

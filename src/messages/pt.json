@@ -45,7 +45,8 @@
         "company": "Empresa",
         "blog": "Blog",
         "login": "Entrar",
-        "book": "Pedir demonstração"
+        "book": "Pedir demonstração",
+        "dashboard": "Ir para o painel"
       }
     },
 
