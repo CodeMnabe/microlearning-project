@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import LoaderLink from "../../(marketing)/components/TopLoader/LoaderLinkr/LoaderLink";
+import LoaderLink from "../../(marketing)/components/TopLoader/LoaderLink";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "./login.module.css";
