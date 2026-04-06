@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import styles from "./[locale].module.css";
-import LanguageSwitch from "../components/TopBar/LanguageSwitch";
+import styles from "../[locale].module.css";
+import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 
 import Hero from "./components/Hero/Hero.jsx";
 import SocialProof from "./components/SocialProof/SocialProof";

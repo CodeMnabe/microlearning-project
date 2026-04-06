@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import LoaderLink from "../components/TopLoader/LoaderLink";
-import MarketingNavbar from "../components/Hero/Navbar/Navbar";
+import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
 import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 import Footer from "../components/Footer/Footer";
 import ContactForm from "./ContactForm.jsx";
@@ -54,8 +54,8 @@ export default function ContactPage() {
                 <p className={styles.formEyebrow}>{t("form.eyebrow")}</p>
                 <h2 className={styles.formTitle}>{t("form.title")}</h2>
                 <div className={styles.formText}>
-                  <p >{t("form.subhead")}</p>
-                  <p >{t("form.secondSubhead")}</p>
+                  <p>{t("form.subhead")}</p>
+                  <p>{t("form.secondSubhead")}</p>
                 </div>
               </div>
 

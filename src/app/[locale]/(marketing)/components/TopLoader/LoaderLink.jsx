@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { startTopLoader } from "../TopLoader/TopLoader";
+import { startTopLoader } from "./TopLoader";
 
 export default function LoaderLink({ onClick, href, ...props }) {
   const pathname = usePathname();

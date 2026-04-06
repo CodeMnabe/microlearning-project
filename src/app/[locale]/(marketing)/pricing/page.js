@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import MarketingNavbar from "../components/Hero/Navbar/Navbar";
+import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
 import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 import Footer from "../components/Footer/Footer";
 import PricingExplorer from "./PricingExplorer.jsx";
