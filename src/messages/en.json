@@ -146,14 +146,18 @@
 
     "Footer": {
       "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
-      "cols": { "product": "Product" },
+      "cols": { "product": "Product", "legal": "Legal" },
       "links": {
         "payments": "Integrations",
         "auth": "Security",
         "crm": "AI Coach",
         "email": "Analytics",
         "help": "Help",
-        "pricing": "Pricing"
+        "pricing": "Pricing",
+        "terms": "Terms of Service",
+        "dpa": "Data Processing Agreement",
+        "privacy": "Privacy Policy",
+        "security": "Security & Providers"
       },
       "badges": { "gdpr": "GDPR compliant", "status": "Status" }
     },
@@ -344,6 +348,335 @@
       "text": "Keep this as your closing section with one direct CTA and one lower-friction secondary option.",
       "primary": "Book a conversation",
       "secondary": "Back to homepage"
+    }
+  },
+  "Public": {
+    "Dpa": {
+      "Title": "Data Processing Agreement (DPA)",
+      "LastUpdated": "Last updated:",
+      "Subtitle": {
+        "1": "Parties",
+        "2": "Purpose and Scope",
+        "3": "Nature, Purpose and Duration of Processing",
+        "4": "Types of Personal Data",
+        "5": "Categories of Data Subjects",
+        "6": "Processor Obligations",
+        "7": "Controller Obligations",
+        "8": "Subprocessing (Subprocessors)",
+        "9": "International Data Transfers",
+        "10": "Security of Processing",
+        "11": "Rights of Data Subjects",
+        "12": "Notification of Security Incidents",
+        "13": "Deletion or Return of Data",
+        "14": "Audit and Information",
+        "15": "Duration",
+        "16": "Applicable Law",
+        "17": "Contacts"
+      },
+      "Paragraphs": {
+        "1-1": "This Data Processing Agreement ('DPA') is entered into between:",
+        "1-2": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company>, tax identification number 514226226, with registered office at Rua Eng.º Frederico Ulrich, 2650, 4470-605 Maia, Portugal (hereinafter the 'Processor'), and the client entity using the MyDigitalBot service (hereinafter the 'Controller').",
+        "2-1": "This DPA governs the processing of personal data carried out by the Processor on behalf of the Controller in the context of the use of the MyDigitalBot platform.",
+        "2-2": "The Processor undertakes to process personal data only as necessary for the provision of the service and in accordance with the Controller's instructions.",
+        "3-1": "<title>Nature:</title> automated processing of personal data.",
+        "3-2": "<title>Purpose:</title> communication, message processing, and conversational automation.",
+        "3-3": "<title>Duration:</title> for the duration of the contractual relationship between the parties.",
+        "4-1": "The personal data processed may include:",
+        "6-1": "The Processor undertakes to:",
+        "7-1": "The Controller undertakes to:",
+        "8-1": "The Processor may engage third-party service providers (subprocessors) for the provision of the service.",
+        "8-2": "These include, by way of example:",
+        "8-3": "The Processor seeks to select subprocessors that provide adequate guarantees regarding data protection.",
+        "9-1": "Personal data may be processed outside the European Economic Area (EEA), namely when international subprocessors are used.",
+        "9-2": "The Processor seeks to ensure that such processing is carried out with adequate levels of data protection.",
+        "10-1": "The Processor implements appropriate technical and organizational measures to protect personal data, including:",
+        "11-1": "The Processor shall provide reasonable assistance to the Controller in responding to requests from data subjects, namely requests for access, rectification, or erasure.",
+        "12-1": "The Processor shall notify the Controller without undue delay after becoming aware of a relevant personal data breach.",
+        "13-1": "Upon request by the Controller or termination of the service, the data may be deleted or returned, unless otherwise required by law.",
+        "14-1": "The Controller may request reasonable information about the security measures implemented by the Processor.",
+        "15-1": "This DPA shall remain in force for as long as the Processor processes personal data on behalf of the Controller.",
+        "16-1": "This agreement is governed by Portuguese law.",
+        "17-1": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company><br></br>Email: <email>geral@digik.pt</email><br></br>Website: <website>www.digik.pt</website>"
+      },
+      "Lists": {
+        "4-1": {
+          "1": "identification data (name, email);",
+          "2": "user identifiers (e.g. Microsoft Teams, WhatsApp);",
+          "3": "message content and interactions;",
+          "4": "metadata (IDs, timestamps, statuses);",
+          "5": "technical data (logs, IP, errors)."
+        },
+        "5-1": {
+          "1": "employees;",
+          "2": "customers;",
+          "3": "students;",
+          "4": "end users of client organizations."
+        },
+        "6-1": {
+          "1": "process the data solely for the purpose of providing the service;",
+          "2": "not use the data for its own purposes;",
+          "3": "ensure the confidentiality of persons authorized to process the data;",
+          "4": "implement appropriate technical and organizational measures to protect the data;",
+          "5": "provide reasonable assistance to the Controller in complying with the GDPR;",
+          "6": "notify the Controller without undue delay in the event of a relevant security incident."
+        },
+        "7-1": {
+          "1": "ensure that it has a legal basis for the processing of the data;",
+          "2": "inform data subjects about the processing;",
+          "3": "use the platform in compliance with applicable law;",
+          "4": "not input or process data unlawfully."
+        },
+        "8-2": {
+          "1": "Microsoft (Teams, Azure);",
+          "2": "Vercel (application hosting);",
+          "3": "Supabase (database and storage);",
+          "4": "OpenAI;",
+          "5": "MessageBird and Meta (WhatsApp);",
+          "6": "Cloudflare (infrastructure and security)."
+        },
+        "10-1": {
+          "1": "protection of communications (e.g. HTTPS/TLS);",
+          "2": "access control;",
+          "3": "monitoring and event logging;",
+          "4": "data segregation between organizations (multi-tenant)."
+        }
+      }
+    },
+    "TermsOfService": {
+      "Title": "Terms of Service",
+      "LastUpdated": "Last updated:",
+      "Subtitle": {
+        "1": "Parties",
+        "2": "Scope of the Service",
+        "3": "Access and Use",
+        "4": "Acceptable Use",
+        "5": "User Content and Responsibility",
+        "6": "Automated Assistants",
+        "7": "Messages and Communications",
+        "8": "Service Availability",
+        "9": "Limitation of Liability",
+        "10": "Privacy and Personal Data",
+        "11": "Changes to the Terms",
+        "12": "Governing Law and Jurisdiction",
+        "13": "Contacts"
+      },
+      "Paragraphs": {
+        "1-1": "These Terms of Use govern access to and use of MyDigitalBot, a solution provided by Gazelle Talent – Consultoria Empresarial, Lda, which enables communication between organizations and users through digital channels and interaction with automated assistants.",
+        "2-1": "MyDigitalBot operates through communication channels used by organizations, including, by way of example, platforms such as Microsoft Teams, WhatsApp, or other integrated channels.",
+        "2-2": "The application allows:",
+        "3-1": "Access to MyDigitalBot is provided within the context of an organization and depends on the settings, permissions, and licenses defined by that organization and by the services and platforms used (e.g. Microsoft 365 or other equivalent services).",
+        "3-2": "The user undertakes to use the service responsibly and in compliance with the law.",
+        "4-1": "It is expressly prohibited to:",
+        "5-1": "The user is responsible for the content they send or share through MyDigitalBot.",
+        "5-2": "By using the service, the user grants Gazelle Talent – Consultoria Empresarial, Lda a limited, non-exclusive, and temporary license to process such content, strictly to the extent necessary to operate, maintain, and improve the service.",
+        "6-1": "MyDigitalBot may include features based on artificial intelligence, enabling the generation of automatic responses.",
+        "6-2": "The generated responses may not be fully accurate or complete and should therefore not be considered professional or binding advice.",
+        "7-1": "The application may send messages, notifications, or campaigns configured by the organization using the service.",
+        "7-2": "The user may stop receiving communications by uninstalling the application or through the mechanisms made available by the organization or by the channel used.",
+        "8-1": "MyDigitalBot is provided 'as is', and interruptions, limitations, or failures may occur, namely due to technical reasons, maintenance, or dependence on third-party services.",
+        "8-2": "Gazelle Talent – Consultoria Empresarial, Lda does not guarantee that the service will be continuously available or error-free.",
+        "9-1": "To the fullest extent permitted by law, Gazelle Talent – Consultoria Empresarial, Lda shall not be liable for any indirect, incidental, special, or consequential damages, including loss of data, business interruption, or loss of profits.",
+        "10-1": "The processing of personal data is carried out in accordance with the MyDigitalBot Privacy Policy, available on this page.",
+        "11-1": "Gazelle Talent – Consultoria Empresarial, Lda may update these Terms of Use at any time.",
+        "11-2": "The most recent version will always be made available on this page, indicating the update date.",
+        "12-1": "These Terms are governed by Portuguese law.",
+        "12-2": "In the event of a dispute, the court of the district of Maia shall have jurisdiction, with express waiver of any other.",
+        "13-1": "For any questions related to these Terms:",
+        "13-2": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company><br></br>Email: <email>geral@digik.pt</email><br></br>Website: <website>www.digik.pt</website>"
+      },
+      "Lists": {
+        "2-2": {
+          "1": "sending messages by organizations;",
+          "2": "user interaction with automated assistants;",
+          "3": "answering questions and access to contextual information."
+        },
+        "4-1": {
+          "1": "use the service for illegal or unlawful purposes;",
+          "2": "send offensive, abusive, discriminatory, or harmful content;",
+          "3": "carry out spam or unauthorized communications;",
+          "4": "attempt to improperly access systems or data;",
+          "5": "exploit vulnerabilities or interfere with the operation of the platform;",
+          "6": "violate the rights of third parties, including intellectual property rights."
+        }
+      }
+    },
+    "PrivacyPolicy": {
+      "Title": "Privacy Policy",
+      "LastUpdated": "Last updated:",
+      "Subtitle": {
+        "1": "Data Controller",
+        "2": "Scope of Application",
+        "3": "Personal Data Processed",
+        "4": "How Data Is Collected",
+        "5": "Purposes of Processing",
+        "6": "Use of Artificial Intelligence",
+        "7": "Legal Basis for Processing",
+        "8": "Sharing Data with Third Parties",
+        "9": "International Data Transfers",
+        "10": "Data Retention",
+        "11": "Data Security",
+        "12": "Rights of Data Subjects",
+        "13": "Responsibility of User Organizations",
+        "14": "Changes",
+        "15": "Contacts"
+      },
+      "Paragraphs": {
+        "0-1": "This Privacy Policy describes how <strong>Gazelle Talent – Consultoria Empresarial, Lda</strong> collects, uses, stores, and protects the personal data of <strong>MyDigitalBot</strong> users.",
+        "0-2": "<br></br>MyDigitalBot is a communication and conversational interaction solution that allows organizations to communicate with users through integrated digital channels and provide automated assistants with artificial intelligence to answer questions, provide support, and facilitate access to information and services.",
+        "0-3": "<br></br>MyDigitalBot acts as a technological platform that allows organizations to communicate with their users and provide automated assistants, and data processing may occur both in the context of Gazelle Talent – Consultoria Empresarial, Lda and of the organizations using the solution.",
+        "0-4": "<br></br>Gazelle Talent – Consultoria Empresarial, Lda undertakes to process personal data in accordance with the applicable data protection legislation, including the <strong>Regulation (EU) 2016/679 (GDPR)</strong>, as well as the remaining applicable national legislation.",
+        "1-1": "The controller of the personal data is:",
+        "1-2": "<strong>Gazelle Talent – Consultoria Empresarial, Lda</strong><br></br>NIF: 514226226<br></br>Address: Rua Eng.º Frederico Ulrich, 2650, 4470-605 Maia, Portugal<br></br>Email: <email>geral@digik.pt</email><br></br>Website: <web>www.digik.pt</web>",
+        "2-1": "This Privacy Policy applies to the processing of personal data carried out in the context of the use of MyDigitalBot by organizations and end users.",
+        "2-2": "MyDigitalBot may operate through different digital communication channels used by organizations, including, by way of example, platforms such as <strong>Microsoft Teams</strong>, <strong>WhatsApp</strong> or other integrated communication channels that may be supported in the future.",
+        "2-3": "Through these channels, users may receive communications, respond to messages, and interact with automated assistants configured by the organization responsible for using the solution.",
+        "3-1": "In the context of the provision and operation of MyDigitalBot, the following types of personal data may be processed:",
+        "3-1-1": "<br></br><strong>Identification and contact data</strong>",
+        "3-1-2": "<br></br><strong>Usage and interaction data</strong>",
+        "3-1-3": "<br></br><strong>Technical data</strong>",
+        "6-1": "MyDigitalBot may use artificial intelligence technologies to generate automatic responses and support conversational interactions.",
+        "6-2": "For this purpose, the content of messages may be processed by artificial intelligence systems provided by external service providers, strictly to the extent necessary to ensure the functioning of the solution.",
+        "6-3": "Users may, in certain contexts, be interacting with an automated system, with responses generated without direct human intervention.",
+        "8-1": "The data may be processed by service providers necessary for the operation of the platform, including infrastructure services, artificial intelligence, and communication channels (e.g. Microsoft Teams, WhatsApp, or others).",
+        "8-2": "Gazelle Talent – Consultoria Empresarial, Lda seeks to select entities that provide adequate guarantees regarding data protection.",
+        "9-1": "Some data may be processed outside the European Economic Area (EEA) by service providers used by the platform.",
+        "9-2": "Gazelle Talent – Consultoria Empresarial, Lda seeks to select partners that ensure adequate levels of data protection.",
+        "10-1": "Data is retained only for the period necessary for the operation of the service or compliance with legal obligations.",
+        "11-1": "Appropriate technical and organizational measures are implemented to protect personal data against unauthorized access, loss, or disclosure.",
+        "12-1": "Users may request access, rectification, or deletion of their data through: <email>geral@digik.pt</email>",
+        "13-1": "Organizations using MyDigitalBot are responsible for ensuring that they have a legal basis to contact users.",
+        "14-1": "This policy may be updated periodically.",
+        "15-1": "<strong>Gazelle Talent – Consultoria Empresarial, Lda</strong><br></br><email>geral@digik.pt</email>"
+      },
+      "Lists": {
+        "3-1-1": {
+          "1": "Name;",
+          "2": "Email address;",
+          "3": "User identifier on the communication channel used;",
+          "4": "Information associated with the organization to which the user belongs."
+        },
+        "3-1-2": {
+          "1": "Messages sent and received through the platform;",
+          "2": "Content of interactions with automated assistants;",
+          "3": "Conversation history;",
+          "4": "Context necessary to follow up on interactions and improve continuity of the conversation;",
+          "5": "Records of the use of the application's features."
+        },
+        "3-1-3": {
+          "1": "Technical and operational logs;",
+          "2": "Information about errors and performance;",
+          "3": "IP address, when applicable;",
+          "4": "Information about the device, system, or channel used, when technically made available."
+        },
+        "4-1": {
+          "1": "when the user subscribes to, installs, activates, or uses the application;",
+          "2": "when the organization sends communications through MyDigitalBot;",
+          "3": "when the user replies to messages or interacts with the automated assistant;",
+          "4": "when normal use of the platform and its technical integrations occurs."
+        },
+        "5-1": {
+          "1": "operation and management of MyDigitalBot;",
+          "2": "sending communications by organizations;",
+          "3": "interaction with automated assistants;",
+          "4": "responding to user requests and questions;",
+          "5": "improving service quality;",
+          "6": "security and abuse prevention;",
+          "7": "compliance with legal obligations."
+        },
+        "7-1": {
+          "1": "performance of the service;",
+          "2": "compliance with legal obligations;",
+          "3": "legitimate interest;",
+          "4": "consent, where applicable."
+        }
+      }
+    },
+    "SecurityProviders": {
+      "Title": "Security & Providers",
+      "LastUpdated": "Last updated:",
+      "Subtitle": {
+        "1": "Platform Security",
+        "2": "Communication Channels",
+        "3": "Artificial Intelligence",
+        "4": "Subprocessors",
+        "5": "Data Processing"
+      },
+      "Paragraphs": {
+        "1-1": "MyDigitalBot implements appropriate technical and organizational measures to protect personal data and ensure the security of the platform's communications and operations.",
+        "1-2": "These measures include, among others:",
+        "2-1": "MyDigitalBot operates through external communication channels used by organizations, such as Microsoft Teams, WhatsApp, or other equivalent services.",
+        "2-2": "Messages may be processed by these third-party platforms for the purposes of delivery, security, and operation of their respective services, and are subject to the policies and security mechanisms defined by those providers.",
+        "3-1": "MyDigitalBot may use artificial intelligence services provided by third parties to process messages and generate automatic responses.",
+        "3-2": "These services are used exclusively to support the operation of the application and not for advertising purposes.",
+        "3-3": "Whenever possible, configurations are used that limit the retention and use of data to what is strictly necessary for the provision of the service.",
+        "4-1": "To provide the service, MyDigitalBot relies on technological service providers (subprocessors), who may process personal data on behalf of Gazelle Talent – Consultoria Empresarial, Lda.",
+        "4-2": "These include, by way of example:",
+        "4-3": "Gazelle Talent – Consultoria Empresarial, Lda seeks to select partners that adopt appropriate security and data protection practices.",
+        "5-1": "Note: Retention periods may vary depending on the platform’s settings and the operational needs of the service."
+      },
+      "Lists": {
+        "1-2": {
+          "1": "use of secure communications (TLS/HTTPS);",
+          "2": "access control and authentication;",
+          "3": "activity monitoring and event logging;",
+          "4": "protection against unauthorized access and abusive use;",
+          "5": "logical isolation between organizations (multi-tenant)."
+        },
+        "4-2": {
+          "1": "<strong>Microsoft</strong> – communication channels (Teams) and Azure infrastructure;",
+          "2": "<strong>Vercel</strong> – application hosting and execution;",
+          "3": "<strong>Supabase</strong> – database and storage;",
+          "4": "<strong>OpenAI / Azure OpenAI</strong> – natural language processing;",
+          "5": "<strong>MessageBird</strong> – WhatsApp integration;",
+          "6": "<strong>Meta (WhatsApp)</strong> – communication channel."
+        }
+      },
+      "Table": {
+        "5": {
+          "Headers": {
+            "1": "Category",
+            "2": "Examples",
+            "3": "Purpose",
+            "4": "Legal Basis",
+            "5": "Retention",
+            "6": "Subprocessors"
+          },
+          "Rows": {
+            "1": {
+              "1": "Message content",
+              "2": "Text, attachments",
+              "3": "Response and automation",
+              "4": "Performance of the service",
+              "5": "Up to 12 months",
+              "6": "Microsoft, AI services"
+            },
+            "2": {
+              "1": "Metadata",
+              "2": "IDs, timestamps, statuses",
+              "3": "Delivery, security, and metrics",
+              "4": "Legitimate interest",
+              "5": "Up to 12 months",
+              "6": "Microsoft, Meta, MessageBird"
+            },
+            "3": {
+              "1": "Technical logs",
+              "2": "IP, errors",
+              "3": "Monitoring and debugging",
+              "4": "Legitimate interest",
+              "5": "30–90 days",
+              "6": "Cloud infrastructure"
+            },
+            "4": {
+              "1": "Account data",
+              "2": "Name, email",
+              "3": "Access management",
+              "4": "Performance of the service",
+              "5": "While active",
+              "6": "Microsoft"
+            }
+          }
+        }
+      }
     }
   },
   "Nav": {

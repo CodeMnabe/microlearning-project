@@ -149,14 +149,18 @@
 
     "Footer": {
       "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
-      "cols": { "product": "Produto" },
+      "cols": { "product": "Produto", "legal": "Legal" },
       "links": {
         "payments": "Integrações",
         "auth": "Segurança",
         "crm": "IA Coach",
         "email": "Métricas",
         "help": "Ajuda",
-        "pricing": "Preços"
+        "pricing": "Preços",
+        "terms": "Termos de Utilização",
+        "dpa": "Acordo de Tratamento de Dados",
+        "privacy": "Política de Privacidade",
+        "security": "Segurança & Fornecedores"
       },
       "badges": { "gdpr": "Conforme RGPD", "status": "Estado" }
     },
@@ -355,6 +359,335 @@
       "text": "Mantém esta secção como fecho da página com um CTA direto e uma opção secundária mais leve.",
       "primary": "Marcar uma conversa",
       "secondary": "Voltar à homepage"
+    }
+  },
+  "Public": {
+    "Dpa": {
+      "Title": "Acordo de Tratamento de Dados (DPA)",
+      "LastUpdated": "Última atualização:",
+      "Subtitle": {
+        "1": "Partes",
+        "2": "Objeto e Âmbito",
+        "3": "Natureza, Finalidade e Duração do Tratamento",
+        "4": "Tipos de Dados Pessoais",
+        "5": "Categorias de Titulares dos Dados",
+        "6": "Obrigações do Subcontratante",
+        "7": "Obrigações do Responsável pelo Tratamento",
+        "8": "Subcontratação (Subprocessadores)",
+        "9": "Transferências Internacionais de Dados",
+        "10": "Segurança do Tratamento",
+        "11": "Direitos dos Titulares dos Dados",
+        "12": "Notificação de Incidentes de Segurança",
+        "13": "Eliminação ou Devolução de Dados",
+        "14": "Auditoria e Informação",
+        "15": "Duração",
+        "16": "Lei Aplicável",
+        "17": "Contactos"
+      },
+      "Paragraphs": {
+        "1-1": "O presente Acordo de Tratamento de Dados ('DPA') é celebrado entre:",
+        "1-2": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company>, NIF 514226226, com sede na Rua Eng.º Frederico Ulrich, 2650, 4470-605 Maia, Portugal (doravante 'Subcontratante'), e a entidade cliente que utiliza o serviço MyDigitalBot (doravante 'Responsável pelo Tratamento').",
+        "2-1": "O presente DPA regula o tratamento de dados pessoais realizado pelo Subcontratante em nome do Responsável pelo Tratamento, no âmbito da utilização da plataforma MyDigitalBot.",
+        "2-2": "O Subcontratante compromete-se a tratar os dados pessoais apenas conforme necessário para a prestação do serviço e de acordo com as instruções do Responsável pelo Tratamento.",
+        "3-1": "<title>Natureza:</title> tratamento automatizado de dados pessoais.",
+        "3-2": "<title>Finalidade:</title> comunicação, processamento de mensagens e automação conversacional.",
+        "3-3": "<title>Duração:</title> durante a vigência da relação contratual entre as partes.",
+        "4-1": "Os dados pessoais tratados podem incluir:",
+        "6-1": "O Subcontratante compromete-se a:",
+        "7-1": "O Responsável pelo Tratamento compromete-se a:",
+        "8-1": "O Subcontratante poderá recorrer a prestadores de serviços terceiros (subprocessadores) para a prestação do serviço.",
+        "8-2": "Estes incluem, a título exemplificativo:",
+        "8-3": "O Subcontratante procura selecionar subprocessadores que ofereçam garantias adequadas em matéria de proteção de dados.",
+        "9-1": "Os dados pessoais poderão ser tratados fora do Espaço Económico Europeu (EEE), nomeadamente quando são utilizados subprocessadores internacionais.",
+        "9-2": "O Subcontratante procura assegurar que esses tratamentos são realizados com níveis adequados de proteção de dados.",
+        "10-1": "O Subcontratante implementa medidas técnicas e organizativas adequadas para proteger os dados pessoais, incluindo:",
+        "11-1": "O Subcontratante prestará assistência razoável ao Responsável pelo Tratamento para responder a pedidos dos titulares dos dados, nomeadamente pedidos de acesso, retificação ou eliminação.",
+        "12-1": "O Subcontratante notificará o Responsável pelo Tratamento sem demora injustificada após tomar conhecimento de uma violação de dados pessoais relevante.",
+        "13-1": "Mediante solicitação do Responsável pelo Tratamento ou cessação do serviço, os dados poderão ser eliminados ou devolvidos, salvo obrigação legal em contrário.",
+        "14-1": "O Responsável pelo Tratamento poderá solicitar informações razoáveis sobre as medidas de segurança implementadas pelo Subcontratante.",
+        "15-1": "O presente DPA mantém-se em vigor enquanto o Subcontratante tratar dados pessoais em nome do Responsável pelo Tratamento.",
+        "16-1": "O presente acordo é regido pela lei portuguesa.",
+        "17-1": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company><br></br>Email: <email>geral@digik.pt</email><br></br>Website: <website>www.digik.pt</website>"
+      },
+      "Lists": {
+        "4-1": {
+          "1": "dados de identificação (nome, email);",
+          "2": "identificadores de utilizador (ex: Microsoft Teams, WhatsApp);",
+          "3": "conteúdo de mensagens e interações;",
+          "4": "metadados (IDs, timestamps, estados);",
+          "5": "dados técnicos (logs, IP, erros)."
+        },
+        "5-1": {
+          "1": "colaboradores;",
+          "2": "clientes;",
+          "3": "alunos;",
+          "4": "utilizadores finais das organizações clientes."
+        },
+        "6-1": {
+          "1": "tratar os dados apenas para efeitos de prestação do serviço;",
+          "2": "não utilizar os dados para fins próprios;",
+          "3": "assegurar a confidencialidade das pessoas autorizadas a tratar os dados;",
+          "4": "implementar medidas técnicas e organizativas adequadas para proteção dos dados;",
+          "5": "prestar assistência razoável ao Responsável pelo Tratamento no cumprimento do RGPD;",
+          "6": "notificar o Responsável pelo Tratamento em caso de incidente de segurança relevante, sem demora injustificada."
+        },
+        "7-1": {
+          "1": "assegurar que possui base legal para o tratamento dos dados;",
+          "2": "informar os titulares dos dados sobre o tratamento;",
+          "3": "utilizar a plataforma em conformidade com a legislação aplicável;",
+          "4": "não introduzir ou tratar dados de forma ilícita."
+        },
+        "8-2": {
+          "1": "Microsoft (Teams, Azure);",
+          "2": "Vercel (alojamento da aplicação);",
+          "3": "Supabase (base de dados e armazenamento);",
+          "4": "OpenAI;",
+          "5": "MessageBird e Meta (WhatsApp);",
+          "6": "Cloudflare (infraestrutura e segurança)."
+        },
+        "10-1": {
+          "1": "proteção de comunicações (ex: HTTPS/TLS);",
+          "2": "controlo de acessos;",
+          "3": "monitorização e registo de eventos;",
+          "4": "segregação de dados entre organizações (multi-tenant)."
+        }
+      }
+    },
+    "TermsOfService": {
+      "Title": "Termos de Utilização",
+      "LastUpdated": "Última atualização:",
+      "Subtitle": {
+        "1": "Partes",
+        "2": "Âmbito do Serviço",
+        "3": "Acesso e Utilização",
+        "4": "Uso Aceitável",
+        "5": "Conteúdos e Responsabilidade do Utilizador",
+        "6": "Assistentes Automatizados",
+        "7": "Mensagens e Comunicações",
+        "8": "Disponibilidade do Serviço",
+        "9": "Limitação de Responsabilidade",
+        "10": "Privacidade e Dados Pessoais",
+        "11": "Alterações aos Termos",
+        "12": "Lei Aplicável e Foro",
+        "13": "Contactos"
+      },
+      "Paragraphs": {
+        "1-1": "Os presentes Termos de Utilização regulam o acesso e utilização do MyDigitalBot, uma solução disponibilizada pela Gazelle Talent – Consultoria Empresarial, Lda, que permite a comunicação entre organizações e utilizadores através de canais digitais e a interação com assistentes automatizados.",
+        "2-1": "O MyDigitalBot funciona através de canais de comunicação utilizados pelas organizações, incluindo, a título exemplificativo, plataformas como Microsoft Teams, WhatsApp ou outros canais integrados.",
+        "2-2": "A aplicação permite:",
+        "3-1": "O acesso ao MyDigitalBot é disponibilizado no âmbito de uma organização e depende das configurações, permissões e licenças definidas por essa organização e pelos serviços e plataformas utilizados (ex: Microsoft 365 ou outros serviços equivalentes).",
+        "3-2": "O utilizador compromete-se a utilizar o serviço de forma responsável e em conformidade com a lei.",
+        "4-1": "É expressamente proibido:",
+        "5-1": "O utilizador é responsável pelos conteúdos que envia ou partilha através do MyDigitalBot.",
+        "5-2": "Ao utilizar o serviço, o utilizador concede à Gazelle Talent – Consultoria Empresarial, Lda uma licença limitada, não exclusiva e temporária para processar esses conteúdos, estritamente na medida necessária para operar, manter e melhorar o serviço.",
+        "6-1": "O MyDigitalBot pode incluir funcionalidades baseadas em inteligência artificial, permitindo a geração de respostas automáticas.",
+        "6-2": "As respostas geradas podem não ser totalmente precisas ou completas, pelo que não devem ser consideradas aconselhamento profissional ou vinculativo.",
+        "7-1": "A aplicação pode enviar mensagens, notificações ou campanhas configuradas pela organização que utiliza o serviço.",
+        "7-2": "O utilizador poderá deixar de receber comunicações através da desinstalação da aplicação ou através dos mecanismos disponibilizados pela organização ou pelo canal utilizado.",
+        "8-1": "O MyDigitalBot é disponibilizado 'tal como está', podendo ocorrer interrupções, limitações ou falhas, nomeadamente por motivos técnicos, manutenção ou dependência de serviços de terceiros.",
+        "8-2": "A Gazelle Talent – Consultoria Empresarial, Lda não garante que o serviço estará disponível de forma contínua ou isenta de erros.",
+        "9-1": "Na máxima medida permitida por lei, a Gazelle Talent – Consultoria Empresarial, Lda não será responsável por quaisquer danos indiretos, incidentais, especiais ou consequenciais, incluindo perda de dados, interrupção de atividade ou perda de lucros.",
+        "10-1": "O tratamento de dados pessoais é realizado de acordo com a Política de Privacidade do MyDigitalBot, disponível nesta página.",
+        "11-1": "A Gazelle Talent – Consultoria Empresarial, Lda pode atualizar os presentes Termos de Utilização a qualquer momento.",
+        "11-2": "A versão mais recente será sempre disponibilizada nesta página, com indicação da data de atualização.",
+        "12-1": "Os presentes Termos são regidos pela lei portuguesa.",
+        "12-2": "Em caso de litígio, é competente o foro da comarca de Maia, com expressa renúncia a qualquer outro.",
+        "13-1": "Para qualquer questão relacionada com estes Termos:",
+        "13-2": "<company>Gazelle Talent – Consultoria Empresarial, Lda</company><br></br>Email: <email>geral@digik.pt</email><br></br>Website: <website>www.digik.pt</website>"
+      },
+      "Lists": {
+        "2-2": {
+          "1": "envio de mensagens por parte das organizações;",
+          "2": "interação dos utilizadores com assistentes automatizados;",
+          "3": "resposta a perguntas e acesso a informação contextual."
+        },
+        "4-1": {
+          "1": "utilizar o serviço para fins ilegais ou ilícitos;",
+          "2": "enviar conteúdos ofensivos, abusivos, discriminatórios ou prejudiciais;",
+          "3": "realizar spam ou comunicações não autorizadas;",
+          "4": "tentar aceder indevidamente a sistemas ou dados;",
+          "5": "explorar vulnerabilidades ou interferir com o funcionamento da plataforma;",
+          "6": "violar direitos de terceiros, incluindo direitos de propriedade intelectual."
+        }
+      }
+    },
+    "PrivacyPolicy": {
+      "Title": "Política de Privacidade",
+      "LastUpdated": "Última atualização:",
+      "Subtitle": {
+        "1": "Responsável pelo Tratamento",
+        "2": "Âmbito de Aplicação",
+        "3": "Dados Pessoais Tratados",
+        "4": "Forma de Recolha dos Dados",
+        "5": "Finalidades do Tratamento",
+        "6": "Utilização de Inteligência Artificial",
+        "7": "Fundamento de Licitude do Tratamento",
+        "8": "Partilha de Dados com Terceiros",
+        "9": "Transferências Internacionais de Dados",
+        "10": "Conservação dos Dados",
+        "11": "Segurança dos Dados",
+        "12": "Direitos dos Titulares dos Dados",
+        "13": "Responsabilidade das Organizações Utilizadoras",
+        "14": "Alterações",
+        "15": "Contactos"
+      },
+      "Paragraphs": {
+        "0-1": "A presente Política de Privacidade descreve a forma como a <strong>Gazelle Talent – Consultoria Empresarial, Lda</strong> recolhe, utiliza, conserva e protege os dados pessoais dos utilizadores do <strong>MyDigitalBot</strong>.",
+        "0-2": "<br></br>O MyDigitalBot é uma solução de comunicação e interação conversacional que permite a organizações comunicar com utilizadores através de canais digitais integrados e disponibilizar assistentes automatizados com inteligência artificial para responder a perguntas, prestar apoio e facilitar o acesso a informação e serviços.",
+        "0-3": "<br></br>O MyDigitalBot atua como uma plataforma tecnológica que permite às organizações comunicar com os seus utilizadores e disponibilizar assistentes automatizados, podendo o tratamento de dados ocorrer tanto no contexto da Gazelle Talent – Consultoria Empresarial, Lda como das organizações utilizadoras da solução.",
+        "0-4": "<br></br>A Gazelle Talent – Consultoria Empresarial, Lda compromete-se a tratar os dados pessoais em conformidade com a legislação aplicável em matéria de proteção de dados, incluindo o <strong>Regulamento (UE) 2016/679 (RGPD)</strong>, bem como a restante legislação nacional aplicável.",
+        "1-1": "O responsável pelo tratamento dos dados pessoais é:",
+        "1-2": "<strong>Gazelle Talent – Consultoria Empresarial, Lda</strong><br></br>NIF: 514226226<br></br>Morada: Rua Eng.º Frederico Ulrich, 2650, 4470-605 Maia, Portugal<br></br>Email: <email>geral@digik.pt</email><br></br>Website: <web>www.digik.pt</web>",
+        "2-1": "Esta Política de Privacidade aplica-se ao tratamento de dados pessoais efetuado no contexto da utilização do MyDigitalBot por organizações e utilizadores finais.",
+        "2-2": "O MyDigitalBot pode operar através de diferentes canais de comunicação digitais utilizados pelas organizações, incluindo, a título exemplificativo, plataformas como <strong>Microsoft Teams</strong>, <strong>WhatsApp</strong> ou outros canais de comunicação integrados que venham a ser suportados no futuro.",
+        "2-3": "Através destes canais, os utilizadores podem receber comunicações, responder a mensagens e interagir com assistentes automatizados configurados pela organização responsável pela utilização da solução.",
+        "3-1": "No âmbito da disponibilização e funcionamento do MyDigitalBot, poderão ser tratados os seguintes tipos de dados pessoais:",
+        "3-1-1": "<br></br><strong>Dados de identificação e contacto</strong>",
+        "3-1-2": "<br></br><strong>Dados de utilização e interação</strong>",
+        "3-1-3": "<br></br><strong>Dados técnicos</strong>",
+        "6-1": "O MyDigitalBot pode recorrer a tecnologias de inteligência artificial para gerar respostas automáticas e apoiar interações conversacionais.",
+        "6-2": "Para esse efeito, o conteúdo das mensagens poderá ser processado por sistemas de inteligência artificial fornecidos por prestadores de serviços externos, estritamente na medida do necessário para assegurar o funcionamento da solução.",
+        "6-3": "Os utilizadores poderão, em determinados contextos, estar a interagir com um sistema automatizado, sendo as respostas geradas sem intervenção humana direta.",
+        "8-1": "Os dados poderão ser tratados por prestadores de serviços necessários ao funcionamento da plataforma, incluindo serviços de infraestrutura, inteligência artificial e canais de comunicação (ex: Microsoft Teams, WhatsApp ou outros).",
+        "8-2": "A Gazelle Talent – Consultoria Empresarial, Lda procura selecionar entidades que ofereçam garantias adequadas em matéria de proteção de dados.",
+        "9-1": "Alguns dados poderão ser tratados fora do Espaço Económico Europeu (EEE) por prestadores de serviços utilizados pela plataforma.",
+        "9-2": "A Gazelle Talent – Consultoria Empresarial, Lda procura selecionar parceiros que assegurem níveis adequados de proteção de dados.",
+        "10-1": "Os dados são conservados apenas pelo período necessário ao funcionamento do serviço ou cumprimento de obrigações legais.",
+        "11-1": "São implementadas medidas técnicas e organizativas adequadas para proteger os dados pessoais contra acesso não autorizado, perda ou divulgação.",
+        "12-1": "Os utilizadores podem solicitar acesso, retificação ou eliminação dos seus dados através de: <email>geral@digik.pt</email>",
+        "13-1": "As organizações que utilizam o MyDigitalBot são responsáveis por assegurar que possuem base legal para contactar os utilizadores.",
+        "14-1": "Esta política poderá ser atualizada periodicamente.",
+        "15-1": "<strong>Gazelle Talent – Consultoria Empresarial, Lda</strong><br></br><email>geral@digik.pt</email>"
+      },
+      "Lists": {
+        "3-1-1": {
+          "1": "Nome;",
+          "2": "Endereço de email;",
+          "3": "Identificador do utilizador no canal de comunicação utilizado;",
+          "4": "Informação associada à organização a que o utilizador pertence."
+        },
+        "3-1-2": {
+          "1": "Mensagens enviadas e recebidas através da plataforma;",
+          "2": "Conteúdo das interações com os assistentes automatizados;",
+          "3": "Histórico conversacional;",
+          "4": "Contexto necessário para dar seguimento às interações e melhorar a continuidade da conversa;",
+          "5": "Registos de utilização das funcionalidades da aplicação."
+        },
+        "3-1-3": {
+          "1": "Logs técnicos e operacionais;",
+          "2": "Informação sobre erros e desempenho;",
+          "3": "Endereço IP, quando aplicável;",
+          "4": "Informação sobre dispositivo, sistema ou canal utilizado, quando tecnicamente disponibilizada."
+        },
+        "4-1": {
+          "1": "quando o utilizador adere, instala, ativa ou utiliza a aplicação;",
+          "2": "quando a organização envia comunicações através do MyDigitalBot;",
+          "3": "quando o utilizador responde a mensagens ou interage com o assistente automatizado;",
+          "4": "quando ocorre utilização normal da plataforma e respetivas integrações técnicas."
+        },
+        "5-1": {
+          "1": "funcionamento e gestão do MyDigitalBot;",
+          "2": "envio de comunicações por parte das organizações;",
+          "3": "interação com assistentes automatizados;",
+          "4": "resposta a pedidos e questões dos utilizadores;",
+          "5": "melhoria da qualidade do serviço;",
+          "6": "segurança e prevenção de abuso;",
+          "7": "cumprimento de obrigações legais."
+        },
+        "7-1": {
+          "1": "execução de serviço;",
+          "2": "cumprimento de obrigações legais;",
+          "3": "interesse legítimo;",
+          "4": "consentimento, quando aplicável."
+        }
+      }
+    },
+    "SecurityProviders": {
+      "Title": "Segurança & Fornecedores",
+      "LastUpdated": "Última atualização:",
+      "Subtitle": {
+        "1": "Segurança da Plataforma",
+        "2": "Canais de Comunicação",
+        "3": "Inteligência Artificial",
+        "4": "Subprocessadores",
+        "5": "Tratamento de Dados"
+      },
+      "Paragraphs": {
+        "1-1": "O MyDigitalBot implementa medidas técnicas e organizativas adequadas para proteger os dados pessoais e garantir a segurança das comunicações e operações da plataforma.",
+        "1-2": "Estas medidas incluem, entre outras:",
+        "2-1": " O MyDigitalBot opera através de canais de comunicação externos utilizados pelas organizações, como Microsoft Teams, WhatsApp ou outros serviços equivalentes.",
+        "2-2": "As mensagens podem ser processadas por estas plataformas de terceiros para efeitos de entrega, segurança e funcionamento dos respetivos serviços, estando sujeitas às políticas e mecanismos de segurança definidos por esses fornecedores.",
+        "3-1": "O MyDigitalBot pode recorrer a serviços de inteligência artificial fornecidos por terceiros para processar mensagens e gerar respostas automáticas.",
+        "3-2": "Estes serviços são utilizados exclusivamente para suportar o funcionamento da aplicação e não para fins de publicidade.",
+        "3-3": "Sempre que possível, são utilizadas configurações que limitam a retenção e utilização dos dados ao estritamente necessário para a prestação do serviço.",
+        "4-1": "Para disponibilizar o serviço, o MyDigitalBot recorre a prestadores de serviços tecnológicos (subprocessadores), que podem tratar dados pessoais em nome da Gazelle Talent – Consultoria Empresarial, Lda.",
+        "4-2": "Estes incluem, a título exemplificativo:",
+        "4-3": "A Gazelle Talent – Consultoria Empresarial, Lda procura selecionar parceiros que adotem práticas adequadas de segurança e proteção de dados.",
+        "5-1": "Nota: os períodos de retenção poderão variar em função das configurações da plataforma e das necessidades operacionais do serviço."
+      },
+      "Lists": {
+        "1-2": {
+          "1": "utilização de comunicações seguras (TLS/HTTPS);",
+          "2": "controlo de acessos e autenticação;",
+          "3": "monitorização de atividade e registo de eventos;",
+          "4": "proteção contra acesso não autorizado e utilização abusiva;",
+          "5": "isolamento lógico entre organizações (multi-tenant)."
+        },
+        "4-2": {
+          "1": "<strong>Microsoft</strong> – canais de comunicação (Teams) e infraestrutura Azure;",
+          "2": "<strong>Vercel</strong> – alojamento e execução da aplicação;",
+          "3": "<strong>Supabase</strong> – base de dados e armazenamento;",
+          "4": "<strong>OpenAI / Azure OpenAI</strong> – processamento de linguagem natural;",
+          "5": "<strong>MessageBird</strong> – integração com WhatsApp;",
+          "6": "<strong>Meta (WhatsApp)</strong> – canal de comunicação."
+        }
+      },
+      "Table": {
+        "5": {
+          "Headers": {
+            "1": "Categoria",
+            "2": "Exemplos",
+            "3": "Finalidade",
+            "4": "Base Legal",
+            "5": "Retenção",
+            "6": "Subprocessadores"
+          },
+          "Rows": {
+            "1": {
+              "1": "Conteúdo de mensagens",
+              "2": "Texto, anexos",
+              "3": "Resposta e automação",
+              "4": "Execução de serviço",
+              "5": "Até 12 meses",
+              "6": "Microsoft, serviços de IA"
+            },
+            "2": {
+              "1": "Metadados",
+              "2": "IDs, timestamps, estados",
+              "3": "Entrega, segurança e métricas",
+              "4": "Interesse legítimo",
+              "5": "Até 12 meses",
+              "6": "Microsoft, Meta, MessageBird"
+            },
+            "3": {
+              "1": "Logs técnicos",
+              "2": "IP, erros",
+              "3": "Monitorização e depuração",
+              "4": "Interesse legítimo",
+              "5": "30–90 dias",
+              "6": "Infraestrutura cloud"
+            },
+            "4": {
+              "1": "Dados de conta",
+              "2": "Nome, email",
+              "3": "Gestão de acessos",
+              "4": "Execução de serviço",
+              "5": "Enquanto ativo",
+              "6": "Microsoft"
+            }
+          }
+        }
+      }
     }
   },
   "Nav": {

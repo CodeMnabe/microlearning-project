@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import LoaderLink from "../../components/TopLoader/LoaderLink";
+import LoaderLink from "../../(marketing)/components/TopLoader/LoaderLinkr/LoaderLink";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "./login.module.css";
@@ -64,13 +64,15 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <LoaderLink href="/" className={styles.brand}>
-        <Image src="/images/Logos/Logo cores.png"
+        <Image
+          src="/images/Logos/Logo cores.png"
           alt="MyDigitalBot logo"
           width={2047}
           height={276}
           className={styles.logoMark}
           priority
-          unoptimized />
+          unoptimized
+        />
       </LoaderLink>
 
       <form className={styles.card} onSubmit={handleAuth}>

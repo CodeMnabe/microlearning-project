@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import LoaderLink from "../../TopLoader/LoaderLink";
+import LoaderLink from "@/app/[locale]/(marketing)/components/TopLoader/LoaderLink";
 import styles from "./navbar.module.css";
 import { useTranslations } from "next-intl";
 import Image from "next/image";

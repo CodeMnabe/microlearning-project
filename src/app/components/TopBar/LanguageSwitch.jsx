@@ -1,12 +1,17 @@
 // src/app/components/TopBar/LanguageSwitch.jsx
 "use client";
+
 import { useLocale } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 
-function Lang({ to, active, pathname }) {
+function Lang({ to, active, pathname, query }) {
   return (
     <Link
-      href={pathname}
+      href={{
+        pathname,
+        query,
+      }}
       locale={to}
       prefetch={false}
       aria-current={active ? "true" : undefined}
@@ -25,8 +30,11 @@ function Lang({ to, active, pathname }) {
 }
 
 export default function LanguageSwitch() {
-  const locale = useLocale(); // 'en' | 'pt'
-  const pathname = usePathname(); // current path (with locale)
+  const locale = useLocale();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const query = Object.fromEntries(searchParams.entries());
 
   return (
     <div
@@ -38,8 +46,18 @@ export default function LanguageSwitch() {
         background: "#f3f5f7",
       }}
     >
-      <Lang to="pt" active={locale === "pt"} pathname={pathname} />
-      <Lang to="en" active={locale === "en"} pathname={pathname} />
+      <Lang
+        to="pt"
+        active={locale === "pt"}
+        pathname={pathname}
+        query={query}
+      />
+      <Lang
+        to="en"
+        active={locale === "en"}
+        pathname={pathname}
+        query={query}
+      />
     </div>
   );
 }

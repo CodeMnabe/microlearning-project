@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import LoaderLink from "../TopLoader/LoaderLink";
 import { useTranslations } from "next-intl";
 import styles from "./hero.module.css";
-import MarketingNavbar from "./Navbar/Navbar";
+import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
 import Chips from "./Chips/Chips";
 import Cards from "./Cards/Cards";
 

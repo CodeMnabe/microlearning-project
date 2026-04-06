@@ -24,6 +24,21 @@
         { "labelKey": "links.help", "href": "#" },
         { "labelKey": "links.pricing", "href": "#" }
       ]
+    },
+    {
+      "titleKey": "cols.legal",
+      "links": [
+        { "labelKey": "links.terms", "href": "/legal?doc=terms-of-service" },
+        {
+          "labelKey": "links.dpa",
+          "href": "/legal?doc=data-processing-agreement"
+        },
+        { "labelKey": "links.privacy", "href": "/legal?doc=privacy-policy" },
+        {
+          "labelKey": "links.security",
+          "href": "/legal?doc=security-providers"
+        }
+      ]
     }
   ],
   "badgesKeys": ["badges.gdpr", "badges.status"]
