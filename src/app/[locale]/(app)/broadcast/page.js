@@ -160,6 +160,13 @@ export default function BroadcastPage() {
   // channel switch
   const [channel, setChannel] = useState("teams");
 
+  const [deliveryMode, setDeliveryMode] = useState("now");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const browserTimeZone = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    [],
+  );
+
   // derived lists for UI
   const imageFiles = useMemo(
     () => files.filter((f) => isImageContentType(f.contentType)),
@@ -185,7 +192,7 @@ export default function BroadcastPage() {
     if (!org?.id) return;
     const res = await fetch(`/api/users?orgId=${org.id}`);
     const data = await res.json().catch(() => []);
-    setUsers(Array.isArray(data) ? data : data?.users || []);
+    setUsers(Array.isArray(data?.items) ? data.items : []);
   }, [org?.id]);
 
   // fetch tags + assistants for filter
@@ -606,13 +613,25 @@ export default function BroadcastPage() {
     });
   }, [varDefs, sampleRecipient?.name, org?.name]);
 
-  const canSend =
+  const baseCanSend =
     selected.size > 0 &&
     (channel === "whatsapp"
       ? (tplName && tplLang && paramsComplete) ||
         message.trim().length > 0 ||
         files.length > 0
       : message.trim().length > 0 || files.length > 0);
+
+  const scheduledDate = useMemo(() => {
+    if (!scheduledAt) return null;
+    const d = new Date(scheduledAt);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [scheduledAt]);
+
+  const scheduleInvalid =
+    deliveryMode === "schedule" &&
+    (!scheduledDate || scheduledDate.getTime() <= Date.now());
+
+  const canSend = baseCanSend && !scheduleInvalid;
 
   async function handleSend() {
     const chosen = normalizedUsers.filter((u) => selected.has(u.id));
@@ -622,79 +641,128 @@ export default function BroadcastPage() {
     setResult(null);
 
     try {
-      if (channel === "whatsapp") {
-        const payload = {
-          orgId: org?.id,
-          message,
-          imageUrls, // old route compatibility
-          files,
-          recipients: chosen.map((u) => u.phone_number).filter(Boolean),
-          template:
-            tplName && tplLang && paramsComplete
-              ? {
-                  projectId: chosenTemplate?.projectId,
-                  name: tplName.trim(),
-                  languageCode: (tplLang || "pt-PT").trim(),
-                  params: orderedParamValues,
-                  varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
-                  manualParams: varDefs.length ? undefined : tplParamsManual,
-                  urlVar: needsUrlVar ? tplUrlVar.trim() || null : null,
-                }
-              : null,
-        };
+      const payload = buildBroadcastPayload(chosen);
+      const endpoint =
+        channel === "whatsapp"
+          ? "/api/broadcast/whatsapp"
+          : "/api/broadcast/teams";
 
-        const res = await fetch("/api/broadcast/whatsapp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        const text = await res.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
-        }
-
-        setResult(data);
-
-        if (!res.ok) {
-          console.error("Broadcast error", data);
-          alert(translation("Common.error"));
-        }
-      } else {
-        // TEAMS
-        const payload = {
-          orgId: org?.id,
-          userIds: chosen.map((u) => u.id),
-          message,
-          files, // includes thumbnailUrl for videos
-        };
-
-        const res = await fetch("/api/broadcast/teams", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        const text = await res.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          data = text;
-        }
-
-        setResult(data);
-
-        if (!res.ok) {
-          console.error("Teams broadcast error", data);
-          alert(translation("Common.error"));
-        }
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
       }
+
+      setResult(data);
+
+      if (!res.ok) {
+        console.error("Broadcast send error", data);
+        alert(translation("Common.error"));
+        return;
+      }
+
+      alert(
+        channel === "whatsapp"
+          ? "WhatsApp broadcast sent successfully."
+          : "Teams broadcast sent successfully.",
+      );
     } catch (err) {
-      console.error("[Broadcast] handleSend error", err);
+      console.error("[Broadcast] handleSend error:", err);
+      alert(translation("Common.error") + ": " + err.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function buildBroadcastPayload(chosen) {
+    if (channel === "whatsapp") {
+      return {
+        orgId: org?.id,
+        message,
+        imageUrls,
+        files,
+        recipients: chosen.map((u) => u.phone_number).filter(Boolean),
+        template:
+          tplName && tplLang && paramsComplete
+            ? {
+                projectId: chosenTemplate?.projectId,
+                name: tplName.trim(),
+                languageCode: (tplLang || "pt-PT").trim(),
+                params: orderedParamValues,
+                varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
+                manualParams: varDefs.length ? undefined : tplParamsManual,
+                urlVar: needsUrlVar ? tplUrlVar.trim() || null : null,
+              }
+            : null,
+      };
+    }
+
+    return {
+      orgId: org?.id,
+      userIds: chosen.map((u) => u.id),
+      message,
+      files,
+    };
+  }
+
+  async function handleSchedule() {
+    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
+    if (!chosen.length) {
+      return alert(translation("Broadcast.chooseRecipients"));
+    }
+
+    if (!scheduledAt) {
+      return alert("Choose a date and time.");
+    }
+
+    const when = new Date(scheduledAt);
+    if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
+      return alert("The scheduled date must be in the future");
+    }
+
+    setSending(true);
+    setResult(null);
+
+    try {
+      const payload = buildBroadcastPayload(chosen);
+
+      const res = await fetch("/api/broadcast/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: org?.id,
+          createdByUserId: user?.id || null,
+          channel,
+          scheduledFor: when.toISOString(),
+          timezone: browserTimeZone,
+          payload,
+          recipientCount: chosen.length,
+        }),
+      });
+
+      const data = await res.json();
+
+      setResult(data);
+
+      if (!res.ok) {
+        console.error("Schedule broadcast error", data);
+        alert(translation("Common.error"));
+        return;
+      }
+
+      alert("Broadcast scheduled successfully");
+      setScheduledAt("");
+      setDeliveryMode("now");
+    } catch (err) {
+      console.error(err);
       alert(translation("Common.error") + ": " + err.message);
     } finally {
       setSending(false);
@@ -733,13 +801,15 @@ export default function BroadcastPage() {
             {translation("Broadcast.selected")} <strong>{selected.size}</strong>
           </div>
           <button
-            onClick={handleSend}
+            onClick={deliveryMode === "schedule" ? handleSchedule : handleSend}
             disabled={sending || !canSend}
             className={styles.primaryBtn}
           >
             {sending
               ? translation("Broadcast.sending")
-              : translation("Broadcast.send")}
+              : deliveryMode === "schedule"
+                ? "Schedule"
+                : translation("Broadcast.send")}
           </button>
         </div>
       </div>
@@ -759,6 +829,32 @@ export default function BroadcastPage() {
               placeholder={translation("Broadcast.messagePlaceholder")}
               className={styles.textarea}
             />
+
+            <div className={styles.scheduleBox}>
+              <div className={styles.label}>Delivery</div>
+
+              <div className={styles.scheduleModeRow}>
+                <button
+                  type="button"
+                  className={`${styles.kbdBtn} ${deliveryMode === "now" ? styles.modeBtnActive : ""}`}
+                  onClick={() => setDeliveryMode("now")}
+                >
+                  Send now
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.kbdBtn} ${deliveryMode === "schedule" ? styles.modeBtnActive : ""}`}
+                >
+                  Schedule
+                </button>
+              </div>
+
+              {deliveryMode === "schedule" && (
+                <div className={styles.scheduleGrid}>
+                  <div className={styles.field}></div>
+                </div>
+              )}
+            </div>
 
             {/* FILE picker */}
             <div className={styles.imagesRow}>
