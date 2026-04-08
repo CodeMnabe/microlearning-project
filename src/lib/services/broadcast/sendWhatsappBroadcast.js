@@ -259,7 +259,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         endpoint: messagesEndpoint,
         accessKey,
         to,
-        messages,
+        message,
         imageUrls: onlyImageUrls,
       });
 
