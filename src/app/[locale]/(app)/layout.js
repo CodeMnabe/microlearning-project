@@ -3,6 +3,7 @@ import GlobalLoadingOverlay from "../../LoadingScreen/GlobalLoadingOverlay";
 import Navbar from "../../components/Navbar/Navbar";
 import TopBar from "../../components/TopBar/TopBar";
 import { MobileNavProvider } from "@/app/components/MobileNav/MobileNavContext";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function AppLayout({ children }) {
   return (

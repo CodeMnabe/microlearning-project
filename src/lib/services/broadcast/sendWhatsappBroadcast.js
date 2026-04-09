@@ -71,7 +71,7 @@ function buildKvParamsForUser({
       return `${key}=${value}`;
     });
 
-  if (urlVar && !pairs.some((p) => p.startsWith("url)"))) {
+  if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
     pairs.push(`url=${urlVar}`);
   }
 
@@ -244,7 +244,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       if (user.phone_number) {
         to = user.phone_number;
       } else if (user.phone_country_code && user.phone_national) {
-        to = `${user - phone_country_code}${String(user.phone_national).replace(/\D/g, "")}`;
+        to = `${user.phone_country_code}${String(user.phone_national).replace(/\D/g, "")}`;
       } else {
         to = await toE164(rawPhone, defaultCc);
       }

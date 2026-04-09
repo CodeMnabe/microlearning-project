@@ -2,17 +2,70 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DatePicker from "react-datepicker";
+import { Filter } from "lucide-react";
+import { useTranslations } from "next-intl";
+
 import styles from "./broadcast.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import { useTranslations } from "next-intl";
-import { Filter } from "lucide-react";
 import FilterMenu from "@/app/[locale]/(app)/users/FilterMenu";
 
 function Initial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
+}
+
+function asList(data, preferredKey = "items") {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.[preferredKey])) return data[preferredKey];
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.users)) return data.users;
+  return [];
+}
+
+function buildInitialScheduledDate() {
+  const d = new Date();
+  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+  return d;
+}
+
+function formatTime(date) {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function formatHour(date) {
+  return String(date.getHours()).padStart(2, "0");
+}
+
+function formatMinute(date) {
+  return String(date.getMinutes()).padStart(2, "0");
+}
+
+function parseTimeString(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return { hours, minutes };
 }
 
 const NAME_KEYS = [
@@ -23,6 +76,7 @@ const NAME_KEYS = [
   "utilizador",
   "user",
 ];
+
 const COMPANY_KEYS = [
   "empresa",
   "company",
@@ -35,11 +89,6 @@ const COMPANY_KEYS = [
   "organizationname",
 ];
 
-const isLockedVar = (key) => {
-  const k = String(key || "").toLowerCase();
-  return NAME_KEYS.includes(k) || COMPANY_KEYS.includes(k);
-};
-
 const STATUS_RANK = {
   ACTIVE: 4,
   PENDING: 3,
@@ -48,10 +97,16 @@ const STATUS_RANK = {
   INACTIVE: 1,
 };
 
+const isLockedVar = (key) => {
+  const k = String(key || "").toLowerCase();
+  return NAME_KEYS.includes(k) || COMPANY_KEYS.includes(k);
+};
+
 const byBestStatus = (a, b) => {
   const ra = STATUS_RANK[a.status] || 0;
   const rb = STATUS_RANK[b.status] || 0;
   if (ra !== rb) return rb - ra;
+
   const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
   const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
   return tb - ta;
@@ -71,29 +126,36 @@ function interpolate(str, values) {
 
 function extractText(node, out = []) {
   if (!node) return out;
+
   if (Array.isArray(node)) {
     node.forEach((n) => extractText(n, out));
     return out;
   }
+
   if (typeof node === "object") {
     for (const [k, v] of Object.entries(node)) {
       if (
         typeof v === "string" &&
         (k === "text" || k === "title" || k === "content")
-      )
+      ) {
         out.push(v);
-      else extractText(v, out);
+      } else {
+        extractText(v, out);
+      }
     }
   }
+
   return out;
 }
 
 function isImageContentType(ct = "") {
   return String(ct).toLowerCase().startsWith("image/");
 }
+
 function isVideoContentType(ct = "") {
   return String(ct).toLowerCase().startsWith("video/");
 }
+
 function guessContentTypeFromName(name = "") {
   const n = String(name || "").toLowerCase();
   if (n.endsWith(".png")) return "image/png";
@@ -112,14 +174,12 @@ export default function BroadcastPage() {
   const { org } = useOrganization(user);
   const translation = useTranslations();
   const supabase = createClient();
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { stopLoading } = useGlobalLoader();
 
-  // people
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
 
-  // filters (tags + assistants like UsersPage)
   const [allTags, setAllTags] = useState([]);
   const [assistantsList, setAssistantsList] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -128,20 +188,16 @@ export default function BroadcastPage() {
   const [selectedAssistantIds, setSelectedAssistantIds] = useState([]);
   const activeFilterCount = selectedTagIds.length + selectedAssistantIds.length;
 
-  // pickers
   const fileInputRef = useRef(null);
   const thumbInputRef = useRef(null);
   const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
 
-  // message & files
   const [message, setMessage] = useState("");
-  const [files, setFiles] = useState([]); // [{ url, name, contentType, thumbnailUrl? }]
+  const [files, setFiles] = useState([]);
 
-  // sending
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  // templates (list)
   const [templates, setTemplates] = useState([]);
   const [tplLoading, setTplLoading] = useState(false);
   const [tplErr, setTplErr] = useState(null);
@@ -149,7 +205,6 @@ export default function BroadcastPage() {
   const [tplName, setTplName] = useState("");
   const [tplLang, setTplLang] = useState("pt-PT");
 
-  // template details / variables
   const [tplDetails, setTplDetails] = useState(null);
   const [varDefs, setVarDefs] = useState([]);
   const [varValues, setVarValues] = useState({});
@@ -157,25 +212,34 @@ export default function BroadcastPage() {
   const [tplUrlVar, setTplUrlVar] = useState("");
   const [tplParamsManual, setTplParamsManual] = useState("");
 
-  // channel switch
   const [channel, setChannel] = useState("teams");
-
   const [deliveryMode, setDeliveryMode] = useState("now");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const initialScheduledRef = useRef(buildInitialScheduledDate());
+
+  const [scheduledFor, setScheduledFor] = useState(initialScheduledRef.current);
+  const [hourDraft, setHourDraft] = useState(() =>
+    formatHour(initialScheduledRef.current),
+  );
+  const [minuteDraft, setMinuteDraft] = useState(() =>
+    formatMinute(initialScheduledRef.current),
+  );
+  const [timeError, setTimeError] = useState("");
+
   const browserTimeZone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     [],
   );
 
-  // derived lists for UI
   const imageFiles = useMemo(
     () => files.filter((f) => isImageContentType(f.contentType)),
     [files],
   );
+
   const videoFiles = useMemo(
     () => files.filter((f) => isVideoContentType(f.contentType)),
     [files],
   );
+
   const otherFiles = useMemo(
     () =>
       files.filter(
@@ -191,25 +255,25 @@ export default function BroadcastPage() {
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
     const res = await fetch(`/api/users?orgId=${org.id}`);
-    const data = await res.json().catch(() => []);
-    setUsers(Array.isArray(data?.items) ? data.items : []);
+    const data = await res.json().catch(() => ({}));
+    setUsers(asList(data, "items"));
   }, [org?.id]);
 
-  // fetch tags + assistants for filter
   useEffect(() => {
     if (!org?.id) return;
     let alive = true;
 
     (async () => {
       try {
-        const [a, t] = await Promise.all([
+        const [assistantsData, tagsData] = await Promise.all([
           fetch(`/api/assistants?orgId=${org.id}`).then((r) => r.json()),
           fetch(`/api/tags?orgId=${org.id}`).then((r) => r.json()),
         ]);
 
         if (!alive) return;
-        setAssistantsList(Array.isArray(a) ? a : []);
-        setAllTags(Array.isArray(t) ? t : []);
+
+        setAssistantsList(asList(assistantsData, "items"));
+        setAllTags(asList(tagsData, "items"));
       } catch (e) {
         console.error(e);
         if (!alive) return;
@@ -225,18 +289,24 @@ export default function BroadcastPage() {
 
   const loadTemplates = useCallback(async () => {
     if (!org?.id) return;
+
     setTplLoading(true);
     setTplErr(null);
+
     try {
       const res = await fetch(`/api/template/list?orgId=${org.id}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to fetch templates");
 
-      const items = (data.items || []).map((t) => ({
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to fetch templates");
+      }
+
+      const items = asList(data, "items").map((t) => ({
         ...t,
         createdAt: t.createdAt || null,
         updatedAt: t.updatedAt || null,
       }));
+
       setTemplates(items);
 
       const best = [...items].sort(byBestStatus)[0];
@@ -255,19 +325,22 @@ export default function BroadcastPage() {
   useEffect(() => {
     if (!org?.id) return;
     let alive = true;
+
     (async () => {
       await getUsers();
+
       if (channel === "whatsapp") {
         await loadTemplates();
       }
+
       if (alive) stopLoading();
     })();
+
     return () => {
       alive = false;
     };
-  }, [org?.id, channel, getUsers, loadTemplates, startLoading, stopLoading]);
+  }, [org?.id, channel, getUsers, loadTemplates, stopLoading]);
 
-  // normalize users so filters always work the same way
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
       ...u,
@@ -281,14 +354,15 @@ export default function BroadcastPage() {
     }));
   }, [users]);
 
-  // group & choose template
   const templatesByName = useMemo(() => {
     const m = new Map();
     for (const t of templates) {
       if (!m.has(t.name)) m.set(t.name, []);
       m.get(t.name).push(t);
     }
-    for (const [k, arr] of m) m.set(k, arr.sort(byBestStatus));
+    for (const [k, arr] of m) {
+      m.set(k, arr.sort(byBestStatus));
+    }
     return m;
   }, [templates]);
 
@@ -325,27 +399,32 @@ export default function BroadcastPage() {
     const visit = (n) => {
       if (!n) return false;
       if (Array.isArray(n)) return n.some(visit);
+
       if (typeof n === "object") {
         for (const [k, v] of Object.entries(n)) {
-          if (k === "url" && typeof v === "string" && v.includes("{{"))
+          if (k === "url" && typeof v === "string" && v.includes("{{")) {
             return true;
+          }
           if (visit(v)) return true;
         }
       }
+
       return false;
     };
+
     return visit(blocks);
   }
 
-  // fetch details of selected template
   useEffect(() => {
     let alive = true;
+
     (async () => {
       setTplDetails(null);
       setVarDefs([]);
       setVarValues({});
       setNeedsUrlVar(false);
       setTplUrlVar("");
+
       if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
 
       try {
@@ -353,17 +432,23 @@ export default function BroadcastPage() {
           `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
         );
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to fetch template");
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to fetch template");
+        }
+
         if (!alive) return;
 
         setTplDetails(data);
 
         const defs = Array.isArray(data.variables) ? data.variables : [];
         const defaults = {};
+
         for (const v of defs) {
           const examples = v.examplesLocale?.[tplLang]?.exampleValueStrings;
           defaults[v.key] = examples?.[0] ?? "";
         }
+
         setVarDefs(defs);
         setVarValues(defaults);
 
@@ -377,10 +462,12 @@ export default function BroadcastPage() {
         console.error(e);
       }
     })();
-    return () => (alive = false);
+
+    return () => {
+      alive = false;
+    };
   }, [org?.id, chosenTemplate, tplLang, channel]);
 
-  // recipients filter (text + tags + assistant + whatsapp phone guard)
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
 
@@ -397,7 +484,6 @@ export default function BroadcastPage() {
         selectedAssistantIds.length === 0 ||
         selectedAssistantIds.includes(u.assistantId);
 
-      // WhatsApp requires phone
       const channelOk = channel !== "whatsapp" || !!u.phone_number;
 
       return channelOk && textOk && tagsOk && assistantOk;
@@ -407,7 +493,8 @@ export default function BroadcastPage() {
   function toggleOne(id) {
     setSelected((s) => {
       const n = new Set(s);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
       return n;
     });
   }
@@ -417,8 +504,13 @@ export default function BroadcastPage() {
       const n = new Set(s);
       const ids = filtered.map((u) => u.id);
       const allSel = ids.length > 0 && ids.every((id) => n.has(id));
-      (allSel ? ids : []).forEach((id) => n.delete(id));
-      (!allSel ? ids : []).forEach((id) => n.add(id));
+
+      if (allSel) {
+        ids.forEach((id) => n.delete(id));
+      } else {
+        ids.forEach((id) => n.add(id));
+      }
+
       return n;
     });
   }
@@ -427,9 +519,8 @@ export default function BroadcastPage() {
     setFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
-  // Upload helper
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = "images"; // keeping your existing bucket
+    const bucket = "images";
     const uploaded = [];
 
     const makeSafeName = (name) => {
@@ -442,7 +533,6 @@ export default function BroadcastPage() {
     for (const file of pickedFiles) {
       const safeName = makeSafeName(file.name);
       const key = `broadcasts/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
-
       const ct = file.type || guessContentTypeFromName(file.name);
 
       const { error: upErr } = await supabase.storage
@@ -455,6 +545,7 @@ export default function BroadcastPage() {
       }
 
       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
+
       if (pub?.publicUrl) {
         uploaded.push({
           url: pub.publicUrl,
@@ -475,13 +566,12 @@ export default function BroadcastPage() {
       const uploaded = await supabaseUpload(picked);
       setFiles((prev) => [...prev, ...uploaded]);
     } catch (err) {
-      alert(translation("Common.error") + ": " + err.message);
+      alert(`${translation("Common.error")}: ${err.message}`);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  // Thumbnail picking for a given video
   function openThumbnailPicker(videoUrl) {
     setThumbForVideoUrl(videoUrl);
     setTimeout(() => {
@@ -491,6 +581,7 @@ export default function BroadcastPage() {
 
   async function handlePickThumbnail(e) {
     const picked = Array.from(e.target.files || []);
+
     if (!picked.length || !thumbForVideoUrl) {
       if (thumbInputRef.current) thumbInputRef.current.value = "";
       return;
@@ -509,7 +600,7 @@ export default function BroadcastPage() {
         );
       }
     } catch (err) {
-      alert(translation("Common.error") + ": " + err.message);
+      alert(`${translation("Common.error")}: ${err.message}`);
     } finally {
       setThumbForVideoUrl(null);
       if (thumbInputRef.current) thumbInputRef.current.value = "";
@@ -522,7 +613,6 @@ export default function BroadcastPage() {
     );
   }
 
-  // ordered param values
   const orderedParamValues = useMemo(() => {
     if (varDefs.length === 0) {
       const map = new Map(
@@ -535,8 +625,10 @@ export default function BroadcastPage() {
             return [k.trim(), rest.join("=").trim()];
           }),
       );
+
       return Array.from(map.values());
     }
+
     return varDefs.map((v) => (varValues[v.key] ?? "").trim());
   }, [varDefs, varValues, tplParamsManual]);
 
@@ -547,16 +639,21 @@ export default function BroadcastPage() {
 
   const previewVars = useMemo(() => {
     const map = {};
-    for (const v of varDefs) map[v.key] = varValues[v.key] ?? "";
+    for (const v of varDefs) {
+      map[v.key] = varValues[v.key] ?? "";
+    }
+
     map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
     map.orgName =
       org?.name || map.empresa || map.company || map.organization || "";
     map.urlVar = tplUrlVar || "";
+
     return map;
   }, [varDefs, varValues, sampleRecipient, tplUrlVar, org?.name]);
 
   const preview = useMemo(() => {
     if (!tplDetails) return { body: "", buttonText: "", buttonUrl: "" };
+
     const pc =
       (tplDetails.platformContent || []).find(
         (x) => (x.locale || tplDetails.defaultLocale) === tplLang,
@@ -565,20 +662,26 @@ export default function BroadcastPage() {
     const blocks = pc?.blocks?.length
       ? pc.blocks
       : tplDetails.genericContent?.[0]?.blocks || [];
+
     const bodyRaw = extractText(blocks).join("\n\n");
     const body = interpolate(bodyRaw, previewVars);
 
-    let buttonText = "",
-      buttonUrl = "";
+    let buttonText = "";
+    let buttonUrl = "";
+
     (function scan(n) {
       if (!n) return;
       if (Array.isArray(n)) return n.forEach(scan);
+
       if (typeof n === "object") {
         if (n.action?.type === "link" && n.action.link) {
           buttonText = n.action.link.text || buttonText;
           buttonUrl = n.action.link.url || buttonUrl;
         }
-        for (const v of Object.values(n)) scan(v);
+
+        for (const v of Object.values(n)) {
+          scan(v);
+        }
       }
     })(blocks);
 
@@ -587,6 +690,7 @@ export default function BroadcastPage() {
       ...previewVars,
       urlVar: previewVars.urlVar,
     });
+
     return { body, buttonText, buttonUrl };
   }, [tplDetails, tplLang, previewVars]);
 
@@ -604,14 +708,105 @@ export default function BroadcastPage() {
       for (const v of varDefs) {
         const key = v.key || "";
         const k = key.toLowerCase();
+
         if (!next[key]) {
           if (NAME_KEYS.includes(k)) next[key] = recName;
           if (COMPANY_KEYS.includes(k)) next[key] = org?.name || "";
         }
       }
+
       return next;
     });
   }, [varDefs, sampleRecipient?.name, org?.name]);
+
+  useEffect(() => {
+    setHourDraft(formatHour(scheduledFor));
+    setMinuteDraft(formatMinute(scheduledFor));
+  }, [scheduledFor]);
+
+  const commitTimeParts = useCallback(
+    (hourValue, minuteValue) => {
+      const rawHour = String(hourValue || "").trim();
+      const rawMinute = String(minuteValue || "").trim();
+
+      if (!rawHour || !rawMinute) {
+        setTimeError("Fill in both hour and minute.");
+        return false;
+      }
+
+      if (!/^\d{1,2}$/.test(rawHour) || !/^\d{1,2}$/.test(rawMinute)) {
+        setTimeError("Use only numbers.");
+        return false;
+      }
+
+      const hours = Number(rawHour);
+      const minutes = Number(rawMinute);
+
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        setTimeError("Enter a valid time.");
+        return false;
+      }
+
+      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        setTimeError("Enter a valid time.");
+        return false;
+      }
+
+      const totalMinutes = hours * 60 + minutes;
+      const minMinutes = 8 * 60;
+      const maxMinutes = 20 * 60;
+
+      if (totalMinutes < minMinutes || totalMinutes > maxMinutes) {
+        setTimeError("Choose a time between 08:00 and 20:00.");
+        return false;
+      }
+
+      const next = new Date(scheduledFor);
+      next.setHours(hours, minutes, 0, 0);
+
+      setScheduledFor(next);
+      setHourDraft(String(hours).padStart(2, "0"));
+      setMinuteDraft(String(minutes).padStart(2, "0"));
+      setTimeError("");
+
+      return true;
+    },
+    [scheduledFor],
+  );
+
+  function handleHourChange(value) {
+    setHourDraft(
+      String(value || "")
+        .replace(/\D/g, "")
+        .slice(0, 2),
+    );
+    setTimeError("");
+  }
+
+  function handleMinuteChange(value) {
+    setMinuteDraft(
+      String(value || "")
+        .replace(/\D/g, "")
+        .slice(0, 2),
+    );
+    setTimeError("");
+  }
+
+  useEffect(() => {
+    if (!hourDraft.trim() || !minuteDraft.trim()) return;
+    if (hourDraft.length < 2 || minuteDraft.length < 2) return;
+
+    const currentHour = formatHour(scheduledFor);
+    const currentMinute = formatMinute(scheduledFor);
+
+    if (hourDraft === currentHour && minuteDraft === currentMinute) return;
+
+    const timeout = setTimeout(() => {
+      commitTimeParts(hourDraft, minuteDraft);
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [commitTimeParts, hourDraft, minuteDraft, scheduledFor]);
 
   const baseCanSend =
     selected.size > 0 &&
@@ -621,66 +816,11 @@ export default function BroadcastPage() {
         files.length > 0
       : message.trim().length > 0 || files.length > 0);
 
-  const scheduledDate = useMemo(() => {
-    if (!scheduledAt) return null;
-    const d = new Date(scheduledAt);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }, [scheduledAt]);
-
   const scheduleInvalid =
     deliveryMode === "schedule" &&
-    (!scheduledDate || scheduledDate.getTime() <= Date.now());
+    (!scheduledFor || scheduledFor.getTime() <= Date.now() || !!timeError);
 
   const canSend = baseCanSend && !scheduleInvalid;
-
-  async function handleSend() {
-    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
-    if (!chosen.length) return alert(translation("Broadcast.chooseRecipients"));
-
-    setSending(true);
-    setResult(null);
-
-    try {
-      const payload = buildBroadcastPayload(chosen);
-      const endpoint =
-        channel === "whatsapp"
-          ? "/api/broadcast/whatsapp"
-          : "/api/broadcast/teams";
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = text;
-      }
-
-      setResult(data);
-
-      if (!res.ok) {
-        console.error("Broadcast send error", data);
-        alert(translation("Common.error"));
-        return;
-      }
-
-      alert(
-        channel === "whatsapp"
-          ? "WhatsApp broadcast sent successfully."
-          : "Teams broadcast sent successfully.",
-      );
-    } catch (err) {
-      console.error("[Broadcast] handleSend error:", err);
-      alert(translation("Common.error") + ": " + err.message);
-    } finally {
-      setSending(false);
-    }
-  }
 
   function buildBroadcastPayload(chosen) {
     if (channel === "whatsapp") {
@@ -713,18 +853,75 @@ export default function BroadcastPage() {
     };
   }
 
-  async function handleSchedule() {
+  async function handleSend() {
     const chosen = normalizedUsers.filter((u) => selected.has(u.id));
     if (!chosen.length) {
       return alert(translation("Broadcast.chooseRecipients"));
     }
 
-    if (!scheduledAt) {
+    setSending(true);
+    setResult(null);
+
+    try {
+      const payload = buildBroadcastPayload(chosen);
+      const endpoint =
+        channel === "whatsapp"
+          ? "/api/broadcast/whatsapp"
+          : "/api/broadcast/teams";
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+
+      setResult(data);
+
+      if (!res.ok) {
+        console.error("Broadcast send error", data);
+        alert(translation("Common.error"));
+        return;
+      }
+
+      alert(
+        channel === "whatsapp"
+          ? "WhatsApp broadcast sent successfully."
+          : "Teams broadcast sent successfully.",
+      );
+    } catch (err) {
+      console.error("[Broadcast] handleSend error:", err);
+      alert(`${translation("Common.error")}: ${err.message}`);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleSchedule() {
+    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
+
+    if (!chosen.length) {
+      return alert(translation("Broadcast.chooseRecipients"));
+    }
+
+    const committed = commitTimeParts(hourDraft, minuteDraft);
+    if (!committed) {
+      return alert("Please enter a valid time between 08:00 and 20:00.");
+    }
+
+    if (!scheduledFor || Number.isNaN(scheduledFor.getTime())) {
       return alert("Choose a date and time.");
     }
 
-    const when = new Date(scheduledAt);
-    if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
+    if (scheduledFor.getTime() <= Date.now()) {
       return alert("The scheduled date must be in the future");
     }
 
@@ -741,7 +938,7 @@ export default function BroadcastPage() {
           orgId: org?.id,
           createdByUserId: user?.id || null,
           channel,
-          scheduledFor: when.toISOString(),
+          scheduledFor: scheduledFor.toISOString(),
           timezone: browserTimeZone,
           payload,
           recipientCount: chosen.length,
@@ -749,7 +946,6 @@ export default function BroadcastPage() {
       });
 
       const data = await res.json();
-
       setResult(data);
 
       if (!res.ok) {
@@ -759,11 +955,10 @@ export default function BroadcastPage() {
       }
 
       alert("Broadcast scheduled successfully");
-      setScheduledAt("");
       setDeliveryMode("now");
     } catch (err) {
       console.error(err);
-      alert(translation("Common.error") + ": " + err.message);
+      alert(`${translation("Common.error")}: ${err.message}`);
     } finally {
       setSending(false);
     }
@@ -771,6 +966,15 @@ export default function BroadcastPage() {
 
   const allOnPageSelected =
     filtered.length > 0 && filtered.every((u) => selected.has(u.id));
+
+  const previewTime = useMemo(
+    () =>
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [],
+  );
 
   return (
     <div className={styles.screen}>
@@ -785,6 +989,7 @@ export default function BroadcastPage() {
           >
             Teams
           </button>
+
           <button
             type="button"
             className={`${styles.channelBtn} ${
@@ -800,6 +1005,7 @@ export default function BroadcastPage() {
           <div className={styles.selectedLabel}>
             {translation("Broadcast.selected")} <strong>{selected.size}</strong>
           </div>
+
           <button
             onClick={deliveryMode === "schedule" ? handleSchedule : handleSend}
             disabled={sending || !canSend}
@@ -815,7 +1021,6 @@ export default function BroadcastPage() {
       </div>
 
       <div className={styles.columns}>
-        {/* LEFT */}
         <div className={styles.leftCol}>
           <div className={styles.panel}>
             <div className={styles.panelTitle}>
@@ -829,233 +1034,276 @@ export default function BroadcastPage() {
               placeholder={translation("Broadcast.messagePlaceholder")}
               className={styles.textarea}
             />
+          </div>
 
-            <div className={styles.scheduleBox}>
-              <div className={styles.label}>Delivery</div>
+          <div
+            className={`${styles.toolsGrid} ${
+              channel === "whatsapp"
+                ? styles.toolsGridThree
+                : styles.toolsGridTwo
+            }`}
+          >
+            <div className={`${styles.toolCard} ${styles.toolCardSchedule}`}>
+              <div className={styles.panelTitle}>Agendamento</div>
 
               <div className={styles.scheduleModeRow}>
                 <button
                   type="button"
-                  className={`${styles.kbdBtn} ${deliveryMode === "now" ? styles.modeBtnActive : ""}`}
+                  className={`${styles.kbdBtn} ${
+                    deliveryMode === "now" ? styles.modeBtnActive : ""
+                  }`}
                   onClick={() => setDeliveryMode("now")}
                 >
                   Send now
                 </button>
+
                 <button
                   type="button"
-                  className={`${styles.kbdBtn} ${deliveryMode === "schedule" ? styles.modeBtnActive : ""}`}
+                  className={`${styles.kbdBtn} ${
+                    deliveryMode === "schedule" ? styles.modeBtnActive : ""
+                  }`}
+                  onClick={() => setDeliveryMode("schedule")}
                 >
                   Schedule
                 </button>
               </div>
 
-              {deliveryMode === "schedule" && (
-                <div className={styles.scheduleGrid}>
-                  <div className={styles.field}></div>
+              <div className={styles.scheduleHint}>
+                Timezone: {browserTimeZone}
+              </div>
+
+              <div className={styles.calendarWrap}>
+                <DatePicker
+                  selected={scheduledFor}
+                  onChange={(date) => {
+                    if (!date) return;
+
+                    const next = new Date(date);
+                    next.setHours(
+                      scheduledFor.getHours(),
+                      scheduledFor.getMinutes(),
+                      0,
+                      0,
+                    );
+                    setScheduledFor(next);
+                  }}
+                  inline
+                  dateFormat="dd/MM/yyyy"
+                  minDate={new Date()}
+                />
+              </div>
+
+              <div className={styles.timeInputWrap}>
+                <label className={styles.smallLabel}>Hora</label>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto 1fr",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                  onBlur={(e) => {
+                    if (e.currentTarget.contains(e.relatedTarget)) return;
+
+                    const ok = commitTimeParts(hourDraft, minuteDraft);
+                    if (!ok) {
+                      setHourDraft(formatHour(scheduledFor));
+                      setMinuteDraft(formatMinute(scheduledFor));
+                    }
+                  }}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="08"
+                    value={hourDraft}
+                    onChange={(e) => handleHourChange(e.target.value)}
+                    className={styles.input}
+                  />
+
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: "#666",
+                      textAlign: "center",
+                    }}
+                  >
+                    :
+                  </span>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="00"
+                    value={minuteDraft}
+                    onChange={(e) => handleMinuteChange(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+
+                {timeError && (
+                  <div className={styles.scheduleError}>{timeError}</div>
+                )}
+              </div>
+
+              {deliveryMode === "schedule" && scheduleInvalid && !timeError && (
+                <div className={styles.scheduleError}>
+                  Please choose a future date and time.
                 </div>
               )}
             </div>
 
-            {/* FILE picker */}
-            <div className={styles.imagesRow}>
-              <label className={styles.label}>
+            <div className={styles.toolCard}>
+              <div className={styles.panelTitle}>
                 Anexos ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
-              </label>
+              </div>
+
+              <div className={styles.imagesRow}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="*/*"
+                  multiple
+                  onChange={handlePickFiles}
+                />
+              </div>
+
               <input
-                ref={fileInputRef}
+                ref={thumbInputRef}
                 type="file"
-                accept="*/*"
-                multiple
-                onChange={handlePickFiles}
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handlePickThumbnail}
               />
+
+              <div className={styles.filesStack}>
+                {imageFiles.length > 0 && (
+                  <div>
+                    <div className={styles.label}>Imagens</div>
+                    <div className={styles.thumbStrip}>
+                      {imageFiles.map((f) => (
+                        <div key={f.url} className={styles.thumbWrap}>
+                          <img
+                            src={f.url}
+                            alt={f.name || "upload"}
+                            width={110}
+                            height={110}
+                            className={styles.imageThumb}
+                          />
+                          <button
+                            onClick={() => removeFile(f.url)}
+                            className={styles.thumbClose}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {videoFiles.length > 0 && (
+                  <div>
+                    <div className={styles.label}>Vídeos</div>
+                    <div className={styles.fileList}>
+                      {videoFiles.map((f) => (
+                        <div key={f.url} className={styles.fileItem}>
+                          <div className={styles.fileMeta}>
+                            <div className={styles.fileName}>
+                              {f.name || "video"}
+                            </div>
+                            <div className={styles.fileType}>
+                              {f.contentType}
+                            </div>
+                          </div>
+
+                          <div className={styles.fileActions}>
+                            <button
+                              type="button"
+                              onClick={() => openThumbnailPicker(f.url)}
+                              className={styles.kbdBtn}
+                            >
+                              Thumbnail
+                            </button>
+
+                            {f.thumbnailUrl && (
+                              <button
+                                type="button"
+                                onClick={() => removeThumbnail(f.url)}
+                                className={styles.kbdBtn}
+                              >
+                                Remove thumb
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => removeFile(f.url)}
+                              className={styles.kbdBtn}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {otherFiles.length > 0 && (
+                  <div>
+                    <div className={styles.label}>Ficheiros</div>
+                    <div className={styles.fileList}>
+                      {otherFiles.map((f) => (
+                        <div key={f.url} className={styles.fileItem}>
+                          <div className={styles.fileMeta}>
+                            <a href={f.url} target="_blank" rel="noreferrer">
+                              {f.name || "file"}
+                            </a>
+                            <div className={styles.fileType}>
+                              {f.contentType}
+                            </div>
+                          </div>
+
+                          <div className={styles.fileActions}>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(f.url)}
+                              className={styles.kbdBtn}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {files.length === 0 && (
+                  <div className={styles.emptyMini}>
+                    Sem anexos adicionados.
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* hidden thumbnail picker (used per-video) */}
-            <input
-              ref={thumbInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handlePickThumbnail}
-            />
-
-            {/* Images */}
-            {imageFiles.length > 0 && (
-              <div style={{ marginTop: 10 }}>
-                <div className={styles.label}>Imagens</div>
-                <div className={styles.thumbStrip}>
-                  {imageFiles.map((f) => (
-                    <div key={f.url} className={styles.thumbWrap}>
-                      <img
-                        src={f.url}
-                        alt={f.name || "upload"}
-                        width={120}
-                        height={120}
-                        style={{
-                          objectFit: "cover",
-                          borderRadius: 8,
-                          border: "1px solid #eee",
-                        }}
-                      />
-                      <button
-                        onClick={() => removeFile(f.url)}
-                        className={styles.thumbClose}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+            {channel === "whatsapp" && (
+              <div className={`${styles.toolCard} ${styles.toolCardTemplate}`}>
+                <div className={styles.panelTitle}>
+                  Pré-Visualização do Template
                 </div>
-              </div>
-            )}
 
-            {/* Videos */}
-            {videoFiles.length > 0 && (
-              <div style={{ marginTop: 14 }}>
-                <div className={styles.label}>Vídeos (Teams: card + botão)</div>
-                {videoFiles.map((f) => (
-                  <div
-                    key={f.url}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "8px 0",
-                      borderBottom: "1px solid #f0f0f0",
-                    }}
-                  >
-                    {/* thumb preview */}
-                    <div
-                      style={{
-                        width: 72,
-                        height: 44,
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        border: "1px solid #eee",
-                        background: "#fafafa",
-                      }}
-                    >
-                      {f.thumbnailUrl ? (
-                        <img
-                          src={f.thumbnailUrl}
-                          alt="thumb"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 12,
-                            opacity: 0.7,
-                          }}
-                        >
-                          sem thumb
-                        </div>
-                      )}
-                    </div>
+                {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
 
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{f.name || "video"}</div>
-                      <div style={{ fontSize: 12, opacity: 0.7 }}>
-                        {f.contentType}
-                      </div>
-                      <a
-                        href={f.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ fontSize: 12 }}
-                      >
-                        abrir link
-                      </a>
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        onClick={() => openThumbnailPicker(f.url)}
-                        className={styles.kbdBtn}
-                      >
-                        Adicionar thumbnail
-                      </button>
-                      {f.thumbnailUrl && (
-                        <button
-                          type="button"
-                          onClick={() => removeThumbnail(f.url)}
-                          className={styles.kbdBtn}
-                        >
-                          Remover thumb
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeFile(f.url)}
-                        className={styles.kbdBtn}
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Other files */}
-            {otherFiles.length > 0 && (
-              <div style={{ marginTop: 14 }}>
-                <div className={styles.label}>Ficheiros</div>
-                {otherFiles.map((f) => (
-                  <div
-                    key={f.url}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "6px 0",
-                      borderBottom: "1px solid #f0f0f0",
-                    }}
-                  >
-                    <a href={f.url} target="_blank" rel="noreferrer">
-                      {f.name || "file"}
-                    </a>
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>
-                      {f.contentType}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(f.url)}
-                      className={styles.kbdBtn}
-                    >
-                      Remover
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Template section (kept as-is in your version) */}
-          {channel === "whatsapp" && (
-            <div className={`${styles.panel} ${styles.panelSlim}`}>
-              <div className={styles.panelTitle}>
-                {translation("Broadcast.templatePreview")}
-              </div>
-              {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
-
-              <div className={styles.templateGrid}>
-                <div className={styles.templateFormCol}>
-                  <div className={styles.templateRow}>
+                <div className={styles.templateCardBody}>
+                  <div className={styles.templateFields}>
                     <div className={styles.field}>
                       <div className={styles.label}>
                         {translation("Broadcast.template")}
                       </div>
+
                       <select
                         disabled={tplLoading || nameOptions.length === 0}
                         value={tplName}
@@ -1076,189 +1324,160 @@ export default function BroadcastPage() {
                       </select>
                     </div>
 
-                    {chosenTemplate && (
-                      <div className={styles.meta}>
-                        <span className={styles.metaItem}>
-                          <span className={`${styles.pill} ${styles.pillSoft}`}>
-                            {/* status */}
-                          </span>
-                        </span>
+                    {varDefs.length > 0 ? (
+                      <div className={styles.gridSingle}>
+                        {varDefs.map((v) => {
+                          const kLower = String(v.key || "").toLowerCase();
+                          const locked = isLockedVar(kLower);
+
+                          let displayVal = varValues[v.key] ?? "";
+                          if (!displayVal && COMPANY_KEYS.includes(kLower)) {
+                            displayVal = org?.name || "";
+                          }
+                          if (!displayVal && NAME_KEYS.includes(kLower)) {
+                            displayVal = sampleRecipient?.name || "";
+                          }
+
+                          const placeholder =
+                            v.examplesLocale?.[tplLang]
+                              ?.exampleValueStrings?.[0] ??
+                            (v.examplesLocale
+                              ? v.examplesLocale[
+                                  Object.keys(v.examplesLocale)[0]
+                                ]?.exampleValueStrings?.[0]
+                              : "") ??
+                            "";
+
+                          return (
+                            <div key={v.key} className={styles.fieldWide}>
+                              <label className={styles.smallLabel}>
+                                {v.key}
+                                {v.characterLimit
+                                  ? ` · máx ${v.characterLimit}`
+                                  : ""}
+                                {v.description ? ` — ${v.description}` : ""}
+                              </label>
+
+                              {locked ? (
+                                <div className={styles.lockedField}>
+                                  {displayVal || "—"}
+                                </div>
+                              ) : (
+                                <input
+                                  value={varValues[v.key] ?? ""}
+                                  onChange={(e) =>
+                                    setVarValues((prev) => ({
+                                      ...prev,
+                                      [v.key]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder={placeholder}
+                                  maxLength={v.characterLimit || undefined}
+                                  className={styles.input}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className={styles.fieldWide}>
+                        <label className={styles.smallLabel}>
+                          {translation("Broadcast.varKeyDesc")}
+                        </label>
+                        <input
+                          value={tplParamsManual}
+                          onChange={(e) => setTplParamsManual(e.target.value)}
+                          placeholder="name=Gaspar,url=?session=123"
+                          className={styles.input}
+                        />
+                      </div>
+                    )}
+
+                    {needsUrlVar && (
+                      <div className={styles.fieldWide}>
+                        <label className={styles.smallLabel}>
+                          {translation("Broadcast.urlVar")}
+                        </label>
+                        <input
+                          value={tplUrlVar}
+                          onChange={(e) => setTplUrlVar(e.target.value)}
+                          placeholder="session-12345"
+                          className={styles.input}
+                        />
+                      </div>
+                    )}
+
+                    {!paramsComplete && (
+                      <div className={styles.helpDanger}>
+                        {translation("Common.error")}
                       </div>
                     )}
                   </div>
 
-                  {varDefs.length > 0 ? (
-                    <div className={styles.grid}>
-                      {varDefs.map((v) => {
-                        const kLower = String(v.key || "").toLowerCase();
-                        const locked = isLockedVar(kLower);
+                  <aside className={styles.templatePreviewCol}>
+                    {preview.body || preview.buttonText || preview.buttonUrl ? (
+                      <>
+                        <div
+                          className={`${styles.waFrame} ${styles.waFrameSmall}`}
+                        >
+                          <div className={styles.waHeader}>
+                            <div className={styles.waAvatar}>U</div>
 
-                        let displayVal = varValues[v.key] ?? "";
-                        if (!displayVal && COMPANY_KEYS.includes(kLower))
-                          displayVal = org?.name || "";
-                        if (!displayVal && NAME_KEYS.includes(kLower))
-                          displayVal = sampleRecipient?.name || "";
-
-                        const placeholder =
-                          v.examplesLocale?.[tplLang]
-                            ?.exampleValueStrings?.[0] ??
-                          (v.examplesLocale
-                            ? v.examplesLocale[Object.keys(v.examplesLocale)[0]]
-                                ?.exampleValueStrings?.[0]
-                            : "") ??
-                          "";
-
-                        return (
-                          <div key={v.key} className={styles.fieldWide}>
-                            <label className={styles.smallLabel}>
-                              {v.key}
-                              {v.characterLimit
-                                ? ` · máx ${v.characterLimit}`
-                                : ""}
-                              {v.description ? ` — ${v.description}` : ""}
-                              {locked && (
-                                <span
-                                  style={{
-                                    marginLeft: 8,
-                                    fontSize: 11,
-                                    padding: "2px 6px",
-                                    borderRadius: 999,
-                                    background: "#F3F4F6",
-                                    color: "#374151",
-                                  }}
-                                >
-                                  auto
-                                </span>
-                              )}
-                            </label>
-
-                            {locked ? (
-                              <div
-                                style={{
-                                  padding: "10px 12px",
-                                  border: "1px dashed #e5e7eb",
-                                  borderRadius: 10,
-                                  background: "#F9FAFB",
-                                  color: "#111827",
-                                  minHeight: 40,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  whiteSpace: "pre-wrap",
-                                }}
-                              >
-                                {displayVal || "—"}
+                            <div className={styles.waHeaderText}>
+                              <div className={styles.waTitle}>
+                                {sampleRecipient?.name ||
+                                  translation("Common.none")}
                               </div>
-                            ) : (
-                              <input
-                                value={varValues[v.key] ?? ""}
-                                onChange={(e) =>
-                                  setVarValues((prev) => ({
-                                    ...prev,
-                                    [v.key]: e.target.value,
-                                  }))
-                                }
-                                placeholder={placeholder}
-                                maxLength={v.characterLimit || undefined}
-                                className={styles.input}
-                              />
+                              <div className={styles.waSubtitle}>online</div>
+                            </div>
+
+                            <div className={styles.waIcons}>⋯</div>
+                          </div>
+
+                          <div className={styles.waChat}>
+                            <div className={styles.waRowOut}>
+                              <div className={styles.waBubbleOut}>
+                                <span className={styles.waText}>
+                                  {preview.body || "—"}
+                                </span>
+                                <span className={styles.waMeta}>
+                                  {previewTime} ✓✓
+                                </span>
+                              </div>
+                            </div>
+
+                            {(preview.buttonText || preview.buttonUrl) && (
+                              <div className={styles.waRowOut}>
+                                <button
+                                  className={styles.waCtaBtn}
+                                  type="button"
+                                >
+                                  {preview.buttonText || "Abrir"}
+                                </button>
+                              </div>
                             )}
                           </div>
-                        );
-                      })}
-                      {!paramsComplete && (
-                        <div className={styles.helpDanger}>
-                          {translation("Common.error")}
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className={styles.fieldWide}>
-                      <label className={styles.smallLabel}>
-                        {translation("Broadcast.varKeyDesc")}
-                      </label>
-                      <input
-                        value={tplParamsManual}
-                        onChange={(e) => setTplParamsManual(e.target.value)}
-                        placeholder="name=Gaspar,url=?session=123"
-                        className={styles.input}
-                      />
-                    </div>
-                  )}
 
-                  {needsUrlVar && (
-                    <div className={styles.fieldWide}>
-                      <label className={styles.smallLabel}>
-                        {translation("Broadcast.urlVar")}
-                      </label>
-                      <input
-                        value={tplUrlVar}
-                        onChange={(e) => setTplUrlVar(e.target.value)}
-                        placeholder="session-12345"
-                        className={styles.input}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <aside className={styles.previewCol}>
-                  {preview.body || preview.buttonText || preview.buttonUrl ? (
-                    <>
-                      <div
-                        className={`${styles.waFrame} ${styles.waFrameSmall}`}
-                      >
-                        <div className={styles.waHeader}>
-                          <div className={styles.waAvatar}>U</div>
-                          <div className={styles.waHeaderText}>
-                            <div className={styles.waTitle}>
-                              {sampleRecipient?.name ||
-                                translation("Common.none")}
-                            </div>
-                            <div className={styles.waSubtitle}>online</div>
+                        {preview.buttonUrl && (
+                          <div className={styles.previewUrlHint}>
+                            URL: {preview.buttonUrl}
                           </div>
-                          <div className={styles.waIcons}>⋯</div>
-                        </div>
-                        <div className={styles.waChat}>
-                          <div className={styles.waRowOut}>
-                            <div className={styles.waBubbleOut}>
-                              <span className={styles.waText}>
-                                {preview.body || "—"}
-                              </span>
-                              <span className={styles.waMeta}>
-                                {new Date().toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}{" "}
-                                ✓✓
-                              </span>
-                            </div>
-                          </div>
-                          {(preview.buttonText || preview.buttonUrl) && (
-                            <div className={styles.waRowOut}>
-                              <button className={styles.waCtaBtn} type="button">
-                                {preview.buttonText || "Abrir"}
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className={styles.previewPlaceholder}>
+                        {translation("Common.noResults")}
                       </div>
-                      {preview.buttonUrl && (
-                        <div className={styles.previewUrlHint}>
-                          URL: {preview.buttonUrl}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className={styles.previewPlaceholder}>
-                      {translation("Common.noResults")}
-                    </div>
-                  )}
-                </aside>
+                    )}
+                  </aside>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* RIGHT */}
         <div className={styles.rightCol}>
           <div className={styles.panel}>
             <div className={styles.recipientsHeader}>
@@ -1296,12 +1515,12 @@ export default function BroadcastPage() {
               />
             </div>
 
-            {/* Active filter chips */}
             {activeFilterCount > 0 && (
               <div className={styles.activeFilters}>
                 {selectedTagIds.map((id) => {
                   const t = allTags.find((x) => x.id === id);
                   if (!t) return null;
+
                   return (
                     <button
                       key={`t${id}`}
@@ -1321,6 +1540,7 @@ export default function BroadcastPage() {
                 {selectedAssistantIds.map((id) => {
                   const a = assistantsList.find((x) => x.id === id);
                   if (!a) return null;
+
                   return (
                     <button
                       key={`a${id}`}
@@ -1352,6 +1572,7 @@ export default function BroadcastPage() {
             <div className={styles.listBox}>
               {filtered.map((u, i) => {
                 const isSel = selected.has(u.id);
+
                 return (
                   <label
                     key={u.id}
@@ -1364,7 +1585,9 @@ export default function BroadcastPage() {
                       checked={isSel}
                       onChange={() => toggleOne(u.id)}
                     />
+
                     <div className={styles.avatar}>{Initial(u.name)}</div>
+
                     <div className={styles.nameBlock}>
                       <div className={styles.name}>
                         {u.name || translation("Common.none")}
@@ -1376,6 +1599,7 @@ export default function BroadcastPage() {
                   </label>
                 );
               })}
+
               {filtered.length === 0 && (
                 <div className={styles.empty}>
                   {translation("Broadcast.emptyUsers")}
@@ -1386,7 +1610,6 @@ export default function BroadcastPage() {
         </div>
       </div>
 
-      {/* Popover filter */}
       <FilterMenu
         side="left"
         open={filterOpen}
