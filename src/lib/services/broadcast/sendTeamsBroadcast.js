@@ -33,7 +33,7 @@ export async function sendTeamsBroadcast(input = {}) {
   }
 
   const results = [];
-  for (const userid of userIds) {
+  for (const userId of userIds) {
     const install = await getTeamsUserInstallation({
       userId,
       conversationType: "personal",
@@ -75,7 +75,7 @@ export async function sendTeamsBroadcast(input = {}) {
         name: f.name || "image",
       }));
       const videoCardAttachments = videoFiles.map((f) => {
-        const hasThumb = Boolean(g.thumbnailUrl);
+        const hasThumb = Boolean(f.thumbnailUrl);
 
         return {
           contentType: "application/vnd.microsoft.card.hero",

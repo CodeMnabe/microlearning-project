@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
 
-export async function POST() {
+export async function POST(req) {
   try {
     const body = await req.json();
 
@@ -54,6 +54,7 @@ export async function POST() {
       organization_id: orgId,
       created_by_user_id: createdByUserId,
       channel,
+      status: "queued",
       scheduled_for: when.toISOString(),
       timezone: timezone || null,
       payload,
