@@ -14,6 +14,9 @@ import {
   Settings,
   LogOut,
   LogIn,
+  ChevronDown,
+  SendHorizontal,
+  CalendarClock,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useMobileNav } from "@/app/components/MobileNav/MobileNavContext";
@@ -26,14 +29,11 @@ export default function Navbar() {
   const locale = useLocale();
   const pathName = usePathname();
 
-  const { open, close } = useMobileNav(); // <— new
+  const { open, close } = useMobileNav();
 
   const pathNoLocale = pathName.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
   const [pendingHref, setPendingHref] = useState(null);
   const isAdmin = !!org && org.id === 1;
-
-  useEffect(() => setPendingHref(null), [pathName]);
-  useEffect(() => close(), [pathName]); // close drawer after route changes
 
   const isActive = useCallback(
     (href) => {
@@ -44,35 +44,61 @@ export default function Navbar() {
     [pendingHref, pathNoLocale],
   );
 
+  const isExactActive = useCallback(
+    (href) => {
+      const current = pendingHref ?? pathNoLocale;
+      return current === href;
+    },
+    [pendingHref, pathNoLocale],
+  );
+
+  const broadcastSectionActive = isActive("/broadcast");
+  const [broadcastOpen, setBroadcastOpen] = useState(broadcastSectionActive);
+
+  useEffect(() => setPendingHref(null), [pathName]);
+  useEffect(() => close(), [pathName]);
+
+  useEffect(() => {
+    if (broadcastSectionActive) {
+      setBroadcastOpen(true);
+    }
+  }, [broadcastSectionActive]);
+
   const onNavClick = (href) => (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
       return;
     setPendingHref(href);
-    close(); // close drawer on tap (mobile)
+    close();
   };
 
   async function handleSignOut() {
     try {
       await supabase.auth.signOut({ scope: "local" });
     } catch {}
+
     try {
       for (const k of Object.keys(localStorage)) {
-        if (k.startsWith("sb-") && k.endsWith("-auth-token"))
+        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
           localStorage.removeItem(k);
-        if (k.startsWith("sb-") && k.endsWith("-refresh-token"))
+        }
+        if (k.startsWith("sb-") && k.endsWith("-refresh-token")) {
           localStorage.removeItem(k);
+        }
       }
+
       try {
         const bc = new BroadcastChannel("supabase.auth");
         bc.postMessage({ event: "SIGNED_OUT" });
         bc.close();
       } catch {}
     } catch {}
+
     await fetch("/api/auth/signout", {
       method: "POST",
       credentials: "same-origin",
       cache: "no-store",
     });
+
     setUser(null);
     router.replace("/login");
     window.location.assign(`/${locale}/login`);
@@ -80,7 +106,6 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Drawer */}
       <aside
         id="primary-nav"
         className={`${styles.sidebar} ${open ? styles.open : ""}`}
@@ -132,16 +157,61 @@ export default function Navbar() {
                 <span>{translation("Nav.assistants")}</span>
               </Link>
 
-              <Link
-                href="/broadcast"
-                onClick={onNavClick("/broadcast")}
-                className={`${styles.navItem} ${
-                  isActive("/broadcast") ? styles.active : ""
-                }`}
-              >
-                <MessageSquare aria-hidden className={styles.icon} />
-                <span>{translation("Nav.broadcast")}</span>
-              </Link>
+              <div className={styles.group}>
+                <button
+                  type="button"
+                  className={`${styles.navItem} ${styles.navToggle} ${
+                    broadcastSectionActive ? styles.active : ""
+                  }`}
+                  onClick={() => setBroadcastOpen((prev) => !prev)}
+                  aria-expanded={broadcastOpen}
+                  aria-controls="broadcast-subnav"
+                >
+                  <span className={styles.navItemMain}>
+                    <MessageSquare aria-hidden className={styles.icon} />
+                    <span>{translation("Nav.broadcast")}</span>
+                  </span>
+
+                  <ChevronDown
+                    aria-hidden
+                    className={`${styles.chevron} ${
+                      broadcastOpen ? styles.chevronOpen : ""
+                    }`}
+                  />
+                </button>
+
+                {broadcastOpen && (
+                  <div id="broadcast-subnav" className={styles.subnav}>
+                    <Link
+                      href="/broadcast"
+                      onClick={onNavClick("/broadcast")}
+                      className={`${styles.subnavItem} ${
+                        isExactActive("/broadcast") ? styles.active : ""
+                      }`}
+                    >
+                      <SendHorizontal
+                        aria-hidden
+                        className={styles.subnavIcon}
+                      />
+                      <span>{translation("Nav.broadcastCreate")}</span>
+                    </Link>
+
+                    <Link
+                      href="/broadcast/scheduled"
+                      onClick={onNavClick("/broadcast/scheduled")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/scheduled") ? styles.active : ""
+                      }`}
+                    >
+                      <CalendarClock
+                        aria-hidden
+                        className={styles.subnavIcon}
+                      />
+                      <span>{translation("Nav.broadcastScheduled")}</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
 
               {isAdmin && (
                 <Link
@@ -201,7 +271,6 @@ export default function Navbar() {
         )}
       </aside>
 
-      {/* Backdrop (mobile only via CSS) */}
       <button
         className={styles.backdrop}
         hidden={!open}

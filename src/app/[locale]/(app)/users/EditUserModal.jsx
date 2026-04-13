@@ -36,7 +36,7 @@ export default function EditUserModal({
   const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
-  const [teamsAadObjectId, setTeamsAadObjectId] = useState("");
+  const [teamsAadObjectId, setTeamsAadObjectId] = useState(null);
   const [teamsFromId, setTeamsFromId] = useState("");
   const [saving, setSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,7 +81,7 @@ export default function EditUserModal({
     setAssistantId(user.assistantId ?? user.assistant_id ?? null);
 
     setTeamsAadObjectId(
-      user.teamsAadObjectId ?? user.teams_aad_object_id ?? "",
+      user.teamsAadObjectId ?? user.teams_aad_object_id ?? null,
     );
     setTeamsFromId(user.teamsFromId ?? user.teams_from_id ?? "");
     setSelectedTagIds(user.tagIds || user.tag_ids || []);
@@ -378,7 +378,7 @@ export default function EditUserModal({
                   <div className={styles.formGroup}>
                     <label>Teams Aad Object ID</label>
                     <input
-                      value={teamsAadObjectId ?? ""}
+                      value={teamsAadObjectId ?? null}
                       onChange={(e) => setTeamsAadObjectId(e.target.value)}
                       placeholder="00000000-0000-0000-0000-000000000000"
                     />

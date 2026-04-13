@@ -4,26 +4,26 @@ import { createPortal } from "react-dom";
 import styles from "./pillSelect.module.css";
 
 export default function PillSelect({
-  options = [], // [{ value, label }]
+  options = [],
   value,
   onChange,
   placeholder = "Select...",
   disabled = false,
-  menuWidth, // optional fixed width for the menu
+  menuWidth,
   portalToBody = true,
   fullWidth = false,
   className = "",
+  style,
 }) {
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0, width: 220 });
-  const [direction, setDirection] = useState("down"); // "down" | "up"
+  const [direction, setDirection] = useState("down");
 
   const selected = options.find((o) => String(o.value) === String(value));
   const label = selected?.label ?? placeholder;
 
-  // Close on outside click / ESC + keep position updated
   useEffect(() => {
     if (!open) return;
 
@@ -32,12 +32,15 @@ export default function PillSelect({
       if (triggerRef.current?.contains(e.target)) return;
       setOpen(false);
     }
+
     function onEsc(e) {
       if (e.key === "Escape") setOpen(false);
     }
+
     function onResize() {
       reposition();
     }
+
     function onScroll() {
       reposition();
     }
@@ -45,7 +48,6 @@ export default function PillSelect({
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onEsc);
     window.addEventListener("resize", onResize);
-    // capture=true catches scrolls in nested containers
     document.addEventListener("scroll", onScroll, true);
 
     return () => {
@@ -54,10 +56,8 @@ export default function PillSelect({
       window.removeEventListener("resize", onResize);
       document.removeEventListener("scroll", onScroll, true);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Compute position & flip if needed
   const reposition = () => {
     if (!open || !triggerRef.current) return;
 
@@ -65,23 +65,19 @@ export default function PillSelect({
     const width = menuWidth ?? r.width;
     const left = Math.max(12, Math.min(window.innerWidth - width - 12, r.left));
 
-    // Provisional place (down) to measure height
     const downTop = r.bottom + 6;
     setPos((p) => ({ ...p, top: downTop, left, width }));
 
-    // Measure then decide up vs down
     requestAnimationFrame(() => {
       const mh = menuRef.current?.getBoundingClientRect().height ?? 0;
       const spaceBelow = window.innerHeight - (r.bottom + 6) - 12;
       const spaceAbove = r.top - 6 - 12;
 
       if (mh > spaceBelow && spaceAbove > spaceBelow) {
-        // Open UP
         const upTop = Math.max(12, r.top - 6 - mh);
         setDirection("up");
         setPos({ top: upTop, left, width });
       } else {
-        // Stay DOWN (clamp so it never goes off-screen)
         const clampedDown = Math.min(downTop, window.innerHeight - mh - 12);
         setDirection("down");
         setPos({ top: clampedDown, left, width });
@@ -89,11 +85,9 @@ export default function PillSelect({
     });
   };
 
-  // Reposition when opening or option count changes (height)
   useLayoutEffect(() => {
     if (!open) return;
     reposition();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, menuWidth, options.length]);
 
   const menuEl = (
@@ -144,9 +138,8 @@ export default function PillSelect({
         ref={triggerRef}
         type="button"
         disabled={disabled}
-        className={`${styles.trigger} ${
-          fullWidth ? styles.full : ""
-        } ${className}`}
+        className={`${styles.trigger} ${fullWidth ? styles.full : ""} ${className}`}
+        style={style}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}

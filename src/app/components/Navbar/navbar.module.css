@@ -1,4 +1,3 @@
-/* src/app/components/Navbar/navbar.module.css */
 .sidebar {
   position: sticky;
   top: var(--topbar-h);
@@ -13,70 +12,143 @@
   gap: 12px;
   padding: 16px;
   box-sizing: border-box;
-  z-index: 1; /* desktop layer under topbar */
+  z-index: 1;
 }
+
 .brand {
   font-weight: 700;
   font-size: 1.1rem;
   margin-bottom: 4px;
 }
+
 .brandLink {
   text-decoration: none;
   color: var(--sidebar-fg);
 }
+
 .userBlock {
   padding: 8px 0 4px;
   border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 8px;
 }
+
 .orgLine {
   font-size: 20px;
   font-weight: 600;
   padding-bottom: 5px;
 }
+
 .emailLine {
   font-size: 0.75rem;
   color: var(--sidebar-muted);
 }
+
 .nav {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 8px;
 }
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .navItem {
   display: flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
   color: var(--sidebar-fg);
-  padding: 10px 12px; /* a bit larger for touch */
+  padding: 10px 12px;
   border-radius: 20px;
 }
+
 .navItem.active {
-  background: linear-gradient(
-    to right,
-    var(--color-primary),
-    var(--color-secondary)
-  );
+  background: linear-gradient(to right,
+      var(--color-primary),
+      var(--color-secondary));
   outline: none;
 }
+
 .navItem:hover {
-  background: linear-gradient(
-    to right,
-    var(--color-primary),
-    var(--color-secondary)
-  );
+  background: linear-gradient(to right,
+      var(--color-primary),
+      var(--color-secondary));
   outline: none;
 }
+
+.navToggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  justify-content: space-between;
+}
+
+.navItemMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  transition: transform 180ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 18px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.subnavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--sidebar-fg);
+  padding: 9px 12px;
+  border-radius: 14px;
+  opacity: 0.95;
+}
+
+.subnavItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.subnavItem.active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.subnavIcon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: #fff;
+}
+
 .icon {
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
-  color: #fff; /* default muted icon */
+  color: #fff;
 }
+
 .options {
-  margin-top: auto; /* push to bottom */
+  margin-top: auto;
   width: 100%;
   padding: 10px 12px;
   border: none;
@@ -85,10 +157,12 @@
   color: white;
   cursor: pointer;
 }
+
 .options:hover {
   opacity: 0.9;
   background: #9c9c9c;
 }
+
 .signOut {
   width: 100%;
   padding: 10px 12px;
@@ -98,6 +172,7 @@
   color: white;
   cursor: pointer;
 }
+
 .signOut:hover {
   opacity: 0.9;
   background: #d9534f;
@@ -105,23 +180,25 @@
 
 @media (max-width: 900px) {
   .sidebar {
-    position: fixed; /* take it out of flow */
+    position: fixed;
     left: 0;
     top: var(--topbar-h);
     height: calc(100vh - var(--topbar-h, 56px));
     width: min(88vw, 360px);
     max-width: 92vw;
-    transform: translateX(-104%); /* hidden by default */
+    transform: translateX(-104%);
     transition:
       transform 220ms ease,
       box-shadow 220ms ease;
-    z-index: 49; /* below the fixed topbar (z-index:50) */
+    z-index: 49;
     box-shadow: none;
   }
+
   .open {
     transform: translateX(0);
     box-shadow: 0 20px 40px rgba(15, 28, 63, 0.25);
   }
+
   .backdrop {
     position: fixed;
     top: var(--topbar-h);
@@ -133,22 +210,28 @@
     border: none;
     margin: 0;
     padding: 0;
-    z-index: 48; /* under the drawer */
+    z-index: 48;
   }
 
-  /* beef up hit area a bit more on compact screens */
   .navItem {
     padding: 12px 14px;
   }
+
   .icon {
     width: 20px;
     height: 20px;
   }
+
+  .subnavIcon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .sidebar {
+
+  .sidebar,
+  .chevron {
     transition: none;
   }
 }

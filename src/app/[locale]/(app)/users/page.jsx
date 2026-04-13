@@ -511,7 +511,7 @@ export default function UsersPage() {
                   <div
                     className={styles.cellName}
                     role="button"
-                    onClick={() => openViewFor(u)}
+                    onMouseUp={() => openViewFor(u)}
                   >
                     <div className={styles.avatar}>{initial(u.name)}</div>
                     <div className={styles.nameBlock}>

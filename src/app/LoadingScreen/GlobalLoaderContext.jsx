@@ -30,6 +30,10 @@ export function GlobalLoaderProvider({ children }) {
   }, []);
 
   const stopLoading = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+
     setFadeOut(true);
     hideTimerRef.current = setTimeout(() => {
       setShowLoading(false);

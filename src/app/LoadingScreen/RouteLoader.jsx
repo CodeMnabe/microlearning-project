@@ -2,23 +2,27 @@
 
 import { useEffect } from "react";
 import { useGlobalLoader } from "./GlobalLoaderContext";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export default function RouteLoader() {
   const pathName = usePathname();
+  const searchParams = useSearchParams();
   const { startLoading, stopLoading, showLoading } = useGlobalLoader();
+
+  const routeKey = `${pathName}?${searchParams.toString()}`;
 
   useEffect(() => {
     stopLoading();
-  }, [stopLoading]);
+  }, [routeKey, stopLoading]);
 
   useEffect(() => {
     const onClick = (e) => {
       const a = e.target?.closest?.("a[href]");
       if (!a) return;
 
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
         return;
+      }
       if (a.target && a.target !== "_self") return;
       if (a.hasAttribute("download")) return;
 
@@ -27,20 +31,23 @@ export default function RouteLoader() {
 
       const next = url.pathname + url.search;
       const current = location.pathname + location.search;
-      if (next === current) return; // no real nav
+      if (next === current) return;
 
-      if (showLoading) return; // ← key line: don't re-start while visible
+      if (showLoading) return;
       startLoading();
     };
+
     document.addEventListener("click", onClick, { capture: true });
-    return () =>
+    return () => {
       document.removeEventListener("click", onClick, { capture: true });
+    };
   }, [startLoading, showLoading]);
 
   useEffect(() => {
     const onPop = () => {
       if (!showLoading) startLoading();
     };
+
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [startLoading, showLoading]);

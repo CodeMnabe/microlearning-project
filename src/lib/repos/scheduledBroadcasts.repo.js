@@ -17,6 +17,37 @@ export async function createScheduledBroadcast(row) {
   return data;
 }
 
+export async function getOrgScheduledBroadcasts(id) {
+  const { data, error } = await sb
+    .from("scheduled_broadcast")
+    .select("*")
+    .eq("organization_id", id)
+    .order("scheduled_for", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateScheduledBroadcast(id, patch) {
+  const { data, error } = await sb
+    .from("scheduled_broadcast")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function deleteScheduledBroadcast(id) {
+  const { error } = await sb.from("scheduled_broadcast").delete().eq("id", id);
+
+  if (error) throw error;
+  return true;
+}
+
 export async function getDueScheduledBroadcasts(limit = 20) {
   const nowIso = new Date().toISOString();
 
