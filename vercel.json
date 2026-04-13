@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/process-scheduled-broadcasts",
-      "schedule": "0 15 * * *"
+      "schedule": "0 13 * * *"
     }
   ]
 }

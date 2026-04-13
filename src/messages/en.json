@@ -684,6 +684,8 @@
     "users": "Users",
     "assistants": "Assistants",
     "broadcast": "Messages",
+    "broadcastCreate": "Send",
+    "broadcastScheduled": "See Scheduled",
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
@@ -897,9 +899,114 @@
     "emptyUsers": "No users.",
     "result": "Result:",
     "sent": "sent",
-    "failed": "failed"
+    "failed": "failed",
+    "schedule": "Schedule",
+    "sendnow": "Send now",
+    "scheduleBtn": "Schedule",
+    "timezone": "Timezone",
+    "hour": "Hour",
+    "scheduleError": "Please choose a future date and time."
   },
-
+  "BroadcastScheduled": {
+    "Title": "Scheduled messages",
+    "Subtitle": "Scheduled messages for organization {organization}",
+    "NewMessage": "New message",
+    "Refresh": "Refresh",
+    "Loading": "Loading scheduled messages...",
+    "Timezone": "Timezone",
+    "ConfirmDelete": "Are you sure you want to delete this scheduled message?",
+    "Stats": {
+      "total": "Total",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "failed": "Failed"
+    },
+    "Filters": {
+      "searchPlaceholder": "Search by message, status, channel or creator..."
+    },
+    "Channels": {
+      "all": "All channels",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp"
+    },
+    "Statuses": {
+      "all": "All statuses",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "sent": "Sent",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "queued": "Queued"
+    },
+    "Table": {
+      "message": "Message",
+      "channel": "Channel",
+      "recipients": "Recipients",
+      "scheduledFor": "Scheduled for",
+      "status": "Status",
+      "createdBy": "Created by",
+      "actions": "Actions",
+      "people": "people"
+    },
+    "Actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "ViewModal": {
+      "title": "Message details",
+      "createdAt": "Created at"
+    },
+    "EditModal": {
+      "title": "Edit scheduled message",
+      "message": "Message",
+      "recipients": "Recipients",
+      "manageRecipients": "Manage Recipients",
+      "channel": "Channel",
+      "status": "Status",
+      "date": "Date",
+      "timezone": "Timezone",
+      "hour": "Hour",
+      "minute": "Minute",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "remove": "Remove",
+      "noRecipients": "No recipients selected.",
+      "files": "Files",
+      "noFiles": "No files added."
+    },
+    "RecipientPicker": {
+      "title": "Manage recipients",
+      "searchPlaceholder": "Search users...",
+      "countSelected": "selected",
+      "selected": "Selected",
+      "remove": "Remove",
+      "noRecipient": "No recipient selected",
+      "available": "Available",
+      "loading": "Loading users…",
+      "add": "Add",
+      "emptyRecipient": "There are no recipients available for this channel",
+      "cancel": "Cancel",
+      "apply": "Apply recipients"
+    },
+    "Empty": {
+      "title": "You do not have scheduled messages yet",
+      "text": "Once you schedule a message, it will appear here so you can view, edit or delete it."
+    },
+    "Delete": {
+      "title": "Are you sure you want to delete this message?",
+      "deleteMessage": "This action cannot be undone.",
+      "delete": "Delete",
+      "cancel": "Cancel"
+    },
+    "Errors": {
+      "load": "Could not load scheduled messages.",
+      "save": "Could not save the changes.",
+      "delete": "Could not delete the scheduled message.",
+      "invalidForm": "Please fill in the message and a valid date/time."
+    }
+  },
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",

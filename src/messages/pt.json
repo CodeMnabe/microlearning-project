@@ -695,6 +695,8 @@
     "users": "Colaboradores",
     "assistants": "Assistentes",
     "broadcast": "Mensagens",
+    "broadcastCreate": "Enviar",
+    "broadcastScheduled": "Ver Agendadas",
     "templates": "Templates",
     "admin": "Administração",
     "login": "Login",
@@ -905,7 +907,113 @@
     "emptyUsers": "Sem utilizadores.",
     "result": "Resultado:",
     "sent": "enviados",
-    "failed": "falharam"
+    "failed": "falharam",
+    "schedule": "Agendamento",
+    "sendnow": "Enviar agora",
+    "scheduleBtn": "Agendar",
+    "timezone": "Fuso Horário",
+    "hour": "Hora",
+    "scheduleError": "Por favor escolha uma data e hora no futuro."
+  },
+  "BroadcastScheduled": {
+    "Title": "Mensagens agendadas",
+    "Subtitle": "Mensagens agendadas da organização {organization}",
+    "NewMessage": "Nova mensagem",
+    "Refresh": "Atualizar",
+    "Loading": "A carregar mensagens agendadas...",
+    "Timezone": "Fuso horário",
+    "ConfirmDelete": "Tens a certeza que queres eliminar esta mensagem agendada?",
+    "Stats": {
+      "total": "Total",
+      "scheduled": "Agendadas",
+      "sending": "A enviar",
+      "failed": "Falhadas"
+    },
+    "Filters": {
+      "searchPlaceholder": "Pesquisar por mensagem, estado, canal ou criador..."
+    },
+    "Channels": {
+      "all": "Todos os canais",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp"
+    },
+    "Statuses": {
+      "all": "Todos os estados",
+      "scheduled": "Agendada",
+      "sending": "A enviar",
+      "sent": "Enviada",
+      "failed": "Falhada",
+      "cancelled": "Cancelada",
+      "queued": "Queued"
+    },
+    "Table": {
+      "message": "Mensagem",
+      "channel": "Canal",
+      "recipients": "Destinatários",
+      "scheduledFor": "Agendada para",
+      "status": "Estado",
+      "createdBy": "Criada por",
+      "actions": "Ações",
+      "people": "pessoas"
+    },
+    "Actions": {
+      "view": "Ver",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "ViewModal": {
+      "title": "Detalhes da mensagem",
+      "createdAt": "Criada em"
+    },
+    "EditModal": {
+      "title": "Editar mensagem agendada",
+      "message": "Mensagem",
+      "recipients": "Destinatários",
+      "manageRecipients": "Gerir Destinatários",
+      "channel": "Canal",
+      "status": "Estado",
+      "date": "Data",
+      "timezone": "Fuso horário",
+      "hour": "Hora",
+      "minute": "Minuto",
+      "cancel": "Cancelar",
+      "save": "Guardar alterações",
+      "saving": "A guardar...",
+      "remove": "Remover",
+      "noRecipients": "Sem destinatários selecionados.",
+      "files": "Ficheiros",
+      "noFiles": "Sem ficheiros adicionados."
+    },
+    "RecipientPicker": {
+      "title": "Gerir destinatários",
+      "searchPlaceholder": "Pesquisar utilizadores...",
+      "countSelected": "selecionado(s)",
+      "selected": "Selecionados",
+      "remove": "Remover",
+      "noRecipient": "Nenhum destinatário selecionado",
+      "available": "Disponíveis",
+      "loading": "A carregar utilizadores…",
+      "add": "Adicionar",
+      "emptyRecipient": "Não existem utilizadores disponíveis para este canal",
+      "cancel": "Cancelar",
+      "apply": "Aplicar destinatários"
+    },
+    "Empty": {
+      "title": "Ainda não tens mensagens agendadas",
+      "text": "Quando agendares uma mensagem, ela vai aparecer aqui para poderes ver, editar ou eliminar."
+    },
+    "Delete": {
+      "title": "Tem a certeza que quer apagar esta mensagem?",
+      "deleteMessage": "Esta ação não pode ser desfeita.",
+      "delete": "Apagar",
+      "cancel": "Cancelar"
+    },
+    "Errors": {
+      "load": "Não foi possível carregar as mensagens agendadas.",
+      "save": "Não foi possível guardar as alterações.",
+      "delete": "Não foi possível eliminar a mensagem agendada.",
+      "invalidForm": "Preenche a mensagem e uma data/hora válida."
+    }
   },
   "Assistants": {
     "myAssistants": "Os meus Assistentes",

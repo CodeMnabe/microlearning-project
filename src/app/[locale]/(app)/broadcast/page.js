@@ -13,7 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import FilterMenu from "@/app/[locale]/(app)/users/FilterMenu";
 
-function Initial(name = "") {
+function getInitial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }
 
@@ -31,41 +31,12 @@ function buildInitialScheduledDate() {
   return d;
 }
 
-function formatTime(date) {
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
 function formatHour(date) {
   return String(date.getHours()).padStart(2, "0");
 }
 
 function formatMinute(date) {
   return String(date.getMinutes()).padStart(2, "0");
-}
-
-function parseTimeString(value) {
-  const raw = String(value || "").trim();
-  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
-
-  if (!match) return null;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-
-  if (
-    Number.isNaN(hours) ||
-    Number.isNaN(minutes) ||
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  ) {
-    return null;
-  }
-
-  return { hours, minutes };
 }
 
 const NAME_KEYS = [
@@ -114,12 +85,18 @@ const byBestStatus = (a, b) => {
 
 function interpolate(str, values) {
   if (!str) return "";
+
   return str.replace(/\{\{\s*([.\w-]+)\s*\}\}/g, (_, rawKey) => {
     const k = String(rawKey).toLowerCase();
-    if (NAME_KEYS.includes(k))
+
+    if (NAME_KEYS.includes(k)) {
       return values.recipientName ?? values[rawKey] ?? values[k] ?? "";
-    if (COMPANY_KEYS.includes(k))
+    }
+
+    if (COMPANY_KEYS.includes(k)) {
       return values.orgName ?? values[rawKey] ?? values[k] ?? "";
+    }
+
     return values[rawKey] ?? values[k] ?? "";
   });
 }
@@ -148,6 +125,26 @@ function extractText(node, out = []) {
   return out;
 }
 
+function blocksHaveUrlVariable(blocks) {
+  const visit = (n) => {
+    if (!n) return false;
+    if (Array.isArray(n)) return n.some(visit);
+
+    if (typeof n === "object") {
+      for (const [k, v] of Object.entries(n)) {
+        if (k === "url" && typeof v === "string" && v.includes("{{")) {
+          return true;
+        }
+        if (visit(v)) return true;
+      }
+    }
+
+    return false;
+  };
+
+  return visit(blocks);
+}
+
 function isImageContentType(ct = "") {
   return String(ct).toLowerCase().startsWith("image/");
 }
@@ -158,6 +155,7 @@ function isVideoContentType(ct = "") {
 
 function guessContentTypeFromName(name = "") {
   const n = String(name || "").toLowerCase();
+
   if (n.endsWith(".png")) return "image/png";
   if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
   if (n.endsWith(".gif")) return "image/gif";
@@ -166,6 +164,7 @@ function guessContentTypeFromName(name = "") {
   if (n.endsWith(".mp4")) return "video/mp4";
   if (n.endsWith(".mov")) return "video/quicktime";
   if (n.endsWith(".webm")) return "video/webm";
+
   return "application/octet-stream";
 }
 
@@ -173,7 +172,7 @@ export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
   const translation = useTranslations();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const { stopLoading } = useGlobalLoader();
 
   const [users, setUsers] = useState([]);
@@ -196,7 +195,6 @@ export default function BroadcastPage() {
   const [files, setFiles] = useState([]);
 
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState(null);
 
   const [templates, setTemplates] = useState([]);
   const [tplLoading, setTplLoading] = useState(false);
@@ -214,14 +212,14 @@ export default function BroadcastPage() {
 
   const [channel, setChannel] = useState("teams");
   const [deliveryMode, setDeliveryMode] = useState("now");
-  const initialScheduledRef = useRef(buildInitialScheduledDate());
 
-  const [scheduledFor, setScheduledFor] = useState(initialScheduledRef.current);
+  const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
+  const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
   const [hourDraft, setHourDraft] = useState(() =>
-    formatHour(initialScheduledRef.current),
+    formatHour(initialScheduledDate),
   );
   const [minuteDraft, setMinuteDraft] = useState(() =>
-    formatMinute(initialScheduledRef.current),
+    formatMinute(initialScheduledDate),
   );
   const [timeError, setTimeError] = useState("");
 
@@ -254,6 +252,7 @@ export default function BroadcastPage() {
 
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
+
     const res = await fetch(`/api/users?orgId=${org.id}`);
     const data = await res.json().catch(() => ({}));
     setUsers(asList(data, "items"));
@@ -261,6 +260,7 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     if (!org?.id) return;
+
     let alive = true;
 
     (async () => {
@@ -276,6 +276,7 @@ export default function BroadcastPage() {
         setAllTags(asList(tagsData, "items"));
       } catch (e) {
         console.error(e);
+
         if (!alive) return;
         setAssistantsList([]);
         setAllTags([]);
@@ -324,6 +325,7 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     if (!org?.id) return;
+
     let alive = true;
 
     (async () => {
@@ -348,21 +350,28 @@ export default function BroadcastPage() {
       name: u.name,
       phone_number: u.phone_number ?? u.phoneNumber ?? "",
       email: u.email ?? "",
-      tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
-      tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
+      tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id),
       assistantId: u.assistant_id ?? null,
     }));
   }, [users]);
 
+  const selectedUsers = useMemo(
+    () => normalizedUsers.filter((u) => selected.has(u.id)),
+    [normalizedUsers, selected],
+  );
+
   const templatesByName = useMemo(() => {
     const m = new Map();
+
     for (const t of templates) {
       if (!m.has(t.name)) m.set(t.name, []);
       m.get(t.name).push(t);
     }
+
     for (const [k, arr] of m) {
       m.set(k, arr.sort(byBestStatus));
     }
+
     return m;
   }, [templates]);
 
@@ -378,15 +387,18 @@ export default function BroadcastPage() {
 
   useEffect(() => {
     if (!tplName) return;
+
     const list = templatesByName.get(tplName) || [];
     const pt = list.find((t) =>
       (t.language || "").toLowerCase().startsWith("pt"),
     );
+
     setTplLang(pt?.language || list[0]?.language || "pt-PT");
   }, [tplName, templatesByName]);
 
   const chosenTemplate = useMemo(() => {
     const list = languagesForChosenName;
+
     return (
       list.find((t) => t.language === tplLang) ||
       list.find((t) => (t.language || "").toLowerCase().startsWith("pt")) ||
@@ -394,26 +406,6 @@ export default function BroadcastPage() {
       null
     );
   }, [languagesForChosenName, tplLang]);
-
-  function blocksHaveUrlVariable(blocks) {
-    const visit = (n) => {
-      if (!n) return false;
-      if (Array.isArray(n)) return n.some(visit);
-
-      if (typeof n === "object") {
-        for (const [k, v] of Object.entries(n)) {
-          if (k === "url" && typeof v === "string" && v.includes("{{")) {
-            return true;
-          }
-          if (visit(v)) return true;
-        }
-      }
-
-      return false;
-    };
-
-    return visit(blocks);
-  }
 
   useEffect(() => {
     let alive = true;
@@ -473,8 +465,9 @@ export default function BroadcastPage() {
 
     return normalizedUsers.filter((u) => {
       const textHay =
-        (u.name || "") + " " + (u.phone_number || "") + " " + (u.email || "");
-      const textOk = !term || textHay.toLowerCase().includes(term);
+        `${u.name || ""} ${u.phone_number || ""} ${u.email || ""}`.toLowerCase();
+
+      const textOk = !term || textHay.includes(term);
 
       const tagsOk =
         selectedTagIds.length === 0 ||
@@ -491,27 +484,29 @@ export default function BroadcastPage() {
   }, [normalizedUsers, q, selectedTagIds, selectedAssistantIds, channel]);
 
   function toggleOne(id) {
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
+    setSelected((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
     });
   }
 
   function toggleAllCurrent() {
-    setSelected((s) => {
-      const n = new Set(s);
+    setSelected((prev) => {
+      const next = new Set(prev);
       const ids = filtered.map((u) => u.id);
-      const allSel = ids.length > 0 && ids.every((id) => n.has(id));
+      const allSel = ids.length > 0 && ids.every((id) => next.has(id));
 
       if (allSel) {
-        ids.forEach((id) => n.delete(id));
+        ids.forEach((id) => next.delete(id));
       } else {
-        ids.forEach((id) => n.add(id));
+        ids.forEach((id) => next.add(id));
       }
 
-      return n;
+      return next;
     });
   }
 
@@ -574,6 +569,7 @@ export default function BroadcastPage() {
 
   function openThumbnailPicker(videoUrl) {
     setThumbForVideoUrl(videoUrl);
+
     setTimeout(() => {
       thumbInputRef.current?.click?.();
     }, 0);
@@ -632,13 +628,11 @@ export default function BroadcastPage() {
     return varDefs.map((v) => (varValues[v.key] ?? "").trim());
   }, [varDefs, varValues, tplParamsManual]);
 
-  const sampleRecipient = useMemo(
-    () => normalizedUsers.find((u) => selected.has(u.id)) || null,
-    [normalizedUsers, selected],
-  );
+  const sampleRecipient = selectedUsers[0] || null;
 
   const previewVars = useMemo(() => {
     const map = {};
+
     for (const v of varDefs) {
       map[v.key] = varValues[v.key] ?? "";
     }
@@ -652,7 +646,9 @@ export default function BroadcastPage() {
   }, [varDefs, varValues, sampleRecipient, tplUrlVar, org?.name]);
 
   const preview = useMemo(() => {
-    if (!tplDetails) return { body: "", buttonText: "", buttonUrl: "" };
+    if (!tplDetails) {
+      return { body: "", buttonText: "", buttonUrl: "" };
+    }
 
     const pc =
       (tplDetails.platformContent || []).find(
@@ -854,16 +850,14 @@ export default function BroadcastPage() {
   }
 
   async function handleSend() {
-    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
-    if (!chosen.length) {
+    if (!selectedUsers.length) {
       return alert(translation("Broadcast.chooseRecipients"));
     }
 
     setSending(true);
-    setResult(null);
 
     try {
-      const payload = buildBroadcastPayload(chosen);
+      const payload = buildBroadcastPayload(selectedUsers);
       const endpoint =
         channel === "whatsapp"
           ? "/api/broadcast/whatsapp"
@@ -883,8 +877,6 @@ export default function BroadcastPage() {
       } catch {
         data = text;
       }
-
-      setResult(data);
 
       if (!res.ok) {
         console.error("Broadcast send error", data);
@@ -906,9 +898,7 @@ export default function BroadcastPage() {
   }
 
   async function handleSchedule() {
-    const chosen = normalizedUsers.filter((u) => selected.has(u.id));
-
-    if (!chosen.length) {
+    if (!selectedUsers.length) {
       return alert(translation("Broadcast.chooseRecipients"));
     }
 
@@ -926,10 +916,9 @@ export default function BroadcastPage() {
     }
 
     setSending(true);
-    setResult(null);
 
     try {
-      const payload = buildBroadcastPayload(chosen);
+      const payload = buildBroadcastPayload(selectedUsers);
 
       const res = await fetch("/api/broadcast/schedule", {
         method: "POST",
@@ -941,12 +930,11 @@ export default function BroadcastPage() {
           scheduledFor: scheduledFor.toISOString(),
           timezone: browserTimeZone,
           payload,
-          recipientCount: chosen.length,
+          recipientCount: selectedUsers.length,
         }),
       });
 
       const data = await res.json();
-      setResult(data);
 
       if (!res.ok) {
         console.error("Schedule broadcast error", data);
@@ -1044,7 +1032,9 @@ export default function BroadcastPage() {
             }`}
           >
             <div className={`${styles.toolCard} ${styles.toolCardSchedule}`}>
-              <div className={styles.panelTitle}>Agendamento</div>
+              <div className={styles.panelTitle}>
+                {translation("Broadcast.schedule")}
+              </div>
 
               <div className={styles.scheduleModeRow}>
                 <button
@@ -1054,7 +1044,7 @@ export default function BroadcastPage() {
                   }`}
                   onClick={() => setDeliveryMode("now")}
                 >
-                  Send now
+                  {translation("Broadcast.sendnow")}
                 </button>
 
                 <button
@@ -1064,12 +1054,12 @@ export default function BroadcastPage() {
                   }`}
                   onClick={() => setDeliveryMode("schedule")}
                 >
-                  Schedule
+                  {translation("Broadcast.scheduleBtn")}
                 </button>
               </div>
 
               <div className={styles.scheduleHint}>
-                Timezone: {browserTimeZone}
+                {translation("Broadcast.timezone")}: {browserTimeZone}
               </div>
 
               <div className={styles.calendarWrap}>
@@ -1094,7 +1084,9 @@ export default function BroadcastPage() {
               </div>
 
               <div className={styles.timeInputWrap}>
-                <label className={styles.smallLabel}>Hora</label>
+                <label className={styles.smallLabel}>
+                  {translation("Broadcast.hour")}
+                </label>
 
                 <div
                   style={{
@@ -1149,7 +1141,7 @@ export default function BroadcastPage() {
 
               {deliveryMode === "schedule" && scheduleInvalid && !timeError && (
                 <div className={styles.scheduleError}>
-                  Please choose a future date and time.
+                  {translation("Broadcast.scheduleError")}
                 </div>
               )}
             </div>
@@ -1181,6 +1173,7 @@ export default function BroadcastPage() {
                 {imageFiles.length > 0 && (
                   <div>
                     <div className={styles.label}>Imagens</div>
+
                     <div className={styles.thumbStrip}>
                       {imageFiles.map((f) => (
                         <div key={f.url} className={styles.thumbWrap}>
@@ -1191,6 +1184,7 @@ export default function BroadcastPage() {
                             height={110}
                             className={styles.imageThumb}
                           />
+
                           <button
                             onClick={() => removeFile(f.url)}
                             className={styles.thumbClose}
@@ -1206,6 +1200,7 @@ export default function BroadcastPage() {
                 {videoFiles.length > 0 && (
                   <div>
                     <div className={styles.label}>Vídeos</div>
+
                     <div className={styles.fileList}>
                       {videoFiles.map((f) => (
                         <div key={f.url} className={styles.fileItem}>
@@ -1254,6 +1249,7 @@ export default function BroadcastPage() {
                 {otherFiles.length > 0 && (
                   <div>
                     <div className={styles.label}>Ficheiros</div>
+
                     <div className={styles.fileList}>
                       {otherFiles.map((f) => (
                         <div key={f.url} className={styles.fileItem}>
@@ -1385,6 +1381,7 @@ export default function BroadcastPage() {
                         <label className={styles.smallLabel}>
                           {translation("Broadcast.varKeyDesc")}
                         </label>
+
                         <input
                           value={tplParamsManual}
                           onChange={(e) => setTplParamsManual(e.target.value)}
@@ -1399,6 +1396,7 @@ export default function BroadcastPage() {
                         <label className={styles.smallLabel}>
                           {translation("Broadcast.urlVar")}
                         </label>
+
                         <input
                           value={tplUrlVar}
                           onChange={(e) => setTplUrlVar(e.target.value)}
@@ -1491,6 +1489,7 @@ export default function BroadcastPage() {
                 >
                   <Filter size={16} />
                   <span>{translation("Common.filter")}</span>
+
                   {activeFilterCount > 0 && (
                     <span className={styles.filterBadge}>
                       {activeFilterCount}
@@ -1586,7 +1585,7 @@ export default function BroadcastPage() {
                       onChange={() => toggleOne(u.id)}
                     />
 
-                    <div className={styles.avatar}>{Initial(u.name)}</div>
+                    <div className={styles.avatar}>{getInitial(u.name)}</div>
 
                     <div className={styles.nameBlock}>
                       <div className={styles.name}>

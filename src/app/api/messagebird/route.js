@@ -145,11 +145,15 @@ export async function POST(req) {
   }
 
   try {
-    console.log("OPENAI KEY LAST 4:", process.env.OPENAI_API_KEY?.slice(-4));
     await handleEvent(rawBody);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Webhook error:", err);
+    console.error("OpenAI step failed", {
+      message: err?.message,
+      status: err?.status,
+      type: err?.type,
+      request_id: err?.request_id,
+    });
     return NextResponse.json(
       { ok: false, error: String(err) },
       { status: 200 },
