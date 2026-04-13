@@ -145,6 +145,7 @@ export async function POST(req) {
   }
 
   try {
+    console.log("OPENAI KEY LAST 4:", process.env.OPENAI_API_KEY?.slice(-4));
     await handleEvent(rawBody);
     return NextResponse.json({ ok: true });
   } catch (err) {
