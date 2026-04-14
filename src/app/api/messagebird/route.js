@@ -337,7 +337,7 @@ async function handlePendingMessages({
           type: "image",
           image: {
             images: p.imageUrls.map((u) => ({
-              altText: "image",
+              // altText: "image",
               mediaUrl: u,
             })),
             ...(hasText ? { text: p.message } : {}),
