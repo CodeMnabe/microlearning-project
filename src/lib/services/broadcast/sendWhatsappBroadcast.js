@@ -119,7 +119,7 @@ async function sendFreeform({ endpoint, accessKey, to, message, imageUrls }) {
           type: "image",
           image: {
             images: imageUrls.map((u) => ({
-              altText: "image",
+              // altText: "image",
               mediaUrl: u,
             })),
             ...(message ? { text: message } : {}),
