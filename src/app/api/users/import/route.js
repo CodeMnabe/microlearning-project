@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUser, getUsersInOrg } from "@/lib/repos/user.repo";
+import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
 
 function cleanText(value) {
   if (value == null) return "";
@@ -85,16 +86,20 @@ export async function POST(req) {
 
       const phoneCountryCode = cleanText(rawUser.phoneCountryCode) || null;
       const phoneNational = cleanText(rawUser.phoneNational) || null;
+
       const phoneNumber = buildFullPhone({
         phoneNumber: rawUser.phoneNumber,
         phoneCountryCode,
         phoneNational,
       });
 
+      const parsedAssistantId = Number(rawUser.assistantId);
       const assistantId =
-        rawUser.assistantId === "" || rawUser.assistantId == null
+        rawUser.assistantId === "" ||
+        rawUser.assistantId == null ||
+        Number.isNaN(parsedAssistantId)
           ? null
-          : Number(rawUser.assistantId);
+          : parsedAssistantId;
 
       if (!name) {
         skippedRows.push({
@@ -168,14 +173,14 @@ export async function POST(req) {
 
     const results = await Promise.allSettled(
       toCreate.map((user) =>
-        createUser({
+        createUserWithAutomations({
           organizationId: user.organizationId,
           name: user.name,
           email: user.email,
           assistantId: user.assistantId,
           phoneNumber: user.phoneNumber,
-          phoneCountryCode: user.phoneCountryCode,
-          phoneNational: user.phoneNational,
+          phoneCountryCode: user.phoneCountryCode || undefined,
+          phoneNational: user.phoneNational || undefined,
           teamsAadObjectId: user.teamsAadObjectId,
           teamsFromId: user.teamsFromId,
         }),

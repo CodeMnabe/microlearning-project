@@ -1,0 +1,146 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  z-index: 10000;
+}
+
+.card {
+  width: min(420px, 92vw);
+  background: #fff;
+  color: #0f1c3f;
+  border: 1px solid var(--ui-border, #e5edf5);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  opacity: 0;
+  transform: translateY(40vh) scale(0.98);
+}
+
+.open.overlay {
+  animation: overlayIn 0.4s ease forwards;
+}
+
+.open.card {
+  animation: modalIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.closing.overlay {
+  animation: overlayOut 0.28s ease forwards;
+}
+
+.closing.card {
+  animation: modalOut 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes overlayIn {
+  from {
+    background: rgba(0, 0, 0, 0);
+  }
+
+  to {
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+@keyframes overlayOut {
+  from {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  to {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes modalIn {
+  0% {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+
+  70% {
+    transform: translateY(-6px) scale(1.01);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes modalOut {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateY(40vh) scale(0.98);
+    opacity: 0;
+  }
+}
+
+.title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.message {
+  margin: 0 0 14px;
+  color: #5b6471;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btnOk {
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #7cc2ff);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.18);
+}
+
+.btnOk.success {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.18);
+}
+
+.btnOk.danger {
+  background: linear-gradient(135deg, #ef4444, #f97373);
+  box-shadow: 0 10px 22px rgba(239, 68, 68, 0.18);
+}
+
+.btnOk.warning {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .open.overlay,
+  .closing.overlay,
+  .open.card,
+  .closing.card {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .overlay {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .card {
+    opacity: 1;
+    transform: none;
+  }
+}

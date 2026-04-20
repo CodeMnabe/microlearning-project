@@ -4,7 +4,11 @@ import {
   markScheduledBroadcastProcessing,
   finishScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
-
+import {
+  markAutomationRunFailed,
+  markAutomationRunProcessing,
+  markAutomationRunSent,
+} from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 
@@ -28,8 +32,47 @@ function isAuthorized(req) {
   return bearer === cronSecret || xCronSecret === cronSecret;
 }
 
+async function syncAutomationRunProcessing(automationRunId) {
+  if (!automationRunId) return;
+
+  try {
+    await markAutomationRunProcessing(automationRunId);
+  } catch (error) {
+    console.warn("[Automations] Failed to mark run processing", {
+      automationRunId,
+      message: error?.message || String(error),
+    });
+  }
+}
+
+async function syncAutomationRunSuccess(automationRunId) {
+  if (!automationRunId) return;
+
+  try {
+    await markAutomationRunSent(automationRunId);
+  } catch (error) {
+    console.warn("[Automations] Failed to mark run sent", {
+      automationRunId,
+      message: error?.message || String(error),
+    });
+  }
+}
+
+async function syncAutomationRunFailure(automationRunId, errorMessage) {
+  if (!automationRunId) return;
+
+  try {
+  } catch (error) {
+    console.warn("[AUtomations] Failed to mark run failed", {
+      automationRunId,
+      message: error?.message || String(error),
+    });
+  }
+}
+
 async function processOneBroadcast(broadcast) {
   let locked;
+  const automationRunId = broadcast?.payload?.automationRunId || null;
 
   try {
     locked = await markScheduledBroadcastProcessing(broadcast.id);
@@ -50,6 +93,8 @@ async function processOneBroadcast(broadcast) {
       error: "Could not lock broadcast for processing",
     };
   }
+
+  await syncAutomationRunProcessing(automationRunId);
 
   try {
     const payload = {
@@ -78,6 +123,15 @@ async function processOneBroadcast(broadcast) {
       status: finalStatus,
     });
 
+    if (finalStatus === "failed") {
+      await syncAutomationRunFailure(
+        automationRunId,
+        JSON.stringify(result?.results || result || {}),
+      );
+    } else {
+      await syncAutomationRunSuccess(automationRunId);
+    }
+
     return {
       id: broadcast.id,
       ok: finalStatus !== "failed",
@@ -93,6 +147,8 @@ async function processOneBroadcast(broadcast) {
         finishErr,
       );
     }
+
+    await syncAutomationRunFailure(automationRunId, err.message || String(err));
 
     return {
       id: broadcast.id,

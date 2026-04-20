@@ -69,8 +69,30 @@ export default function ImportUsersModal({
       complete: (results) => {
         try {
           const mapped = (results.data || [])
-            .map((row) => mapCsvRow(row, defaultPhoneCode, assistantId || null))
-            .filter((row) => row.name || row.email || row.teamsAadObjectId);
+            .map((row) => {
+              const mappedRow = mapCsvRow(
+                row,
+                defaultPhoneCode,
+                assistantId || null,
+              );
+
+              if (!mappedRow.assistantId && mappedRow.assistantPosition) {
+                const index = Number(mappedRow.assistantPosition) - 1;
+
+                if (index >= 0 && index < assistants.length) {
+                  mappedRow.assistantId = assistants[index]?.id ?? null;
+                }
+              }
+
+              return mappedRow;
+            })
+            .filter(
+              (row) =>
+                row.name ||
+                row.email ||
+                row.phoneNumber ||
+                row.teamsAadObjectId,
+            );
 
           if (!mapped.length) {
             setRows([]);
@@ -217,6 +239,7 @@ export default function ImportUsersModal({
                   <div>Email</div>
                   <div>Teams AAD Object ID</div>
                   <div>Phone</div>
+                  <div>Assistant</div>
                 </div>
 
                 {previewRows.map((row, index) => (
@@ -228,6 +251,7 @@ export default function ImportUsersModal({
                     <div>{row.email || "—"}</div>
                     <div>{row.teamsAadObjectId || "—"}</div>
                     <div>{row.phoneNumber || "—"}</div>
+                    <div>{row.assistantId || row.assistantPosition || "—"}</div>
                   </div>
                 ))}
               </div>

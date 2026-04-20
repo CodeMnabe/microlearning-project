@@ -80,38 +80,71 @@ function splitPhone(rawPhone, defaultPhoneCode = "+351") {
   };
 }
 
+function getValue(row, keys = []) {
+  for (const key of keys) {
+    if (row[key] != null && String(row[key]).trim() !== "") {
+      return String(row[key]).trim();
+    }
+  }
+  return "";
+}
+
 export default function mapCsvRow(
-  rawRow,
+  row,
   defaultPhoneCode = "+351",
-  assistantId = null,
+  forcedAssistantId = null,
 ) {
-  const row = normalizeHeaders(rawRow);
+  const name = getValue(row, ["name", "Name"]);
+  const email = getValue(row, ["email", "Email"]).toLowerCase();
 
-  const phone = splitPhone(
-    getFirst(row, ["phone number", "mobile phone", "telephone number"]),
-    defaultPhoneCode,
-  );
+  const rawPhoneCountryCode = getValue(row, ["phone_country_code"]);
 
-  const firstName = getFirst(row, ["first name"]);
-  const lastName = getFirst(row, ["last name"]);
+  const rawPhone = getValue(row, [
+    "phone_number",
+    "phone",
+    "Phone",
+    "Phone Number",
+    "phoneNumber",
+  ]);
 
-  const name =
-    getFirst(row, ["display name", "full name"]) ||
-    [firstName, lastName].filter(Boolean).join(" ");
+  const teamsAadObjectId = getValue(row, [
+    "teams_aad_object_id",
+    "teamsAadObjectId",
+    "Teams AAD Object ID",
+    "teams_aad",
+  ]);
 
-  const email = getFirst(row, ["user name", "email", "mail"]) || null;
+  const assistantIdFromCsv = getValue(row, [
+    "assistant_id",
+    "assistantId",
+    "Assistant ID",
+  ]);
 
-  const teamsAadObjectId =
-    getFirst(row, ["user id", "aad object id", "object id"]) || null;
+  const assistantPositionFromCsv = getValue(row, [
+    "assistant_position",
+    "assistantPosition",
+    "Assistant Position",
+  ]);
 
+  const phoneCountryCode =
+    cleanValue(rawPhoneCountryCode) || defaultPhoneCode || "";
+  console.log(phoneCountryCode);
+
+  let phoneNumber = rawPhone;
+  let fullPhoneNumber;
+
+  if (phoneNumber && !phoneNumber.startsWith("+")) {
+    const digits = phoneNumber.replace(/\D/g, "");
+    fullPhoneNumber = digits ? `${defaultPhoneCode}${digits}` : "";
+  }
   return {
-    name: name || "",
-    email,
-    assistantId: assistantId ?? null,
-    phoneNumber: phone.phoneNumber,
-    phoneCountryCode: phone.phoneCountryCode,
-    phoneNational: phone.phoneNational,
-    teamsAadObjectId,
-    teamsFromId: null,
+    name,
+    email: email || null,
+    phoneCountryCode: phoneCountryCode || null,
+    phoneNational: phoneNumber || null,
+    phoneNumber: fullPhoneNumber || null,
+    teamsAadObjectId: teamsAadObjectId || null,
+    assistantId: forcedAssistantId || assistantIdFromCsv || null,
+    assistantPosition: assistantPositionFromCsv || null,
   };
 }

@@ -5,6 +5,7 @@ import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useTranslations } from "next-intl";
 import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
   value: c.code,
@@ -19,6 +20,7 @@ export default function CreateUserModal({
   defaultPhoneCode = "+351",
 }) {
   const translation = useTranslations();
+  const alert = useAlert();
   const [userName, setUserName] = useState("");
   const [phoneCode, setPhoneCode] = useState(defaultPhoneCode);
   const [phoneNational, setPhoneNational] = useState("");
@@ -55,7 +57,20 @@ export default function CreateUserModal({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const ok = await onCreateUser({
+      const hasPhone = Boolean(phoneNational.trim());
+      const hasTeams = Boolean(teamsAadObjectId.trim() || teamsFromId.trim());
+      const hasEmail = Boolean(email.trim());
+
+      if (!hasPhone && !hasTeams && !hasEmail) {
+        await alert({
+          title: translation("Alert.noContact.title"),
+          message: translation("Alert.noContact.message"),
+          buttonText: translation("Alert.noContact.ok"),
+        });
+        return;
+      }
+
+      const result = await onCreateUser({
         userName,
         phoneCode,
         phoneNational,
@@ -65,7 +80,16 @@ export default function CreateUserModal({
         teamsFromId: teamsFromId || null,
       });
 
-      if (ok) {
+      if (!result?.ok) {
+        await alert({
+          title: translation("Alert.fullOrg.title"),
+          message: translation("Alert.fullOrg.message"),
+          buttonText: translation("Alert.fullOrg.ok"),
+        });
+        return;
+      }
+
+      if (result.ok) {
         // only clear if the API call succeeded
         setUserName("");
         setPhoneCode(defaultPhoneCode || "+351");

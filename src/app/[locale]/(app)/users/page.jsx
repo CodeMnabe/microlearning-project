@@ -250,14 +250,23 @@ export default function UsersPage() {
         teamsFromId: teamsFromId || null,
       }),
     });
+
     if (!res.ok) {
-      const err = await res.json();
-      console.error(`Error creating user: ${err.error}`);
-      return false;
+      let errMsg = "Failed to create user.";
+      try {
+        const err = await res.json();
+        errMsg = err?.error || errMsg;
+      } catch {
+        // ignore JSON parse failure, keep fallback message
+      }
+
+      console.error(`Error creating user: ${errMsg}`);
+      return { ok: false, error: errMsg };
     }
+
     await refreshUsers();
     setIsCreateOpen(false);
-    return true;
+    return { ok: true };
   }
 
   function openEditFor(u) {

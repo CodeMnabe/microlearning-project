@@ -13,61 +13,38 @@ function cleanMsisdn(n) {
 
 export async function createUser({
   organizationId,
-  phoneNumber, // full E.164, e.g. "+351912345678"
-  phoneCountryCode, // e.g. "+351"
-  phoneNational, // e.g. "912345678"
+  phoneNumber,
+  phoneCountryCode,
+  phoneNational,
   name,
   email = null,
   assistantId,
   teamsAadObjectId,
   teamsFromId,
 }) {
-  const row = {
-    organization_id: organizationId,
-    name,
-    email,
-    assistant_id: assistantId ?? null,
-  };
+  const { data, error } = await supabase.rpc("create_user_with_plan_limit", {
+    p_organization_id: organizationId,
+    p_phone_number: phoneNumber ?? null,
+    p_name: name ?? null,
+    p_assistant_id: assistantId ?? null,
+    p_email: email ?? null,
+    p_teams_aad_object_id: teamsAadObjectId ?? null,
+    p_teams_from_id: teamsFromId ?? null,
+    p_phone_country_code: phoneCountryCode ?? null,
+    p_phone_national: phoneNational ?? null,
+  });
 
-  // full E.164 as-is (no digit stripping)
-  if (phoneNumber !== undefined) {
-    row.phone_number = phoneNumber === null ? null : String(phoneNumber).trim();
+  if (error) {
+    if (error.message?.includes("User limit reached")) {
+      const err = new Error("User limit reached for this organization");
+      err.code = "USER_LIMIT_REACHED";
+      throw err;
+    }
+    throw error;
   }
 
-  // country code column
-  if (phoneCountryCode !== undefined) {
-    row.phone_country_code =
-      phoneCountryCode === null ? null : String(phoneCountryCode).trim();
-  }
-
-  // national number (digits only)
-  if (phoneNational !== undefined) {
-    const digits = cleanMsisdn(phoneNational);
-    row.phone_national = digits || null;
-  }
-
-  // ─── NEW: Teams fields ───
-  if (teamsAadObjectId !== undefined) {
-    row.teams_aad_object_id =
-      teamsAadObjectId === null ? null : String(teamsAadObjectId).trim();
-  }
-
-  if (teamsFromId !== undefined) {
-    row.teams_from_id =
-      teamsFromId === null ? null : String(teamsFromId).trim();
-  }
-  // ─────────────────────────
-
-  const { data, error } = await supabase
-    .from("user")
-    .insert([row])
-    .select("id")
-    .single();
-
-  if (error) throw error;
-
-  // return in the same enriched shape as list
-  return await getUserById(data.id);
+  const created = Array.isArray(data) ? data[0] : data;
+  return await getUserById(created.id);
 }
 
 export async function deleteUser(userId) {
