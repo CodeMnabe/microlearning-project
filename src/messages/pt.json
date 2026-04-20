@@ -841,6 +841,7 @@
     "assistant": "Assistente:",
     "chooseAssistant": "Escolher assistente",
     "create": "Criar",
+    "creating": "A criar…",
     "cancel": "Cancelar"
   },
   "ManageTagsModal": {
@@ -1263,6 +1264,18 @@
       "invalid": "Link inválido ou expirado",
       "updating": "A atualizar…",
       "updated": "Password atualizada! Redirecionando…"
+    }
+  },
+  "Alert": {
+    "noContact": {
+      "title": "Falta de Contacto",
+      "message": "Adiciona pelo menos um método de contacto: telemóvel, Teams ou email",
+      "ok": "OK"
+    },
+    "fullOrg": {
+      "title": "Limite de Utilizadores",
+      "message": "Chegou ao limite de utilizadores para esta organização.",
+      "ok": "OK"
     }
   },
   "PillSelect": {

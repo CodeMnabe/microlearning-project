@@ -258,11 +258,12 @@ async function handleEvent(rawJSON) {
     });
   }
 
-  const aiThreadId = thread.ai_thread_id;
-
   await createMessage({
     threadId: thread?.id ?? null,
     userId: user.id,
+    organizationId: user.organization_id,
+    assistantId: assistantRow.id,
+    channel,
     messageId: inboundMsgId,
     externalContactId: contactId,
     content: text,
@@ -297,10 +298,15 @@ async function handleEvent(rawJSON) {
   await createMessage({
     threadId: thread?.id ?? null,
     userId: user.id,
+    organizationId: user.organization_id,
+    assistantId: assistantRow.id,
+    channel,
     messageId: outboundId,
     externalContactId: contactId,
     content: aiResponse.aiResponse,
     role: "assistant",
+    deliveryStatus: sendRes.ok ? "accepted" : "failed",
+    failedAt: sendRes.ok ? null : new Date().toISOString(),
   });
 }
 
@@ -314,6 +320,9 @@ async function handlePendingMessages({
   await createMessage({
     threadId: null,
     userId: user.id,
+    organizationId: user.organization_id,
+    assistantId: user.assistant_id ?? null,
+    channel: "whatsapp",
     messageId: inboundMsgId,
     externalContactId: contactId,
     content: inboundText,
@@ -337,7 +346,6 @@ async function handlePendingMessages({
           type: "image",
           image: {
             images: p.imageUrls.map((u) => ({
-              // altText: "image",
               mediaUrl: u,
             })),
             ...(hasText ? { text: p.message } : {}),
@@ -364,10 +372,14 @@ async function handlePendingMessages({
     await createMessage({
       threadId: null,
       userId: user.id,
+      organizationId: user.organization_id,
+      assistantId: user.assistant_id ?? null,
+      channel: "whatsapp",
       messageId: outboundId,
       externalContactId: contactId,
       content: p.message || "",
       role: "system",
+      deliveryStatus: "accepted",
     });
 
     await markPendingOutreachReplied(row.id, inboundMsgId);

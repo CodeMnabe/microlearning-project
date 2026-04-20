@@ -5,6 +5,7 @@ import {
   updateUser,
   deleteUser,
 } from "@/lib/repos/user.repo";
+import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
 
 export async function GET(req) {
   try {
@@ -50,7 +51,6 @@ export async function POST(req) {
       );
     }
 
-    // Normalize
     const normalizedNational =
       typeof phoneNational === "string"
         ? phoneNational.replace(/\s+/g, "")
@@ -67,14 +67,7 @@ export async function POST(req) {
         ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
         : null);
 
-    if (!fullPhone) {
-      return NextResponse.json(
-        { error: "Missing phone number" },
-        { status: 400 },
-      );
-    }
-
-    const _newUser = await createUser({
+    const _newUser = await createUserWithAutomations({
       organizationId,
       name,
       email,
@@ -88,6 +81,12 @@ export async function POST(req) {
 
     return NextResponse.json(_newUser, { status: 201 });
   } catch (error) {
+    if (error.code === "USER_LIMIT_REACHED") {
+      return NextResponse.json(
+        { error: "This organization has reached its user limit." },
+        { status: 409 },
+      );
+    }
     if (error.code === "23505") {
       return NextResponse.json(
         { error: "User already exists (duplicate key)." },

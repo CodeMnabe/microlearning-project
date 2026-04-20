@@ -4,6 +4,7 @@ import { ConfirmProvider } from "../components/Confirm/ConfirmProvider";
 import NavCursor from "../components/NavCursor/NavCursor";
 import TopLoader from "./(marketing)/components/TopLoader/TopLoader";
 import SiteUnavailable from "../components/SiteUnavailable/SiteUnavailable";
+import { AlertProvider } from "../components/Alert/AlertProvider";
 
 export function generateStaticParams() {
   return [{ locale: "en" }, { locale: "pt" }];
@@ -17,7 +18,9 @@ export default async function LocaleLayout({ children }) {
     <NextIntlClientProvider locale={locale} messages={messages}>
       <TopLoader />
       <NavCursor />
-      <ConfirmProvider>{children}</ConfirmProvider>
+      <AlertProvider>
+        <ConfirmProvider>{children}</ConfirmProvider>
+      </AlertProvider>
     </NextIntlClientProvider>
   );
 }
