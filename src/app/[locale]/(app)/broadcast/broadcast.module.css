@@ -97,18 +97,85 @@
   resize: vertical;
 }
 
+.placeholderHint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #666;
+  display: grid;
+  gap: 6px;
+}
+
+.messagePreviewBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.messagePreviewTitle {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #666;
+}
+
+.messagePreviewText {
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
+.messageToolsRow {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.secondaryActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.secondaryActionContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+}
+
+.secondaryActionBadge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #1f6fff;
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .toolsGrid {
   display: grid;
   gap: var(--gutter-x);
   align-items: start;
 }
 
-.toolsGridTwo {
-  grid-template-columns: 280px minmax(0, 1fr);
+.toolsGridOne {
+  grid-template-columns: 280px;
 }
 
-.toolsGridThree {
-  grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1.2fr);
+.toolsGridTwo {
+  grid-template-columns: 280px minmax(0, 1fr);
 }
 
 .toolCard {
@@ -172,8 +239,53 @@
   color: #c00;
 }
 
+.scheduleLayout {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 320px);
+  gap: 20px;
+  align-items: start;
+}
+
+.scheduleCalendarCol {
+  min-width: 0;
+}
+
+.scheduleTimeCol {
+  min-width: 0;
+}
+
+.scheduleTimeCard {
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.scheduleSummaryLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scheduleSummaryValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.scheduleMiniHint {
+  font-size: 12px;
+  color: #64748b;
+}
+
 .calendarWrap {
-  margin-top: 10px;
+  margin-top: 0;
   display: flex;
   justify-content: flex-start;
   max-width: 100%;
@@ -182,7 +294,49 @@
 .timeInputWrap {
   margin-top: 6px;
   display: grid;
+}
 
+.timeInputGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.timeInputsRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.timeInputsCompact {
+  display: inline-grid;
+  grid-template-columns: 72px auto 72px;
+  gap: 8px;
+  align-items: center;
+  width: max-content;
+}
+
+.timeInputSmall {
+  width: 72px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.timeInputSmall:focus {
+  outline: none;
+  border-color: #1f6fff;
+  box-shadow: 0 0 0 3px rgba(31, 111, 255, 0.12);
+}
+
+.timeSeparator {
+  font-weight: 700;
+  color: #666;
+  text-align: center;
 }
 
 .calendarWrap :global(.react-datepicker) {
@@ -463,12 +617,8 @@
   padding: 12px;
   min-height: 120px;
   background:
-    radial-gradient(circle at 10px 10px,
-      rgba(255, 255, 255, 0.25) 2px,
-      transparent 2px) 0 0/28px 28px,
-    radial-gradient(circle at 20px 20px,
-      rgba(255, 255, 255, 0.18) 2px,
-      transparent 2px) 0 0/28px 28px,
+    radial-gradient(circle at 10px 10px, rgba(255, 255, 255, 0.25) 2px, transparent 2px) 0 0/28px 28px,
+    radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.18) 2px, transparent 2px) 0 0/28px 28px,
     #ece5dd;
 }
 
@@ -679,6 +829,174 @@
   color: #888;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 2000;
+}
+
+.modalCard {
+  width: min(980px, 100%);
+  max-height: min(90vh, 920px);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: 18px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.18);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modalSubtitle {
+  font-size: 13px;
+  color: #667085;
+  margin-top: 4px;
+}
+
+.iconCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.modalBody {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.modalSection {
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  padding: 14px;
+  background: #fcfcfd;
+}
+
+.modalSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.modalHelpText {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.trackedLinksGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.trackedLinkCard {
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: #fff;
+}
+
+.trackedLinkCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.trackedPlaceholder {
+  font-size: 12px;
+  color: #666;
+}
+
+.inlineHelpText {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+}
+
+.inlineToolPanel {
+  margin-top: 16px;
+}
+
+.toolPanelCard {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+}
+
+.placeholderHintTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #666;
+}
+
+.placeholderInsertBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.placeholderInsertBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.placeholderInsertBtn code {
+  background: #f1f5f9;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+.placeholderInsertBtn span {
+  color: #475569;
+  font-size: 13px;
+}
+
 @media (max-width: 1400px) {
   .templateCardBody {
     grid-template-columns: 1fr;
@@ -694,8 +1012,61 @@
     grid-template-columns: 1fr;
   }
 
-  .toolsGridTwo,
-  .toolsGridThree {
+  .toolsGridOne,
+  .toolsGridTwo {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .scheduleLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .timeInputsCompact {
+    width: 100%;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .timeInputSmall {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .modalBackdrop {
+    padding: 12px;
+  }
+
+  .modalCard {
+    width: 100%;
+    max-height: 94vh;
+  }
+
+  .modalHeader {
+    padding: 14px 14px 12px;
+  }
+
+  .modalBody {
+    padding: 14px;
+  }
+
+  .modalFooter {
+    padding: 12px 14px 14px;
+  }
+
+  .trackedLinkCardHeader,
+  .modalSectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .messageToolsRow {
+    justify-content: flex-start;
+  }
+
+  .secondaryActionBtn {
+    width: 100%;
+    justify-content: space-between;
   }
 }
