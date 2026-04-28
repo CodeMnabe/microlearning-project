@@ -3,7 +3,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
-import { Filter } from "lucide-react";
+import {
+  Filter,
+  Link2,
+  Paperclip,
+  Plus,
+  Trash2,
+  CalendarDays,
+  MessageSquareText,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import styles from "./broadcast.module.css";
@@ -37,6 +45,18 @@ function formatHour(date) {
 
 function formatMinute(date) {
   return String(date.getMinutes()).padStart(2, "0");
+}
+
+function makeTrackedLinkDraft() {
+  return {
+    id:
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    key: "",
+    label: "",
+    destinationUrl: "",
+  };
 }
 
 const NAME_KEYS = [
@@ -168,6 +188,34 @@ function guessContentTypeFromName(name = "") {
   return "application/octet-stream";
 }
 
+function sanitizeTrackedKey(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_-]/g, "");
+}
+
+function replaceTrackedPlaceholders(
+  str = "",
+  trackedLinks = [],
+  channel = "teams",
+) {
+  let out = String(str || "");
+
+  for (const link of trackedLinks) {
+    const placeholder = `{{link.${link.key}}}`;
+    const replacement =
+      channel === "teams"
+        ? `[${link.label || link.key}](${placeholder})`
+        : placeholder;
+
+    out = out.split(placeholder).join(replacement);
+  }
+
+  return out;
+}
+
 export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
@@ -193,6 +241,8 @@ export default function BroadcastPage() {
 
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
+  const [trackedLinks, setTrackedLinks] = useState([]);
+  const [selectedTrackedUrlKey, setSelectedTrackedUrlKey] = useState("");
 
   const [sending, setSending] = useState(false);
 
@@ -207,11 +257,11 @@ export default function BroadcastPage() {
   const [varDefs, setVarDefs] = useState([]);
   const [varValues, setVarValues] = useState({});
   const [needsUrlVar, setNeedsUrlVar] = useState(false);
-  const [tplUrlVar, setTplUrlVar] = useState("");
   const [tplParamsManual, setTplParamsManual] = useState("");
 
   const [channel, setChannel] = useState("teams");
   const [deliveryMode, setDeliveryMode] = useState("now");
+  const [activeToolPanel, setActiveToolPanel] = useState(null);
 
   const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
@@ -222,6 +272,8 @@ export default function BroadcastPage() {
     formatMinute(initialScheduledDate),
   );
   const [timeError, setTimeError] = useState("");
+
+  const messageInputRef = useRef(null);
 
   const browserTimeZone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
@@ -249,6 +301,34 @@ export default function BroadcastPage() {
   );
 
   const imageUrls = useMemo(() => imageFiles.map((f) => f.url), [imageFiles]);
+
+  const trackedLinkOptions = useMemo(
+    () =>
+      trackedLinks
+        .map((l) => ({
+          value: sanitizeTrackedKey(l.key),
+          label: l.key
+            ? `${sanitizeTrackedKey(l.key)}${l.label ? ` — ${l.label}` : ""}`
+            : "",
+        }))
+        .filter((l) => l.value),
+    [trackedLinks],
+  );
+
+  const normalizedTrackedLinks = useMemo(
+    () =>
+      trackedLinks
+        .map((l) => ({
+          key: sanitizeTrackedKey(l.key),
+          label: String(l.label || "").trim(),
+          destinationUrl: String(l.destinationUrl || "").trim(),
+        }))
+        .filter((l) => l.key && l.label && l.destinationUrl),
+    [trackedLinks],
+  );
+
+  const attachmentsCount = files.length;
+  const trackedLinksCount = normalizedTrackedLinks.length;
 
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
@@ -343,6 +423,12 @@ export default function BroadcastPage() {
     };
   }, [org?.id, channel, getUsers, loadTemplates, stopLoading]);
 
+  useEffect(() => {
+    if (channel === "teams" && activeToolPanel === "template") {
+      setActiveToolPanel(null);
+    }
+  }, [channel, activeToolPanel]);
+
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
       ...u,
@@ -415,7 +501,7 @@ export default function BroadcastPage() {
       setVarDefs([]);
       setVarValues({});
       setNeedsUrlVar(false);
-      setTplUrlVar("");
+      setSelectedTrackedUrlKey("");
 
       if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
 
@@ -459,6 +545,14 @@ export default function BroadcastPage() {
       alive = false;
     };
   }, [org?.id, chosenTemplate, tplLang, channel]);
+
+  useEffect(() => {
+    if (!needsUrlVar) return;
+    if (!trackedLinkOptions.length) return;
+    if (selectedTrackedUrlKey) return;
+
+    setSelectedTrackedUrlKey(trackedLinkOptions[0].value);
+  }, [needsUrlVar, trackedLinkOptions, selectedTrackedUrlKey]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -512,6 +606,44 @@ export default function BroadcastPage() {
 
   function removeFile(url) {
     setFiles((prev) => prev.filter((f) => f.url !== url));
+  }
+
+  function addTrackedLink() {
+    setTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
+  }
+
+  function updateTrackedLink(id, field, value) {
+    setTrackedLinks((prev) =>
+      prev.map((link) => {
+        if (link.id !== id) return link;
+
+        if (field === "key") {
+          return { ...link, key: sanitizeTrackedKey(value) };
+        }
+
+        return { ...link, [field]: value };
+      }),
+    );
+  }
+
+  function removeTrackedLink(id) {
+    setTrackedLinks((prev) => {
+      const removed = prev.find((x) => x.id === id);
+      const next = prev.filter((x) => x.id !== id);
+
+      if (
+        removed &&
+        selectedTrackedUrlKey === sanitizeTrackedKey(removed.key)
+      ) {
+        setSelectedTrackedUrlKey("");
+      }
+
+      return next;
+    });
+  }
+
+  function toggleToolPanel(panel) {
+    setActiveToolPanel((prev) => (prev === panel ? null : panel));
   }
 
   const supabaseUpload = async (pickedFiles) => {
@@ -640,10 +772,20 @@ export default function BroadcastPage() {
     map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
     map.orgName =
       org?.name || map.empresa || map.company || map.organization || "";
-    map.urlVar = tplUrlVar || "";
+    map.urlVar =
+      needsUrlVar && selectedTrackedUrlKey
+        ? `{{link.${selectedTrackedUrlKey}}}`
+        : "";
 
     return map;
-  }, [varDefs, varValues, sampleRecipient, tplUrlVar, org?.name]);
+  }, [
+    varDefs,
+    varValues,
+    sampleRecipient,
+    org?.name,
+    needsUrlVar,
+    selectedTrackedUrlKey,
+  ]);
 
   const preview = useMemo(() => {
     if (!tplDetails) {
@@ -690,9 +832,23 @@ export default function BroadcastPage() {
     return { body, buttonText, buttonUrl };
   }, [tplDetails, tplLang, previewVars]);
 
+  const previewMessageWithTrackedLinks = useMemo(() => {
+    return replaceTrackedPlaceholders(message, normalizedTrackedLinks, channel);
+  }, [message, normalizedTrackedLinks, channel]);
+
   const paramsComplete =
     (varDefs.length === 0 && tplParamsManual.trim().length > 0) ||
     (varDefs.length > 0 && orderedParamValues.every((v) => v !== ""));
+
+  const trackedLinksValid =
+    normalizedTrackedLinks.length === trackedLinks.length &&
+    new Set(normalizedTrackedLinks.map((l) => l.key)).size ===
+      normalizedTrackedLinks.length;
+
+  const whatsappUrlBindingValid =
+    !needsUrlVar ||
+    trackedLinkOptions.length === 0 ||
+    Boolean(selectedTrackedUrlKey);
 
   useEffect(() => {
     if (varDefs.length === 0) return;
@@ -806,6 +962,8 @@ export default function BroadcastPage() {
 
   const baseCanSend =
     selected.size > 0 &&
+    trackedLinksValid &&
+    whatsappUrlBindingValid &&
     (channel === "whatsapp"
       ? (tplName && tplLang && paramsComplete) ||
         message.trim().length > 0 ||
@@ -825,6 +983,7 @@ export default function BroadcastPage() {
         message,
         imageUrls,
         files,
+        trackedLinks: normalizedTrackedLinks,
         recipients: chosen.map((u) => u.phone_number).filter(Boolean),
         template:
           tplName && tplLang && paramsComplete
@@ -835,7 +994,10 @@ export default function BroadcastPage() {
                 params: orderedParamValues,
                 varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
                 manualParams: varDefs.length ? undefined : tplParamsManual,
-                urlVar: needsUrlVar ? tplUrlVar.trim() || null : null,
+                trackedUrlKey:
+                  needsUrlVar && selectedTrackedUrlKey
+                    ? selectedTrackedUrlKey
+                    : null,
               }
             : null,
       };
@@ -846,12 +1008,25 @@ export default function BroadcastPage() {
       userIds: chosen.map((u) => u.id),
       message,
       files,
+      trackedLinks: normalizedTrackedLinks,
     };
   }
 
   async function handleSend() {
     if (!selectedUsers.length) {
       return alert(translation("Broadcast.chooseRecipients"));
+    }
+
+    if (!trackedLinksValid) {
+      return alert(
+        "Please complete all tracked links and avoid duplicate keys.",
+      );
+    }
+
+    if (!whatsappUrlBindingValid) {
+      return alert(
+        "Please choose which tracked link should be used for the WhatsApp template URL button.",
+      );
     }
 
     setSending(true);
@@ -884,6 +1059,14 @@ export default function BroadcastPage() {
         return;
       }
 
+      if (typeof data === "object" && data && data.failed > 0) {
+        console.error("Broadcast partial/failed result", data);
+        alert(
+          `Broadcast finished with ${data.ok || 0} success and ${data.failed || 0} failed.`,
+        );
+        return;
+      }
+
       alert(
         channel === "whatsapp"
           ? "WhatsApp broadcast sent successfully."
@@ -900,6 +1083,18 @@ export default function BroadcastPage() {
   async function handleSchedule() {
     if (!selectedUsers.length) {
       return alert(translation("Broadcast.chooseRecipients"));
+    }
+
+    if (!trackedLinksValid) {
+      return alert(
+        "Please complete all tracked links and avoid duplicate keys.",
+      );
+    }
+
+    if (!whatsappUrlBindingValid) {
+      return alert(
+        "Please choose which tracked link should be used for the WhatsApp template URL button.",
+      );
     }
 
     const committed = commitTimeParts(hourDraft, minuteDraft);
@@ -952,6 +1147,41 @@ export default function BroadcastPage() {
     }
   }
 
+  function insertTrackedPlaceholder(key) {
+    const token = `{{link.${key}}}`;
+    const textArea = messageInputRef.current;
+
+    if (!textArea) {
+      setMessage(
+        (prev) => `${prev}${prev && !prev.endsWith(" ") ? " " : ""}${token}`,
+      );
+      return;
+    }
+
+    const start = textArea.selectionStart ?? message.length;
+    const end = textArea.selectionEnd ?? message.length;
+
+    const before = message.slice(0, start);
+    const after = message.slice(end);
+
+    const prefix =
+      before && !before.endsWith(" ") && !before.endsWith("\n") ? " " : "";
+
+    const suffix =
+      after && !after.startsWith(" ") && !after.startsWith("\n") ? " " : "";
+
+    const inserted = `${prefix}${token}${suffix}`;
+    const nextValue = before + inserted + after;
+
+    setMessage(nextValue);
+
+    requestAnimationFrame(() => {
+      textArea.focus();
+      const nextCursor = before.length + inserted.length;
+      textArea.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
+
   const allOnPageSelected =
     filtered.length > 0 && filtered.every((u) => selected.has(u.id));
 
@@ -963,6 +1193,14 @@ export default function BroadcastPage() {
       }),
     [],
   );
+
+  const scheduleButtonLabel =
+    deliveryMode === "schedule"
+      ? `${scheduledFor.toLocaleDateString()} ${formatHour(scheduledFor)}:${formatMinute(scheduledFor)}`
+      : translation("Broadcast.sendnow");
+
+  const templateButtonLabel =
+    channel === "whatsapp" && tplName ? tplName : "No template";
 
   return (
     <div className={styles.screen}>
@@ -1016,461 +1254,752 @@ export default function BroadcastPage() {
             </div>
 
             <textarea
+              ref={messageInputRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={10}
               placeholder={translation("Broadcast.messagePlaceholder")}
               className={styles.textarea}
             />
-          </div>
 
-          <div
-            className={`${styles.toolsGrid} ${
-              channel === "whatsapp"
-                ? styles.toolsGridThree
-                : styles.toolsGridTwo
-            }`}
-          >
-            <div className={`${styles.toolCard} ${styles.toolCardSchedule}`}>
-              <div className={styles.panelTitle}>
-                {translation("Broadcast.schedule")}
+            {normalizedTrackedLinks.length > 0 && (
+              <div className={styles.placeholderHint}>
+                <div className={styles.placeholderHintTitle}>
+                  Tracked placeholders:
+                </div>
+                {normalizedTrackedLinks.map((link) => {
+                  const token = `{{link.${link.key}}}`;
+
+                  return (
+                    <button
+                      key={link.key}
+                      type="button"
+                      className={styles.placeholderInsertBtn}
+                      onClick={() => insertTrackedPlaceholder(link.key)}
+                      title={`Insert ${token}`}
+                    >
+                      <code>{token}</code>
+                      <span>→ {link.label}</span>
+                    </button>
+                  );
+                })}
               </div>
+            )}
 
-              <div className={styles.scheduleModeRow}>
-                <button
-                  type="button"
-                  className={`${styles.kbdBtn} ${
-                    deliveryMode === "now" ? styles.modeBtnActive : ""
-                  }`}
-                  onClick={() => setDeliveryMode("now")}
-                >
-                  {translation("Broadcast.sendnow")}
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.kbdBtn} ${
-                    deliveryMode === "schedule" ? styles.modeBtnActive : ""
-                  }`}
-                  onClick={() => setDeliveryMode("schedule")}
-                >
-                  {translation("Broadcast.scheduleBtn")}
-                </button>
+            {!!message.trim() && normalizedTrackedLinks.length > 0 && (
+              <div className={styles.messagePreviewBox}>
+                <div className={styles.messagePreviewTitle}>
+                  Message preview
+                </div>
+                <div className={styles.messagePreviewText}>
+                  {previewMessageWithTrackedLinks}
+                </div>
               </div>
+            )}
 
-              <div className={styles.scheduleHint}>
-                {translation("Broadcast.timezone")}: {browserTimeZone}
-              </div>
+            <div className={styles.messageToolsRow}>
+              <button
+                type="button"
+                onClick={() => toggleToolPanel("schedule")}
+                className={`${styles.secondaryActionBtn} ${
+                  activeToolPanel === "schedule" ? styles.modeBtnActive : ""
+                }`}
+              >
+                <span className={styles.secondaryActionContent}>
+                  <CalendarDays size={16} />
+                  <span>Schedule</span>
+                </span>
+                <span className={styles.secondaryActionBadge}>
+                  {scheduleButtonLabel}
+                </span>
+              </button>
 
-              <div className={styles.calendarWrap}>
-                <DatePicker
-                  selected={scheduledFor}
-                  onChange={(date) => {
-                    if (!date) return;
-
-                    const next = new Date(date);
-                    next.setHours(
-                      scheduledFor.getHours(),
-                      scheduledFor.getMinutes(),
-                      0,
-                      0,
-                    );
-                    setScheduledFor(next);
-                  }}
-                  inline
-                  dateFormat="dd/MM/yyyy"
-                  minDate={new Date()}
-                />
-              </div>
-
-              <div className={styles.timeInputWrap}>
-                <label className={styles.smallLabel}>
-                  {translation("Broadcast.hour")}
-                </label>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto 1fr",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                  onBlur={(e) => {
-                    if (e.currentTarget.contains(e.relatedTarget)) return;
-
-                    const ok = commitTimeParts(hourDraft, minuteDraft);
-                    if (!ok) {
-                      setHourDraft(formatHour(scheduledFor));
-                      setMinuteDraft(formatMinute(scheduledFor));
-                    }
-                  }}
-                >
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="08"
-                    value={hourDraft}
-                    onChange={(e) => handleHourChange(e.target.value)}
-                    className={styles.input}
-                  />
-
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "#666",
-                      textAlign: "center",
-                    }}
-                  >
-                    :
+              <button
+                type="button"
+                onClick={() => toggleToolPanel("attachments")}
+                className={`${styles.secondaryActionBtn} ${
+                  activeToolPanel === "attachments" ? styles.modeBtnActive : ""
+                }`}
+              >
+                <span className={styles.secondaryActionContent}>
+                  <Paperclip size={16} />
+                  <span>Attachments</span>
+                </span>
+                {attachmentsCount > 0 && (
+                  <span className={styles.secondaryActionBadge}>
+                    {attachmentsCount}
                   </span>
-
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="00"
-                    value={minuteDraft}
-                    onChange={(e) => handleMinuteChange(e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-
-                {timeError && (
-                  <div className={styles.scheduleError}>{timeError}</div>
                 )}
-              </div>
+              </button>
 
-              {deliveryMode === "schedule" && scheduleInvalid && !timeError && (
-                <div className={styles.scheduleError}>
-                  {translation("Broadcast.scheduleError")}
-                </div>
+              <button
+                type="button"
+                onClick={() => toggleToolPanel("links")}
+                className={`${styles.secondaryActionBtn} ${
+                  activeToolPanel === "links" ? styles.modeBtnActive : ""
+                }`}
+              >
+                <span className={styles.secondaryActionContent}>
+                  <Link2 size={16} />
+                  <span>Links</span>
+                </span>
+                {trackedLinksCount > 0 && (
+                  <span className={styles.secondaryActionBadge}>
+                    {trackedLinksCount}
+                  </span>
+                )}
+              </button>
+
+              {channel === "whatsapp" && (
+                <button
+                  type="button"
+                  onClick={() => toggleToolPanel("template")}
+                  className={`${styles.secondaryActionBtn} ${
+                    activeToolPanel === "template" ? styles.modeBtnActive : ""
+                  }`}
+                >
+                  <span className={styles.secondaryActionContent}>
+                    <MessageSquareText size={16} />
+                    <span>Template</span>
+                  </span>
+                  <span className={styles.secondaryActionBadge}>
+                    {templateButtonLabel}
+                  </span>
+                </button>
               )}
             </div>
 
-            <div className={styles.toolCard}>
-              <div className={styles.panelTitle}>
-                Anexos ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
-              </div>
-
-              <div className={styles.imagesRow}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="*/*"
-                  multiple
-                  onChange={handlePickFiles}
-                />
-              </div>
-
-              <input
-                ref={thumbInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={handlePickThumbnail}
-              />
-
-              <div className={styles.filesStack}>
-                {imageFiles.length > 0 && (
-                  <div>
-                    <div className={styles.label}>Imagens</div>
-
-                    <div className={styles.thumbStrip}>
-                      {imageFiles.map((f) => (
-                        <div key={f.url} className={styles.thumbWrap}>
-                          <img
-                            src={f.url}
-                            alt={f.name || "upload"}
-                            width={110}
-                            height={110}
-                            className={styles.imageThumb}
-                          />
-
-                          <button
-                            onClick={() => removeFile(f.url)}
-                            className={styles.thumbClose}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
+            {activeToolPanel && (
+              <div className={styles.inlineToolPanel}>
+                {activeToolPanel === "schedule" && (
+                  <div className={styles.toolPanelCard}>
+                    <div className={styles.panelTitle}>
+                      {translation("Broadcast.schedule")}
                     </div>
-                  </div>
-                )}
 
-                {videoFiles.length > 0 && (
-                  <div>
-                    <div className={styles.label}>Vídeos</div>
-
-                    <div className={styles.fileList}>
-                      {videoFiles.map((f) => (
-                        <div key={f.url} className={styles.fileItem}>
-                          <div className={styles.fileMeta}>
-                            <div className={styles.fileName}>
-                              {f.name || "video"}
-                            </div>
-                            <div className={styles.fileType}>
-                              {f.contentType}
-                            </div>
-                          </div>
-
-                          <div className={styles.fileActions}>
-                            <button
-                              type="button"
-                              onClick={() => openThumbnailPicker(f.url)}
-                              className={styles.kbdBtn}
-                            >
-                              Thumbnail
-                            </button>
-
-                            {f.thumbnailUrl && (
-                              <button
-                                type="button"
-                                onClick={() => removeThumbnail(f.url)}
-                                className={styles.kbdBtn}
-                              >
-                                Remove thumb
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => removeFile(f.url)}
-                              className={styles.kbdBtn}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {otherFiles.length > 0 && (
-                  <div>
-                    <div className={styles.label}>Ficheiros</div>
-
-                    <div className={styles.fileList}>
-                      {otherFiles.map((f) => (
-                        <div key={f.url} className={styles.fileItem}>
-                          <div className={styles.fileMeta}>
-                            <a href={f.url} target="_blank" rel="noreferrer">
-                              {f.name || "file"}
-                            </a>
-                            <div className={styles.fileType}>
-                              {f.contentType}
-                            </div>
-                          </div>
-
-                          <div className={styles.fileActions}>
-                            <button
-                              type="button"
-                              onClick={() => removeFile(f.url)}
-                              className={styles.kbdBtn}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {files.length === 0 && (
-                  <div className={styles.emptyMini}>
-                    Sem anexos adicionados.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {channel === "whatsapp" && (
-              <div className={`${styles.toolCard} ${styles.toolCardTemplate}`}>
-                <div className={styles.panelTitle}>
-                  Pré-Visualização do Template
-                </div>
-
-                {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
-
-                <div className={styles.templateCardBody}>
-                  <div className={styles.templateFields}>
-                    <div className={styles.field}>
-                      <div className={styles.label}>
-                        {translation("Broadcast.template")}
-                      </div>
-
-                      <select
-                        disabled={tplLoading || nameOptions.length === 0}
-                        value={tplName}
-                        onChange={(e) => setTplName(e.target.value)}
-                        className={styles.select}
+                    <div className={styles.scheduleModeRow}>
+                      <button
+                        type="button"
+                        className={`${styles.kbdBtn} ${
+                          deliveryMode === "now" ? styles.modeBtnActive : ""
+                        }`}
+                        onClick={() => setDeliveryMode("now")}
                       >
-                        {nameOptions.length === 0 ? (
-                          <option value="">
-                            {translation("Broadcast.noTemplates")}
-                          </option>
-                        ) : (
-                          nameOptions.map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))
-                        )}
-                      </select>
+                        {translation("Broadcast.sendnow")}
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.kbdBtn} ${
+                          deliveryMode === "schedule"
+                            ? styles.modeBtnActive
+                            : ""
+                        }`}
+                        onClick={() => setDeliveryMode("schedule")}
+                      >
+                        {translation("Broadcast.scheduleBtn")}
+                      </button>
                     </div>
 
-                    {varDefs.length > 0 ? (
-                      <div className={styles.gridSingle}>
-                        {varDefs.map((v) => {
-                          const kLower = String(v.key || "").toLowerCase();
-                          const locked = isLockedVar(kLower);
+                    <div className={styles.scheduleHint}>
+                      {translation("Broadcast.timezone")}: {browserTimeZone}
+                    </div>
 
-                          let displayVal = varValues[v.key] ?? "";
-                          if (!displayVal && COMPANY_KEYS.includes(kLower)) {
-                            displayVal = org?.name || "";
-                          }
-                          if (!displayVal && NAME_KEYS.includes(kLower)) {
-                            displayVal = sampleRecipient?.name || "";
-                          }
+                    <div className={styles.scheduleLayout}>
+                      <div className={styles.scheduleCalendarCol}>
+                        <div className={styles.calendarWrap}>
+                          <DatePicker
+                            selected={scheduledFor}
+                            onChange={(date) => {
+                              if (!date) return;
 
-                          const placeholder =
-                            v.examplesLocale?.[tplLang]
-                              ?.exampleValueStrings?.[0] ??
-                            (v.examplesLocale
-                              ? v.examplesLocale[
-                                  Object.keys(v.examplesLocale)[0]
-                                ]?.exampleValueStrings?.[0]
-                              : "") ??
-                            "";
-
-                          return (
-                            <div key={v.key} className={styles.fieldWide}>
-                              <label className={styles.smallLabel}>
-                                {v.key}
-                                {v.characterLimit
-                                  ? ` · máx ${v.characterLimit}`
-                                  : ""}
-                                {v.description ? ` — ${v.description}` : ""}
-                              </label>
-
-                              {locked ? (
-                                <div className={styles.lockedField}>
-                                  {displayVal || "—"}
-                                </div>
-                              ) : (
-                                <input
-                                  value={varValues[v.key] ?? ""}
-                                  onChange={(e) =>
-                                    setVarValues((prev) => ({
-                                      ...prev,
-                                      [v.key]: e.target.value,
-                                    }))
-                                  }
-                                  placeholder={placeholder}
-                                  maxLength={v.characterLimit || undefined}
-                                  className={styles.input}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
+                              const next = new Date(date);
+                              next.setHours(
+                                scheduledFor.getHours(),
+                                scheduledFor.getMinutes(),
+                                0,
+                                0,
+                              );
+                              setScheduledFor(next);
+                            }}
+                            inline
+                            dateFormat="dd/MM/yyyy"
+                            minDate={new Date()}
+                          />
+                        </div>
                       </div>
-                    ) : (
-                      <div className={styles.fieldWide}>
-                        <label className={styles.smallLabel}>
-                          {translation("Broadcast.varKeyDesc")}
-                        </label>
 
-                        <input
-                          value={tplParamsManual}
-                          onChange={(e) => setTplParamsManual(e.target.value)}
-                          placeholder="name=Gaspar,url=?session=123"
-                          className={styles.input}
-                        />
-                      </div>
-                    )}
-
-                    {needsUrlVar && (
-                      <div className={styles.fieldWide}>
-                        <label className={styles.smallLabel}>
-                          {translation("Broadcast.urlVar")}
-                        </label>
-
-                        <input
-                          value={tplUrlVar}
-                          onChange={(e) => setTplUrlVar(e.target.value)}
-                          placeholder="session-12345"
-                          className={styles.input}
-                        />
-                      </div>
-                    )}
-
-                    {!paramsComplete && (
-                      <div className={styles.helpDanger}>
-                        {translation("Common.error")}
-                      </div>
-                    )}
-                  </div>
-
-                  <aside className={styles.templatePreviewCol}>
-                    {preview.body || preview.buttonText || preview.buttonUrl ? (
-                      <>
-                        <div
-                          className={`${styles.waFrame} ${styles.waFrameSmall}`}
-                        >
-                          <div className={styles.waHeader}>
-                            <div className={styles.waAvatar}>U</div>
-
-                            <div className={styles.waHeaderText}>
-                              <div className={styles.waTitle}>
-                                {sampleRecipient?.name ||
-                                  translation("Common.none")}
-                              </div>
-                              <div className={styles.waSubtitle}>online</div>
-                            </div>
-
-                            <div className={styles.waIcons}>⋯</div>
+                      <div className={styles.scheduleTimeCol}>
+                        <div className={styles.scheduleTimeCard}>
+                          <div className={styles.scheduleSummaryLabel}>
+                            Selected send time
                           </div>
 
-                          <div className={styles.waChat}>
-                            <div className={styles.waRowOut}>
-                              <div className={styles.waBubbleOut}>
-                                <span className={styles.waText}>
-                                  {preview.body || "—"}
-                                </span>
-                                <span className={styles.waMeta}>
-                                  {previewTime} ✓✓
-                                </span>
-                              </div>
+                          <div className={styles.scheduleSummaryValue}>
+                            {scheduledFor.toLocaleDateString()} ·{" "}
+                            {formatHour(scheduledFor)}:
+                            {formatMinute(scheduledFor)}
+                          </div>
+
+                          <div className={styles.scheduleMiniHint}>
+                            Choose a time between 08:00 and 20:00.
+                          </div>
+
+                          <div className={styles.timeInputGroup}>
+                            <label className={styles.smallLabel}>
+                              {translation("Broadcast.hour")}
+                            </label>
+
+                            <div
+                              className={styles.timeInputsCompact}
+                              onBlur={(e) => {
+                                if (e.currentTarget.contains(e.relatedTarget)) {
+                                  return;
+                                }
+
+                                const ok = commitTimeParts(
+                                  hourDraft,
+                                  minuteDraft,
+                                );
+                                if (!ok) {
+                                  setHourDraft(formatHour(scheduledFor));
+                                  setMinuteDraft(formatMinute(scheduledFor));
+                                }
+                              }}
+                            >
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="08"
+                                value={hourDraft}
+                                onChange={(e) =>
+                                  handleHourChange(e.target.value)
+                                }
+                                className={styles.timeInputSmall}
+                              />
+
+                              <span className={styles.timeSeparator}>:</span>
+
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="00"
+                                value={minuteDraft}
+                                onChange={(e) =>
+                                  handleMinuteChange(e.target.value)
+                                }
+                                className={styles.timeInputSmall}
+                              />
                             </div>
 
-                            {(preview.buttonText || preview.buttonUrl) && (
-                              <div className={styles.waRowOut}>
+                            {timeError && (
+                              <div className={styles.scheduleError}>
+                                {timeError}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {deliveryMode === "schedule" &&
+                      scheduleInvalid &&
+                      !timeError && (
+                        <div className={styles.scheduleError}>
+                          {translation("Broadcast.scheduleError")}
+                        </div>
+                      )}
+                  </div>
+                )}
+
+                {activeToolPanel === "attachments" && (
+                  <div className={styles.toolPanelCard}>
+                    <div className={styles.panelTitle}>
+                      Anexos ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
+                    </div>
+
+                    <div className={styles.imagesRow}>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="*/*"
+                        multiple
+                        onChange={handlePickFiles}
+                      />
+                    </div>
+
+                    <input
+                      ref={thumbInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={handlePickThumbnail}
+                    />
+
+                    <div className={styles.filesStack}>
+                      {imageFiles.length > 0 && (
+                        <div>
+                          <div className={styles.label}>Imagens</div>
+
+                          <div className={styles.thumbStrip}>
+                            {imageFiles.map((f) => (
+                              <div key={f.url} className={styles.thumbWrap}>
+                                <img
+                                  src={f.url}
+                                  alt={f.name || "upload"}
+                                  width={110}
+                                  height={110}
+                                  className={styles.imageThumb}
+                                />
+
                                 <button
-                                  className={styles.waCtaBtn}
+                                  onClick={() => removeFile(f.url)}
+                                  className={styles.thumbClose}
                                   type="button"
                                 >
-                                  {preview.buttonText || "Abrir"}
+                                  ✕
                                 </button>
                               </div>
-                            )}
+                            ))}
                           </div>
                         </div>
+                      )}
 
-                        {preview.buttonUrl && (
-                          <div className={styles.previewUrlHint}>
-                            URL: {preview.buttonUrl}
+                      {videoFiles.length > 0 && (
+                        <div>
+                          <div className={styles.label}>Vídeos</div>
+
+                          <div className={styles.fileList}>
+                            {videoFiles.map((f) => (
+                              <div key={f.url} className={styles.fileItem}>
+                                <div className={styles.fileMeta}>
+                                  <div className={styles.fileName}>
+                                    {f.name || "video"}
+                                  </div>
+                                  <div className={styles.fileType}>
+                                    {f.contentType}
+                                  </div>
+                                </div>
+
+                                <div className={styles.fileActions}>
+                                  <button
+                                    type="button"
+                                    onClick={() => openThumbnailPicker(f.url)}
+                                    className={styles.kbdBtn}
+                                  >
+                                    Thumbnail
+                                  </button>
+
+                                  {f.thumbnailUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeThumbnail(f.url)}
+                                      className={styles.kbdBtn}
+                                    >
+                                      Remove thumb
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(f.url)}
+                                    className={styles.kbdBtn}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {otherFiles.length > 0 && (
+                        <div>
+                          <div className={styles.label}>Ficheiros</div>
+
+                          <div className={styles.fileList}>
+                            {otherFiles.map((f) => (
+                              <div key={f.url} className={styles.fileItem}>
+                                <div className={styles.fileMeta}>
+                                  <a
+                                    href={f.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {f.name || "file"}
+                                  </a>
+                                  <div className={styles.fileType}>
+                                    {f.contentType}
+                                  </div>
+                                </div>
+
+                                <div className={styles.fileActions}>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(f.url)}
+                                    className={styles.kbdBtn}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {files.length === 0 && (
+                        <div className={styles.emptyMini}>
+                          Sem anexos adicionados.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeToolPanel === "links" && (
+                  <div className={styles.toolPanelCard}>
+                    <div className={styles.modalSectionHeader}>
+                      <div className={styles.panelTitle}>Tracked Links</div>
+
+                      <button
+                        type="button"
+                        onClick={addTrackedLink}
+                        className={styles.kbdBtn}
+                      >
+                        <Plus size={14} />
+                        <span>Add link</span>
+                      </button>
+                    </div>
+
+                    <div className={styles.modalHelpText}>
+                      Add placeholders like <code>{`{{link.training}}`}</code>{" "}
+                      inside the message.
+                    </div>
+
+                    <div className={styles.trackedLinksGrid}>
+                      {trackedLinks.map((link, index) => (
+                        <div key={link.id} className={styles.trackedLinkCard}>
+                          <div className={styles.trackedLinkCardHeader}>
+                            <strong>Link {index + 1}</strong>
+
+                            <button
+                              type="button"
+                              onClick={() => removeTrackedLink(link.id)}
+                              className={styles.kbdBtn}
+                            >
+                              <Trash2 size={14} />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+
+                          <div className={styles.fieldWide}>
+                            <label className={styles.smallLabel}>Key</label>
+                            <input
+                              value={link.key}
+                              onChange={(e) =>
+                                updateTrackedLink(
+                                  link.id,
+                                  "key",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="training"
+                              className={styles.input}
+                            />
+                          </div>
+
+                          <div className={styles.fieldWide}>
+                            <label className={styles.smallLabel}>Label</label>
+                            <input
+                              value={link.label}
+                              onChange={(e) =>
+                                updateTrackedLink(
+                                  link.id,
+                                  "label",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Aceder à formação"
+                              className={styles.input}
+                            />
+                          </div>
+
+                          <div className={styles.fieldWide}>
+                            <label className={styles.smallLabel}>
+                              Destination URL
+                            </label>
+                            <input
+                              value={link.destinationUrl}
+                              onChange={(e) =>
+                                updateTrackedLink(
+                                  link.id,
+                                  "destinationUrl",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="https://example.com/course/123"
+                              className={styles.input}
+                            />
+                          </div>
+
+                          {sanitizeTrackedKey(link.key) && (
+                            <div className={styles.trackedPlaceholder}>
+                              Placeholder:{" "}
+                              <code>{`{{link.${sanitizeTrackedKey(link.key)}}}`}</code>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {trackedLinks.length === 0 && (
+                        <div className={styles.emptyMini}>
+                          No tracked links added yet.
+                        </div>
+                      )}
+
+                      {!trackedLinksValid && trackedLinks.length > 0 && (
+                        <div className={styles.helpDanger}>
+                          Complete every tracked link and avoid duplicate keys.
+                        </div>
+                      )}
+                    </div>
+
+                    {channel === "whatsapp" && needsUrlVar && (
+                      <div className={styles.modalSection}>
+                        <div className={styles.panelTitle}>
+                          WhatsApp CTA Button
+                        </div>
+
+                        <div className={styles.fieldWide}>
+                          <label className={styles.smallLabel}>
+                            Tracked link for CTA button
+                          </label>
+
+                          <select
+                            value={selectedTrackedUrlKey}
+                            onChange={(e) =>
+                              setSelectedTrackedUrlKey(e.target.value)
+                            }
+                            className={styles.select}
+                            disabled={trackedLinkOptions.length === 0}
+                          >
+                            {trackedLinkOptions.length === 0 ? (
+                              <option value="">Add a tracked link first</option>
+                            ) : (
+                              <>
+                                <option value="">Select tracked link</option>
+                                {trackedLinkOptions.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </select>
+
+                          {trackedLinkOptions.length === 0 && (
+                            <div className={styles.inlineHelpText}>
+                              This template needs a URL variable, so you should
+                              add at least one tracked link.
+                            </div>
+                          )}
+                        </div>
+
+                        {!whatsappUrlBindingValid && (
+                          <div className={styles.helpDanger}>
+                            Select which tracked link should power the WhatsApp
+                            CTA button.
                           </div>
                         )}
-                      </>
-                    ) : (
-                      <div className={styles.previewPlaceholder}>
-                        {translation("Common.noResults")}
                       </div>
                     )}
-                  </aside>
-                </div>
+                  </div>
+                )}
+
+                {activeToolPanel === "template" && channel === "whatsapp" && (
+                  <div className={styles.toolPanelCard}>
+                    <div className={styles.panelTitle}>
+                      Pré-Visualização do Template
+                    </div>
+
+                    {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
+
+                    <div className={styles.templateCardBody}>
+                      <div className={styles.templateFields}>
+                        <div className={styles.field}>
+                          <div className={styles.label}>
+                            {translation("Broadcast.template")}
+                          </div>
+
+                          <select
+                            disabled={tplLoading || nameOptions.length === 0}
+                            value={tplName}
+                            onChange={(e) => setTplName(e.target.value)}
+                            className={styles.select}
+                          >
+                            {nameOptions.length === 0 ? (
+                              <option value="">
+                                {translation("Broadcast.noTemplates")}
+                              </option>
+                            ) : (
+                              nameOptions.map((n) => (
+                                <option key={n} value={n}>
+                                  {n}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+
+                        {varDefs.length > 0 ? (
+                          <div className={styles.gridSingle}>
+                            {varDefs.map((v) => {
+                              const kLower = String(v.key || "").toLowerCase();
+                              const locked = isLockedVar(kLower);
+
+                              let displayVal = varValues[v.key] ?? "";
+                              if (
+                                !displayVal &&
+                                COMPANY_KEYS.includes(kLower)
+                              ) {
+                                displayVal = org?.name || "";
+                              }
+                              if (!displayVal && NAME_KEYS.includes(kLower)) {
+                                displayVal = sampleRecipient?.name || "";
+                              }
+
+                              const placeholder =
+                                v.examplesLocale?.[tplLang]
+                                  ?.exampleValueStrings?.[0] ??
+                                (v.examplesLocale
+                                  ? v.examplesLocale[
+                                      Object.keys(v.examplesLocale)[0]
+                                    ]?.exampleValueStrings?.[0]
+                                  : "") ??
+                                "";
+
+                              return (
+                                <div key={v.key} className={styles.fieldWide}>
+                                  <label className={styles.smallLabel}>
+                                    {v.key}
+                                    {v.characterLimit
+                                      ? ` · máx ${v.characterLimit}`
+                                      : ""}
+                                    {v.description ? ` — ${v.description}` : ""}
+                                  </label>
+
+                                  {locked ? (
+                                    <div className={styles.lockedField}>
+                                      {displayVal || "—"}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      value={varValues[v.key] ?? ""}
+                                      onChange={(e) =>
+                                        setVarValues((prev) => ({
+                                          ...prev,
+                                          [v.key]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder={placeholder}
+                                      maxLength={v.characterLimit || undefined}
+                                      className={styles.input}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className={styles.fieldWide}>
+                            <label className={styles.smallLabel}>
+                              {translation("Broadcast.varKeyDesc")}
+                            </label>
+
+                            <input
+                              value={tplParamsManual}
+                              onChange={(e) =>
+                                setTplParamsManual(e.target.value)
+                              }
+                              placeholder="name=Gaspar,url=?session=123"
+                              className={styles.input}
+                            />
+                          </div>
+                        )}
+
+                        {!paramsComplete && (
+                          <div className={styles.helpDanger}>
+                            {translation("Common.error")}
+                          </div>
+                        )}
+                      </div>
+
+                      <aside className={styles.templatePreviewCol}>
+                        {preview.body ||
+                        preview.buttonText ||
+                        preview.buttonUrl ? (
+                          <>
+                            <div
+                              className={`${styles.waFrame} ${styles.waFrameSmall}`}
+                            >
+                              <div className={styles.waHeader}>
+                                <div className={styles.waAvatar}>U</div>
+
+                                <div className={styles.waHeaderText}>
+                                  <div className={styles.waTitle}>
+                                    {sampleRecipient?.name ||
+                                      translation("Common.none")}
+                                  </div>
+                                  <div className={styles.waSubtitle}>
+                                    online
+                                  </div>
+                                </div>
+
+                                <div className={styles.waIcons}>⋯</div>
+                              </div>
+
+                              <div className={styles.waChat}>
+                                <div className={styles.waRowOut}>
+                                  <div className={styles.waBubbleOut}>
+                                    <span className={styles.waText}>
+                                      {preview.body || "—"}
+                                    </span>
+                                    <span className={styles.waMeta}>
+                                      {previewTime} ✓✓
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {(preview.buttonText || preview.buttonUrl) && (
+                                  <div className={styles.waRowOut}>
+                                    <button
+                                      className={styles.waCtaBtn}
+                                      type="button"
+                                    >
+                                      {preview.buttonText || "Abrir"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {preview.buttonUrl && (
+                              <div className={styles.previewUrlHint}>
+                                URL: {preview.buttonUrl}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className={styles.previewPlaceholder}>
+                            {translation("Common.noResults")}
+                          </div>
+                        )}
+                      </aside>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

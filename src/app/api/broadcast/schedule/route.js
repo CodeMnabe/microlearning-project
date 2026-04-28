@@ -50,6 +50,11 @@ export async function POST(req) {
       );
     }
 
+    const enrichedPayload = {
+      ...payload,
+      createdByUserId,
+    };
+
     const row = await createScheduledBroadcast({
       organization_id: orgId,
       created_by_user_id: createdByUserId,
@@ -57,13 +62,13 @@ export async function POST(req) {
       status: "queued",
       scheduled_for: when.toISOString(),
       timezone: timezone || null,
-      payload,
+      payload: enrichedPayload,
       recipient_count: Number(recipientCount || 0),
     });
 
     return NextResponse.json({ ok: true, item: row });
   } catch (err) {
-    console.error("Schedule broadcast error: ", err);
+    console.error("Schedule broadcast error:", err);
     return NextResponse.json(
       { error: err.message || String(err) },
       { status: 500 },

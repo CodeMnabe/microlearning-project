@@ -7,6 +7,10 @@ import {
   isImageType,
   isVideoType,
 } from "./shared";
+import {
+  replaceTrackedPlaceholders,
+  resolveTrackedLinksForRecipient,
+} from "./trackedLinks";
 
 export async function sendTeamsBroadcast(input = {}) {
   const {
@@ -15,6 +19,9 @@ export async function sendTeamsBroadcast(input = {}) {
     message = "",
     files = [],
     imageUrls = [],
+    trackedLinks = [],
+    scheduledBroadcastId = null,
+    createdByUserId = null,
   } = input;
 
   if (!orgId || !Array.isArray(userIds) || userIds.length === 0) {
@@ -33,6 +40,7 @@ export async function sendTeamsBroadcast(input = {}) {
   }
 
   const results = [];
+
   for (const userId of userIds) {
     const install = await getTeamsUserInstallation({
       userId,
@@ -57,6 +65,7 @@ export async function sendTeamsBroadcast(input = {}) {
       const token = await getBotToken(install.tenant_id);
 
       const endpoint = `${String(install.service_url).replace(/\/$/, "")}/v3/conversations/${install.conversation_id}/activities`;
+
       const imageFiles = normalizedFiles.filter((f) =>
         isImageType(f.contentType),
       );
@@ -74,6 +83,7 @@ export async function sendTeamsBroadcast(input = {}) {
         contentUrl: f.url,
         name: f.name || "image",
       }));
+
       const videoCardAttachments = videoFiles.map((f) => {
         const hasThumb = Boolean(f.thumbnailUrl);
 
@@ -87,7 +97,19 @@ export async function sendTeamsBroadcast(input = {}) {
         };
       });
 
-      let text = String(message || "").trim();
+      const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
+        trackedLinks,
+        orgId,
+        channel: "teams",
+        recipientUserId: userId,
+        scheduledBroadcastId,
+        createdByUserId,
+      });
+
+      let text = replaceTrackedPlaceholders(
+        message,
+        resolvedTrackedLinks,
+      ).trim();
 
       if (otherFiles.length) {
         const links = otherFiles
@@ -98,6 +120,12 @@ export async function sendTeamsBroadcast(input = {}) {
       }
 
       if (!text) text = " ";
+
+      console.log("[Teams final message]", {
+        userId,
+        text,
+        resolvedTrackedLinks,
+      });
 
       const payload = {
         type: "message",
@@ -139,9 +167,21 @@ export async function sendTeamsBroadcast(input = {}) {
     }
   }
 
+  const okCount = results.filter((r) => r.ok).length;
+  const failedCount = results.length - okCount;
+
+  if (okCount === 0) {
+    throw new BroadcastError(
+      results[0]?.error ||
+        results[0]?.data?.error ||
+        "Teams broadcast failed for all recipients.",
+      400,
+    );
+  }
+
   return {
-    ok: results.filter((r) => r.ok).length,
-    failed: results.filter((r) => !r.ok).length,
+    ok: okCount,
+    failed: failedCount,
     results,
   };
 }

@@ -6,6 +6,10 @@ import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import { getWhatsappTemplateById } from "@/lib/repos/whatsappTemplates.repo";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
+import {
+  replaceTrackedPlaceholders,
+  resolveTrackedLinksForRecipient,
+} from "./trackedLinks";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -45,16 +49,20 @@ function buildKvParamsForUser({
   orgName,
 }) {
   if (Array.isArray(varKeys) && varKeys.length) {
-    return varKeys
-      .map((k, i) => {
-        let v = baseValues[i] ?? "";
+    const pairs = varKeys.map((k, i) => {
+      let v = baseValues[i] ?? "";
 
-        if (isIn(NAME_KEYS, k)) v = userName ?? v ?? "";
-        if (isIn(COMPANY_KEYS, k)) v = orgName ?? v ?? "";
+      if (isIn(NAME_KEYS, k)) v = userName ?? v ?? "";
+      if (isIn(COMPANY_KEYS, k)) v = orgName ?? v ?? "";
 
-        return `${k}=${v}`;
-      })
-      .concat(urlVar ? [`url=${urlVar}`] : []);
+      return `${k}=${v}`;
+    });
+
+    if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
+      pairs.push(`url=${urlVar}`);
+    }
+
+    return pairs;
   }
 
   const pairs = (manualParams || "")
@@ -80,33 +88,6 @@ function buildKvParamsForUser({
   return pairs;
 }
 
-function resolveTemplateBinding(binding, ctx) {
-  if (!binding) return "";
-
-  if (binding.type === "static") {
-    return binding.value || "";
-  }
-
-  if (binding.type === "system") {
-    switch (binding.path) {
-      case "user.name":
-        return ctx.user?.name || "";
-      case "organization.name":
-        return ctx.org?.name || "";
-      case "assistant.name":
-        return ctx.assistant?.name || "";
-      case "user.email":
-        return ctx.user?.email || "";
-      case "user.phone":
-        return ctx.user?.phone_number || "";
-      default:
-        return "";
-    }
-  }
-
-  return "";
-}
-
 async function loadOrgForWhatsapp(orgId) {
   const { data: org, error } = await supabaseAdmin
     .from("organization")
@@ -127,7 +108,7 @@ function getMessagesEndpoint(channelId) {
 
   if (!workspaceId || !channelId || !accessKey) {
     throw new BroadcastError(
-      "Missing Bird config (WORKSPACE_ID, channel_id, BIRD_API_KEY",
+      "Missing Bird config (WORKSPACE_ID, channel_id, BIRD_API_KEY)",
       500,
     );
   }
@@ -148,7 +129,6 @@ async function sendFreeform({ endpoint, accessKey, to, message, imageUrls }) {
           type: "image",
           image: {
             images: imageUrls.map((u) => ({
-              // altText: "image",
               mediaUrl: u,
             })),
             ...(message ? { text: message } : {}),
@@ -222,7 +202,9 @@ export async function sendWhatsappBroadcast(input = {}) {
     recipients = [],
     template = null,
     whatsappTemplateId = null,
-    templateBindings = {},
+    trackedLinks = [],
+    scheduledBroadcastId = null,
+    createdByUserId = null,
   } = input;
 
   if (!orgId) {
@@ -237,9 +219,6 @@ export async function sendWhatsappBroadcast(input = {}) {
   const onlyImageUrls = normalizedFiles
     .filter((f) => isImageType(f.contentType))
     .map((f) => f.url);
-
-  const hasFreeformContent =
-    String(message || "").trim().length > 0 || onlyImageUrls.length > 0;
 
   let resolvedTemplate = template;
 
@@ -267,13 +246,15 @@ export async function sendWhatsappBroadcast(input = {}) {
       varKeys: order,
       params: order.map(() => ""),
       manualParams: "",
-      urlVar: tpl.components?.urlButtonVarKey || null,
+      trackedUrlKey: tpl.components?.urlButtonVarKey || null,
     };
   }
 
   const hasTemplate = Boolean(resolvedTemplate?.projectId);
+  const hasInitialFreeformContent =
+    String(message || "").trim().length > 0 || onlyImageUrls.length > 0;
 
-  if (!hasFreeformContent && !hasTemplate) {
+  if (!hasInitialFreeformContent && !hasTemplate) {
     throw new BroadcastError(
       "Missing message/images and no template provided",
       400,
@@ -313,11 +294,28 @@ export async function sendWhatsappBroadcast(input = {}) {
       to = await toE164(rawPhone, defaultCc);
     }
 
-    const resolvedMessage = interpolateBroadcastMessage(message, {
-      user,
-      org,
-      assistant: null,
+    const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
+      trackedLinks,
+      orgId,
+      channel: "whatsapp",
+      recipientUserId: user?.id || null,
+      scheduledBroadcastId,
+      createdByUserId,
     });
+
+    const messageWithTrackedLinks = replaceTrackedPlaceholders(
+      message,
+      resolvedTrackedLinks,
+    );
+
+    const resolvedMessage = interpolateBroadcastMessage(
+      messageWithTrackedLinks,
+      {
+        user,
+        org,
+        assistant: null,
+      },
+    );
 
     const hasResolvedFreeformContent =
       String(resolvedMessage || "").trim().length > 0 ||
@@ -334,37 +332,49 @@ export async function sendWhatsappBroadcast(input = {}) {
         imageUrls: onlyImageUrls,
       });
 
+      console.log("[WA freeform result]", {
+        to,
+        ok: r.ok,
+        status: r.status,
+        data: r.data,
+      });
+
       return { to, kind: "freeform", ...r };
     }
 
     if (hasTemplate) {
-      const orderedKeys = resolvedTemplate.varKeys || [];
+      const orderedKeys = Array.isArray(resolvedTemplate.varKeys)
+        ? resolvedTemplate.varKeys
+        : [];
 
-      const resolvedParams = orderedKeys.map((key) =>
-        resolveTemplateBinding(templateBindings[key], {
-          user,
-          org,
-          assistant: null,
-        }),
-      );
+      const baseValues = Array.isArray(resolvedTemplate.params)
+        ? resolvedTemplate.params
+        : [];
+
+      let trackedUrlForTemplate = null;
+      if (resolvedTemplate.trackedUrlKey) {
+        const found = resolvedTrackedLinks.find(
+          (x) => x.key === resolvedTemplate.trackedUrlKey,
+        );
+        trackedUrlForTemplate = found?.trackedUrl || null;
+      }
 
       const kvPairs = buildKvParamsForUser({
         varKeys: orderedKeys,
-        baseValues: resolvedParams,
+        baseValues,
         manualParams: resolvedTemplate.manualParams,
         userName: user?.name || "",
         orgName: org?.name || "",
-        urlVar: resolvedTemplate.urlVar || null,
+        urlVar: trackedUrlForTemplate,
       });
 
-      console.log("[WA template debug]", {
-        resolvedTemplate,
-        orderedKeys,
-        resolvedParams,
-        kvPairs,
-        templateBindings,
-        orgId,
+      console.log("[WA template final]", {
         to,
+        orderedKeys,
+        baseValues,
+        trackedUrlForTemplate,
+        kvPairs,
+        resolvedTemplate,
       });
 
       const r = await sendTemplate({
@@ -373,6 +383,13 @@ export async function sendWhatsappBroadcast(input = {}) {
         to,
         template: resolvedTemplate,
         kvPairs,
+      });
+
+      console.log("[WA template result]", {
+        to,
+        ok: r.ok,
+        status: r.status,
+        data: r.data,
       });
 
       if (r.ok && user && hasResolvedFreeformContent) {
@@ -422,13 +439,23 @@ export async function sendWhatsappBroadcast(input = {}) {
   );
 
   const okCount = results.filter((r) => r.ok).length;
+  const failedCount = results.length - okCount;
+
+  if (okCount === 0) {
+    throw new BroadcastError(
+      results[0]?.data?.error ||
+        results[0]?.error ||
+        "WhatsApp broadcast failed for all recipients.",
+      400,
+    );
+  }
 
   return {
     ok: okCount,
-    failed: results.length - okCount,
+    failed: failedCount,
     results,
     note:
-      hasTemplate && hasFreeformContent
+      hasTemplate && hasInitialFreeformContent
         ? "If a contact was outside the 24h window, we sent the selected template and queued your message to be delivered on their first reply."
         : null,
   };

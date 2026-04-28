@@ -27,6 +27,54 @@ import { splitE164 } from "@/lib/whatsapp/E164";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
+function normalizeId(value) {
+  if (value === undefined || value === null) return null;
+
+  const str = String(value).trim();
+  return str.length > 0 ? str : null;
+}
+
+function getThreadAiThreadId(thread) {
+  if (!thread) return null;
+
+  return (
+    normalizeId(thread.ai_thread_id) ||
+    normalizeId(thread.aiThreadId) ||
+    normalizeId(thread.ai_threadId) ||
+    normalizeId(thread.open_ai_thread_id) ||
+    normalizeId(thread.openAiThreadId) ||
+    normalizeId(thread.openai_thread_id) ||
+    null
+  );
+}
+
+function getAssistantOpenAiId(assistant) {
+  if (!assistant) return null;
+
+  return (
+    normalizeId(assistant.open_ai_id) ||
+    normalizeId(assistant.openAiId) ||
+    normalizeId(assistant.openai_id) ||
+    null
+  );
+}
+
+function getAiResponseText(response) {
+  if (typeof response === "string") {
+    return response;
+  }
+
+  if (!response) return "";
+
+  return String(
+    response.aiResponse ??
+      response.text ??
+      response.message ??
+      response.content ??
+      "",
+  );
+}
+
 function isValid(sigB64, ts, fullUrl, raw) {
   if (!SIGNING_KEY || !sigB64 || !ts || !fullUrl) return false;
 
@@ -42,6 +90,7 @@ function isValid(sigB64, ts, fullUrl, raw) {
   const received = Buffer.from(sigB64, "base64");
 
   if (received.length !== expected.length) return false;
+
   return crypto.timingSafeEqual(expected, received);
 }
 
@@ -49,7 +98,11 @@ async function getAssistantFromUser(user, organization) {
   if (user?.assistant_id) {
     try {
       const assistant = await getAssistantById(Number(user.assistant_id));
-      if (assistant && assistant.organization_id === organization.id) {
+
+      if (
+        assistant &&
+        String(assistant.organization_id) === String(organization.id)
+      ) {
         return assistant;
       }
 
@@ -63,6 +116,7 @@ async function getAssistantFromUser(user, organization) {
 
   try {
     const assistants = await getAssistantsInOrg(organization.id);
+
     if (Array.isArray(assistants) && assistants.length > 0) {
       return assistants[0];
     }
@@ -91,22 +145,70 @@ async function findUserFromPhone(rawPhone) {
 }
 
 async function sendBirdMessage({ channelId, contactId, body }) {
-  const res = await fetch(
-    `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${channelId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        receiver: {
-          contacts: [{ id: contactId }],
+  const cleanChannelId = normalizeId(channelId);
+  const cleanContactId = normalizeId(contactId);
+
+  if (!cleanChannelId) {
+    return {
+      ok: false,
+      status: 400,
+      data: { error: "Missing MessageBird/Bird channelId" },
+    };
+  }
+
+  if (!cleanContactId) {
+    return {
+      ok: false,
+      status: 400,
+      data: { error: "Missing MessageBird/Bird contactId" },
+    };
+  }
+
+  if (!process.env.WORKSPACE_ID) {
+    return {
+      ok: false,
+      status: 500,
+      data: { error: "Missing WORKSPACE_ID env variable" },
+    };
+  }
+
+  if (!process.env.BIRD_API_KEY) {
+    return {
+      ok: false,
+      status: 500,
+      data: { error: "Missing BIRD_API_KEY env variable" },
+    };
+  }
+
+  let res;
+
+  try {
+    res = await fetch(
+      `https://api.bird.com/workspaces/${process.env.WORKSPACE_ID}/channels/${cleanChannelId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
+          "Content-Type": "application/json",
         },
-        body,
-      }),
-    },
-  );
+        body: JSON.stringify({
+          receiver: {
+            contacts: [{ id: cleanContactId }],
+          },
+          body,
+        }),
+      },
+    );
+  } catch (err) {
+    return {
+      ok: false,
+      status: 500,
+      data: {
+        error: "Failed to call Bird API",
+        message: err?.message || String(err),
+      },
+    };
+  }
 
   const raw = await res.text();
   let data;
@@ -130,6 +232,7 @@ export async function GET() {
 
 export async function POST(req) {
   const rawBody = await req.text();
+
   const sigHeader = req.headers.get("messagebird-signature") ?? "";
   const tsHeader = req.headers.get("messagebird-request-timestamp") ?? "";
 
@@ -148,14 +251,18 @@ export async function POST(req) {
     await handleEvent(rawBody);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("OpenAI step failed", {
+    console.error("MessageBird webhook failed", {
       message: err?.message,
       status: err?.status,
       type: err?.type,
       request_id: err?.request_id,
     });
+
     return NextResponse.json(
-      { ok: false, error: String(err) },
+      {
+        ok: false,
+        error: err?.message || String(err),
+      },
       { status: 200 },
     );
   }
@@ -178,16 +285,30 @@ async function handleEvent(rawJSON) {
 
   if (!isInboundText) return;
 
-  const fromNumber = evt.payload?.sender?.contact?.identifierValue || "";
-  const contactId = evt.payload?.sender?.contact?.id || "unknown";
+  const fromNumber =
+    evt.payload?.sender?.contact?.identifierValue ||
+    evt.payload?.sender?.identifierValue ||
+    "";
+
+  const contactId =
+    evt.payload?.sender?.contact?.id || evt.payload?.contact?.id || null;
+
   const text = evt.payload?.body?.text?.text || "";
-  const sentChannelId = evt.payload?.channelId || null;
+
+  const sentChannelId =
+    evt.payload?.channelId ||
+    evt.payload?.channel?.id ||
+    evt.payload?.receiver?.channel?.id ||
+    null;
 
   const inboundMsgId =
     evt.payload?.id || evt.payload?.messageId || evt.payload?.body?.id || null;
 
   if (!fromNumber || !contactId) {
-    console.warn("Inbound WhatsApp event missing fromNumber or contactId");
+    console.warn("Inbound WhatsApp event missing fromNumber or contactId", {
+      fromNumber,
+      contactId,
+    });
     return;
   }
 
@@ -221,11 +342,14 @@ async function handleEvent(rawJSON) {
       contactId,
       inboundText: text,
       pendingMessages,
+      sentChannelId,
     });
+
     return;
   }
 
   const organization = await getOrganization(user.organization_id);
+
   if (!organization) {
     console.warn("Organization not found for user", user.id);
     return;
@@ -238,6 +362,12 @@ async function handleEvent(rawJSON) {
     return;
   }
 
+  const assistantOpenAiId = getAssistantOpenAiId(assistantRow);
+
+  if (!assistantOpenAiId) {
+    throw new Error(`Assistant ${assistantRow.id} is missing open_ai_id`);
+  }
+
   const channel = "whatsapp";
 
   let thread = await getUserThreadForChannel({
@@ -246,16 +376,31 @@ async function handleEvent(rawJSON) {
     channel,
   });
 
+  let aiThreadId = getThreadAiThreadId(thread);
+
   if (!thread) {
     const aiThread = await createOAiThread();
+
+    aiThreadId = normalizeId(aiThread?.id);
+
+    if (!aiThreadId) {
+      throw new Error("createOAiThread did not return an OpenAI thread id");
+    }
+
     thread = await createThread({
       userId: user.id,
       assistantId: assistantRow.id,
-      aiThreadId: aiThread.id,
+      aiThreadId,
       channel,
       scope: "user",
       externalConversationId: null,
     });
+  }
+
+  if (!aiThreadId) {
+    throw new Error(
+      `Existing thread ${thread?.id ?? "unknown"} is missing ai_thread_id`,
+    );
   }
 
   await createMessage({
@@ -270,21 +415,26 @@ async function handleEvent(rawJSON) {
     role: "user",
   });
 
-  const aiResponse = await sendMessageToAi(
-    assistantRow.open_ai_id,
-    text,
-    aiThreadId,
-  );
+  const aiResponse = await sendMessageToAi(assistantOpenAiId, text, aiThreadId);
+
+  const aiText = getAiResponseText(aiResponse);
+
+  if (!aiText.trim()) {
+    throw new Error("OpenAI returned an empty assistant response");
+  }
 
   let outboundId = null;
 
+  const outgoingChannelId =
+    normalizeId(organization.channel_id) || normalizeId(sentChannelId);
+
   const sendRes = await sendBirdMessage({
-    channelId: organization.channel_id,
+    channelId: outgoingChannelId,
     contactId,
     body: {
       type: "text",
       text: {
-        text: aiResponse.aiResponse,
+        text: aiText,
       },
     },
   });
@@ -303,7 +453,7 @@ async function handleEvent(rawJSON) {
     channel,
     messageId: outboundId,
     externalContactId: contactId,
-    content: aiResponse.aiResponse,
+    content: aiText,
     role: "assistant",
     deliveryStatus: sendRes.ok ? "accepted" : "failed",
     failedAt: sendRes.ok ? null : new Date().toISOString(),
@@ -316,6 +466,7 @@ async function handlePendingMessages({
   contactId,
   inboundText,
   pendingMessages,
+  sentChannelId,
 }) {
   await createMessage({
     threadId: null,
@@ -330,10 +481,14 @@ async function handlePendingMessages({
   });
 
   const organization = await getOrganization(user.organization_id);
+
   if (!organization) {
     console.warn("Organization not found while sending pending outreach");
     return;
   }
+
+  const outgoingChannelId =
+    normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
   for (const row of pendingMessages) {
     const p = row.payload || {};
@@ -353,11 +508,13 @@ async function handlePendingMessages({
         }
       : {
           type: "text",
-          text: { text: p.message || "" },
+          text: {
+            text: p.message || "",
+          },
         };
 
     const sendRes = await sendBirdMessage({
-      channelId: organization.channel_id,
+      channelId: outgoingChannelId,
       contactId,
       body,
     });
