@@ -2,11 +2,13 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import styles from "./redirect.module.css";
+import { useTranslations } from "next-intl";
 
 export default function TrackedRedirectPage({ params }) {
   const resolvedParams = use(params);
   const token = String(resolvedParams?.token || "");
 
+  const translation = useTranslations("Redirect");
   const [status, setStatus] = useState("loading");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [error, setError] = useState("");

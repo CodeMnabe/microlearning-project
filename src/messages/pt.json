@@ -697,6 +697,7 @@
     "broadcast": "Mensagens",
     "broadcastCreate": "Enviar",
     "broadcastScheduled": "Ver Agendadas",
+    "trackedLinks": "Links Rastreados",
     "templates": "Templates",
     "admin": "Administração",
     "login": "Login",
@@ -1014,6 +1015,48 @@
       "save": "Não foi possível guardar as alterações.",
       "delete": "Não foi possível eliminar a mensagem agendada.",
       "invalidForm": "Preenche a mensagem e uma data/hora válida."
+    }
+  },
+  "TrackedLinks": {
+    "title": "Links Rastreados",
+    "subtitle": "Vê as estatísticas do links rastreados da tua organização.",
+    "totalLinks": "Total de Links",
+    "search": "Procura por nome, chave, destino ou canal",
+    "loading": "A carregar links",
+    "noLinks": "Não foram encontrados links nesta organização.",
+    "table": {
+      "label": "Nome",
+      "key": "Chave",
+      "channel": "Canal",
+      "destination": "Destino",
+      "recipients": "Recipientes",
+      "clicked": "Clicado",
+      "totalClicks": "Total de cliques",
+      "clickRate": "Percentagem de cliques",
+      "created": "Criado"
+    },
+    "view": "Ver",
+    "detail": {
+      "back": "Voltar",
+      "loading": "A carregar os detalhes do link...",
+      "trackedLink": "Link Rastreado",
+      "key": "chave",
+      "destinationUrl": "URL Destino",
+      "recipients": "Recipientes",
+      "clicked": "Clicado",
+      "notClicked": "Não clicado",
+      "totalClicks": "Total de cliques",
+      "clickRate": "Percentagem de cliques",
+      "created": "Criado",
+      "noClickedUsers": "Ninguém clicou no link ainda...",
+      "allClickedUsers": "Toda a gente clicou neste link.",
+      "recipient": "Recipiente",
+      "email": "E-mail",
+      "phone": "Nº. Telemóvel",
+      "clicks": "Cliques",
+      "firstClick": "Primeiro Clique",
+      "lastClick": "Último Clique",
+      "sentAt": "Enviado"
     }
   },
   "Assistants": {

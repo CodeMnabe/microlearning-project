@@ -17,6 +17,7 @@ import {
   ChevronDown,
   SendHorizontal,
   CalendarClock,
+  Link2,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useMobileNav } from "@/app/components/MobileNav/MobileNavContext";
@@ -208,6 +209,19 @@ export default function Navbar() {
                         className={styles.subnavIcon}
                       />
                       <span>{translation("Nav.broadcastScheduled")}</span>
+                    </Link>
+
+                    <Link
+                      href="/broadcast/tracked-links"
+                      onClick={onNavClick("/broadcast/tracked-links")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/tracked-links")
+                          ? styles.active
+                          : ""
+                      }`}
+                    >
+                      <Link2 aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.trackedLinks")}</span>
                     </Link>
                   </div>
                 )}

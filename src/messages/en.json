@@ -686,6 +686,7 @@
     "broadcast": "Messages",
     "broadcastCreate": "Send",
     "broadcastScheduled": "See Scheduled",
+    "trackedLinks": "Tracked Links",
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
@@ -1006,6 +1007,48 @@
       "save": "Could not save the changes.",
       "delete": "Could not delete the scheduled message.",
       "invalidForm": "Please fill in the message and a valid date/time."
+    }
+  },
+  "TrackedLinks": {
+    "title": "Tracked Links",
+    "subtitle": "View click performance for your organization's tracked links.",
+    "totalLinks": "Total Links",
+    "search": "Search by label, key, destination, or channel",
+    "loading": "Loading tracked links...",
+    "noLinks": "No tracked links found.",
+    "table": {
+      "label": "Label",
+      "key": "Key",
+      "channel": "Channel",
+      "destination": "Destination",
+      "recipients": "Recipients",
+      "clicked": "Clicked",
+      "totalClicks": "Total Clicks",
+      "clickRate": "Click Rate",
+      "created": "Created"
+    },
+    "view": "View",
+    "detail": {
+      "back": "Back",
+      "loading": "Loading tracked link details...",
+      "trackedLink": "Tracked Link",
+      "key": "key",
+      "destinationUrl": "Destination URL",
+      "recipients": "Recipients",
+      "clicked": "Clicked",
+      "notClicked": "Not Clicked",
+      "totalClicks": "Total Clicks",
+      "clickRate": "Click Rate",
+      "created": "Created",
+      "noClickedUsers": "Nobody clicked this link yet.",
+      "allClickedUsers": "Everyone clicked this link.",
+      "recipient": "Recipient",
+      "email": "E-mail",
+      "phone": "Phone Number",
+      "clicks": "Clicks",
+      "firstClick": "First Click",
+      "lastClick": "Last Click",
+      "sentAt": "Sent at"
     }
   },
   "Assistants": {

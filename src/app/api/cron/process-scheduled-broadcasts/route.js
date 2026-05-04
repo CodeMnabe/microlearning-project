@@ -62,11 +62,29 @@ async function syncAutomationRunFailure(automationRunId, errorMessage) {
   if (!automationRunId) return;
 
   try {
+    await markAutomationRunFailed(automationRunId, errorMessage);
   } catch (error) {
-    console.warn("[AUtomations] Failed to mark run failed", {
+    console.warn("[Automations] Failed to mark run failed", {
       automationRunId,
       message: error?.message || String(error),
     });
+  }
+}
+
+function normalizeError(err) {
+  if (!err) return "Unknown error";
+
+  if (typeof err === "string") return err;
+  if (typeof err?.message === "string" && err.message !== "[object Object]") {
+    return err.message;
+  }
+  if (typeof err?.error === "string") return err.error;
+  if (typeof err?.data?.error === "string") return err.data.error;
+
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
   }
 }
 
@@ -81,7 +99,7 @@ async function processOneBroadcast(broadcast) {
       id: broadcast.id,
       ok: false,
       skipped: true,
-      error: err.message || String(err),
+      error: normalizeError(err),
     };
   }
 
@@ -97,10 +115,23 @@ async function processOneBroadcast(broadcast) {
   await syncAutomationRunProcessing(automationRunId);
 
   try {
+    // IMPORTANT:
+    // old scheduled rows may already contain createdByUserId inside payload.
+    // remove it before sending to avoid bigint/uuid issues in tracked_link.created_by_user_id
+    const { createdByUserId: _ignoredCreatedByUserId, ...safeStoredPayload } =
+      broadcast.payload || {};
+
     const payload = {
-      ...(broadcast.payload || {}),
-      orgId: broadcast.payload?.orgId || broadcast.organization_id,
+      ...safeStoredPayload,
+      orgId: safeStoredPayload.orgId || broadcast.organization_id,
+      scheduledBroadcastId: broadcast.id,
     };
+
+    console.log("[Schedule Broadcast] payload before send", {
+      broadcastId: broadcast.id,
+      channel: broadcast.channel,
+      payload,
+    });
 
     let result;
 
@@ -139,6 +170,15 @@ async function processOneBroadcast(broadcast) {
       result,
     };
   } catch (err) {
+    console.error("[Schedule Broadcast] processOneBroadcast failed", {
+      broadcastId: broadcast.id,
+      channel: broadcast.channel,
+      payload: broadcast.payload,
+      err,
+      message: err?.message,
+      stack: err?.stack,
+    });
+
     try {
       await finishScheduledBroadcast(broadcast.id, { status: "failed" });
     } catch (finishErr) {
@@ -148,13 +188,15 @@ async function processOneBroadcast(broadcast) {
       );
     }
 
-    await syncAutomationRunFailure(automationRunId, err.message || String(err));
+    const normalizedError = normalizeError(err);
+
+    await syncAutomationRunFailure(automationRunId, normalizedError);
 
     return {
       id: broadcast.id,
       ok: false,
       status: "failed",
-      error: err.message || String(err),
+      error: normalizedError,
     };
   }
 }
@@ -177,7 +219,7 @@ async function handler(req) {
         if (rawLimit) limit = Number(rawLimit) || 500;
       }
     } catch {
-      //ignore bad limit parsing and keep default catch
+      // keep default
     }
 
     const due = await getDueScheduledBroadcasts(limit);
@@ -207,9 +249,9 @@ async function handler(req) {
       results,
     });
   } catch (err) {
-    console.error("[Schedule Broadcast] Cron error: ", err);
+    console.error("[Schedule Broadcast] Cron error:", err);
     return NextResponse.json(
-      { error: err.message || String(err) },
+      { error: err?.message || String(err) },
       { status: 500 },
     );
   }
