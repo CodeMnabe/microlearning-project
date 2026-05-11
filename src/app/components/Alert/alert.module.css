@@ -93,6 +93,9 @@
 .message {
   margin: 0 0 14px;
   color: #5b6471;
+  white-space: pre-wrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .actions {

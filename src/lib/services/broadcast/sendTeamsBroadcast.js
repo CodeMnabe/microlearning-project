@@ -170,18 +170,15 @@ export async function sendTeamsBroadcast(input = {}) {
   const okCount = results.filter((r) => r.ok).length;
   const failedCount = results.length - okCount;
 
-  if (okCount === 0) {
-    throw new BroadcastError(
-      results[0]?.error ||
-        results[0]?.data?.error ||
-        "Teams broadcast failed for all recipients.",
-      400,
-    );
-  }
-
   return {
     ok: okCount,
     failed: failedCount,
     results,
+    error:
+      okCount === 0
+        ? results[0]?.error ||
+          results[0]?.data?.error ||
+          "Teams broadcast failed for all recipients."
+        : null,
   };
 }

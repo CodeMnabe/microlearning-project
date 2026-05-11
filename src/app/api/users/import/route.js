@@ -1,6 +1,20 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
-import { createUser, getUsersInOrg } from "@/lib/repos/user.repo";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { getUsersInOrg } from "@/lib/repos/user.repo";
+import {
+  getTagsByExactNamesInOrg,
+  addTagsToUser,
+} from "@/lib/repos/tag.repo.js";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+
+const admin = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } },
+);
 
 function cleanText(value) {
   if (value == null) return "";
@@ -16,11 +30,26 @@ function cleanDigits(value) {
   return cleanText(value).replace(/\D/g, "");
 }
 
-function buildFullPhone({ phoneNumber, phoneCountryCode, phoneNational }) {
-  const explicit = cleanText(phoneNumber);
-  if (explicit) return explicit;
+function cleanPhoneNumber(value) {
+  const phone = cleanText(value).replace(/[^\d+]/g, "");
+  return phone || null;
+}
 
-  const code = cleanText(phoneCountryCode);
+function normalizeCountryCode(value) {
+  const code = cleanText(value).replace(/[^\d+]/g, "");
+
+  if (!code) return "";
+  return code.startsWith("+") ? code : `+${code}`;
+}
+
+function buildFullPhone({ phoneNumber, phoneCountryCode, phoneNational }) {
+  const explicit = cleanPhoneNumber(phoneNumber);
+
+  if (explicit) {
+    return explicit;
+  }
+
+  const code = normalizeCountryCode(phoneCountryCode);
   const national = cleanDigits(phoneNational);
 
   if (code && national) {
@@ -28,6 +57,126 @@ function buildFullPhone({ phoneNumber, phoneCountryCode, phoneNational }) {
   }
 
   return null;
+}
+
+function parseAssistantId(value) {
+  if (value === "" || value == null) return null;
+
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function parseTags(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((tag) => cleanText(tag)).filter(Boolean))];
+  }
+
+  const raw = cleanText(value);
+
+  if (!raw) return [];
+
+  return [
+    ...new Set(
+      raw
+        .split(/[,;\n]/)
+        .map((tag) => cleanText(tag))
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function getCreatedUserId(resultValue) {
+  return (
+    resultValue?.id ||
+    resultValue?.user?.id ||
+    resultValue?.data?.id ||
+    resultValue?.createdUser?.id ||
+    resultValue?.[0]?.id ||
+    null
+  );
+}
+
+function findExistingUserForImport({
+  existingUsers,
+  email,
+  teamsAadObjectId,
+  phoneNumber,
+}) {
+  const matches = [];
+
+  if (teamsAadObjectId) {
+    const match = existingUsers.find(
+      (user) => cleanText(user.teams_aad_object_id) === teamsAadObjectId,
+    );
+
+    if (match) matches.push(match);
+  }
+
+  if (email) {
+    const match = existingUsers.find(
+      (user) => cleanEmail(user.email) === email,
+    );
+
+    if (match) matches.push(match);
+  }
+
+  if (phoneNumber) {
+    const match = existingUsers.find(
+      (user) => cleanPhoneNumber(user.phone_number) === phoneNumber,
+    );
+
+    if (match) matches.push(match);
+  }
+
+  const uniqueMatches = Array.from(
+    new Map(matches.map((user) => [user.id, user])).values(),
+  );
+
+  if (uniqueMatches.length > 1) {
+    return {
+      status: "conflict",
+      user: null,
+    };
+  }
+
+  if (uniqueMatches.length === 1) {
+    return {
+      status: "found",
+      user: uniqueMatches[0],
+    };
+  }
+
+  return {
+    status: "not_found",
+    user: null,
+  };
+}
+
+async function updateImportedUser(adminClient, orgId, userId, patch) {
+  const cleanPatch = Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  );
+
+  if (!Object.keys(cleanPatch).length) {
+    return { id: userId };
+  }
+
+  const { data, error } = await adminClient
+    .from("user")
+    .update(cleanPatch)
+    .eq("id", userId)
+    .eq("organization_id", orgId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
 }
 
 export async function POST(req) {
@@ -40,52 +189,65 @@ export async function POST(req) {
 
     const orgId = Number(organizationId);
 
-    if (!orgId) {
+    if (!Number.isInteger(orgId) || orgId <= 0) {
       return NextResponse.json(
         { error: "Invalid organizationId" },
         { status: 400 },
       );
     }
 
+    const requestedTagNames = new Set();
+
+    users.forEach((rawUser) => {
+      parseTags(rawUser.tags).forEach((tagName) => {
+        requestedTagNames.add(tagName);
+      });
+    });
+
+    const tagRows = await getTagsByExactNamesInOrg(
+      admin,
+      orgId,
+      Array.from(requestedTagNames),
+    );
+
+    const tagsByName = new Map();
+
+    tagRows.forEach((tag) => {
+      const name = cleanText(tag.name);
+
+      if (name) {
+        tagsByName.set(name, tag);
+      }
+    });
+
     const existingUsersResult = await getUsersInOrg(orgId, {
       page: 1,
       pageSize: 1000,
     });
+
     const existingUsers = existingUsersResult.items || [];
-
-    const existingEmails = new Set(
-      (existingUsers || []).map((u) => cleanEmail(u.email)).filter(Boolean),
-    );
-
-    const existingAadIds = new Set(
-      (existingUsers || [])
-        .map((u) => cleanText(u.teams_aad_object_id))
-        .filter(Boolean),
-    );
-
-    const existingPhone = new Set(
-      (existingUsers || [])
-        .map((u) => cleanText(u.phone_number))
-        .filter(Boolean),
-    );
 
     const seenEmails = new Set();
     const seenAadIds = new Set();
     const seenPhones = new Set();
+    const seenExistingUserIds = new Set();
 
     const skippedRows = [];
-    const toCreate = [];
+    const toProcess = [];
 
     users.forEach((rawUser, index) => {
       const rowNumber = index + 1;
 
       const name = cleanText(rawUser.name);
       const email = cleanEmail(rawUser.email);
+
       const teamsAadObjectId = cleanText(rawUser.teamsAadObjectId) || null;
       const teamsFromId = cleanText(rawUser.teamsFromId) || null;
 
-      const phoneCountryCode = cleanText(rawUser.phoneCountryCode) || null;
-      const phoneNational = cleanText(rawUser.phoneNational) || null;
+      const phoneCountryCode =
+        normalizeCountryCode(rawUser.phoneCountryCode) || null;
+
+      const phoneNational = cleanDigits(rawUser.phoneNational) || null;
 
       const phoneNumber = buildFullPhone({
         phoneNumber: rawUser.phoneNumber,
@@ -93,22 +255,13 @@ export async function POST(req) {
         phoneNational,
       });
 
-      const parsedAssistantId = Number(rawUser.assistantId);
-      const assistantId =
-        rawUser.assistantId === "" ||
-        rawUser.assistantId == null ||
-        Number.isNaN(parsedAssistantId)
-          ? null
-          : parsedAssistantId;
+      const assistantId = parseAssistantId(rawUser.assistantId);
 
-      if (!name) {
-        skippedRows.push({
-          row: rowNumber,
-          name: "",
-          reason: "Missing name",
-        });
-        return;
-      }
+      const tagNames = parseTags(rawUser.tags);
+
+      const missingTagNames = tagNames.filter(
+        (tagName) => !tagsByName.has(tagName),
+      );
 
       if (!email && !teamsAadObjectId && !phoneNumber) {
         skippedRows.push({
@@ -119,88 +272,206 @@ export async function POST(req) {
         return;
       }
 
-      if (email && (existingEmails.has(email) || seenEmails.has(email))) {
+      const matchResult = findExistingUserForImport({
+        existingUsers,
+        email,
+        teamsAadObjectId,
+        phoneNumber,
+      });
+
+      if (matchResult.status === "conflict") {
         skippedRows.push({
           row: rowNumber,
           name,
-          reason: "Duplicate email",
+          reason:
+            "Multiple matching users found. Email, phone, or Teams AAD Object ID belong to different users.",
         });
         return;
       }
 
-      if (
-        teamsAadObjectId &&
-        (existingAadIds.has(teamsAadObjectId) ||
-          seenAadIds.has(teamsAadObjectId))
-      ) {
+      const existingUser = matchResult.user;
+      const existingUserId = existingUser?.id || null;
+      const displayName = name || cleanText(existingUser?.name);
+
+      if (!existingUser && !name) {
         skippedRows.push({
           row: rowNumber,
-          name,
-          reason: "Duplicate Teams AAD Object ID",
+          name: "",
+          reason: "Missing name",
         });
         return;
       }
 
-      if (
-        phoneNumber &&
-        (existingPhone.has(phoneNumber) || seenPhones.has(phoneNumber))
-      ) {
+      if (missingTagNames.length) {
         skippedRows.push({
           row: rowNumber,
-          name,
-          reason: "Duplicate phone number",
+          name: displayName,
+          reason: `Unknown tag(s): ${missingTagNames.join(", ")}`,
         });
         return;
       }
+
+      if (existingUserId && seenExistingUserIds.has(existingUserId)) {
+        skippedRows.push({
+          row: rowNumber,
+          name: displayName,
+          reason: "Duplicate row for the same existing user",
+        });
+        return;
+      }
+
+      if (email && seenEmails.has(email)) {
+        skippedRows.push({
+          row: rowNumber,
+          name: displayName,
+          reason: "Duplicate email in import file",
+        });
+        return;
+      }
+
+      if (teamsAadObjectId && seenAadIds.has(teamsAadObjectId)) {
+        skippedRows.push({
+          row: rowNumber,
+          name: displayName,
+          reason: "Duplicate Teams AAD Object ID in import file",
+        });
+        return;
+      }
+
+      if (phoneNumber && seenPhones.has(phoneNumber)) {
+        skippedRows.push({
+          row: rowNumber,
+          name: displayName,
+          reason: "Duplicate phone number in import file",
+        });
+        return;
+      }
+
+      const tagIds = tagNames.map((tagName) => tagsByName.get(tagName).id);
 
       if (email) seenEmails.add(email);
       if (teamsAadObjectId) seenAadIds.add(teamsAadObjectId);
       if (phoneNumber) seenPhones.add(phoneNumber);
+      if (existingUserId) seenExistingUserIds.add(existingUserId);
 
-      toCreate.push({
+      if (existingUser) {
+        const patch = {};
+
+        if (name) patch.name = name;
+        if (email) patch.email = email;
+        if (assistantId) patch.assistant_id = assistantId;
+
+        if (phoneNumber) {
+          patch.phone_number = phoneNumber;
+          patch.phone_country_code = phoneCountryCode || null;
+          patch.phone_national = phoneNational || null;
+        }
+
+        if (teamsAadObjectId) patch.teams_aad_object_id = teamsAadObjectId;
+        if (teamsFromId) patch.teams_from_id = teamsFromId;
+
+        toProcess.push({
+          action: "update",
+          existingUserId: existingUser.id,
+          patch,
+          tagIds,
+          name: displayName,
+          __row: rowNumber,
+        });
+
+        return;
+      }
+
+      toProcess.push({
+        action: "create",
         organizationId: orgId,
         name,
         email,
         assistantId,
         phoneNumber: phoneNumber || undefined,
-        phoneCountryCode: phoneCountryCode || undefined,
-        phoneNational: phoneNational || undefined,
+        phoneCountryCode: phoneNumber
+          ? phoneCountryCode || undefined
+          : undefined,
+        phoneNational: phoneNumber ? phoneNational || undefined : undefined,
         teamsAadObjectId,
         teamsFromId,
+        tagIds,
         __row: rowNumber,
       });
     });
 
     const results = await Promise.allSettled(
-      toCreate.map((user) =>
-        createUserWithAutomations({
-          organizationId: user.organizationId,
-          name: user.name,
-          email: user.email,
-          assistantId: user.assistantId,
-          phoneNumber: user.phoneNumber,
-          phoneCountryCode: user.phoneCountryCode || undefined,
-          phoneNational: user.phoneNational || undefined,
-          teamsAadObjectId: user.teamsAadObjectId,
-          teamsFromId: user.teamsFromId,
-        }),
-      ),
+      toProcess.map(async (item) => {
+        if (item.action === "update") {
+          const updatedUser = await updateImportedUser(
+            admin,
+            orgId,
+            item.existingUserId,
+            item.patch,
+          );
+
+          if (item.tagIds.length) {
+            await addTagsToUser(admin, item.existingUserId, item.tagIds);
+          }
+
+          return {
+            action: "update",
+            user: updatedUser,
+          };
+        }
+
+        const createdUser = await createUserWithAutomations({
+          organizationId: item.organizationId,
+          name: item.name,
+          email: item.email,
+          assistantId: item.assistantId,
+          phoneNumber: item.phoneNumber,
+          phoneCountryCode: item.phoneCountryCode,
+          phoneNational: item.phoneNational,
+          teamsAadObjectId: item.teamsAadObjectId,
+          teamsFromId: item.teamsFromId,
+        });
+
+        const createdUserId = getCreatedUserId(createdUser);
+
+        if (item.tagIds.length) {
+          if (!createdUserId) {
+            throw new Error(
+              "User was created, but no user ID was returned to attach tags.",
+            );
+          }
+
+          await addTagsToUser(admin, createdUserId, item.tagIds);
+        }
+
+        return {
+          action: "create",
+          user: createdUser,
+        };
+      }),
     );
 
     const failedRows = [];
     let created = 0;
+    let updated = 0;
 
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
-        created += 1;
+        if (result.value.action === "update") {
+          updated += 1;
+        } else {
+          created += 1;
+        }
+
         return;
       }
 
-      const source = toCreate[index];
+      const source = toProcess[index];
+
       const message =
         result.reason?.message ||
         result.reason?.error_description ||
-        "Failed to create user";
+        "Failed to process user";
 
       failedRows.push({
         row: source.__row,
@@ -212,6 +483,7 @@ export async function POST(req) {
     return NextResponse.json({
       totalReceived: users.length,
       created,
+      updated,
       skipped: skippedRows.length,
       failed: failedRows.length,
       skippedRows,
@@ -219,6 +491,7 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error(error);
+
     return NextResponse.json(
       { error: "Import failed: " + error.message },
       { status: 500 },

@@ -686,6 +686,7 @@
     "broadcast": "Messages",
     "broadcastCreate": "Send",
     "broadcastScheduled": "See Scheduled",
+    "trackedLinks": "Tracked Links",
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
@@ -902,11 +903,31 @@
     "sent": "sent",
     "failed": "failed",
     "schedule": "Schedule",
+    "attachments": "Attachments",
     "sendnow": "Send now",
     "scheduleBtn": "Schedule",
     "timezone": "Timezone",
     "hour": "Hour",
-    "scheduleError": "Please choose a future date and time."
+    "scheduleError": "Please choose a future date and time.",
+    "trackedPlaceholders": "Tracked Placeholders",
+    "messagePreview": "Message Preview",
+    "images": "Images",
+    "videos": "Videos",
+    "thumbnail": "Thumbnail",
+    "removeThumbnail": "Remove Thumbnail",
+    "remove": "Remove",
+    "files": "Files",
+    "selectSendTime": "Selected send Time and Date",
+    "chooseTime": "Choose a time between 08:00 and 20:00.",
+    "trackedLinks": "Tracked Links",
+    "addLink": "Add Link",
+    "key": "Key",
+    "label": "Label",
+    "destinationUrl": "Destination URL",
+    "addPlaceholders": {
+      "first": "Add placeholders like",
+      "second": "inside the message."
+    }
   },
   "BroadcastScheduled": {
     "Title": "Scheduled messages",
@@ -1008,6 +1029,48 @@
       "invalidForm": "Please fill in the message and a valid date/time."
     }
   },
+  "TrackedLinks": {
+    "title": "Tracked Links",
+    "subtitle": "View click performance for your organization's tracked links.",
+    "totalLinks": "Total Links",
+    "search": "Search by label, key, destination, or channel",
+    "loading": "Loading tracked links...",
+    "noLinks": "No tracked links found.",
+    "table": {
+      "label": "Label",
+      "key": "Key",
+      "channel": "Channel",
+      "destination": "Destination",
+      "recipients": "Recipients",
+      "clicked": "Clicked",
+      "totalClicks": "Total Clicks",
+      "clickRate": "Click Rate",
+      "created": "Created"
+    },
+    "view": "View",
+    "detail": {
+      "back": "Back",
+      "loading": "Loading tracked link details...",
+      "trackedLink": "Tracked Link",
+      "key": "key",
+      "destinationUrl": "Destination URL",
+      "recipients": "Recipients",
+      "clicked": "Clicked",
+      "notClicked": "Not Clicked",
+      "totalClicks": "Total Clicks",
+      "clickRate": "Click Rate",
+      "created": "Created",
+      "noClickedUsers": "Nobody clicked this link yet.",
+      "allClickedUsers": "Everyone clicked this link.",
+      "recipient": "Recipient",
+      "email": "E-mail",
+      "phone": "Phone Number",
+      "clicks": "Clicks",
+      "firstClick": "First Click",
+      "lastClick": "Last Click",
+      "sentAt": "Sent at"
+    }
+  },
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",
@@ -1036,7 +1099,7 @@
       "docCollection": "Document Collection",
       "collectionTitle": "Collection Name",
       "quantity": "Quantity",
-      "filenames": "Filenames"
+      "filenames": "File Names"
     },
     "placeholder": "Select an assistant from the left column."
   },

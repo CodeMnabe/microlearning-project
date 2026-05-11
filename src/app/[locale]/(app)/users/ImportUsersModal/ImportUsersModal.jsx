@@ -5,8 +5,29 @@ import Papa from "papaparse";
 import styles from "./import.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import mapCsvRow from "./helpers";
+import { Download } from "lucide-react";
 
 const PREVIEW_LIMIT = 10;
+
+function isExcelFile(file) {
+  const name = file?.name?.toLowerCase() || "";
+
+  return (
+    name.endsWith(".xlsx") ||
+    file?.type ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+}
+
+function isCsvFile(file) {
+  const name = file?.name?.toLowerCase() || "";
+
+  return (
+    name.endsWith(".csv") ||
+    file?.type === "text/csv" ||
+    file?.type === "application/csv"
+  );
+}
 
 export default function ImportUsersModal({
   isOpen,
@@ -23,7 +44,6 @@ export default function ImportUsersModal({
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
 
-  // Keep mounted while closing animation runs
   const [render, setRender] = useState(isOpen);
 
   useEffect(() => {
@@ -56,67 +76,105 @@ export default function ImportUsersModal({
 
   const stateClass = isOpen ? styles.open : styles.closing;
 
-  function handleFileChange(file) {
+  async function readExcelFile(file) {
+    const XLSX = await import("xlsx");
+
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, {
+      type: "array",
+      cellDates: false,
+    });
+
+    const sheetName = workbook.SheetNames.includes("Users")
+      ? "Users"
+      : workbook.SheetNames[0];
+
+    if (!sheetName) {
+      throw new Error("No sheets found in Excel file.");
+    }
+
+    const worksheet = workbook.Sheets[sheetName];
+
+    return XLSX.utils.sheet_to_json(worksheet, {
+      defval: "",
+      raw: false,
+    });
+  }
+
+  async function readCsvFile(file) {
+    const text = await file.text();
+
+    const results = Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+    });
+
+    if (results.errors?.length) {
+      console.warn("CSV parse warnings:", results.errors);
+    }
+
+    return results.data || [];
+  }
+
+  async function handleFileChange(file) {
     if (!file) return;
 
     setError("");
     setSummary(null);
     setFileName(file.name);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        try {
-          const mapped = (results.data || [])
-            .map((row) => {
-              const mappedRow = mapCsvRow(
-                row,
-                defaultPhoneCode,
-                assistantId || null,
-              );
+    try {
+      let data = [];
 
-              if (!mappedRow.assistantId && mappedRow.assistantPosition) {
-                const index = Number(mappedRow.assistantPosition) - 1;
-
-                if (index >= 0 && index < assistants.length) {
-                  mappedRow.assistantId = assistants[index]?.id ?? null;
-                }
-              }
-
-              return mappedRow;
-            })
-            .filter(
-              (row) =>
-                row.name ||
-                row.email ||
-                row.phoneNumber ||
-                row.teamsAadObjectId,
-            );
-
-          if (!mapped.length) {
-            setRows([]);
-            setError("No valid rows were found in that CSV.");
-            return;
-          }
-
-          setRows(mapped);
-
-          if (results.errors?.length) {
-            console.warn("CSV parse warnings:", results.errors);
-          }
-        } catch (err) {
-          console.error(err);
-          setRows([]);
-          setError("There was a problem reading that CSV file.");
-        }
-      },
-      error: (err) => {
-        console.error(err);
+      if (isExcelFile(file)) {
+        data = await readExcelFile(file);
+      } else if (isCsvFile(file)) {
+        data = await readCsvFile(file);
+      } else {
         setRows([]);
-        setError("There was a problem reading that CSV file.");
-      },
-    });
+        setError("Please upload a .xlsx or .csv file.");
+        return;
+      }
+
+      const mapped = data
+        .map((row) => {
+          const mappedRow = mapCsvRow(
+            row,
+            defaultPhoneCode,
+            assistantId || null,
+          );
+
+          if (!mappedRow.assistantId && mappedRow.assistantPosition) {
+            const index = Number(mappedRow.assistantPosition) - 1;
+
+            if (index >= 0 && index < assistants.length) {
+              mappedRow.assistantId = assistants[index]?.id ?? null;
+            }
+          }
+
+          return mappedRow;
+        })
+        .filter(
+          (row) =>
+            row.name ||
+            row.email ||
+            row.phoneNumber ||
+            row.teamsAadObjectId ||
+            row.tags?.length,
+        );
+
+      if (!mapped.length) {
+        setRows([]);
+        setError("No valid rows were found in that file.");
+        return;
+      }
+
+      setRows(mapped);
+    } catch (err) {
+      console.error(err);
+      setRows([]);
+      setError("There was a problem reading that file.");
+    }
   }
 
   async function handleImport() {
@@ -173,21 +231,39 @@ export default function ImportUsersModal({
         role="dialog"
         aria-modal="true"
       >
-        <h3 className={styles.modalTitle}>Import users from CSV</h3>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Import users</h3>
+
+          <a
+            href="/templates/user_import_template.xlsx"
+            download="user_import_template.xlsx"
+            className={styles.templateDownloadButton}
+          >
+            <Download />
+            Template
+          </a>
+        </div>
 
         <div className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="csvFile">CSV file</label>
+            <label htmlFor="importFile">Import file</label>
+
             <input
-              id="csvFile"
+              id="importFile"
               type="file"
-              accept=".csv,text/csv"
+              accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(e) => handleFileChange(e.target.files?.[0])}
               disabled={isSubmitting}
             />
+
             {fileName ? (
               <div className={styles.helperText}>Selected file: {fileName}</div>
-            ) : null}
+            ) : (
+              <div className={styles.helperText}>
+                Upload an Excel file from the provided template, or a CSV with
+                the same columns.
+              </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -214,7 +290,7 @@ export default function ImportUsersModal({
 
           {!rows.length && !error ? (
             <div className={styles.emptyState}>
-              Upload a CSV file to preview the users before importing.
+              Upload a file to preview the users before importing.
             </div>
           ) : null}
 
@@ -240,18 +316,31 @@ export default function ImportUsersModal({
                   <div>Teams AAD Object ID</div>
                   <div>Phone</div>
                   <div>Assistant</div>
+                  <div>Tags</div>
                 </div>
 
                 {previewRows.map((row, index) => (
                   <div
-                    key={`${row.email || row.teamsAadObjectId || row.name}-${index}`}
+                    key={`${
+                      row.email ||
+                      row.teamsAadObjectId ||
+                      row.phoneNumber ||
+                      row.name ||
+                      "row"
+                    }-${index}`}
                     className={styles.previewRow}
                   >
                     <div>{row.name || "—"}</div>
                     <div>{row.email || "—"}</div>
                     <div>{row.teamsAadObjectId || "—"}</div>
                     <div>{row.phoneNumber || "—"}</div>
-                    <div>{row.assistantId || row.assistantPosition || "—"}</div>
+                    <div>
+                      {assistantId ||
+                        row.assistantId ||
+                        row.assistantPosition ||
+                        "—"}
+                    </div>
+                    <div>{row.tags?.length ? row.tags.join(", ") : "—"}</div>
                   </div>
                 ))}
               </div>
@@ -270,19 +359,27 @@ export default function ImportUsersModal({
                 <div className={styles.summaryGrid}>
                   <div className={styles.summaryItem}>
                     <span className={styles.summaryLabel}>Created</span>
-                    <strong>{summary.created}</strong>
+                    <strong>{summary.created || 0}</strong>
                   </div>
+
+                  <div className={styles.summaryItem}>
+                    <span className={styles.summaryLabel}>Updated</span>
+                    <strong>{summary.updated || 0}</strong>
+                  </div>
+
                   <div className={styles.summaryItem}>
                     <span className={styles.summaryLabel}>Skipped</span>
-                    <strong>{summary.skipped}</strong>
+                    <strong>{summary.skipped || 0}</strong>
                   </div>
+
                   <div className={styles.summaryItem}>
                     <span className={styles.summaryLabel}>Failed</span>
-                    <strong>{summary.failed}</strong>
+                    <strong>{summary.failed || 0}</strong>
                   </div>
+
                   <div className={styles.summaryItem}>
                     <span className={styles.summaryLabel}>Received</span>
-                    <strong>{summary.totalReceived}</strong>
+                    <strong>{summary.totalReceived || 0}</strong>
                   </div>
                 </div>
 

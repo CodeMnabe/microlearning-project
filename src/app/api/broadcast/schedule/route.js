@@ -50,9 +50,10 @@ export async function POST(req) {
       );
     }
 
-    const enrichedPayload = {
+    // Do NOT store createdByUserId inside payload.
+    // Keep it only in created_by_user_id column.
+    const cleanPayload = {
       ...payload,
-      createdByUserId,
     };
 
     const row = await createScheduledBroadcast({
@@ -62,7 +63,7 @@ export async function POST(req) {
       status: "queued",
       scheduled_for: when.toISOString(),
       timezone: timezone || null,
-      payload: enrichedPayload,
+      payload: cleanPayload,
       recipient_count: Number(recipientCount || 0),
     });
 
@@ -70,7 +71,7 @@ export async function POST(req) {
   } catch (err) {
     console.error("Schedule broadcast error:", err);
     return NextResponse.json(
-      { error: err.message || String(err) },
+      { error: err?.message || String(err) },
       { status: 500 },
     );
   }

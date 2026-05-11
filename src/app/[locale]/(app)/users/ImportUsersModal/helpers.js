@@ -3,90 +3,112 @@ function cleanValue(value) {
   return String(value).trim();
 }
 
+function normalizeHeader(key) {
+  return cleanValue(key)
+    .replace(/^\uFEFF/, "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
 function normalizeHeaders(row) {
   return Object.fromEntries(
     Object.entries(row).map(([key, value]) => [
-      String(key || "")
-        .trim()
-        .toLowerCase(),
+      normalizeHeader(key),
       cleanValue(value),
     ]),
   );
 }
 
-function getFirst(row, keys) {
+function getValue(row, keys = []) {
   for (const key of keys) {
-    const value = row[key];
-    if (value) return value;
+    const normalizedKey = normalizeHeader(key);
+    const value = row[normalizedKey];
+
+    if (value != null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
   }
 
   return "";
 }
 
-function splitPhone(rawPhone, defaultPhoneCode = "+351") {
-  const phone = cleanValue(rawPhone);
-  if (!phone) {
-    return {
-      phoneNumber: null,
-      phoneCountryCode: null,
-      phoneNational: null,
-    };
-  }
+function onlyDigits(value) {
+  return cleanValue(value).replace(/\D/g, "");
+}
 
-  const cleaned = phone.replace(/[^\d+]/g, "");
-  if (!cleaned) {
-    return {
-      phoneNumber: null,
-      phoneCountryCode: null,
-      phoneNational: null,
-    };
-  }
+function normalizeCountryCode(value) {
+  const code = cleanValue(value).replace(/[^\d+]/g, "");
 
-  // If already international
-  if (cleaned.startsWith("+")) {
-    // Best case: matches org default code
-    if (defaultPhoneCode && cleaned.startsWith(defaultPhoneCode)) {
+  if (!code) return "";
+  return code.startsWith("+") ? code : `+${code}`;
+}
+
+function parseTags(value) {
+  const raw = cleanValue(value);
+
+  if (!raw) return [];
+
+  return [
+    ...new Set(
+      raw
+        .split(/[,;\n]/)
+        .map((tag) => cleanValue(tag))
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function splitPhone({
+  rawPhoneNumber,
+  rawPhoneCountryCode,
+  rawPhoneNational,
+  defaultPhoneCode = "+351",
+}) {
+  const phoneNumber = cleanValue(rawPhoneNumber).replace(/[^\d+]/g, "");
+  const explicitCode = normalizeCountryCode(rawPhoneCountryCode);
+  const defaultCode = normalizeCountryCode(defaultPhoneCode);
+  const nationalFromCsv = onlyDigits(rawPhoneNational);
+
+  if (phoneNumber) {
+    if (phoneNumber.startsWith("+")) {
+      const detectedCode =
+        explicitCode ||
+        (defaultCode && phoneNumber.startsWith(defaultCode) ? defaultCode : "");
+
       return {
-        phoneNumber: cleaned,
-        phoneCountryCode: defaultPhoneCode,
-        phoneNational: cleaned
-          .slice(defaultPhoneCode.length)
-          .replace(/\D/g, ""),
+        phoneNumber,
+        phoneCountryCode: detectedCode || null,
+        phoneNational: detectedCode
+          ? onlyDigits(phoneNumber.slice(detectedCode.length)) || null
+          : onlyDigits(phoneNumber.slice(1)) || null,
       };
     }
 
-    // Keep full number, but avoid guessing the country code incorrectly
+    const national = onlyDigits(phoneNumber);
+    const code = explicitCode || defaultCode;
+
     return {
-      phoneNumber: cleaned,
-      phoneCountryCode: null,
-      phoneNational: cleaned.slice(1).replace(/\D/g, "") || null,
+      phoneNumber: code ? `${code}${national}` : national,
+      phoneCountryCode: code || null,
+      phoneNational: national || null,
     };
   }
 
-  // Local/national number
-  const national = cleaned.replace(/\D/g, "");
-  if (!national) {
+  if (nationalFromCsv) {
+    const code = explicitCode || defaultCode;
+
     return {
-      phoneNumber: null,
-      phoneCountryCode: null,
-      phoneNational: null,
+      phoneNumber: code ? `${code}${nationalFromCsv}` : nationalFromCsv,
+      phoneCountryCode: code || null,
+      phoneNational: nationalFromCsv,
     };
   }
 
   return {
-    phoneNumber: `${defaultPhoneCode}${national}`,
-    phoneCountryCode: defaultPhoneCode || null,
-    phoneNational: national,
+    phoneNumber: null,
+    phoneCountryCode: null,
+    phoneNational: null,
   };
-}
-
-function getValue(row, keys = []) {
-  for (const key of keys) {
-    if (row[key] != null && String(row[key]).trim() !== "") {
-      return String(row[key]).trim();
-    }
-  }
-  return "";
 }
 
 export default function mapCsvRow(
@@ -94,57 +116,74 @@ export default function mapCsvRow(
   defaultPhoneCode = "+351",
   forcedAssistantId = null,
 ) {
-  const name = getValue(row, ["name", "Name"]);
-  const email = getValue(row, ["email", "Email"]).toLowerCase();
+  const normalized = normalizeHeaders(row);
 
-  const rawPhoneCountryCode = getValue(row, ["phone_country_code"]);
+  const name = getValue(normalized, ["name", "display_name", "full_name"]);
 
-  const rawPhone = getValue(row, [
+  const email = getValue(normalized, [
+    "email",
+    "user_name",
+    "username",
+  ]).toLowerCase();
+
+  const rawPhoneNumber = getValue(normalized, [
     "phone_number",
     "phone",
-    "Phone",
-    "Phone Number",
-    "phoneNumber",
+    "mobile",
+    "mobile_phone",
   ]);
 
-  const teamsAadObjectId = getValue(row, [
+  const rawPhoneCountryCode = getValue(normalized, [
+    "phone_country_code",
+    "country_code",
+  ]);
+
+  const rawPhoneNational = getValue(normalized, [
+    "phone_national",
+    "national_phone",
+    "national_number",
+  ]);
+
+  const phone = splitPhone({
+    rawPhoneNumber,
+    rawPhoneCountryCode,
+    rawPhoneNational,
+    defaultPhoneCode,
+  });
+
+  const teamsAadObjectId = getValue(normalized, [
     "teams_aad_object_id",
-    "teamsAadObjectId",
-    "Teams AAD Object ID",
     "teams_aad",
+    "aad_object_id",
+    "user_id",
   ]);
 
-  const assistantIdFromCsv = getValue(row, [
+  const teamsFromId = getValue(normalized, ["teams_from_id"]);
+
+  const assistantIdFromCsv = getValue(normalized, [
     "assistant_id",
-    "assistantId",
-    "Assistant ID",
+    "assistantid",
   ]);
 
-  const assistantPositionFromCsv = getValue(row, [
+  const assistantPositionFromCsv = getValue(normalized, [
     "assistant_position",
-    "assistantPosition",
-    "Assistant Position",
+    "assistantposition",
   ]);
 
-  const phoneCountryCode =
-    cleanValue(rawPhoneCountryCode) || defaultPhoneCode || "";
-  console.log(phoneCountryCode);
+  const tags = parseTags(
+    getValue(normalized, ["tags", "tag", "user_tags", "tag_names"]),
+  );
 
-  let phoneNumber = rawPhone;
-  let fullPhoneNumber;
-
-  if (phoneNumber && !phoneNumber.startsWith("+")) {
-    const digits = phoneNumber.replace(/\D/g, "");
-    fullPhoneNumber = digits ? `${defaultPhoneCode}${digits}` : "";
-  }
   return {
     name,
     email: email || null,
-    phoneCountryCode: phoneCountryCode || null,
-    phoneNational: phoneNumber || null,
-    phoneNumber: fullPhoneNumber || null,
+    phoneCountryCode: phone.phoneCountryCode,
+    phoneNational: phone.phoneNational,
+    phoneNumber: phone.phoneNumber,
     teamsAadObjectId: teamsAadObjectId || null,
+    teamsFromId: teamsFromId || null,
     assistantId: forcedAssistantId || assistantIdFromCsv || null,
     assistantPosition: assistantPositionFromCsv || null,
+    tags,
   };
 }
