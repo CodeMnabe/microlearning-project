@@ -153,7 +153,6 @@ export default function TrackedLinksPage() {
                   <th>{translation("TrackedLinks.table.destination")}</th>
                   <th>{translation("TrackedLinks.table.recipients")}</th>
                   <th>{translation("TrackedLinks.table.clicked")}</th>
-                  <th>{translation("TrackedLinks.table.totalClicks")}</th>
                   <th>{translation("TrackedLinks.table.clickRate")}</th>
                   <th>{translation("TrackedLinks.table.created")}</th>
                   <th></th>
@@ -165,25 +164,15 @@ export default function TrackedLinksPage() {
                   const href =
                     `/broadcast/tracked-links/detail?` +
                     new URLSearchParams({
-                      scheduledBroadcastId: item.scheduledBroadcastId ?? "null",
-                      linkKey: item.linkKey || "",
-                      destinationUrl: item.destinationUrl || "",
+                      sendGroupId: item.sendGroupId || "",
                     }).toString();
 
                   return (
                     <tr
                       key={
+                        item.sendGroupId ||
                         item.groupKey ||
-                        [
-                          item.channel ?? "",
-                          item.scheduledBroadcastId ?? "manual",
-                          item.linkKey ?? "",
-                          item.destinationUrl ?? "",
-                          item.linkLabel ?? "",
-                          item.sourceType ?? "",
-                          item.createdAt ?? "",
-                          index,
-                        ].join("|")
+                        `tracked-link-row-${index}`
                       }
                     >
                       <td>
@@ -217,7 +206,6 @@ export default function TrackedLinksPage() {
                         {item.recipientCount}
                       </td>
                       <td className={styles.numberCell}>{item.clickedCount}</td>
-                      <td className={styles.numberCell}>{item.totalClicks}</td>
 
                       <td className={getRateClass(item.clickRate)}>
                         {item.clickRate}%

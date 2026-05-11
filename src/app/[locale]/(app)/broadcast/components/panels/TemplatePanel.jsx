@@ -23,7 +23,9 @@ export default function TemplatePanel({
 }) {
   return (
     <div className={styles.toolPanelCard}>
-      <div className={styles.panelTitle}>Pré-Visualização do Template</div>
+      <div className={styles.panelTitle}>
+        {translation("Broadcast.templatePreview")}
+      </div>
 
       {tplErr && <div className={styles.errorBox}>{tplErr}</div>}
 

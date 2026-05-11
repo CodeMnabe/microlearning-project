@@ -8,6 +8,7 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -39,6 +40,7 @@ export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
   const translation = useTranslations();
+  const showAlert = useAlert();
   const supabase = useMemo(() => createClient(), []);
   const { stopLoading } = useGlobalLoader();
 
@@ -514,7 +516,11 @@ export default function BroadcastPage() {
       const uploaded = await supabaseUpload(picked);
       setFiles((prev) => [...prev, ...uploaded]);
     } catch (err) {
-      alert(`${translation("Common.error")}: ${err.message}`);
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -549,7 +555,11 @@ export default function BroadcastPage() {
         );
       }
     } catch (err) {
-      alert(`${translation("Common.error")}: ${err.message}`);
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
     } finally {
       setThumbForVideoUrl(null);
       if (thumbInputRef.current) thumbInputRef.current.value = "";
@@ -833,21 +843,185 @@ export default function BroadcastPage() {
     };
   }
 
+  function getBroadcastCounts(data, fallbackTotal = 0) {
+    if (!data || typeof data !== "object") {
+      return {
+        ok: fallbackTotal,
+        failed: 0,
+        total: fallbackTotal,
+      };
+    }
+
+    const results = Array.isArray(data.results) ? data.results : [];
+
+    const ok = Number.isFinite(Number(data.ok))
+      ? Number(data.ok)
+      : Number.isFinite(Number(data.successes))
+        ? Number(data.successes)
+        : results.length
+          ? results.filter((r) => r.ok).length
+          : fallbackTotal;
+
+    const failed = Number.isFinite(Number(data.failed))
+      ? Number(data.failed)
+      : Number.isFinite(Number(data.failures))
+        ? Number(data.failures)
+        : results.length
+          ? results.length - ok
+          : 0;
+
+    return {
+      ok,
+      failed,
+      total: ok + failed,
+    };
+  }
+
+  function normalizePhoneDigits(value) {
+    return String(value || "").replace(/\D/g, "");
+  }
+
+  function phonesMatch(a, b) {
+    const da = normalizePhoneDigits(a);
+    const db = normalizePhoneDigits(b);
+
+    if (!da || !db) return false;
+
+    return da === db || da.endsWith(db) || db.endsWith(da);
+  }
+
+  function getResultReason(result) {
+    if (!result) return "Unknown error.";
+
+    if (result.error) return String(result.error);
+    if (result.reason) return String(result.reason);
+
+    if (typeof result.data === "string" && result.data.trim()) {
+      return result.data.trim();
+    }
+
+    if (result.data?.error) return String(result.data.error);
+    if (result.data?.message) return String(result.data.message);
+    if (result.data?.detail) return String(result.data.detail);
+
+    if (result.status) {
+      return `Request failed with status ${result.status}.`;
+    }
+
+    return "Unknown error.";
+  }
+
+  function getFailedRecipients(data, selectedUsers, channel) {
+    if (!data || typeof data !== "object") return [];
+
+    const results = Array.isArray(data.results) ? data.results : [];
+
+    return results
+      .filter((r) => !r.ok)
+      .map((r) => {
+        let matchedUser = null;
+
+        if (channel === "teams") {
+          matchedUser = selectedUsers.find(
+            (u) => String(u.id) === String(r.userId),
+          );
+        } else {
+          matchedUser = selectedUsers.find((u) =>
+            phonesMatch(u.phone_number || u.phoneNumber, r.recipient || r.to),
+          );
+        }
+
+        const fallbackIdentifier =
+          r.recipient || r.to || r.userId || r.email || "Unknown recipient";
+
+        const label =
+          matchedUser?.name ||
+          matchedUser?.email ||
+          matchedUser?.phone_number ||
+          fallbackIdentifier;
+
+        const contact =
+          channel === "teams"
+            ? matchedUser?.email || r.userId || ""
+            : matchedUser?.phone_number || r.to || r.recipient || "";
+
+        return {
+          label,
+          contact,
+          reason: getResultReason(r),
+        };
+      });
+  }
+
+  function formatFailedRecipients(failedRecipients, maxToShow = 8) {
+    if (!failedRecipients.length) return "";
+
+    const visible = failedRecipients.slice(0, maxToShow);
+
+    const lines = visible.map((r) => {
+      const contact =
+        r.contact && String(r.contact) !== String(r.label)
+          ? ` (${r.contact})`
+          : "";
+
+      return `- ${r.label}${contact}: ${r.reason}`;
+    });
+
+    const hiddenCount = failedRecipients.length - visible.length;
+
+    if (hiddenCount > 0) {
+      lines.push(`- And ${hiddenCount} more...`);
+    }
+
+    return `Failed recipients:\n${lines.join("\n")}`;
+  }
+
+  function formatBroadcastResultMessage({
+    channel,
+    action,
+    ok,
+    failed,
+    note,
+    failedRecipients = [],
+  }) {
+    const channelLabel = channel === "whatsapp" ? "WhatsApp" : "Teams";
+
+    const successLabel = ok === 1 ? "1 success" : `${ok} successes`;
+    const failedLabel = failed === 1 ? "1 fail" : `${failed} fails`;
+
+    const mainMessage = `${channelLabel} broadcast ${action} with ${successLabel} and ${failedLabel}.`;
+    const failureDetails = formatFailedRecipients(failedRecipients);
+
+    return [mainMessage, note, failureDetails].filter(Boolean).join("\n\n");
+  }
+
   async function handleSend() {
     if (!selectedUsers.length) {
-      return alert(translation("Broadcast.chooseRecipients"));
+      await showAlert({
+        title: "Choose recipients",
+        message: translation("Broadcast.chooseRecipients"),
+        tone: "warning",
+      });
+      return;
     }
 
     if (!trackedLinksValid) {
-      return alert(
-        "Please complete all tracked links and avoid duplicate keys.",
-      );
+      await showAlert({
+        title: "Invalid tracked links",
+        message: "Please complete all tracked links and avoid duplicate keys.",
+        tone: "warning",
+      });
+      return;
     }
 
     if (!whatsappUrlBindingValid) {
-      return alert(
-        "Please choose which tracked link should be used for the WhatsApp template URL button.",
-      );
+      await showAlert({
+        title: "Missing WhatsApp URL button link",
+        message:
+          "Please choose which tracked link should be used for the WhatsApp template URL button.",
+        tone: "warning",
+      });
+      return;
     }
 
     setSending(true);
@@ -876,26 +1050,49 @@ export default function BroadcastPage() {
 
       if (!res.ok) {
         console.error("Broadcast send error", data);
-        alert(translation("Common.error"));
+
+        await showAlert({
+          title: translation("Common.error"),
+          message:
+            typeof data === "object" && data?.error
+              ? data.error
+              : translation("Common.error"),
+          tone: "danger",
+        });
+
         return;
       }
 
-      if (typeof data === "object" && data && data.failed > 0) {
-        console.error("Broadcast partial/failed result", data);
-        alert(
-          `Broadcast finished with ${data.ok || 0} success and ${data.failed || 0} failed.`,
-        );
-        return;
-      }
-
-      alert(
-        channel === "whatsapp"
-          ? "WhatsApp broadcast sent successfully."
-          : "Teams broadcast sent successfully.",
+      const counts = getBroadcastCounts(data, selectedUsers.length);
+      const failedRecipients = getFailedRecipients(
+        data,
+        selectedUsers,
+        channel,
       );
+
+      await showAlert({
+        title:
+          counts.failed > 0
+            ? "Broadcast completed with issues"
+            : "Broadcast sent",
+        message: formatBroadcastResultMessage({
+          channel,
+          action: "sent",
+          ok: counts.ok,
+          failed: counts.failed,
+          note: data?.note || null,
+          failedRecipients,
+        }),
+        tone: counts.failed > 0 ? "warning" : "success",
+      });
     } catch (err) {
       console.error("[Broadcast] handleSend error:", err);
-      alert(`${translation("Common.error")}: ${err.message}`);
+
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
     } finally {
       setSending(false);
     }
@@ -903,32 +1100,59 @@ export default function BroadcastPage() {
 
   async function handleSchedule() {
     if (!selectedUsers.length) {
-      return alert(translation("Broadcast.chooseRecipients"));
+      await showAlert({
+        title: "Choose recipients",
+        message: translation("Broadcast.chooseRecipients"),
+        tone: "warning",
+      });
+      return;
     }
 
     if (!trackedLinksValid) {
-      return alert(
-        "Please complete all tracked links and avoid duplicate keys.",
-      );
+      await showAlert({
+        title: "Invalid tracked links",
+        message: "Please complete all tracked links and avoid duplicate keys.",
+        tone: "warning",
+      });
+      return;
     }
 
     if (!whatsappUrlBindingValid) {
-      return alert(
-        "Please choose which tracked link should be used for the WhatsApp template URL button.",
-      );
+      await showAlert({
+        title: "Missing WhatsApp URL button link",
+        message:
+          "Please choose which tracked link should be used for the WhatsApp template URL button.",
+        tone: "warning",
+      });
+      return;
     }
 
     const committed = commitTimeParts(hourDraft, minuteDraft);
     if (!committed) {
-      return alert("Please enter a valid time between 08:00 and 20:00.");
+      await showAlert({
+        title: "Invalid time",
+        message: "Please enter a valid time between 08:00 and 20:00.",
+        tone: "warning",
+      });
+      return;
     }
 
     if (!scheduledFor || Number.isNaN(scheduledFor.getTime())) {
-      return alert("Choose a date and time.");
+      await showAlert({
+        title: "Choose date and time",
+        message: "Choose a date and time.",
+        tone: "warning",
+      });
+      return;
     }
 
     if (scheduledFor.getTime() <= Date.now()) {
-      return alert("The scheduled date must be in the future");
+      await showAlert({
+        title: "Invalid schedule date",
+        message: "The scheduled date must be in the future.",
+        tone: "warning",
+      });
+      return;
     }
 
     setSending(true);
@@ -950,19 +1174,52 @@ export default function BroadcastPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         console.error("Schedule broadcast error", data);
-        alert(translation("Common.error"));
+
+        await showAlert({
+          title: translation("Common.error"),
+          message: data?.error || translation("Common.error"),
+          tone: "danger",
+        });
+
         return;
       }
 
-      alert("Broadcast scheduled successfully");
+      const counts = getBroadcastCounts(data, selectedUsers.length);
+      const failedRecipients = getFailedRecipients(
+        data,
+        selectedUsers,
+        channel,
+      );
+
+      await showAlert({
+        title:
+          counts.failed > 0
+            ? "Broadcast scheduled with issues"
+            : "Broadcast scheduled",
+        message: formatBroadcastResultMessage({
+          channel,
+          action: "scheduled",
+          ok: counts.ok,
+          failed: counts.failed,
+          note: "These counts mean the broadcast was scheduled for those recipients. Delivery success will only be known when the scheduled broadcast is actually sent.",
+          failedRecipients,
+        }),
+        tone: counts.failed > 0 ? "warning" : "success",
+      });
+
       setDeliveryMode("now");
     } catch (err) {
       console.error(err);
-      alert(`${translation("Common.error")}: ${err.message}`);
+
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
     } finally {
       setSending(false);
     }
@@ -1090,6 +1347,7 @@ export default function BroadcastPage() {
                 removeFile={removeFile}
                 openThumbnailPicker={openThumbnailPicker}
                 removeThumbnail={removeThumbnail}
+                translation={translation}
               />
             )}
 
@@ -1106,6 +1364,7 @@ export default function BroadcastPage() {
                 addTrackedLink={addTrackedLink}
                 updateTrackedLink={updateTrackedLink}
                 removeTrackedLink={removeTrackedLink}
+                translation={translation}
               />
             )}
 

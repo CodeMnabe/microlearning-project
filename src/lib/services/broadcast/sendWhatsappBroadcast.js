@@ -333,13 +333,21 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA freeform result]", {
+        recipient: rawPhone,
         to,
         ok: r.ok,
         status: r.status,
         data: r.data,
       });
 
-      return { to, kind: "freeform", ...r };
+      return {
+        recipient: rawPhone,
+        to,
+        kind: "freeform",
+        userId: user?.id || null,
+        userName: user?.name || null,
+        ...r,
+      };
     }
 
     if (hasTemplate) {
@@ -369,6 +377,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA template final]", {
+        recipient: rawPhone,
         to,
         orderedKeys,
         baseValues,
@@ -386,6 +395,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA template result]", {
+        recipient: rawPhone,
         to,
         ok: r.ok,
         status: r.status,
@@ -410,15 +420,21 @@ export async function sendWhatsappBroadcast(input = {}) {
       }
 
       return {
+        recipient: rawPhone,
         to,
         kind: "template",
+        userId: user?.id || null,
+        userName: user?.name || null,
         ...r,
       };
     }
 
     return {
+      recipient: rawPhone,
       to,
       kind: "freeform",
+      userId: user?.id || null,
+      userName: user?.name || null,
       ok: false,
       status: 412,
       data: { error: "24h window closed and no template provided." },
@@ -431,6 +447,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     r.status === "fulfilled"
       ? r.value
       : {
+          recipient: recipients[i],
           to: recipients[i],
           ok: false,
           status: 0,
@@ -441,19 +458,16 @@ export async function sendWhatsappBroadcast(input = {}) {
   const okCount = results.filter((r) => r.ok).length;
   const failedCount = results.length - okCount;
 
-  if (okCount === 0) {
-    throw new BroadcastError(
-      results[0]?.data?.error ||
-        results[0]?.error ||
-        "WhatsApp broadcast failed for all recipients.",
-      400,
-    );
-  }
-
   return {
     ok: okCount,
     failed: failedCount,
     results,
+    error:
+      okCount === 0
+        ? results[0]?.data?.error ||
+          results[0]?.error ||
+          "WhatsApp broadcast failed for all recipients."
+        : null,
     note:
       hasTemplate && hasInitialFreeformContent
         ? "If a contact was outside the 24h window, we sent the selected template and queued your message to be delivered on their first reply."

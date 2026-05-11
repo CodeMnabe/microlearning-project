@@ -23,7 +23,7 @@
 }
 
 .modalContentWide {
-  width: min(860px, 92vw);
+  width: min(1040px, 92vw);
   max-height: min(88vh, 900px);
   overflow: auto;
 }
@@ -114,7 +114,7 @@
 }
 
 .modalTitle {
-  margin: 0 0 0.75rem;
+  margin: 0;
 }
 
 .form {
@@ -137,7 +137,7 @@
   border-radius: 10px;
   border: 1px solid var(--ui-border);
   background: var(--ui-pill);
-  color: #0f1c3f
+  color: #0f1c3f;
 }
 
 .formGroup input[type="file"] {
@@ -152,16 +152,27 @@
 }
 
 .sectionDivider {
-  position: absolute;
-  top: -0.7em;
-  left: 0;
-  padding: 0 6px;
-  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0.25rem 0 0.1rem;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--ui-border);
+}
+
+.sectionDividerLabel {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ui-muted);
+  white-space: nowrap;
 }
 
 .emptyState {
@@ -227,6 +238,27 @@
 
 .previewTable {
   display: grid;
+  overflow-x: auto;
+}
+
+.previewRow {
+  display: grid;
+  grid-template-columns:
+    minmax(130px, 1fr) minmax(180px, 1.25fr) minmax(190px, 1.35fr) minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(160px, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 910px;
+  padding: 0.7rem 0.9rem;
+  border-top: 1px solid var(--ui-border);
+  font-size: 0.88rem;
+  color: #0f1c3f;
+}
+
+.previewRow>div {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .previewHead {
@@ -245,7 +277,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -312,14 +344,66 @@
   color: #fff !important;
 }
 
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.modalTitle {
+  margin: 0;
+}
+
+.templateDownloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #9fd3ff;
+  background: #eaf6ff;
+  color: #1467a3;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.templateDownloadButton:hover {
+  background: #dff1ff;
+}
+
+.templateDownloadButton:active {
+  transform: translateY(1px);
+}
+
 @media (max-width: 820px) {
   .modalContentWide {
     width: min(96vw, 96vw);
   }
 
+  .previewTable {
+    overflow-x: visible;
+  }
+
   .previewRow {
     grid-template-columns: 1fr;
+    min-width: 0;
     gap: 4px;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .previewRow>div {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word;
   }
 
   .previewHead {
@@ -332,6 +416,11 @@
 }
 
 @media (max-width: 520px) {
+  .previewTop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .summaryGrid {
     grid-template-columns: 1fr;
   }
@@ -341,6 +430,15 @@
   }
 
   .buttonGroup button {
+    width: 100%;
+  }
+
+  .modalHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .templateDownloadButton {
     width: 100%;
   }
 }

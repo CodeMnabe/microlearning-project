@@ -15,11 +15,14 @@ export default function TrackedLinksPanel({
   addTrackedLink,
   updateTrackedLink,
   removeTrackedLink,
+  translation,
 }) {
   return (
     <div className={styles.toolPanelCard}>
       <div className={styles.modalSectionHeader}>
-        <div className={styles.panelTitle}>Tracked Links</div>
+        <div className={styles.panelTitle}>
+          {translation("Broadcast.trackedLinks")}
+        </div>
 
         <button
           type="button"
@@ -27,13 +30,14 @@ export default function TrackedLinksPanel({
           className={styles.kbdBtn}
         >
           <Plus size={14} />
-          <span>Add link</span>
+          <span>{translation("Broadcast.addLink")}</span>
         </button>
       </div>
 
       <div className={styles.modalHelpText}>
-        Add placeholders like <code>{`{{link.training}}`}</code> inside the
-        message.
+        {translation("Broadcast.addPlaceholders.first")}{" "}
+        <code>{`{{link.training}}`}</code>{" "}
+        {translation("Broadcast.addPlaceholders.second")}
       </div>
 
       <div className={styles.trackedLinksGrid}>
@@ -48,12 +52,14 @@ export default function TrackedLinksPanel({
                 className={styles.kbdBtn}
               >
                 <Trash2 size={14} />
-                <span>Remove</span>
+                <span>{translation("Broadcast.remove")}</span>
               </button>
             </div>
 
             <div className={styles.fieldWide}>
-              <label className={styles.smallLabel}>Key</label>
+              <label className={styles.smallLabel}>
+                {translation("Broadcast.key")}
+              </label>
               <input
                 value={link.key}
                 onChange={(e) =>
@@ -65,7 +71,9 @@ export default function TrackedLinksPanel({
             </div>
 
             <div className={styles.fieldWide}>
-              <label className={styles.smallLabel}>Label</label>
+              <label className={styles.smallLabel}>
+                {translation("Broadcast.label")}
+              </label>
               <input
                 value={link.label}
                 onChange={(e) =>
@@ -77,7 +85,9 @@ export default function TrackedLinksPanel({
             </div>
 
             <div className={styles.fieldWide}>
-              <label className={styles.smallLabel}>Destination URL</label>
+              <label className={styles.smallLabel}>
+                {translation("Broadcast.destinationUrl")}
+              </label>
               <input
                 value={link.destinationUrl}
                 onChange={(e) =>

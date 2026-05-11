@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-
-import styles from "./detail.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import LoaderLink from "@/app/[locale]/(marketing)/components/TopLoader/LoaderLink";
+import styles from "./detail.module.css";
 import { useTranslations } from "next-intl";
 
 function formatDate(value) {
@@ -28,13 +27,9 @@ export default function TrackedLinkDetailPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
   const { stopLoading } = useGlobalLoader();
-  const translations = useTranslations();
+  const translation = useTranslations("TrackedLinks.detail");
 
-  const scheduledBroadcastId =
-    searchParams.get("scheduledBroadcastId") || "null";
-
-  const linkKey = searchParams.get("linkKey") || "";
-  const destinationUrl = searchParams.get("destinationUrl") || "";
+  const sendGroupId = searchParams.get("sendGroupId") || "";
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +38,7 @@ export default function TrackedLinkDetailPage() {
   const backHref = "/broadcast/tracked-links";
 
   useEffect(() => {
-    if (!org?.id || !linkKey || !destinationUrl) return;
+    if (!org?.id || !sendGroupId) return;
 
     let alive = true;
 
@@ -54,9 +49,7 @@ export default function TrackedLinkDetailPage() {
 
         const query = new URLSearchParams({
           orgId: String(org.id),
-          scheduledBroadcastId,
-          linkKey,
-          destinationUrl,
+          sendGroupId,
         });
 
         const res = await fetch(`/api/tracked-links/report-detail?${query}`, {
@@ -86,7 +79,7 @@ export default function TrackedLinkDetailPage() {
     return () => {
       alive = false;
     };
-  }, [org?.id, scheduledBroadcastId, linkKey, destinationUrl, stopLoading]);
+  }, [org?.id, sendGroupId, stopLoading]);
 
   const summary = useMemo(() => data?.summary || null, [data]);
   const clicked = useMemo(() => data?.clicked || [], [data]);
@@ -96,14 +89,12 @@ export default function TrackedLinkDetailPage() {
     <div className={styles.screen}>
       <div className={styles.topRow}>
         <LoaderLink href={backHref} className={styles.backBtn}>
-          ← {translations("TrackedLinks.detail.back")}
+          ← {translation("back")}
         </LoaderLink>
       </div>
 
       {loading && (
-        <div className={styles.emptyBox}>
-          {translations("TrackedLinks.detail.loading")}
-        </div>
+        <div className={styles.emptyBox}>{translation("loading")}</div>
       )}
 
       {!loading && error && <div className={styles.errorBox}>{error}</div>}
@@ -113,8 +104,7 @@ export default function TrackedLinkDetailPage() {
           <div className={styles.headerCard}>
             <div className={styles.headerInfo}>
               <h1 className={styles.title}>
-                {summary.linkLabel ||
-                  translations("TrackedLinks.detail.trackedLink")}
+                {summary.linkLabel || "Tracked Link"}
               </h1>
 
               <div className={styles.metaRow}>
@@ -122,14 +112,13 @@ export default function TrackedLinkDetailPage() {
                   {summary.channel || "-"}
                 </span>
                 <span className={styles.metaPill}>
-                  {translations("TrackedLinks.detail.key")}:{" "}
-                  <code>{summary.linkKey || "-"}</code>
+                  {translation("key")}: <code>{summary.linkKey || "-"}</code>
                 </span>
               </div>
 
               <div className={styles.destinationBox}>
                 <div className={styles.destinationLabel}>
-                  {translations("TrackedLinks.detail.destinationUrl")}
+                  {translation("destinationUrl")}
                 </div>
                 <div className={styles.destinationValue}>
                   {summary.destinationUrl || "-"}
@@ -140,43 +129,39 @@ export default function TrackedLinkDetailPage() {
             <div className={styles.cardsGrid}>
               <div className={styles.kpiCard}>
                 <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.recipients")}
+                  {translation("recipient")}
                 </div>
                 <div className={styles.kpiValue}>{summary.totalRecipients}</div>
               </div>
 
               <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.clicked")}
-                </div>
+                <div className={styles.kpiLabel}>{translation("clicked")}</div>
                 <div className={styles.kpiValue}>{summary.clickedCount}</div>
               </div>
 
               <div className={styles.kpiCard}>
                 <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.notClicked")}
+                  {translation("notClicked")}
                 </div>
                 <div className={styles.kpiValue}>{summary.notClickedCount}</div>
               </div>
 
               <div className={styles.kpiCard}>
                 <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.totalClicks")}
+                  {translation("totalClicks")}
                 </div>
                 <div className={styles.kpiValue}>{summary.totalClicks}</div>
               </div>
 
               <div className={styles.kpiCard}>
                 <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.clickRate")}
+                  {translation("clickRate")}
                 </div>
                 <div className={styles.kpiValue}>{summary.clickRate}%</div>
               </div>
 
               <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translations("TrackedLinks.detail.created")}
-                </div>
+                <div className={styles.kpiLabel}>{translation("created")}</div>
                 <div className={styles.kpiValue}>
                   {formatDate(summary.createdAt)}
                 </div>
@@ -185,25 +170,23 @@ export default function TrackedLinkDetailPage() {
           </div>
 
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>
-              {translations("TrackedLinks.detail.clicked")}
-            </h2>
+            <div className={styles.sectionTitle}>{translation("clicked")}</div>
 
             {clicked.length === 0 ? (
               <div className={styles.emptyBox}>
-                {translations("TrackedLinks.detail.noClickedUsers")}
+                {translation("noClickedUsers")}
               </div>
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>{translations("TrackedLinks.detail.recipient")}</th>
-                      <th>{translations("TrackedLinks.detail.email")}</th>
-                      <th>{translations("TrackedLinks.detail.phone")}</th>
-                      <th>{translations("TrackedLinks.detail.clicks")}</th>
-                      <th>{translations("TrackedLinks.detail.firstClick")}</th>
-                      <th>{translations("TrackedLinks.detail.lastClick")}</th>
+                      <th>{translation("recipient")}</th>
+                      <th>{translation("email")}</th>
+                      <th>{translation("phone")}</th>
+                      <th>{translation("clicks")}</th>
+                      <th>{translation("firstClick")}</th>
+                      <th>{translation("lastClick")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -227,22 +210,22 @@ export default function TrackedLinkDetailPage() {
 
           <div className={styles.section}>
             <div className={styles.sectionTitle}>
-              {translations("TrackedLinks.detail.notClicked")}
+              {translation("notClicked")}
             </div>
 
             {notClicked.length === 0 ? (
               <div className={styles.emptyBox}>
-                {translations("TrackedLinks.detail.allClickedUsers")}
+                {translation("allClickedUsers")}
               </div>
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>{translations("TrackedLinks.detail.recipient")}</th>
-                      <th>{translations("TrackedLinks.detail.email")}</th>
-                      <th>{translations("TrackedLinks.detail.phone")}</th>
-                      <th>{translations("TrackedLinks.detail.sentAt")}</th>
+                      <th>{translation("recipient")}</th>
+                      <th>{translation("email")}</th>
+                      <th>{translation("phone")}</th>
+                      <th>{translation("sentAt")}</th>
                     </tr>
                   </thead>
                   <tbody>

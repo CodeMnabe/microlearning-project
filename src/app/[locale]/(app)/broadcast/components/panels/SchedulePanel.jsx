@@ -78,7 +78,7 @@ export default function SchedulePanel({
         <div className={styles.scheduleTimeCol}>
           <div className={styles.scheduleTimeCard}>
             <div className={styles.scheduleSummaryLabel}>
-              Selected send time
+              {translation("Broadcast.selectSendTime")}
             </div>
 
             <div className={styles.scheduleSummaryValue}>
@@ -87,7 +87,7 @@ export default function SchedulePanel({
             </div>
 
             <div className={styles.scheduleMiniHint}>
-              Choose a time between 08:00 and 20:00.
+              {translation("Broadcast.chooseTime")}
             </div>
 
             <div className={styles.timeInputGroup}>

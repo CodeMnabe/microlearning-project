@@ -13,11 +13,13 @@ export default function AttachmentsPanel({
   removeFile,
   openThumbnailPicker,
   removeThumbnail,
+  translation,
 }) {
   return (
     <div className={styles.toolPanelCard}>
       <div className={styles.panelTitle}>
-        Anexos ({channel === "whatsapp" ? "WhatsApp" : "Teams"})
+        {translation("Broadcast.attachments")} (
+        {channel === "whatsapp" ? "WhatsApp" : "Teams"})
       </div>
 
       <div className={styles.imagesRow}>
@@ -41,7 +43,9 @@ export default function AttachmentsPanel({
       <div className={styles.filesStack}>
         {imageFiles.length > 0 && (
           <div>
-            <div className={styles.label}>Imagens</div>
+            <div className={styles.label}>
+              {translation("Broadcast.images")}
+            </div>
 
             <div className={styles.thumbStrip}>
               {imageFiles.map((f) => (
@@ -69,7 +73,9 @@ export default function AttachmentsPanel({
 
         {videoFiles.length > 0 && (
           <div>
-            <div className={styles.label}>Vídeos</div>
+            <div className={styles.label}>
+              {translation("Broadcast.videos")}
+            </div>
 
             <div className={styles.fileList}>
               {videoFiles.map((f) => (
@@ -85,7 +91,7 @@ export default function AttachmentsPanel({
                       onClick={() => openThumbnailPicker(f.url)}
                       className={styles.kbdBtn}
                     >
-                      Thumbnail
+                      {translation("Broadcast.thumbnail")}
                     </button>
 
                     {f.thumbnailUrl && (
@@ -94,7 +100,7 @@ export default function AttachmentsPanel({
                         onClick={() => removeThumbnail(f.url)}
                         className={styles.kbdBtn}
                       >
-                        Remove thumb
+                        {translation("Broadcast.removeThumbnail")}
                       </button>
                     )}
 
@@ -103,7 +109,7 @@ export default function AttachmentsPanel({
                       onClick={() => removeFile(f.url)}
                       className={styles.kbdBtn}
                     >
-                      Remove
+                      {translation("Broadcast.remove")}
                     </button>
                   </div>
                 </div>
@@ -114,7 +120,7 @@ export default function AttachmentsPanel({
 
         {otherFiles.length > 0 && (
           <div>
-            <div className={styles.label}>Ficheiros</div>
+            <div className={styles.label}>{translation("Broadcast.files")}</div>
 
             <div className={styles.fileList}>
               {otherFiles.map((f) => (
@@ -133,7 +139,7 @@ export default function AttachmentsPanel({
                       onClick={() => removeFile(f.url)}
                       className={styles.kbdBtn}
                     >
-                      Remove
+                      {translation("Broadcast.remove")}
                     </button>
                   </div>
                 </div>

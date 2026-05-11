@@ -53,6 +53,7 @@ export async function getTrackedLinkReportsByOrg(orgId) {
       channel,
       recipient_user_id,
       scheduled_broadcast_id,
+      send_group_id,
       destination_url,
       link_label,
       link_key,
@@ -79,19 +80,21 @@ export async function getTrackedLinkReportsByOrg(orgId) {
   const grouped = new Map();
 
   for (const row of rows) {
-    const groupKey = [
-      row.channel || "",
-      row.scheduled_broadcast_id || "manual",
-      row.link_key || "",
-      row.destination_url || "",
-      row.link_label || "",
-      row.source_type || "",
-      row.created_at || "",
-    ].join("|");
+    const groupKey =
+      row.send_group_id ||
+      [
+        row.channel || "",
+        row.scheduled_broadcast_id || "manual",
+        row.link_key || "",
+        row.destination_url || "",
+        row.link_label || "",
+        row.source_type || "",
+      ].join("|");
 
     if (!grouped.has(groupKey)) {
       grouped.set(groupKey, {
         groupKey,
+        sendGroupId: row.send_group_id || null,
         scheduledBroadcastId: row.scheduled_broadcast_id || null,
         linkKey: row.link_key || "",
         linkLabel: row.link_label || "",
@@ -133,6 +136,7 @@ export async function getTrackedLinkReportsByOrg(orgId) {
 
     return {
       groupKey: group.groupKey,
+      sendGroupId: group.sendGroupId,
       scheduledBroadcastId: group.scheduledBroadcastId,
       linkKey: group.linkKey,
       linkLabel: group.linkLabel,
@@ -148,13 +152,10 @@ export async function getTrackedLinkReportsByOrg(orgId) {
   });
 }
 
-export async function getTrackedLinkReportDetail({
-  orgId,
-  scheduledBroadcastId = null,
-  linkKey,
-  destinationUrl,
-}) {
-  let query = supabaseAdmin
+export async function getTrackedLinkReportDetail({ orgId, sendGroupId }) {
+  if (!sendGroupId) return null;
+
+  const { data, error } = await supabaseAdmin
     .from("tracked_link")
     .select(
       `
@@ -163,6 +164,7 @@ export async function getTrackedLinkReportDetail({
       channel,
       recipient_user_id,
       scheduled_broadcast_id,
+      send_group_id,
       destination_url,
       link_label,
       link_key,
@@ -181,24 +183,15 @@ export async function getTrackedLinkReportDetail({
     `,
     )
     .eq("org_id", orgId)
-    .eq("link_key", linkKey)
-    .eq("destination_url", destinationUrl)
+    .eq("send_group_id", sendGroupId)
     .order("created_at", { ascending: true });
 
-  if (scheduledBroadcastId) {
-    query = query.eq("scheduled_broadcast_id", scheduledBroadcastId);
-  } else {
-    query = query.is("scheduled_broadcast_id", null);
-  }
-
-  const { data, error } = await query;
   if (error) throw error;
 
   const rows = Array.isArray(data) ? data : [];
   if (!rows.length) return null;
 
   const first = rows[0];
-
   const clicked = [];
   const notClicked = [];
 
@@ -244,6 +237,7 @@ export async function getTrackedLinkReportDetail({
 
   return {
     summary: {
+      sendGroupId: first.send_group_id || null,
       scheduledBroadcastId: first.scheduled_broadcast_id || null,
       linkKey: first.link_key || "",
       linkLabel: first.link_label || "",

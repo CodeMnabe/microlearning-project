@@ -6,29 +6,18 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
 
     const orgId = Number(searchParams.get("orgId"));
-    const scheduledBroadcastIdRaw = searchParams.get("scheduledBroadcastId");
-    const linkKey = String(searchParams.get("linkKey") || "").trim();
-    const destinationUrl = String(
-      searchParams.get("destinationUrl") || "",
-    ).trim();
+    const sendGroupId = String(searchParams.get("sendGroupId") || "").trim();
 
-    if (!orgId || !linkKey || !destinationUrl) {
+    if (!orgId || !sendGroupId) {
       return NextResponse.json(
         { error: "Missing required params" },
         { status: 400 },
       );
     }
 
-    const scheduledBroadcastId =
-      scheduledBroadcastIdRaw && scheduledBroadcastIdRaw !== "null"
-        ? scheduledBroadcastIdRaw
-        : null;
-
     const result = await getTrackedLinkReportDetail({
       orgId,
-      scheduledBroadcastId,
-      linkKey,
-      destinationUrl,
+      sendGroupId,
     });
 
     if (!result) {

@@ -911,11 +911,31 @@
     "sent": "enviados",
     "failed": "falharam",
     "schedule": "Agendamento",
+    "attachments": "Anexos",
     "sendnow": "Enviar agora",
     "scheduleBtn": "Agendar",
     "timezone": "Fuso Horário",
     "hour": "Hora",
-    "scheduleError": "Por favor escolha uma data e hora no futuro."
+    "scheduleError": "Por favor escolha uma data e hora no futuro.",
+    "trackedPlaceholders": "Placeholder para o Rastreamento",
+    "messagePreview": "Visualizador de Mensagem",
+    "images": "Imagens",
+    "videos": "Vídeos",
+    "thumbnail": "Miniatura",
+    "removeThumbnail": "Remover miniatura",
+    "remove": "Remover",
+    "files": "Ficheiros",
+    "selectSendTime": "Seleciona a Data e Hora para enviar",
+    "chooseTime": "Escolhe um tempo entre as 08:00 e as 20:00",
+    "trackedLinks": "Links Rastreados",
+    "addLink": "Adicionar Link",
+    "key": "Chave",
+    "label": "Rótulo",
+    "destinationUrl": "URL Destino",
+    "addPlaceholders": {
+      "first": "Adiciona o placeholder tipo",
+      "second": "dentro da mensagem"
+    }
   },
   "BroadcastScheduled": {
     "Title": "Mensagens agendadas",

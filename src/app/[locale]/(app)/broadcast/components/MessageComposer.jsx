@@ -43,7 +43,7 @@ export default function MessageComposer({
       {normalizedTrackedLinks.length > 0 && (
         <div className={styles.placeholderHint}>
           <div className={styles.placeholderHintTitle}>
-            Tracked placeholders:
+            {translation("Broadcast.trackedPlaceholders")}:
           </div>
 
           {normalizedTrackedLinks.map((link) => {
@@ -67,7 +67,9 @@ export default function MessageComposer({
 
       {!!message.trim() && normalizedTrackedLinks.length > 0 && (
         <div className={styles.messagePreviewBox}>
-          <div className={styles.messagePreviewTitle}>Message preview</div>
+          <div className={styles.messagePreviewTitle}>
+            {translation("Broadcast.messagePreview")}
+          </div>
           <div className={styles.messagePreviewText}>
             {previewMessageWithTrackedLinks}
           </div>
@@ -78,7 +80,7 @@ export default function MessageComposer({
         <ToolToggleButton
           active={activeToolPanel === "schedule"}
           icon={<CalendarDays size={16} />}
-          label="Schedule"
+          label={translation("Broadcast.schedule")}
           badge={scheduleButtonLabel}
           onClick={() => toggleToolPanel("schedule")}
         />
@@ -86,7 +88,7 @@ export default function MessageComposer({
         <ToolToggleButton
           active={activeToolPanel === "attachments"}
           icon={<Paperclip size={16} />}
-          label="Attachments"
+          label={translation("Broadcast.attachments")}
           badge={attachmentsCount > 0 ? attachmentsCount : null}
           onClick={() => toggleToolPanel("attachments")}
         />
