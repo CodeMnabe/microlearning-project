@@ -7,7 +7,12 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-import { getUserByNumber } from "@/lib/repos/user.repo";
+import {
+  getUserByNumber,
+  getUserByWhatsappBsuid,
+  getUserByBirdContactId,
+  updateUserWhatsappIdentity,
+} from "@/lib/repos/user.repo";
 import {
   createThread,
   getUserThreadForChannel,
@@ -17,7 +22,10 @@ import {
   getAssistantsInOrg,
 } from "@/lib/repos/assistants.repo";
 import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
-import { getOrganization } from "@/lib/repos/organizations.repo";
+import {
+  getOrganization,
+  getOrganizationByChannelId,
+} from "@/lib/repos/organizations.repo";
 import { createMessage } from "@/lib/repos/messages.repo";
 import {
   getAllPendingOutreachByUser,
@@ -32,6 +40,21 @@ function normalizeId(value) {
 
   const str = String(value).trim();
   return str.length > 0 ? str : null;
+}
+
+function normalizeUsername(value) {
+  const str = normalizeId(value);
+  return str ? str.toLowerCase() : null;
+}
+
+function normalizePhone(value) {
+  const raw = normalizeId(value);
+  if (!raw) return null;
+
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 7) return null;
+
+  return raw;
 }
 
 function getThreadAiThreadId(thread) {
@@ -94,37 +117,67 @@ function isValid(sigB64, ts, fullUrl, raw) {
   return crypto.timingSafeEqual(expected, received);
 }
 
-async function getAssistantFromUser(user, organization) {
-  if (user?.assistant_id) {
-    try {
-      const assistant = await getAssistantById(Number(user.assistant_id));
+function getIdentifier(contact, key) {
+  const cleanKey = String(key || "").toLowerCase();
 
-      if (
-        assistant &&
-        String(assistant.organization_id) === String(organization.id)
-      ) {
-        return assistant;
-      }
+  return (
+    (contact?.identifiers || []).find(
+      (x) => String(x?.identifierKey || "").toLowerCase() === cleanKey,
+    )?.identifierValue || null
+  );
+}
 
-      console.warn(
-        `User assistant ${user.assistant_id} not in org ${organization.id}; falling back`,
-      );
-    } catch (err) {
-      console.warn("Failed to load user assistant:", err?.message || err);
-    }
-  }
+function getPortfolioScopedBsuid(contact) {
+  return (
+    (contact?.identifiers || []).find((x) =>
+      String(x?.identifierKey || "")
+        .toLowerCase()
+        .startsWith("whatsapp_"),
+    )?.identifierValue || null
+  );
+}
 
-  try {
-    const assistants = await getAssistantsInOrg(organization.id);
+function extractWhatsappIdentity(payload) {
+  const sender = payload?.sender || {};
+  const senderContact = sender?.contact || {};
+  const extra = payload?.meta?.extraInformation || {};
 
-    if (Array.isArray(assistants) && assistants.length > 0) {
-      return assistants[0];
-    }
-  } catch (err) {
-    console.warn("Failed to load org assistants:", err?.message || err);
-  }
+  const contactId =
+    normalizeId(senderContact.id) || normalizeId(payload?.contact?.id) || null;
 
-  return null;
+  const senderKey = String(
+    senderContact.identifierKey || sender.identifierKey || "",
+  ).toLowerCase();
+
+  const senderValue =
+    normalizeId(senderContact.identifierValue) ||
+    normalizeId(sender.identifierValue) ||
+    null;
+
+  const phoneNumber =
+    normalizePhone(extra.phoneNumber) ||
+    normalizePhone(extra.phoneNumber) ||
+    normalizePhone(getIdentifier(senderContact, "phonenumber")) ||
+    (senderKey === "phonenumber" ? normalizePhone(senderValue) : null);
+
+  const whatsappBsuid =
+    normalizeId(extra.whatsappbsuid) ||
+    normalizeId(extra.whatsappBsuid) ||
+    normalizeId(getIdentifier(senderContact, "whatsappbsuid")) ||
+    normalizeId(getPortfolioScopedBsuid(senderContact));
+
+  const whatsappUsername =
+    normalizeUsername(extra.whatsappusername) ||
+    normalizeUsername(extra.whatsappUsername) ||
+    normalizeUsername(getIdentifier(senderContact, "whatsappusername")) ||
+    (senderKey === "whatsappusername" ? normalizeUsername(senderValue) : null);
+
+  return {
+    phoneNumber,
+    whatsappBsuid,
+    whatsappUsername,
+    birdContactId: contactId,
+  };
 }
 
 async function findUserFromPhone(rawPhone) {
@@ -144,9 +197,67 @@ async function findUserFromPhone(rawPhone) {
   return user;
 }
 
-async function sendBirdMessage({ channelId, contactId, body }) {
+async function findUserFromWhatsappIdentity(identity, organizationId = null) {
+  if (identity.whatsappBsuid) {
+    const user = await getUserByWhatsappBsuid(
+      identity.whatsappBsuid,
+      organizationId,
+    );
+
+    if (user) return user;
+  }
+
+  if (identity.birdContactId) {
+    const user = await getUserByBirdContactId(
+      identity.birdContactId,
+      organizationId,
+    );
+
+    if (user) return user;
+  }
+
+  if (identity.phoneNumber) {
+    return await findUserFromPhone(identity.phoneNumber);
+  }
+
+  return null;
+}
+
+function buildReceiverContact({ contactId, phoneNumber, whatsappBsuid }) {
+  if (contactId) {
+    return { id: contactId };
+  }
+
+  if (phoneNumber) {
+    return {
+      identifierKey: "phonenumber",
+      identifierValue: phoneNumber,
+    };
+  }
+
+  if (whatsappBsuid) {
+    return {
+      identifierKey: "whatsappbsuid",
+      identifierValue: whatsappBsuid,
+    };
+  }
+
+  return null;
+}
+
+async function sendBirdMessage({
+  channelId,
+  contactId,
+  phoneNumber,
+  whatsappBsuid,
+  body,
+}) {
   const cleanChannelId = normalizeId(channelId);
-  const cleanContactId = normalizeId(contactId);
+  const receiverContact = buildReceiverContact({
+    contactId: normalizeId(contactId),
+    phoneNumber: normalizeId(phoneNumber),
+    whatsappBsuid: normalizeId(whatsappBsuid),
+  });
 
   if (!cleanChannelId) {
     return {
@@ -156,7 +267,7 @@ async function sendBirdMessage({ channelId, contactId, body }) {
     };
   }
 
-  if (!cleanContactId) {
+  if (!receiverContact) {
     return {
       ok: false,
       status: 400,
@@ -193,7 +304,7 @@ async function sendBirdMessage({ channelId, contactId, body }) {
         },
         body: JSON.stringify({
           receiver: {
-            contacts: [{ id: cleanContactId }],
+            contacts: [receiverContact],
           },
           body,
         }),
@@ -285,14 +396,8 @@ async function handleEvent(rawJSON) {
 
   if (!isInboundText) return;
 
-  const fromNumber =
-    evt.payload?.sender?.contact?.identifierValue ||
-    evt.payload?.sender?.identifierValue ||
-    "";
-
-  const contactId =
-    evt.payload?.sender?.contact?.id || evt.payload?.contact?.id || null;
-
+  const identity = extractWhatsappIdentity(evt.payload);
+  const contactId = identity.birdContactId;
   const text = evt.payload?.body?.text?.text || "";
 
   const sentChannelId =
@@ -304,20 +409,42 @@ async function handleEvent(rawJSON) {
   const inboundMsgId =
     evt.payload?.id || evt.payload?.messageId || evt.payload?.body?.id || null;
 
-  if (!fromNumber || !contactId) {
-    console.warn("Inbound WhatsApp event missing fromNumber or contactId", {
-      fromNumber,
-      contactId,
+  if (!identity.phoneNumber && !identity.whatsappBsuid && !contactId) {
+    console.warn("Inbound WhatsApp event missing usable identity", {
+      identity,
+      sentChannelId,
     });
     return;
   }
 
-  const user = await findUserFromPhone(fromNumber);
+  let channelOrganization = null;
+
+  if (sentChannelId) {
+    try {
+      channelOrganization = await getOrganizationByChannelId(sentChannelId);
+    } catch (err) {
+      console.warn("Could not resolve organization by channel_id", {
+        sentChannelId,
+        message: err?.message || String(err),
+      });
+    }
+  }
+
+  let user = await findUserFromWhatsappIdentity(
+    identity,
+    channelOrganization?.id || null,
+  );
+
+  if (user) {
+    user = await updateUserWhatsappIdentity(user.id, identity);
+  }
 
   if (!user) {
     const r = await sendBirdMessage({
       channelId: sentChannelId,
       contactId,
+      phoneNumber: identity.phoneNumber,
+      whatsappBsuid: identity.whatsappBsuid,
       body: {
         type: "text",
         text: {
@@ -340,6 +467,7 @@ async function handleEvent(rawJSON) {
       user,
       inboundMsgId,
       contactId,
+      inboundIdentity: identity,
       inboundText: text,
       pendingMessages,
       sentChannelId,
@@ -431,6 +559,8 @@ async function handleEvent(rawJSON) {
   const sendRes = await sendBirdMessage({
     channelId: outgoingChannelId,
     contactId,
+    phoneNumber: identity.phoneNumber || user.phone_number,
+    whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
     body: {
       type: "text",
       text: {
@@ -464,6 +594,7 @@ async function handlePendingMessages({
   user,
   inboundMsgId,
   contactId,
+  inboundIdentity,
   inboundText,
   pendingMessages,
   sentChannelId,
@@ -516,6 +647,8 @@ async function handlePendingMessages({
     const sendRes = await sendBirdMessage({
       channelId: outgoingChannelId,
       contactId,
+      phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
+      whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
       body,
     });
 
@@ -541,4 +674,17 @@ async function handlePendingMessages({
 
     await markPendingOutreachReplied(row.id, inboundMsgId);
   }
+}
+
+async function getAssistantFromUser(user, organization) {
+  if (user.assistant_id) {
+    const assistant = await getAssistantById(user.assistant_id);
+    if (assistant) return assistant;
+  }
+
+  const assistants = await getAssistantsInOrg(organization.id);
+
+  if (!assistants?.length) return null;
+
+  return assistants[0];
 }

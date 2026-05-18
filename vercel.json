@@ -2,6 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/cron/automations/inactivity",
+      "schedule": "50 12 * * *"
+    },
+    {
+      "path": "/api/cron/automations/materialize",
+      "schedule": "55 12 * * *"
+    },
+    {
       "path": "/api/cron/process-scheduled-broadcasts",
       "schedule": "0 13 * * *"
     }

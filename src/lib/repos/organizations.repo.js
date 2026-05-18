@@ -4,7 +4,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false } },
 );
 
 /**
@@ -38,6 +38,19 @@ export async function getOrganization(orgId) {
     .select("*")
     .eq("id", orgId)
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getOrganizationByChannelId(channelId) {
+  if (!channelId) return null;
+
+  const { data, error } = await sb
+    .from("organization")
+    .select("*")
+    .eq("channel_id", channelId)
+    .maybeSingle();
+
   if (error) throw error;
   return data;
 }

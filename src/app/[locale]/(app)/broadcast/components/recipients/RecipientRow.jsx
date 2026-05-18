@@ -1,5 +1,5 @@
 import styles from "../../broadcast.module.css";
-import { getInitial } from "../../lib/helpers";
+import { getInitial, getWhatsappSubline } from "../../lib/helpers";
 
 export default function RecipientRow({
   user,
@@ -24,7 +24,7 @@ export default function RecipientRow({
           {user.name || translation("Common.none")}
         </div>
         <div className={styles.subline}>
-          {channel === "whatsapp" ? user.phone_number : user.email}
+          {channel === "whatsapp" ? getWhatsappSubline(user) : user.email}
         </div>
       </div>
     </label>

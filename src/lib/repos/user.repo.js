@@ -11,6 +11,19 @@ function cleanMsisdn(n) {
   return String(n).replace(/\D/g, "");
 }
 
+function cleanText(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+
+  const str = String(value).trim();
+  return str.length ? str : null;
+}
+
+function cleanUsername(value) {
+  const str = cleanText(value);
+  return str ? str.toLowerCase() : str;
+}
+
 export async function createUser({
   organizationId,
   phoneNumber,
@@ -21,6 +34,9 @@ export async function createUser({
   assistantId,
   teamsAadObjectId,
   teamsFromId,
+  whatsappBsuid,
+  whatsappUsername,
+  birdContactId,
 }) {
   const { data, error } = await supabase.rpc("create_user_with_plan_limit", {
     p_organization_id: organizationId,
@@ -44,6 +60,15 @@ export async function createUser({
   }
 
   const created = Array.isArray(data) ? data[0] : data;
+
+  if (whatsappBsuid || whatsappUsername || birdContactId) {
+    return await updateUserWhatsappIdentity(created.id, {
+      whatsappBsuid,
+      whatsappUsername,
+      birdContactId,
+    });
+  }
+
   return await getUserById(created.id);
 }
 
@@ -77,13 +102,6 @@ export async function deleteUser(userId) {
   return true;
 }
 
-/**
- * updates:
- *  - name?: string
- *  - phoneNumber?: string
- *  - assistantId?: number|null
- *  - tagIds?: number[]  (full replacement of the user’s tag set)
- */
 export async function updateUser(userId, updates) {
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name;
@@ -121,6 +139,26 @@ export async function updateUser(userId, updates) {
   if (updates.teamsFromId !== undefined) {
     patch.teams_from_id =
       updates.teamsFromId === null ? null : String(updates.teamsFromId).trim();
+  }
+
+  if (updates.whatsappBsuid !== undefined) {
+    patch.whatsapp_bsuid = cleanText(updates.whatsappBsuid);
+  }
+
+  if (updates.whatsappUsername !== undefined) {
+    patch.whatsapp_username = cleanUsername(updates.whatsappUsername);
+  }
+
+  if (updates.birdContactId !== undefined) {
+    patch.bird_contact_id = cleanText(updates.birdContactId);
+  }
+
+  if (
+    updates.whatsappBsuid !== undefined ||
+    updates.whatsappUsername !== undefined ||
+    updates.birdContactId !== undefined
+  ) {
+    patch.whatsapp_identity_updated_at = new Date().toISOString();
   }
 
   if (Object.keys(patch).length) {
@@ -168,6 +206,55 @@ export async function updateUser(userId, updates) {
   return await getUserById(userId);
 }
 
+export async function updateUserWhatsappIdentity(
+  userId,
+  { whatsappBsuid, whatsappUsername, birdContactId } = {},
+) {
+  if (!userId) return null;
+
+  const current = await getUserById(userId);
+  if (!current) return null;
+
+  const patch = {};
+
+  const nextWhatsappBsuid = cleanText(whatsappBsuid);
+  const nextWhatsappUsername = cleanUsername(whatsappUsername);
+  const nextBirdContactId = cleanText(birdContactId);
+
+  if (
+    nextWhatsappBsuid &&
+    nextWhatsappBsuid !== cleanText(current.whatsapp_bsuid)
+  ) {
+    patch.whatsapp_bsuid = nextWhatsappBsuid;
+  }
+
+  if (
+    nextWhatsappUsername &&
+    nextWhatsappUsername !== cleanUsername(current.whatsapp_username)
+  ) {
+    patch.whatsapp_username = nextWhatsappUsername;
+  }
+
+  if (
+    nextBirdContactId &&
+    nextBirdContactId !== cleanText(current.bird_contact_id)
+  ) {
+    patch.bird_contact_id = nextBirdContactId;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return current;
+  }
+
+  patch.whatsapp_identity_updated_at = new Date().toISOString();
+
+  const { error } = await supabase.from("user").update(patch).eq("id", userId);
+
+  if (error) throw error;
+
+  return await getUserById(userId);
+}
+
 export async function getUserById(userId) {
   const { data, error } = await supabase
     .from("user")
@@ -178,6 +265,10 @@ export async function getUserById(userId) {
       phone_number,
       phone_country_code,
       phone_national,
+      whatsapp_bsuid,
+      whatsapp_username,
+      bird_contact_id, 
+      whatsapp_identity_updated_at,
       name,
       email,
       assistant_id,
@@ -201,6 +292,9 @@ export async function getUserById(userId) {
     phone_number: data.phone_number,
     phone_country_code: data.phone_country_code,
     phone_national: data.phone_national,
+    whatsapp_bsuid: data.whatsapp_bsuid,
+    whatsapp_username: data.whatsapp_username,
+    bird_contact_id: data.bird_contact_id,
     name: data.name,
     email: data.email,
     assistant_id: data.assistant_id,
@@ -211,8 +305,62 @@ export async function getUserById(userId) {
   };
 }
 
+async function getSingleUserByIdentity({ column, value, organizationId }) {
+  const cleaned = cleanText(value);
+  if (!cleaned) return null;
+
+  let query = supabase.from("user").select("id").eq(column, cleaned);
+
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data?.length) return null;
+
+  if (!organizationId && data.length > 1) {
+    console.warn(
+      `Multiple users match ${column}; pass organizationId to disambiguate`,
+      {
+        column,
+        value: cleaned,
+        count: data.length,
+      },
+    );
+
+    return null;
+  }
+
+  return await getUserById(data[0].id);
+}
+
+export async function getUserByWhatsappBsuid(
+  whatsappBsuid,
+  organizationId = null,
+) {
+  return await getSingleUserByIdentity({
+    column: "whatsapp_bsuid",
+    value: whatsappBsuid,
+    organizationId,
+  });
+}
+
+export async function getUserByBirdContactId(
+  birdContactId,
+  organizationId = null,
+) {
+  return await getSingleUserByIdentity({
+    column: "bird_contact_id",
+    value: birdContactId,
+    organizationId,
+  });
+}
+
 export async function getUserByNumber(phoneNumber) {
   const digits = cleanMsisdn(phoneNumber);
+  if (!digits) return null;
 
   // 1) primary: exact match on phone_national (new column)
   let { data, error } = await supabase
@@ -231,6 +379,7 @@ export async function getUserByNumber(phoneNumber) {
     .eq("phone_number", digits)
     .maybeSingle();
 
+  if (legacy.error) throw legacy.error;
   if (legacy.data) return await getUserById(legacy.data.id);
 
   // 3) trailing match on phone_number (handles cases where phone_number is full E.164)
@@ -240,6 +389,7 @@ export async function getUserByNumber(phoneNumber) {
     .ilike("phone_number", `%${digits}`)
     .maybeSingle();
 
+  if (alt.error) throw alt.error;
   return alt.data ? await getUserById(alt.data.id) : null;
 }
 
@@ -283,9 +433,25 @@ export async function getUsersInOrg(orgId, { page = 1, pageSize = 100 } = {}) {
   const { data, error, count } = await supabase
     .from("user")
     .select(
-      `id,name,phone_number,phone_country_code,phone_national,email,assistant_id,teams_aad_object_id,teams_from_id,created_at,user_tag:user_tag (
+      `
+      id,
+      name,
+      phone_number,
+      phone_country_code,
+      phone_national,
+      whatsapp_bsuid,
+      whatsapp_username,
+      bird_contact_id,
+      whatsapp_identity_updated_at,
+      email,
+      assistant_id,
+      teams_aad_object_id,
+      teams_from_id,
+      created_at,
+      user_tag:user_tag (
         tag:tags ( id, name, slug, color )
-      )`,
+      )
+      `,
       { count: "exact" },
     )
     .eq("organization_id", orgId)
@@ -303,6 +469,10 @@ export async function getUsersInOrg(orgId, { page = 1, pageSize = 100 } = {}) {
       phone_number: u.phone_number,
       phone_country_code: u.phone_country_code,
       phone_national: u.phone_national,
+      whatsapp_bsuid: u.whatsapp_bsuid,
+      whatsapp_username: u.whatsapp_username,
+      bird_contact_id: u.bird_contact_id,
+      whatsapp_identity_updated_at: u.whatsapp_identity_updated_at,
       email: u.email,
       assistant_id: u.assistant_id,
       teams_aad_object_id: u.teams_aad_object_id,

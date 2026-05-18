@@ -18,6 +18,7 @@ import {
   SendHorizontal,
   CalendarClock,
   Link2,
+  Zap,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useMobileNav } from "@/app/components/MobileNav/MobileNavContext";
@@ -156,6 +157,17 @@ export default function Navbar() {
               >
                 <Bot aria-hidden className={styles.icon} />
                 <span>{translation("Nav.assistants")}</span>
+              </Link>
+
+              <Link
+                href="/automations"
+                onClick={onNavClick("/automations")}
+                className={`${styles.navItem} ${
+                  isActive("/automations") ? styles.active : ""
+                }`}
+              >
+                <Zap aria-hidden className={styles.icon} />
+                <span>Automations</span>
               </Link>
 
               <div className={styles.group}>

@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { splitE164, toE164 } from "@/lib/whatsapp/E164";
-import { getUserByNumber } from "@/lib/repos/user.repo";
+import {
+  getUserById,
+  getUserByNumber,
+  getUserByWhatsappBsuid,
+  getUserByBirdContactId,
+} from "@/lib/repos/user.repo";
 import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
@@ -39,6 +44,90 @@ const COMPANY_KEYS = [
 ];
 
 const isIn = (arr, k) => arr.includes(String(k || "").toLowerCase());
+
+function cleanText(value) {
+  if (value === undefined || value === null) return null;
+
+  const str = String(value).trim();
+  return str.length ? str : null;
+}
+
+function normalizeRecipient(raw) {
+  if (raw && typeof raw === "object") {
+    return {
+      raw,
+      userId: raw.userId ?? raw.id ?? null,
+      phoneNumber: cleanText(
+        raw.phoneNumber ?? raw.phone_number ?? raw.to ?? raw.recipient,
+      ),
+      whatsappBsuid: cleanText(raw.whatsappBsuid ?? raw.whatsapp_bsuid),
+      whatsappUsername: cleanText(
+        raw.whatsappUsername ?? raw.whatsapp_username,
+      ),
+      birdContactId: cleanText(raw.birdContactId ?? raw.bird_contact_id),
+      name: cleanText(raw.name),
+    };
+  }
+
+  return {
+    raw,
+    userId: null,
+    phoneNumber: cleanText(raw),
+    whatsappBsuid: null,
+    whatsappUsername: null,
+    birdContactId: null,
+    name: null,
+  };
+}
+
+function getUserPhone(user) {
+  if (!user) return null;
+
+  if (cleanText(user.phone_number)) return cleanText(user.phone_number);
+
+  if (cleanText(user.phone_country_code) && cleanText(user.phone_national)) {
+    return `${cleanText(user.phone_country_code)}${String(
+      user.phone_national,
+    ).replace(/\D/g, "")}`;
+  }
+
+  return null;
+}
+
+function buildWhatsappContact({ phoneNumber, whatsappBsuid, birdContactId }) {
+  if (cleanText(phoneNumber)) {
+    return {
+      identifierKey: "phonenumber",
+      identifierValue: cleanText(phoneNumber),
+    };
+  }
+
+  if (cleanText(whatsappBsuid)) {
+    return {
+      identifierKey: "whatsappbsuid",
+      identifierValue: cleanText(whatsappBsuid),
+    };
+  }
+
+  if (cleanText(birdContactId)) {
+    return { id: cleanText(birdContactId) };
+  }
+
+  return null;
+}
+
+function getRecipientLabel(recipient, user, to) {
+  return (
+    cleanText(user?.name) ||
+    cleanText(recipient.name) ||
+    cleanText(user?.phone_number) ||
+    cleanText(recipient.phoneNumber) ||
+    cleanText(recipient.whatsappUsername) ||
+    cleanText(recipient.whatsappBsuid) ||
+    cleanText(to) ||
+    "Unknown recipient"
+  );
+}
 
 function buildKvParamsForUser({
   varKeys = [],
@@ -119,10 +208,26 @@ function getMessagesEndpoint(channelId) {
   };
 }
 
-async function sendFreeform({ endpoint, accessKey, to, message, imageUrls }) {
+async function readBirdResponse(res) {
+  const raw = await res.text();
+
+  try {
+    return json.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+async function sendFreeform({
+  endpoint,
+  accessKey,
+  contact,
+  message,
+  imageUrls,
+}) {
   const payload = {
     receiver: {
-      contacts: [{ identifierKey: "phonenumber", identifierValue: to }],
+      contacts: [contact],
     },
     body: imageUrls.length
       ? {
@@ -155,10 +260,16 @@ async function sendFreeform({ endpoint, accessKey, to, message, imageUrls }) {
   };
 }
 
-async function sendTemplate({ endpoint, accessKey, to, template, kvPairs }) {
+async function sendTemplate({
+  endpoint,
+  accessKey,
+  contact,
+  template,
+  kvPairs,
+}) {
   const payload = {
     receiver: {
-      contacts: [{ identifierKey: "phonenumber", identifierValue: to }],
+      contacts: [contact],
     },
     template: {
       projectId: template.projectId,
@@ -271,34 +382,96 @@ export async function sendWhatsappBroadcast(input = {}) {
     process.env.DEFAULT_COUNTRY_CODE ||
     "+351";
 
-  async function handleOne(rawPhone) {
-    const { nationalNumber } = splitE164(rawPhone);
-    const digits = String(rawPhone).replace(/\D/g, "");
+  async function resolveRecipient(rawRecipient) {
+    const recipient = normalizeRecipient(rawRecipient);
 
-    const user =
-      (nationalNumber && (await getUserByNumber(nationalNumber))) ||
-      (digits && (await getUserByNumber(digits))) ||
-      null;
+    let user = null;
 
-    let to;
+    if (recipient.userId) {
+      user = await getUserById(recipient.userId);
+    }
 
-    if (user) {
-      if (user.phone_number) {
-        to = user.phone_number;
-      } else if (user.phone_country_code && user.phone_national) {
-        to = `${user.phone_country_code}${String(user.phone_national).replace(/\D/g, "")}`;
-      } else {
-        to = await toE164(rawPhone, defaultCc);
-      }
-    } else {
-      to = await toE164(rawPhone, defaultCc);
+    if (!user && recipient.whatsappBsuid) {
+      user = await getUserByWhatsappBsuid(recipient.whatsappBsuid, orgId);
+    }
+
+    if (!user && recipient.birdContactId) {
+      user = await getUserByBirdContactId(recipient.birdContactId, orgId);
+    }
+
+    if (!user && recipient.phoneNumber) {
+      const { nationalNumber } = splitE164(recipient.phoneNumber);
+      const digits = String(recipient.phoneNumber).replace(/\D/g, "");
+
+      user =
+        (nationalNumber && (await getUserByNumber(nationalNumber))) ||
+        (digits && (await getUserByNumber(digits))) ||
+        null;
+    }
+
+    let to = getUserPhone(user) || recipient.phoneNumber || null;
+
+    if (to) {
+      to = await toE164(to, defaultCc);
+    }
+
+    const whatsappBsuid =
+      recipient.whatsappBsuid || user?.whatsapp_bsuid || null;
+    const birdContactId =
+      recipient.birdContactId || user?.bird_contact_id || null;
+
+    const contact = buildWhatsappContact({
+      phoneNumber: to,
+      whatsappBsuid,
+      birdContactId,
+    });
+
+    return {
+      recipient,
+      user,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      contact,
+      label: getRecipientLabel(recipient, user, to),
+    };
+  }
+
+  async function handleOne(rawRecipient) {
+    const resolved = await resolveRecipient(rawRecipient);
+    const {
+      recipient,
+      user,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      contact,
+      label,
+    } = resolved;
+
+    if (!contact) {
+      return {
+        recipient: label,
+        to,
+        whatsappBsuid,
+        birdContactId,
+        kind: "none",
+        userId: user?.id || recipient.userId || null,
+        userName: user?.name || recipient.name || null,
+        ok: false,
+        status: 400,
+        data: {
+          error:
+            "No WhatsApp identity available. Need phone_number, whatsapp_bsuid, or bird_contact_id",
+        },
+      };
     }
 
     const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
       trackedLinks,
       orgId,
       channel: "whatsapp",
-      recipientUserId: user?.id || null,
+      recipientUserId: user?.id || recipient.userId || null,
       scheduledBroadcastId,
       createdByUserId,
     });
@@ -327,25 +500,30 @@ export async function sendWhatsappBroadcast(input = {}) {
       const r = await sendFreeform({
         endpoint: messagesEndpoint,
         accessKey,
-        to,
+        contact,
         message: resolvedMessage,
         imageUrls: onlyImageUrls,
       });
 
       console.log("[WA freeform result]", {
-        recipient: rawPhone,
+        recipient: label,
         to,
+        whatsappBsuid,
+        birdContactId,
+        contact,
         ok: r.ok,
         status: r.status,
         data: r.data,
       });
 
       return {
-        recipient: rawPhone,
+        recipient: label,
         to,
+        whatsappBsuid,
+        birdContactId,
         kind: "freeform",
-        userId: user?.id || null,
-        userName: user?.name || null,
+        userId: user?.id || recipient.userId || null,
+        userName: user?.name || recipient.name || null,
         ...r,
       };
     }
@@ -360,6 +538,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         : [];
 
       let trackedUrlForTemplate = null;
+
       if (resolvedTemplate.trackedUrlKey) {
         const found = resolvedTrackedLinks.find(
           (x) => x.key === resolvedTemplate.trackedUrlKey,
@@ -377,8 +556,11 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA template final]", {
-        recipient: rawPhone,
+        recipient: label,
         to,
+        whatsappBsuid,
+        birdContactId,
+        contact,
         orderedKeys,
         baseValues,
         trackedUrlForTemplate,
@@ -389,14 +571,17 @@ export async function sendWhatsappBroadcast(input = {}) {
       const r = await sendTemplate({
         endpoint: messagesEndpoint,
         accessKey,
-        to,
+        contact,
         template: resolvedTemplate,
         kvPairs,
       });
 
       console.log("[WA template result]", {
-        recipient: rawPhone,
+        recipient: label,
         to,
+        whatsappBsuid,
+        birdContactId,
+        contact,
         ok: r.ok,
         status: r.status,
         data: r.data,
@@ -420,21 +605,25 @@ export async function sendWhatsappBroadcast(input = {}) {
       }
 
       return {
-        recipient: rawPhone,
+        recipient: label,
         to,
+        whatsappBsuid,
+        birdContactId,
         kind: "template",
-        userId: user?.id || null,
-        userName: user?.name || null,
+        userId: user?.id || recipient.userId || null,
+        userName: user?.name || recipient.name || null,
         ...r,
       };
     }
 
     return {
-      recipient: rawPhone,
+      recipient: label,
       to,
+      whatsappBsuid,
+      birdContactId,
       kind: "freeform",
-      userId: user?.id || null,
-      userName: user?.name || null,
+      userId: user?.id || recipient.userId || null,
+      userName: user?.name || recipient.name || null,
       ok: false,
       status: 412,
       data: { error: "24h window closed and no template provided." },
@@ -447,8 +636,22 @@ export async function sendWhatsappBroadcast(input = {}) {
     r.status === "fulfilled"
       ? r.value
       : {
-          recipient: recipients[i],
-          to: recipients[i],
+          recipient:
+            typeof recipients[i] === "object"
+              ? recipients[i]?.name ||
+                recipients[i]?.phoneNumber ||
+                recipients[i]?.phone_number ||
+                recipients[i]?.whatsappUsername ||
+                recipients[i]?.whatsapp_username ||
+                recipients[i]?.whatsappBsuid ||
+                recipients[i]?.whatsapp_bsuid ||
+                recipients[i]?.userId ||
+                "Unknown recipient"
+              : recipients[i],
+          to:
+            typeof recipients[i] === "object"
+              ? recipients[i]?.phoneNumber
+              : recipients[i],
           ok: false,
           status: 0,
           data: { error: String(r.reason) },
