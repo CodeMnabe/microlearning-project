@@ -34,6 +34,9 @@ export async function getOrgAutomationRules(organizationId) {
     .select("*")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getActiveAutomationRules({
@@ -43,7 +46,6 @@ export async function getActiveAutomationRules({
   let query = sb
     .from("automation_rule")
     .select("*")
-    .eq("organization_id", organizationId)
     .eq("is_active", true)
     .order("created_at", { ascending: true });
 

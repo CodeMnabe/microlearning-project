@@ -18,11 +18,19 @@ export async function getWhatsappTemplateById(id) {
 }
 
 export async function getOrgWhatsappTemplates(orgId) {
-  const { data, error } = await sb
+  let query = sb
     .from("whatsapp_templates")
     .select("*")
-    .eq("org_id", orgId)
+    .eq("status", "ACTIVE")
     .order("name", { ascending: true });
+
+  if (orgId != null) {
+    query = query.or(`org_id.eq.${Number(orgId)},org_id.is.null`);
+  } else {
+    query = query.is("org_id", null);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];

@@ -256,6 +256,9 @@ export default function BroadcastPage() {
       id: u.id,
       name: u.name,
       phone_number: u.phone_number ?? u.phoneNumber ?? "",
+      whatsapp_bsuid: u.whatsapp_bsuid ?? u.whatsappBsuid ?? "",
+      whatsapp_username: u.whatsapp_username ?? u.whatsappUsername ?? "",
+      bird_contact_id: u.bird_contact_id ?? u.birdContactId ?? "",
       email: u.email ?? "",
       tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id),
       assistantId: u.assistant_id ?? null,
@@ -268,18 +271,18 @@ export default function BroadcastPage() {
   );
 
   const templatesByName = useMemo(() => {
-    const m = new Map();
+    const map = new Map();
 
     for (const t of templates) {
-      if (!m.has(t.name)) m.set(t.name, []);
-      m.get(t.name).push(t);
+      if (!map.has(t.name)) map.set(t.name, []);
+      map.get(t.name).push(t);
     }
 
-    for (const [k, arr] of m) {
-      m.set(k, arr.sort(byBestStatus));
+    for (const [k, arr] of map) {
+      map.set(k, arr.sort(byBestStatus));
     }
 
-    return m;
+    return map;
   }, [templates]);
 
   const nameOptions = useMemo(
@@ -379,8 +382,9 @@ export default function BroadcastPage() {
     const term = q.trim().toLowerCase();
 
     return normalizedUsers.filter((u) => {
-      const textHay =
-        `${u.name || ""} ${u.phone_number || ""} ${u.email || ""}`.toLowerCase();
+      const textHay = `${u.name || ""} ${u.phone_number || ""} 
+        ${u.whatsapp_username || ""} ${u.whatsapp_bsuid}
+         ${u.email || ""}`.toLowerCase();
 
       const textOk = !term || textHay.includes(term);
 
@@ -392,7 +396,11 @@ export default function BroadcastPage() {
         selectedAssistantIds.length === 0 ||
         selectedAssistantIds.includes(u.assistantId);
 
-      const channelOk = channel !== "whatsapp" || !!u.phone_number;
+      const channelOk =
+        channel !== "whatsapp" ||
+        !!u.phone_number ||
+        !!u.whatsapp_bsuid ||
+        u.bird_contact_id;
 
       return channelOk && textOk && tagsOk && assistantOk;
     });
@@ -815,7 +823,18 @@ export default function BroadcastPage() {
         imageUrls,
         files,
         trackedLinks: normalizedTrackedLinks,
-        recipients: chosen.map((u) => u.phone_number).filter(Boolean),
+        recipients: chosen
+          .filter(
+            (u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id,
+          )
+          .map((u) => ({
+            userId: u.id,
+            name: u.name || null,
+            phoneNumber: u.phone_number || null,
+            whatsappBsuid: u.whatsapp_bsuid || null,
+            whatsappUsername: u.whatsapp_username || null,
+            birdContactId: u.bird_contact_id || null,
+          })),
         template:
           tplName && tplLang && paramsComplete
             ? {
@@ -926,24 +945,54 @@ export default function BroadcastPage() {
             (u) => String(u.id) === String(r.userId),
           );
         } else {
-          matchedUser = selectedUsers.find((u) =>
-            phonesMatch(u.phone_number || u.phoneNumber, r.recipient || r.to),
-          );
+          matchedUser =
+            selectedUsers.find((u) => String(u.id) === String(r.userId)) ||
+            selectedUsers.find((u) =>
+              phonesMatch(u.phone_number || u.phoneNumber, r.recipient || r.to),
+            ) ||
+            selectedUsers.find(
+              (u) =>
+                r.whatsappBsuid &&
+                String(u.whatsapp_bsuid || u.whatsappBsuid) ===
+                  String(r.whatsappBsuid),
+            ) ||
+            selectedUsers.find(
+              (u) =>
+                r.birdContactId &&
+                String(u.bird_contact_id || u.birdContactId) ===
+                  String(r.birdContactId),
+            );
         }
 
         const fallbackIdentifier =
-          r.recipient || r.to || r.userId || r.email || "Unknown recipient";
+          r.recipient ||
+          r.to ||
+          r.whatsappUsername ||
+          r.whatsappBsuid ||
+          r.birdContactId ||
+          r.userId ||
+          r.email ||
+          "Unknown recipient";
 
         const label =
           matchedUser?.name ||
           matchedUser?.email ||
           matchedUser?.phone_number ||
+          matchedUser?.whatsapp_username ||
+          matchedUser?.whatsapp_bsuid ||
           fallbackIdentifier;
 
         const contact =
           channel === "teams"
             ? matchedUser?.email || r.userId || ""
-            : matchedUser?.phone_number || r.to || r.recipient || "";
+            : matchedUser?.phone_number ||
+              matchedUser?.whatsapp_username ||
+              matchedUser?.whatsapp_bsuid ||
+              r.to ||
+              r.recipient ||
+              r.whatsappBsuid ||
+              r.birdContactId ||
+              "";
 
         return {
           label,

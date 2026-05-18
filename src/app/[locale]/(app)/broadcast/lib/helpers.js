@@ -161,3 +161,13 @@ export function replaceTrackedPlaceholders(
 
   return out;
 }
+
+export function getWhatsappSubline(user) {
+  return (
+    user.phone_number ||
+    (user.whatsapp_username ? `@${user.whatsapp_username}` : "") ||
+    user.whatsapp_bsuid ||
+    user.bird_contact_id ||
+    ""
+  );
+}
