@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
 import {
   Bot,
   CalendarClock,
@@ -23,7 +22,6 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { RuleModal } from "./RuleModal/RuleModal";
 
 const TRIGGER_OPTIONS = [
@@ -60,10 +58,17 @@ const STATUS_META = {
   materialized: { label: "Materialized", className: styles.chip },
   processing: { label: "Processing", className: styles.chip },
   sent: { label: "Sent", className: styles.chipSuccess || styles.chip },
+  partial: { label: "Partial", className: styles.chip },
   failed: { label: "Failed", className: styles.rowActBtnDanger },
   cancelled: { label: "Cancelled", className: styles.chipDark },
   skipped: { label: "Skipped", className: styles.chipDark },
 };
+
+const IN_FLIGHT_QUEUE_STATUSES = new Set([
+  "queued",
+  "materialized",
+  "processing",
+]);
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -95,11 +100,44 @@ function summarizeMessage(payload) {
   return p.messageResolved || p.message || "-";
 }
 
+function summarizeMaterializedMessage(item) {
+  const scheduledPayload = safeJsonParse(
+    item?.scheduled_broadcast?.payload,
+    {},
+  );
+
+  return (
+    scheduledPayload.messageResolved ||
+    scheduledPayload.message ||
+    summarizeMessage(item?.payload)
+  );
+}
+
+function summarizeError(value) {
+  if (!value) return "-";
+
+  if (typeof value !== "string") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return value;
+}
+
+function summarizeQueueDetails(run) {
+  if (run?.last_error) return summarizeError(run.last_error);
+  return summarizeMessage(run?.payload);
+}
+
 function RunStatusChip({ status }) {
   const meta = STATUS_META[status] || {
     label: status || "-",
     className: styles.chipDark,
   };
+
   return (
     <span className={`${styles.chip} ${meta.className || ""}`}>
       {meta.label}
@@ -108,7 +146,6 @@ function RunStatusChip({ status }) {
 }
 
 export default function AutomationsPage() {
-  const translation = useTranslations();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const { startLoading, stopLoading } = useGlobalLoader();
@@ -118,6 +155,7 @@ export default function AutomationsPage() {
   const [runs, setRuns] = useState([]);
   const [assistants, setAssistants] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [materialized, setMaterialized] = useState([]);
 
   const [q, setQ] = useState("");
   const [tab, setTab] = useState("rules");
@@ -146,24 +184,34 @@ export default function AutomationsPage() {
 
     startLoading();
     try {
-      const [rulesRes, runsRes, assistantsRes, templatesRes] =
+      const [rulesRes, runsRes, materializedRes, assistantsRes, templatesRes] =
         await Promise.all([
           fetch(`/api/automations/rules?orgId=${orgId}`),
           fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
+          fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
           fetch(`/api/assistants?orgId=${orgId}`),
           fetch(`/api/template/list?orgId=${orgId}`),
         ]);
 
-      const [rulesData, runsData, assistantsData, templatesData] =
-        await Promise.all([
-          rulesRes.json(),
-          runsRes.json(),
-          assistantsRes.json(),
-          templatesRes.json(),
-        ]);
+      const [
+        rulesData,
+        runsData,
+        materializedData,
+        assistantsData,
+        templatesData,
+      ] = await Promise.all([
+        rulesRes.json(),
+        runsRes.json(),
+        materializedRes.json(),
+        assistantsRes.json(),
+        templatesRes.json(),
+      ]);
 
       setRules(Array.isArray(rulesData?.items) ? rulesData.items : []);
       setRuns(Array.isArray(runsData?.items) ? runsData.items : []);
+      setMaterialized(
+        Array.isArray(materializedData?.items) ? materializedData.items : [],
+      );
       setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
       setTemplates(
         Array.isArray(templatesData?.items) ? templatesData.items : [],
@@ -200,6 +248,13 @@ export default function AutomationsPage() {
     };
   }, [createMenuOpen]);
 
+  const queueRuns = useMemo(() => {
+    return runs.filter(
+      (run) =>
+        !run.scheduled_broadcast_id || IN_FLIGHT_QUEUE_STATUSES.has(run.status),
+    );
+  }, [runs]);
+
   const filteredRules = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return rules;
@@ -219,25 +274,48 @@ export default function AutomationsPage() {
     });
   }, [q, rules]);
 
-  const filteredRuns = useMemo(() => {
+  const filteredQueueRuns = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return runs;
+    if (!term) return queueRuns;
 
-    return runs.filter((run) => {
+    return queueRuns.filter((run) => {
       const relatedRule = ruleMap.get(run.rule_id);
       const haystack = [
         relatedRule?.name || "",
+        run.user_row?.name || "",
         run.channel,
         run.trigger_type,
         run.status,
-        summarizeMessage(run.payload),
+        summarizeQueueDetails(run),
       ]
         .join(" ")
         .toLowerCase();
 
       return haystack.includes(term);
     });
-  }, [q, runs, ruleMap]);
+  }, [q, queueRuns, ruleMap]);
+
+  const filteredDeliveries = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return materialized;
+
+    return materialized.filter((item) => {
+      const relatedRule = ruleMap.get(item.rule_id);
+      const haystack = [
+        relatedRule?.name || "",
+        item.channel,
+        item.trigger_type,
+        item.status,
+        item.user_row?.name || "",
+        item.scheduled_broadcast?.status || "",
+        summarizeMaterializedMessage(item),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [q, materialized, ruleMap]);
 
   async function handleSaveRule(ruleInput) {
     if (!orgId) return;
@@ -276,7 +354,7 @@ export default function AutomationsPage() {
 
   async function handleDeleteRule(rule) {
     const ok = await confirm({
-      title: `Delete \"${rule.name}\"?`,
+      title: `Delete "${rule.name}"?`,
       message:
         "This will remove the automation rule. Existing runs stay in history.",
       confirmText: "Delete",
@@ -421,6 +499,7 @@ export default function AutomationsPage() {
           </div>
         </div>
       </div>
+
       <div className={styles.activeFilters}>
         <button
           className={`${styles.filterChip} ${tab === "rules" ? styles.filterChipActive : ""}`}
@@ -428,11 +507,19 @@ export default function AutomationsPage() {
         >
           Rules ({rules.length})
         </button>
+
         <button
-          className={`${styles.filterChip} ${tab === "runs" ? styles.filterChipActive : ""}`}
-          onClick={() => setTab("runs")}
+          className={`${styles.filterChip} ${tab === "queue" ? styles.filterChipActive : ""}`}
+          onClick={() => setTab("queue")}
         >
-          Runs ({runs.length})
+          Queue ({queueRuns.length})
+        </button>
+
+        <button
+          className={`${styles.filterChip} ${tab === "deliveries" ? styles.filterChipActive : ""}`}
+          onClick={() => setTab("deliveries")}
+        >
+          Deliveries ({materialized.length})
         </button>
       </div>
 
@@ -529,20 +616,21 @@ export default function AutomationsPage() {
             })}
           </div>
         </div>
-      ) : (
+      ) : tab === "queue" ? (
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
               <div className={styles.cellHead}>Rule</div>
               <div className={styles.cellHead}>Trigger</div>
               <div className={styles.cellHead}>Channel</div>
-              <div className={styles.cellHead}>Scheduled for</div>
-              <div className={styles.cellHead}>Status</div>
-              <div className={styles.cellHead}>Message</div>
+              <div className={styles.cellHead}>Due at</div>
+              <div className={styles.cellHead}>Run status</div>
+              <div className={styles.cellHead}>Queue details</div>
             </div>
 
-            {filteredRuns.map((run, i) => {
+            {filteredQueueRuns.map((run, i) => {
               const rule = ruleMap.get(run.rule_id);
+
               return (
                 <div
                   key={run.id}
@@ -561,22 +649,95 @@ export default function AutomationsPage() {
                       </div>
                     </div>
                   </div>
+
                   <div className={styles.cellPhone}>
                     {triggerLabel(run.trigger_type)}
                   </div>
+
                   <div className={styles.cellPhone}>{run.channel}</div>
+
                   <div className={styles.cellPhone}>
                     {formatDateTime(run.scheduled_for)}
                   </div>
+
                   <div className={styles.cellPhone}>
                     <RunStatusChip status={run.status} />
                   </div>
+
                   <div className={styles.cellTags}>
                     <div
                       className={styles.messagePreview}
-                      title={summarizeMessage(run.payload)}
+                      title={summarizeQueueDetails(run)}
                     >
-                      {summarizeMessage(run.payload)}
+                      {summarizeQueueDetails(run)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.tableCard}>
+          <div className={styles.table}>
+            <div className={`${styles.row} ${styles.header}`}>
+              <div className={styles.cellHead}>Rule</div>
+              <div className={styles.cellHead}>User</div>
+              <div className={styles.cellHead}>Channel</div>
+              <div className={styles.cellHead}>Scheduled for</div>
+              <div className={styles.cellHead}>Broadcast status</div>
+              <div className={styles.cellHead}>Message</div>
+            </div>
+
+            {filteredDeliveries.map((item, i) => {
+              const rule = ruleMap.get(item.rule_id);
+              const broadcastStatus =
+                item.scheduled_broadcast?.status || item.status;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`${styles.row} ${i % 2 ? styles.rowAlt : ""}`}
+                >
+                  <div className={styles.cellName}>
+                    <div className={styles.avatar}>
+                      <CalendarClock size={16} />
+                    </div>
+                    <div className={styles.nameBlock}>
+                      <div className={styles.name}>
+                        {rule?.name || "Deleted rule"}
+                      </div>
+                      <div className={styles.subline}>
+                        {triggerLabel(item.trigger_type)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.cellPhone}>
+                    {item.user_row?.name || `User #${item.user_id}`}
+                  </div>
+
+                  <div className={styles.cellPhone}>
+                    {item.scheduled_broadcast?.channel || item.channel}
+                  </div>
+
+                  <div className={styles.cellPhone}>
+                    {formatDateTime(
+                      item.scheduled_broadcast?.scheduled_for ||
+                        item.scheduled_for,
+                    )}
+                  </div>
+
+                  <div className={styles.cellPhone}>
+                    <RunStatusChip status={broadcastStatus} />
+                  </div>
+
+                  <div className={styles.cellTags}>
+                    <div
+                      className={styles.messagePreview}
+                      title={summarizeMaterializedMessage(item)}
+                    >
+                      {summarizeMaterializedMessage(item)}
                     </div>
                   </div>
                 </div>
