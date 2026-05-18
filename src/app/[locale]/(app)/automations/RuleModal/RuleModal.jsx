@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, Eye, MessageSquare, UserPlus } from "lucide-react";
 import styles from "../automations.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 
@@ -15,6 +14,10 @@ const CHANNEL_OPTIONS = [
     label: "Teams",
   },
 ];
+
+function getTemplateOptionValue(template) {
+  return template?.whatsappTemplateId || template?.id || "";
+}
 
 export function RuleModal({
   open,
@@ -51,12 +54,12 @@ export function RuleModal({
     setMessage(payload.message || "");
     setWhatsappTemplateId(initialRule?.whatsapp_template_id || "");
     setTemplateBindings(payload.templateBindings || {});
-  }, [initialRule, open]);
+  }, [initialRule, open, safeJsonParse]);
 
   const selectedTemplate = useMemo(
     () =>
       whatsappTemplates.find(
-        (t) => t.whatsappTemplateId === whatsappTemplateId,
+        (t) => getTemplateOptionValue(t) === whatsappTemplateId,
       ) || null,
     [whatsappTemplates, whatsappTemplateId],
   );
@@ -64,7 +67,7 @@ export function RuleModal({
   const templateOrder = useMemo(() => {
     const components = safeJsonParse(selectedTemplate?.components, {});
     return Array.isArray(components?.order) ? components.order : [];
-  }, [selectedTemplate]);
+  }, [selectedTemplate, safeJsonParse]);
 
   useEffect(() => {
     if (!templateOrder.length) return;
@@ -102,14 +105,20 @@ export function RuleModal({
   if (!open) return null;
 
   const templateOptions = whatsappTemplates
-    .filter((t) => t.whatsappTemplateId)
+    .filter((t) => getTemplateOptionValue(t))
     .map((t) => ({
-      value: t.whatsappTemplateId,
+      value: getTemplateOptionValue(t),
       label: `${t.name} (${t.language || "pt-PT"})`,
     }));
 
   const assistantOptions = [
-    { value: "", label: "Any assistant" },
+    {
+      value: "",
+      label:
+        triggerType === "user.inactive"
+          ? "Any assistant (fallback)"
+          : "Any assistant",
+    },
     ...assistants.map((a) => ({ value: a.id, label: a.name })),
   ];
 
@@ -140,7 +149,6 @@ export function RuleModal({
           : null,
     });
   }
-
   return (
     <div
       className={styles.modalOverlay}
@@ -195,6 +203,13 @@ export function RuleModal({
               fullWidth
               portalToBody
             />
+            {triggerType === "user.inactive" && (
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
+                Assistant-specific inactivity rules win. “Any assistant
+                (fallback)” only applies when the user’s current assistant does
+                not already have a specific inactivity rule on this channel.
+              </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -274,7 +289,7 @@ export function RuleModal({
                             <>
                               <PillSelect
                                 options={[
-                                  { value: "static", label: "Static.text" },
+                                  { value: "static", label: "Static text" },
                                   {
                                     value: "system:user.name",
                                     label: "System: user.name",

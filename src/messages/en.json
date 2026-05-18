@@ -683,6 +683,7 @@
     "home": "Home",
     "users": "Users",
     "assistants": "Assistants",
+    "automations": "Automations",
     "broadcast": "Messages",
     "broadcastCreate": "Send",
     "broadcastScheduled": "See Scheduled",

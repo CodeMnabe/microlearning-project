@@ -3,7 +3,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
 const supabase = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY, // service role => bypasses RLS
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
 
@@ -22,6 +22,38 @@ function cleanText(value) {
 function cleanUsername(value) {
   const str = cleanText(value);
   return str ? str.toLowerCase() : str;
+}
+
+function sameNullableNumber(a, b) {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return Number(a) === Number(b);
+}
+
+async function cancelPendingInactivityRunsForAssistantChange(
+  userId,
+  nextAssistantId,
+) {
+  let query = supabase
+    .from("automation_run")
+    .update({
+      status: "cancelled",
+      last_error: "Cancelled because the user's assistant changed",
+      processed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("trigger_type", "user.inactive")
+    .in("status", ["queued", "materialized"]);
+
+  if (nextAssistantId == null) {
+    // cancel all pending inactivity runs for this user
+  } else {
+    query = query.neq("assistant_id", nextAssistantId);
+  }
+
+  const { error } = await query;
+  if (error) throw error;
 }
 
 export async function createUser({
@@ -73,10 +105,8 @@ export async function createUser({
 }
 
 export async function deleteUser(userId) {
-  // 1) remove join rows
   await supabase.from("user_tag").delete().eq("user_id", userId).throwOnError();
 
-  // 2) delete messages linked to the user's threads (if you have them)
   const { data: threads } = await supabase
     .from("thread")
     .select("id")
@@ -84,18 +114,16 @@ export async function deleteUser(userId) {
 
   const threadIds = (threads || []).map((t) => t.id);
   if (threadIds.length) {
-    // if you have a message table referencing thread_id
     await supabase
       .from("message")
       .delete()
       .in("thread_id", threadIds)
       .throwOnError?.();
-    // any other child tables that reference thread_id go here
+
     await supabase.from("thread").delete().in("id", threadIds).throwOnError?.();
   }
 
-  // other tables that reference the user directly (optional)
-  await supabase.from("pending_outreach").delete().eq("user_id", userId); // if exists
+  await supabase.from("pending_outreach").delete().eq("user_id", userId);
 
   const { error } = await supabase.from("user").delete().eq("id", userId);
   if (error) throw error;
@@ -103,19 +131,23 @@ export async function deleteUser(userId) {
 }
 
 export async function updateUser(userId, updates) {
+  const currentUser = await getUserById(userId);
+  if (!currentUser) {
+    throw new Error("User not found");
+  }
+
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name;
   if (updates.email !== undefined) patch.email = updates.email;
-  if (updates.assistantId !== undefined)
+  if (updates.assistantId !== undefined) {
     patch.assistant_id = updates.assistantId;
+  }
 
-  // full E.164
   if (updates.phoneNumber !== undefined) {
     patch.phone_number =
       updates.phoneNumber === null ? null : String(updates.phoneNumber).trim();
   }
 
-  // country code
   if (updates.phoneCountryCode !== undefined) {
     patch.phone_country_code =
       updates.phoneCountryCode === null
@@ -123,7 +155,6 @@ export async function updateUser(userId, updates) {
         : String(updates.phoneCountryCode).trim();
   }
 
-  // national (digits only)
   if (updates.phoneNational !== undefined) {
     const digits = cleanMsisdn(updates.phoneNational);
     patch.phone_national = digits || null;
@@ -166,16 +197,16 @@ export async function updateUser(userId, updates) {
       .from("user")
       .update(patch)
       .eq("id", userId);
+
     if (upErr) throw upErr;
   }
 
-  // Replace tag set if provided
   if (Array.isArray(updates.tagIds)) {
-    // current set
     const { data: existing, error: exErr } = await supabase
       .from("user_tag")
       .select("tag_id")
       .eq("user_id", userId);
+
     if (exErr) throw exErr;
 
     const have = new Set((existing || []).map((r) => r.tag_id));
@@ -192,17 +223,34 @@ export async function updateUser(userId, updates) {
       const { error: insErr } = await supabase.from("user_tag").insert(rows);
       if (insErr) throw insErr;
     }
+
     if (toDelete.length) {
       const { error: delErr } = await supabase
         .from("user_tag")
         .delete()
         .eq("user_id", userId)
         .in("tag_id", toDelete);
+
       if (delErr) throw delErr;
     }
   }
 
-  // return fresh enriched row
+  const nextAssistantId =
+    updates.assistantId !== undefined
+      ? (updates.assistantId ?? null)
+      : (currentUser.assistant_id ?? null);
+
+  const assistantChanged =
+    updates.assistantId !== undefined &&
+    !sameNullableNumber(currentUser.assistant_id, nextAssistantId);
+
+  if (assistantChanged) {
+    await cancelPendingInactivityRunsForAssistantChange(
+      userId,
+      nextAssistantId,
+    );
+  }
+
   return await getUserById(userId);
 }
 
@@ -362,7 +410,6 @@ export async function getUserByNumber(phoneNumber) {
   const digits = cleanMsisdn(phoneNumber);
   if (!digits) return null;
 
-  // 1) primary: exact match on phone_national (new column)
   let { data, error } = await supabase
     .from("user")
     .select("id")
@@ -372,7 +419,6 @@ export async function getUserByNumber(phoneNumber) {
   if (error) throw error;
   if (data) return await getUserById(data.id);
 
-  // 2) legacy: exact match on phone_number (old behaviour where we stored only national)
   const legacy = await supabase
     .from("user")
     .select("id")
@@ -382,7 +428,6 @@ export async function getUserByNumber(phoneNumber) {
   if (legacy.error) throw legacy.error;
   if (legacy.data) return await getUserById(legacy.data.id);
 
-  // 3) trailing match on phone_number (handles cases where phone_number is full E.164)
   const alt = await supabase
     .from("user")
     .select("id")

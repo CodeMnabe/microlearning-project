@@ -23,7 +23,10 @@ async function fetchAll(path) {
     if (next) url.searchParams.set("pageToken", next);
 
     const res = await fetch(url, {
-      headers: { Authorization: `AccessKey ${BIRD_API_KEY}`, Accept: "*/*" },
+      headers: {
+        Authorization: `AccessKey ${BIRD_API_KEY}`,
+        Accept: "*/*",
+      },
       cache: "no-store",
     });
 
@@ -41,6 +44,16 @@ function pickDeploymentValue(deployments, key) {
   return deployments?.find((d) => d.key === key)?.value || null;
 }
 
+function norm(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function nameLangKey(name, language) {
+  return `${norm(name)}__${norm(language)}`;
+}
+
 const STATUS_RANK = {
   ACTIVE: 4,
   PENDING: 3,
@@ -49,16 +62,57 @@ const STATUS_RANK = {
   INACTIVE: 1,
 };
 
-function isBetter(b, a) {
-  if (!a) return true;
+function isBetterBirdTemplate(candidate, current) {
+  if (!current) return true;
 
-  const rb = STATUS_RANK[(b.status || "").toUpperCase()] || 0;
-  const ra = STATUS_RANK[(a.status || "").toUpperCase()] || 0;
-  if (rb !== ra) return rb > ra;
+  const candidateRank =
+    STATUS_RANK[(candidate.status || "").toUpperCase()] || 0;
+  const currentRank = STATUS_RANK[(current.status || "").toUpperCase()] || 0;
 
-  const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
-  const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
-  return tb > ta;
+  if (candidateRank !== currentRank) {
+    return candidateRank > currentRank;
+  }
+
+  const candidateTime = new Date(
+    candidate.updatedAt || candidate.createdAt || 0,
+  ).getTime();
+
+  const currentTime = new Date(
+    current.updatedAt || current.createdAt || 0,
+  ).getTime();
+
+  return candidateTime > currentTime;
+}
+
+function isPreferredDbRow(candidate, current) {
+  if (!current) return true;
+
+  // Prefer organization-specific rows over global rows.
+  const candidateIsOrgSpecific = candidate.org_id != null;
+  const currentIsOrgSpecific = current.org_id != null;
+
+  if (candidateIsOrgSpecific !== currentIsOrgSpecific) {
+    return candidateIsOrgSpecific;
+  }
+
+  return false;
+}
+
+function uniqueByWhatsappTemplateId(items) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const item of items) {
+    const key = String(item.whatsappTemplateId || item.id || "");
+
+    if (!key) continue;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
 }
 
 export async function GET(req) {
@@ -81,27 +135,21 @@ export async function GET(req) {
 
     const { data: allowedRows, error: dbErr } = await supabaseAdmin
       .from("whatsapp_templates")
-      .select("id, name, language, provider_template_id, components")
+      .select("id, org_id, name, language, provider_template_id, components")
       .or(`org_id.eq.${orgId},org_id.is.null`)
       .eq("status", "ACTIVE");
 
     if (dbErr) throw new Error(dbErr.message);
 
-    const norm = (s) =>
-      String(s ?? "")
-        .trim()
-        .toLowerCase();
-
     const allowedIds = new Set(
-      (allowedRows ?? []).map((r) => r.provider_template_id).filter(Boolean),
+      (allowedRows ?? [])
+        .map((row) => row.provider_template_id)
+        .filter(Boolean)
+        .map((id) => String(id)),
     );
 
-    const allowedKey = new Set(
-      (allowedRows ?? []).map((r) => `${norm(r.name)}__${norm(r.language)}`),
-    );
-
-    const allowedNameOnly = new Set(
-      (allowedRows ?? []).map((r) => norm(r.name)),
+    const allowedNameLangKeys = new Set(
+      (allowedRows ?? []).map((row) => nameLangKey(row.name, row.language)),
     );
 
     const dbByProviderId = new Map();
@@ -109,115 +157,158 @@ export async function GET(req) {
 
     for (const row of allowedRows ?? []) {
       if (row.provider_template_id) {
-        dbByProviderId.set(String(row.provider_template_id), row);
+        const providerId = String(row.provider_template_id);
+        const current = dbByProviderId.get(providerId);
+
+        if (isPreferredDbRow(row, current)) {
+          dbByProviderId.set(providerId, row);
+        }
       }
-      dbByNameLang.set(`${norm(row.name)}__${norm(row.language)}`, row);
+
+      const key = nameLangKey(row.name, row.language);
+      const current = dbByNameLang.get(key);
+
+      if (isPreferredDbRow(row, current)) {
+        dbByNameLang.set(key, row);
+      }
     }
 
     let projectIds = [];
+
     if (projectId) {
       projectIds = [projectId];
     } else {
       const projects = await fetchAll(`/workspaces/${WORKSPACE_ID}/projects`);
+
       projectIds = projects
-        .filter((p) => p.type === "channelTemplate")
-        .map((p) => p.id);
+        .filter((project) => project.type === "channelTemplate")
+        .map((project) => project.id);
     }
 
     const raw = [];
 
     for (const pid of projectIds) {
-      const tpls = await fetchAll(
+      const templates = await fetchAll(
         `/workspaces/${WORKSPACE_ID}/projects/${pid}/channel-templates`,
       );
 
-      for (const t of tpls) {
+      for (const template of templates) {
         const name =
-          pickDeploymentValue(t.deployments, "whatsappTemplateName") ||
-          t.description ||
-          t.id;
+          pickDeploymentValue(template.deployments, "whatsappTemplateName") ||
+          template.description ||
+          template.id;
 
         const category =
-          pickDeploymentValue(t.deployments, "whatsappCategory") || "";
+          pickDeploymentValue(template.deployments, "whatsappCategory") || "";
 
         const language =
-          t.defaultLocale || t.platformContent?.[0]?.locale || "en";
+          template.defaultLocale ||
+          template.platformContent?.[0]?.locale ||
+          "en";
 
-        const status = (t.status || "draft").toUpperCase();
+        const status = (template.status || "draft").toUpperCase();
 
         let wabaId = null;
-        for (const pc of t.platformContent || []) {
-          for (const ap of pc.approvals || []) {
-            if (ap.platform === "whatsapp" && ap.platformAccountIdentifier) {
-              wabaId = ap.platformAccountIdentifier;
+
+        for (const platformContentItem of template.platformContent || []) {
+          for (const approval of platformContentItem.approvals || []) {
+            if (
+              approval.platform === "whatsapp" &&
+              approval.platformAccountIdentifier
+            ) {
+              wabaId = approval.platformAccountIdentifier;
               break;
             }
           }
+
           if (wabaId) break;
         }
 
         raw.push({
-          provider_template_id: t.id,
+          provider_template_id: template.id,
           projectId: pid,
           name,
           language,
           category,
           status,
           waba_id: wabaId,
-          defaultLocale: t.defaultLocale || null,
-          variables: t.variables || [],
-          platformContent: t.platformContent || [],
-          genericContent: t.genericContent || [],
-          deployments: t.deployments || [],
-          createdAt: t.createdAt,
-          updatedAt: t.updatedAt,
+          defaultLocale: template.defaultLocale || null,
+          variables: template.variables || [],
+          platformContent: template.platformContent || [],
+          genericContent: template.genericContent || [],
+          deployments: template.deployments || [],
+          createdAt: template.createdAt,
+          updatedAt: template.updatedAt,
         });
       }
     }
 
-    const bestByKey = new Map();
+    // Keep only the best Bird template per normalized name + language.
+    // This prevents duplicate Bird versions with slightly different casing/spaces
+    // from mapping to the same Supabase template row.
+    const bestByNameLang = new Map();
 
-    for (const t of raw) {
-      const key = `${t.name}__${t.language}`;
-      const current = bestByKey.get(key);
-      if (isBetter(t, current)) bestByKey.set(key, t);
+    for (const template of raw) {
+      const key = nameLangKey(template.name, template.language);
+      const current = bestByNameLang.get(key);
+
+      if (isBetterBirdTemplate(template, current)) {
+        bestByNameLang.set(key, template);
+      }
     }
 
-    const best = Array.from(bestByKey.values());
+    const bestTemplates = Array.from(bestByNameLang.values());
 
-    const filtered = best.filter((t) => {
-      const k = `${norm(t.name)}__${norm(t.language)}`;
-      return (
-        allowedIds.has(t.provider_template_id) ||
-        allowedKey.has(k) ||
-        allowedNameOnly.has(norm(t.name))
-      );
+    // Only allow templates that match the DB either by provider_template_id
+    // or by exact normalized name + language.
+    // Important: no name-only fallback, because that creates false matches.
+    const allowedTemplates = bestTemplates.filter((template) => {
+      const providerId = String(template.provider_template_id);
+      const key = nameLangKey(template.name, template.language);
+
+      return allowedIds.has(providerId) || allowedNameLangKeys.has(key);
     });
 
-    const items = filtered.map((t) => {
-      const k = `${norm(t.name)}__${norm(t.language)}`;
+    const items = allowedTemplates
+      .map((template) => {
+        const providerId = String(template.provider_template_id);
+        const key = nameLangKey(template.name, template.language);
 
-      const dbRow =
-        dbByProviderId.get(String(t.provider_template_id)) ||
-        dbByNameLang.get(k) ||
-        null;
+        const dbRow =
+          dbByProviderId.get(providerId) || dbByNameLang.get(key) || null;
 
-      return {
-        id: t.provider_template_id, // keep Bird/provider id for broadcast page
-        whatsappTemplateId: dbRow?.id ?? null, // Supabase UUID for automations FK
-        components: dbRow?.components ?? null, // useful for template bindings
-        projectId: t.projectId,
-        name: t.name,
-        language: t.language,
-        category: t.category,
-        status: t.status,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-      };
+        // Automations need the Supabase UUID, so do not return templates
+        // that cannot map back to whatsapp_templates.
+        if (!dbRow) return null;
+
+        return {
+          // Bird/provider template id.
+          // Useful for broadcast sending.
+          id: template.provider_template_id,
+
+          // Supabase UUID.
+          // Useful for automations FK.
+          whatsappTemplateId: dbRow.id,
+
+          components: dbRow.components ?? null,
+          projectId: template.projectId,
+          name: template.name,
+          language: template.language,
+          category: template.category,
+          status: template.status,
+          createdAt: template.createdAt,
+          updatedAt: template.updatedAt,
+        };
+      })
+      .filter(Boolean);
+
+    return NextResponse.json({
+      items: uniqueByWhatsappTemplateId(items),
     });
-
-    return NextResponse.json({ items });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json(
+      { error: e.message || "Failed to list templates" },
+      { status: 500 },
+    );
   }
 }

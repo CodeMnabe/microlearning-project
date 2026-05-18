@@ -17,12 +17,23 @@ export async function createScheduledBroadcast(row) {
   return data;
 }
 
-export async function getOrgScheduledBroadcasts(id) {
-  const { data, error } = await sb
+export async function getOrgScheduledBroadcasts(
+  organizationId,
+  { source = "all" } = {},
+) {
+  let query = sb
     .from("scheduled_broadcast")
     .select("*")
-    .eq("organization_id", id)
+    .eq("organization_id", organizationId)
     .order("scheduled_for", { ascending: true });
+
+  if (source === "manual") {
+    query = query.not("created_by_user_id", "is", null);
+  } else if (source === "automation") {
+    query = query.is("created_by_user_id", null);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];
