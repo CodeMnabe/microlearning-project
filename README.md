@@ -1,5 +1,9 @@
 ## Getting Started
 
+To install the dependencies run:
+
+npm install
+
 First, run the development server:
 
 ```bash
