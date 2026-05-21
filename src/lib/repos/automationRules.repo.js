@@ -63,6 +63,63 @@ export async function getActiveAutomationRules({
   return data || [];
 }
 
+export async function findActiveInactivityRuleConflict({
+  organizationId,
+  channel,
+  assistantId = null,
+  excludeRuleId = null,
+}) {
+  let query = sb
+    .from("automation_rule")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("trigger_type", "user.inactive")
+    .eq("channel", channel)
+    .eq("is_active", true)
+    .limit(1);
+
+  if (excludeRuleId) {
+    query = query.neq("id", excludeRuleId);
+  }
+
+  if (assistantId == null) {
+    query = query.is("assistant_id", null);
+  } else {
+    query = query.eq("assistant_id", assistantId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export async function assertNoActiveInactivityRuleConflict({
+  organizationId,
+  channel,
+  assistantId = null,
+  excludeRuleId = null,
+}) {
+  const conflict = await findActiveInactivityRuleConflict({
+    organizationId,
+    channel,
+    assistantId,
+    excludeRuleId,
+  });
+
+  if (!conflict) return null;
+
+  const scope =
+    assistantId == null ? "Any assistant fallback" : `assistant ${assistantId}`;
+
+  const err = new Error(
+    `An active inactivity rule already exists for ${channel} on ${scope}.`,
+  );
+  err.code = "INACTIVITY_RULE_CONFLICT";
+  err.status = 409;
+  throw err;
+}
+
 export async function updateAutomationRule(id, patch) {
   const { data, error } = await sb
     .from("automation_rule")

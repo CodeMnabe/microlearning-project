@@ -7,11 +7,14 @@
   --foreground: #0b1220;
 
   /* brand & ink */
-  --brand-1: #30a9e0; /* light blue */
+  --brand-1: #30a9e0;
+  /* light blue */
   --brand-1-rgb: 48, 169, 224;
-  --brand-2: #7cc2ff; /* gradient end */
+  --brand-2: #7cc2ff;
+  /* gradient end */
   --brand-2-rgb: 124, 194, 255;
-  --ink: #191e3b; /* navy text */
+  --ink: #191e3b;
+  /* navy text */
   --ink-rgb: 25, 30, 59;
   --ink-secondary: #34d7b6;
   --ink-secondary-rgb: 52, 215, 182;
@@ -140,8 +143,10 @@ a {
   flex: 1;
   min-height: 0;
 }
+
 .app-main {
-  display: flex; /* lets .hub fill and size to 100% */
+  display: flex;
+  /* lets .hub fill and size to 100% */
   min-width: 0;
   min-height: calc(100dvh - var(--topbar-h));
 }
@@ -151,7 +156,25 @@ textarea,
 select,
 button,
 option {
-  font: inherit; /* pulls from body’s Inter */
+  font: inherit;
+  /* pulls from body’s Inter */
   letter-spacing: inherit;
   color: inherit;
+}
+
+/* Animations */
+.animateDropdownFadeDown {
+  animation: dropdownFadeDown 0.18s ease-out;
+}
+
+@keyframes dropdownFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

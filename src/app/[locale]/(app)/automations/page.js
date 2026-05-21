@@ -23,6 +23,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { RuleModal } from "./RuleModal/RuleModal";
+import { useTranslations } from "next-intl";
 
 const TRIGGER_OPTIONS = [
   {
@@ -78,10 +79,6 @@ function formatDateTime(value) {
   } catch {
     return value;
   }
-}
-
-function triggerLabel(value) {
-  return TRIGGER_OPTIONS.find((t) => t.value === value)?.label || value;
 }
 
 function safeJsonParse(value, fallback) {
@@ -150,6 +147,7 @@ export default function AutomationsPage() {
   const { org, loading: orgLoading } = useOrganization(user);
   const { startLoading, stopLoading } = useGlobalLoader();
   const confirm = useConfirm();
+  const translation = useTranslations("Automations");
 
   const [rules, setRules] = useState([]);
   const [runs, setRuns] = useState([]);
@@ -317,6 +315,21 @@ export default function AutomationsPage() {
     });
   }, [q, materialized, ruleMap]);
 
+  function triggerLabel(value) {
+    switch (value) {
+      case "user.created":
+        return translation("userCreated");
+      case "user.inactive":
+        return translation("userInactive");
+      case "message.read":
+        return translation("messageRead");
+      case "message.unread":
+        return translation("messageUnread");
+      default:
+        return translation("unknown");
+    }
+  }
+
   async function handleSaveRule(ruleInput) {
     if (!orgId) return;
 
@@ -434,10 +447,10 @@ export default function AutomationsPage() {
           </span>
           <input
             className={styles.searchInputXL}
-            placeholder="Search automations"
+            placeholder={translation("searchAutomations")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            aria-label="Search automations"
+            aria-label={translation("searchAutomations")}
           />
         </div>
 
@@ -448,7 +461,7 @@ export default function AutomationsPage() {
             onClick={() => refreshAll()}
           >
             <RefreshCw size={16} />
-            <span>Refresh</span>
+            <span>{translation("refresh")}</span>
           </button>
 
           <button
@@ -457,7 +470,7 @@ export default function AutomationsPage() {
             onClick={() => runCron("/api/cron/automations/inactivity")}
           >
             <Clock3 size={16} />
-            <span>Run inactivity</span>
+            <span>{translation("runInactivity")}</span>
           </button>
 
           <button
@@ -466,7 +479,7 @@ export default function AutomationsPage() {
             onClick={() => runCron("/api/cron/automations/materialize")}
           >
             <PlayCircle size={16} />
-            <span>Materialize</span>
+            <span>{translation("materialize")}</span>
           </button>
 
           <div className={styles.createMenuWrap} ref={createMenuRef}>
@@ -476,12 +489,15 @@ export default function AutomationsPage() {
               onClick={() => setCreateMenuOpen((v) => !v)}
             >
               <Plus size={16} />
-              <span>New automation</span>
+              <span>{translation("newAutomation")}</span>
               <ChevronDown size={16} />
             </button>
 
             {createMenuOpen && (
-              <div className={styles.createMenu} role="menu">
+              <div
+                className={`${styles.createMenu} animateDropdownFadeDown`}
+                role="menu"
+              >
                 <button
                   type="button"
                   className={styles.createMenuItem}
@@ -492,7 +508,7 @@ export default function AutomationsPage() {
                   }}
                 >
                   <Plus size={16} />
-                  <span>Create automation</span>
+                  <span>{translation("createAutomation")}</span>
                 </button>
               </div>
             )}
@@ -505,21 +521,21 @@ export default function AutomationsPage() {
           className={`${styles.filterChip} ${tab === "rules" ? styles.filterChipActive : ""}`}
           onClick={() => setTab("rules")}
         >
-          Rules ({rules.length})
+          {translation("rules")} ({rules.length})
         </button>
 
         <button
           className={`${styles.filterChip} ${tab === "queue" ? styles.filterChipActive : ""}`}
           onClick={() => setTab("queue")}
         >
-          Queue ({queueRuns.length})
+          {translation("queue")} ({queueRuns.length})
         </button>
 
         <button
           className={`${styles.filterChip} ${tab === "deliveries" ? styles.filterChipActive : ""}`}
           onClick={() => setTab("deliveries")}
         >
-          Deliveries ({materialized.length})
+          {translation("deliveries")} ({materialized.length})
         </button>
       </div>
 
@@ -527,12 +543,24 @@ export default function AutomationsPage() {
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
-              <div className={styles.cellHead}>Name</div>
-              <div className={styles.cellHead}>Trigger</div>
-              <div className={styles.cellHead}>Channel</div>
-              <div className={styles.cellHead}>Delay</div>
-              <div className={styles.cellHead}>Assistant</div>
-              <div className={styles.cellHead}>Message</div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.name")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.trigger")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.channel")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.delay")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.assistant")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.message")}
+              </div>
               <div className={styles.cellHeadRight} />
             </div>
 
@@ -557,7 +585,9 @@ export default function AutomationsPage() {
                     <div className={styles.nameBlock}>
                       <div className={styles.name}>{rule.name}</div>
                       <div className={styles.subline}>
-                        {rule.is_active ? "Active" : "Paused"}
+                        {rule.is_active
+                          ? translation("rulesTable.active")
+                          : translation("rulesTable.paused")}
                       </div>
                     </div>
                   </div>
@@ -570,7 +600,7 @@ export default function AutomationsPage() {
                     {rule.delay_minutes} min
                   </div>
                   <div className={styles.cellPhone}>
-                    {assistant?.name || "Any"}
+                    {assistant?.name || translation("rulesTable.any")}
                   </div>
                   <div className={styles.cellTags}>
                     <div
@@ -585,7 +615,11 @@ export default function AutomationsPage() {
                     <button
                       className={styles.rowActBtn}
                       onClick={() => toggleRule(rule)}
-                      title={rule.is_active ? "Pause" : "Activate"}
+                      title={
+                        rule.is_active
+                          ? translation("rulesTable.pause")
+                          : translation("rulesTable.activate")
+                      }
                     >
                       {rule.is_active ? (
                         <ToggleRight size={16} />
@@ -599,14 +633,14 @@ export default function AutomationsPage() {
                         setEditingRule(rule);
                         setModalOpen(true);
                       }}
-                      title="Edit"
+                      title={translation("rulesTable.edit")}
                     >
                       <Pencil size={16} />
                     </button>
                     <button
                       className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
                       onClick={() => handleDeleteRule(rule)}
-                      title="Delete"
+                      title={translation("rulesTable.delete")}
                     >
                       <Trash2 size={16} />
                     </button>

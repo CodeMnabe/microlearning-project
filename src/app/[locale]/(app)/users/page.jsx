@@ -375,7 +375,10 @@ export default function UsersPage() {
             </button>
 
             {createMenuOpen && (
-              <div className={styles.createMenu} role="menu">
+              <div
+                className={`${styles.createMenu} animateDropdownFadeDown`}
+                role="menu"
+              >
                 <button
                   type="button"
                   className={styles.createMenuItem}

@@ -167,7 +167,7 @@ export default function Navbar() {
                 }`}
               >
                 <Zap aria-hidden className={styles.icon} />
-                <span>Automations</span>
+                <span>{translation("Nav.automations")}</span>
               </Link>
 
               <div className={styles.group}>

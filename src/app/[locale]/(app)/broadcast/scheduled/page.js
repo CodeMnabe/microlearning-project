@@ -63,7 +63,7 @@ export default function ScheduledPage() {
 
     try {
       const response = await fetch(
-        `/api/scheduled-broadcasts?orgId=${org.id}`,
+        `/api/scheduled-broadcasts?orgId=${org.id}&source=manual`,
         {
           method: "GET",
           cache: "no-store",
