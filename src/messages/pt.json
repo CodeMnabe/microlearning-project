@@ -890,6 +890,38 @@
       "close": "Fechar"
     }
   },
+  "Automations": {
+    "searchAutomations": "Pesquisar automações...",
+    "refresh": "Atualizar",
+    "runInactivity": "Correr inatividade",
+    "materialize": "Materializar",
+    "newAutomation": "Nova automação",
+    "createAutomation": "Criar automação",
+    "rules": "Regras",
+    "queue": "Fila",
+    "deliveries": "Entregas",
+    "userCreated": "User criado",
+    "userInactive": "User inatividade",
+    "messageRead": "Mensagem lida",
+    "messageUnread": "Mensagem não lida",
+    "unknown": "Outro / desconhecido",
+    "rulesTable": {
+      "name": "Nome",
+      "trigger": "Ação",
+      "channel": "Canal",
+      "delay": "Atraso",
+      "assistant": "Assistente",
+      "message": "Mensagem",
+      "active": "Ativo",
+      "activate": "Ativar",
+      "paused": "Pausado",
+      "pause": "Pausar",
+      "any": "Qualquer",
+      "edit": "Editar",
+      "delete": "Apagar"
+    },
+    "queueTable": {}
+  },
   "Broadcast": {
     "title": "Mensagens WhatsApp",
     "selected": "Selecionados:",
@@ -953,7 +985,8 @@
       "failed": "Falhadas"
     },
     "Filters": {
-      "searchPlaceholder": "Pesquisar por mensagem, estado, canal ou criador..."
+      "searchPlaceholder": "Pesquisar por mensagem, estado, canal ou criador...",
+      "datePlaceholder": "Data"
     },
     "Channels": {
       "all": "Todos os canais",

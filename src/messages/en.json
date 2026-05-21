@@ -882,6 +882,38 @@
       "close": "Close"
     }
   },
+  "Automations": {
+    "searchAutomations": "Search automations...",
+    "refresh": "Refresh",
+    "runInactivity": "Run inactivity",
+    "materialize": "Materialize",
+    "newAutomation": "New automation",
+    "createAutomation": "Create automation",
+    "rules": "Rules",
+    "queue": "Queue",
+    "deliveries": "Deliveries",
+    "userCreated": "User created",
+    "userInactive": "User inactive",
+    "messageRead": "Mensagem read",
+    "messageUnread": "Mensagem not read",
+    "unknown": "Other / unknown",
+    "rulesTable": {
+      "name": "Name",
+      "trigger": "Trigger",
+      "channel": "Channel",
+      "delay": "Delay",
+      "assistant": "Assistant",
+      "message": "Message",
+      "active": "Active",
+      "activate": "Activate",
+      "paused": "Paused",
+      "pause": "Pause",
+      "any": "Any",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "queueTable": {}
+  },
   "Broadcast": {
     "title": "WhatsApp Messages",
     "selected": "Selected:",
@@ -945,7 +977,8 @@
       "failed": "Failed"
     },
     "Filters": {
-      "searchPlaceholder": "Search by message, status, channel or creator..."
+      "searchPlaceholder": "Search by message, status, channel or creator...",
+      "datePlaceholder": "Date"
     },
     "Channels": {
       "all": "All channels",
