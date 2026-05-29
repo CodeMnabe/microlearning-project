@@ -1,0 +1,73 @@
+{
+  "steps": [
+    {
+      "id": "initialSetup",
+      "number": 1,
+      "titleKey": "steps.initialSetup.title",
+      "descriptionKey": "steps.initialSetup.description",
+      "bulletsKeys": [
+        "steps.initialSetup.bullets.0",
+        "steps.initialSetup.bullets.1",
+        "steps.initialSetup.bullets.2",
+        "steps.initialSetup.bullets.3"
+      ],
+      "icon": "/images/Funciona1.png"
+    },
+    {
+      "id": "communicationStructure",
+      "number": 2,
+      "titleKey": "steps.communicationStructure.title",
+      "descriptionKey": "steps.communicationStructure.description",
+      "bulletsKeys": [
+        "steps.communicationStructure.bullets.0",
+        "steps.communicationStructure.bullets.1",
+        "steps.communicationStructure.bullets.2",
+        "steps.communicationStructure.bullets.3"
+      ],
+      "icon": "/images/Funciona2.png"
+    },
+    {
+      "id": "aiAssistants",
+      "number": 3,
+      "titleKey": "steps.aiAssistants.title",
+      "descriptionKey": "steps.aiAssistants.description",
+      "bulletsKeys": [
+        "steps.aiAssistants.bullets.0",
+        "steps.aiAssistants.bullets.1",
+        "steps.aiAssistants.bullets.2",
+        "steps.aiAssistants.bullets.3"
+      ],
+      "icon": "/images/Funciona3.png"
+    },
+    {
+      "id": "testingLaunch",
+      "number": 4,
+      "titleKey": "steps.testingLaunch.title",
+      "descriptionKey": "steps.testingLaunch.description",
+      "bulletsKeys": [
+        "steps.testingLaunch.bullets.0",
+        "steps.testingLaunch.bullets.1",
+        "steps.testingLaunch.bullets.2",
+        "steps.testingLaunch.bullets.3"
+      ],
+      "icon": "/images/Funciona4.png"
+    },
+    {
+      "id": "optimization",
+      "number": 5,
+      "titleKey": "steps.optimization.title",
+      "descriptionKey": "steps.optimization.description",
+      "bulletsKeys": [
+        "steps.optimization.bullets.0",
+        "steps.optimization.bullets.1",
+        "steps.optimization.bullets.2",
+        "steps.optimization.bullets.3"
+      ],
+      "icon": "/images/Funciona5.png"
+    }
+  ],
+  "cta": {
+    "image": "/images/Funciona6.png",
+    "href": "/contact"
+  }
+}

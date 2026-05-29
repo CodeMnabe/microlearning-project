@@ -1,11 +1,12 @@
 "use client";
-
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "../../../AuthContext";
 import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 
 export default function TemplatesPage() {
+  const translation = useTranslations("Templates");
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
 
@@ -38,27 +39,36 @@ export default function TemplatesPage() {
   };
 
   const refresh = useCallback(async () => {
-    if (!org?.id) return console.error("No org passed here");
-    clearMessages();
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/template/list?orgId=${org.id}`);
-      const data = await jsonOrThrow(res);
-      if (!res.ok) {
-        throw new Error(
-          data?.error ? JSON.stringify(data.error) : `HTTP ${data.status}`
-        );
-      }
+  if (!org?.id) return console.error("No org passed here");
 
-      setItems(data.items || []);
-      setNotice(`Synced ${data.items?.length ?? 0} templates.`);
-    } catch (e) {
-      setError(`failed to fetch templates: ${e.message}`);
-    } finally {
-      setLoading(false);
-      stopLoading();
+  clearMessages();
+  setLoading(true);
+
+  try {
+    const res = await fetch(`/api/template/list?orgId=${org.id}`);
+    const data = await jsonOrThrow(res);
+
+    if (!res.ok) {
+      throw new Error(
+        data?.error ? JSON.stringify(data.error) : `HTTP ${data.status}`
+      );
     }
-  }, [org?.id, stopLoading]);
+
+    setItems(data.items || []);
+
+    setNotice(
+      translation("notices.synced", {
+        count: data.items?.length ?? 0,
+      })
+    );
+  } catch (e) {
+    setError(`failed to fetch templates: ${e.message}`);
+  } finally {
+    setLoading(false);
+    stopLoading();
+  }
+}, [org?.id, stopLoading, translation]);
+
 
   async function jsonOrThrow(res) {
     const text = await res.text();
@@ -193,29 +203,45 @@ export default function TemplatesPage() {
     }
   }
 
-  const StatusPill = ({ s }) => (
+ const StatusPill = ({ s }) => {
+  const rawStatus = s || "NEW";
+  const statusKey = String(rawStatus).toLowerCase().replaceAll(" ", "_");
+
+  let label;
+
+  try {
+    label = translation(`statuses.${statusKey}`);
+  } catch {
+    label = rawStatus;
+  }
+
+  return (
     <span
       style={{
         padding: "2px 8px",
         borderRadius: 999,
         fontSize: 12,
         background:
-          s === "APPROVED"
+          rawStatus === "APPROVED"
             ? "#E8F5E9"
-            : s === "REJECTED"
+            : rawStatus === "REJECTED"
             ? "#FFEBEE"
+            : rawStatus === "PENDING"
+            ? "#FFF8E1"
             : "#E3F2FD",
         color:
-          s === "APPROVED"
+          rawStatus === "APPROVED"
             ? "#2E7D32"
-            : s === "REJECTED"
+            : rawStatus === "REJECTED"
             ? "#C62828"
+            : rawStatus === "PENDING"
+            ? "#F57F17"
             : "#1565C0",
       }}
     >
-      {s || "NEW"}
+      {label}
     </span>
-  );
+  );};
 
   return (
     <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
@@ -233,13 +259,14 @@ export default function TemplatesPage() {
             onClick={() => setView("list")}
             style={tabBtn(view === "list")}
           >
-            Lista
+    
+           {translation("tabList")}
           </button>
           <button
             onClick={() => setView("create")}
             style={tabBtn(view === "create")}
           >
-            Criar
+            {translation("tabCreate")}
           </button>
         </div>
       </header>
@@ -251,7 +278,7 @@ export default function TemplatesPage() {
         <section>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
             <button onClick={refresh} disabled={loading} style={primaryBtn()}>
-              {loading ? "A sincronizar…" : "Sincronizar"}
+              {loading ? translation("syncing") : translation("sync")}
             </button>
           </div>
 
@@ -271,10 +298,10 @@ export default function TemplatesPage() {
             >
               <thead>
                 <tr style={{ background: "#F9FAFB", textAlign: "left" }}>
-                  <th style={th()}>Nome</th>
-                  <th style={th(140)}>Idioma</th>
-                  <th style={th(160)}>Categoria</th>
-                  <th style={th(160)}>Estado</th>
+                  <th style={th()}>{translation("name")}</th>
+                  <th style={th(140)}>{translation("language")}</th>
+                  <th style={th(160)}>{translation("category")}</th>
+                  <th style={th(160)}>{translation("status")}</th>
                   <th style={th(140)}></th>
                 </tr>
               </thead>
@@ -289,30 +316,31 @@ export default function TemplatesPage() {
                         color: "#6b7280",
                       }}
                     >
-                      Sem templates. Vá a &quot;Criar&quot; para adicionar um.
+                      {translation("noTemplates")}
+                      
                     </td>
                   </tr>
                 )}
                 {items.map((t) => (
-                  <tr
-                    key={`${t.name}-${t.language}`}
-                    style={{ borderTop: "1px solid #e5e7eb" }}
-                  >
-                    <td style={td()}>{t.name}</td>
-                    <td style={td(140)}>{t.language}</td>
-                    <td style={td(160)}>{t.category}</td>
-                    <td style={td(160)}>
-                      <StatusPill s={t.status} />
-                    </td>
-                    <td style={td(140)}>
-                      <button
-                        onClick={() => openSend(t)}
-                        style={secondaryBtn()}
-                      >
-                        Enviar teste
-                      </button>
-                    </td>
-                  </tr>
+                 <tr
+                  key={`${t.name}-${t.language}`}
+                  style={{ borderTop: "1px solid #e5e7eb" }}
+                >
+                  <td style={td()}>{t.name}</td>
+                  <td style={td(140)}>{t.language}</td>
+                  <td style={td(160)}>{t.category}</td>
+                  <td style={td(160)}>
+                    <StatusPill status={t.status} />
+                  </td>
+                  <td style={td(140)}>
+                    <button
+                      onClick={() => openSend(t)}
+                      style={secondaryBtn()}
+                    >
+                      {translation("sendTest")}
+                    </button>
+                  </td>
+                </tr>
                 ))}
               </tbody>
             </table>
@@ -333,7 +361,7 @@ export default function TemplatesPage() {
               }}
             >
               <div>
-                <label style={label()}>Nome</label>
+                <label style={label()}> {translation("name")}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -342,7 +370,7 @@ export default function TemplatesPage() {
                 />
               </div>
               <div>
-                <label style={label()}>Idioma</label>
+                <label style={label()}> {translation("language")}</label>
                 <input
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
@@ -351,32 +379,32 @@ export default function TemplatesPage() {
                 />
               </div>
               <div>
-                <label style={label()}>Categoria</label>
+                <label style={label()}> {translation("category")}</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   style={input()}
                 >
-                  <option value="MARKETING">MARKETING</option>
-                  <option value="UTILITY">UTILITY</option>
-                  <option value="AUTHENTICATION">AUTHENTICATION</option>
+                  <option value="MARKETING">{translation("MARKETING")}</option>
+                  <option value="UTILITY">{translation("UTILITY")}</option>
+                  <option value="AUTHENTICATION">{translation("AUTHENTICATION")}</option>
                 </select>
               </div>
               <div>
-                <label style={label()}>Modelo</label>
+                <label style={label()}> {translation("Model")}</label>
                 <select
                   value={presetKey}
                   onChange={(e) => onPresetChange(e.target.value)}
                   style={input()}
                 >
                   <option value="text_quickreplies">
-                    Texto + Respostas rápidas
+                    {translation("text_quickreplies")}
                   </option>
                   <option value="image_header_quickreplies">
-                    Imagem (header) + Respostas rápidas
+                    {translation("image_header_quickreplies")}
                   </option>
                   <option value="quiz_url_button">
-                    Quiz com botão URL variável
+                    {translation("quiz_url_button")}
                   </option>
                 </select>
               </div>

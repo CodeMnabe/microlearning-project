@@ -1,0 +1,51 @@
+[
+  {
+    "id": "microlearning",
+    "titleKey": "cards.microlearning.title",
+    "descriptionKey": "cards.microlearning.description",
+    "bulletsKeys": [
+      "cards.microlearning.bullets.0",
+      "cards.microlearning.bullets.1",
+      "cards.microlearning.bullets.2"
+    ],
+    "image": "/images/Solution1.png",
+    "variant": "solutionCardBig"
+  },
+  {
+    "id": "internalCommunication",
+    "titleKey": "cards.internalCommunication.title",
+    "descriptionKey": "cards.internalCommunication.description",
+    "bulletsKeys": [
+      "cards.internalCommunication.bullets.0",
+      "cards.internalCommunication.bullets.1",
+      "cards.internalCommunication.bullets.2"
+    ],
+    "image": "/images/Solution2.png",
+    "variant": "solutionCardImageTop"
+  },
+  {
+    "id": "automatedSupport",
+    "titleKey": "cards.automatedSupport.title",
+    "descriptionKey": "cards.automatedSupport.description",
+    "bulletsKeys": [
+      "cards.automatedSupport.bullets.0",
+      "cards.automatedSupport.bullets.1",
+      "cards.automatedSupport.bullets.2"
+    ],
+    "image": "/images/Solution3.png",
+    "variant": "solutionCardImageBottom"
+  },
+  {
+    "id": "onboarding",
+    "titleKey": "cards.onboarding.title",
+    "descriptionKey": "cards.onboarding.description",
+    "bulletsKeys": [
+      "cards.onboarding.bullets.0",
+      "cards.onboarding.bullets.1",
+      "cards.onboarding.bullets.2"
+    ],
+    "image": "/images/Solution4.png",
+    "variant": "solutionCardSide"
+
+  }
+]

@@ -39,6 +39,7 @@
       },
       "Nav": {
         "learn": "Learn",
+        "solution": "Solution",
         "product": "Product",
         "pricing": "Pricing",
         "support": "Support",
@@ -46,7 +47,8 @@
         "blog": "Blog",
         "login": "Log in",
         "book": "Book a demo",
-        "dashboard": "Go to dashboard"
+        "dashboard": "Go to dashboard",
+        "how-it-works":"How it works"
       }
     },
 
@@ -199,6 +201,133 @@
       }
     }
   },
+
+
+  "SolutionsPage": {
+    "hero": {
+      "eyebrow": "Solutions",
+      "title": "How MyDigitalBot adapts to the challenges of your organization",
+      "subhead": "Discover how to apply smart communication, automation and AI assistants across training, support and internal operations.",
+      "primaryCta": "Book a demo",
+      "secondaryCta": "Talk to sales"
+    },
+
+
+    "overview": {
+      "eyebrow": "Explore our solutions",
+      "title": "How MyDigitalBot adapts to the challenges of your organization",
+      "subtitle": "See how the platform brings training, internal communication, support and onboarding into the channels where teams already work."
+    },
+    "cards": {
+      "microlearning": {
+        "title": "Training & Microlearning",
+        "description": "Turn training content into short, impactful experiences inside the tools your team already uses.",
+        "bullets": {
+          "0": "Deliver learning through Teams and chat",
+          "1": "Give employees access to courses and materials instantly",
+          "2": "Reinforce knowledge with ongoing micro-lessons"
+        }
+      },
+      "internalCommunication": {
+        "title": "Internal Communication",
+        "description": "Structure and scale communication across teams with targeted campaigns and real-time messaging.",
+        "bullets": {
+          "0": "Segment messages by team or role",
+          "1": "Send updates across familiar channels",
+          "2": "Collect continuous feedback from staff"
+        }
+      },
+      "automatedSupport": {
+        "title": "Automated Support",
+        "description": "Reduce support effort with smart assistants that answer questions and guide employees instantly.",
+        "bullets": {
+          "0": "Respond automatically to common queries",
+          "1": "Provide fast access to knowledge and policies",
+          "2": "Keep support available 24/7"
+        }
+      },
+      "onboarding": {
+        "title": "HR & Onboarding",
+        "description": "Support employees from day one with automated onboarding and continuous guidance.",
+        "bullets": {
+          "0": "Share step-by-step integration guides",
+          "1": "Automate onboarding workflows",
+          "2": "Keep communication ongoing throughout the journey"
+        }
+      }
+    }
+  },
+
+
+ "ProductPage": {
+  "hero": {
+    "eyebrow": "Product",
+    "title": "A single platform for communication, learning, and automation",
+    "subhead": "Centralize messages, AI assistants, and knowledge into one integrated solution, directly within the channels where teams already work.",
+    "primaryCta": "Schedule a demo",
+    "secondaryCta": "Talk to the team"
+  },
+
+  "explorer": {
+    "eyebrow": "DISCOVER HOW IT WORKS",
+    "title": "PRODUCT",
+    "subhead": "How MyDigitalBot works in practice"
+
+   
+  },
+   "cards": {
+    "messages": {
+      "title": "Messages that drive interaction",
+      "description": "Send communications that do not go unanswered. Each message can become a conversation with context and continuity.",
+      "checks": {
+        "0": "Campaigns and notifications",
+        "1": "Direct communication via Teams or WhatsApp",
+        "2": "Two-way interaction with users",
+        "3": "Context linked to each message"
+      },
+      "alt": "MyDigitalBot messages mockup"
+    },
+
+    "assistants": {
+      "title": "Intelligent assistants tailored to your organization",
+      "description": "Create configurable assistants by topic, such as HR, training or support.",
+      "checks": {
+        "0": "Assistants configurable by topic",
+        "1": "Automatic and contextualized answers",
+        "2": "Integration with documents and internal knowledge",
+        "3": "Continuous learning based on interactions"
+      },
+      "alt": "MyDigitalBot intelligent assistants mockup"
+    },
+
+    "knowledge": {
+      "title": "Knowledge accessible at the right moment",
+      "description": "FAQs, documents and internal content always available to users.",
+      "checks": {
+        "0": "Immediate access via chat",
+        "1": "Contextual user support",
+        "2": "Reduced dependency on human support"
+      },
+      "alt": "MyDigitalBot internal knowledge mockup"
+    },
+
+    "channels": {
+      "title": "Where users already are",
+      "description": "Bring communication and assistants to the channels your teams already use.",
+      "checks": {
+        "0": "Microsoft Teams",
+        "1": "WhatsApp",
+        "2": "Other integrable channels",
+        "3": "No need for new apps"
+      },
+      "alt": "Channels integration mockup with Teams and WhatsApp"
+    }
+}
+
+ },
+
+
+
   "PricingPage": {
     "hero": {
       "eyebrow": "Pricing",
@@ -350,6 +479,87 @@
       "secondary": "Back to homepage"
     }
   },
+
+
+"HowItWorksPage": {
+  "hero": {
+    "eyebrow": "How it works",
+    "title": "How we implement MyDigitalBot in your organization",
+    "subhead": "A simple, structured process adapted to each organization’s reality, from the initial setup to everyday use.",
+    "primaryCta": "Book a demo",
+    "secondaryCta": "Talk to the team"
+  },
+  "explorer": {
+    "eyebrow": "Discover how it works",
+    "title": "How It Works",
+    "subhead": "A clear and structured process to implement and start using MyDigitalBot quickly"
+  },
+  "steps": {
+    "initialSetup": {
+      "title": "Initial Setup",
+      "description": "We start by configuring MyDigitalBot according to your organization, defining channels, users and main objectives.",
+      "bullets": {
+        "0": "Connection to channels such as Teams and WhatsApp",
+        "1": "Creation of users and groups",
+        "2": "Definition of communication goals",
+        "3": "Initial organization setup"
+      }
+    },
+    "communicationStructure": {
+      "title": "Communication Structure",
+      "description": "We organize how communication happens, ensuring clarity, consistency and context.",
+      "bullets": {
+        "0": "Definition of message types",
+        "1": "Communication planning",
+        "2": "User segmentation",
+        "3": "Integration with content and knowledge"
+      }
+    },
+    "aiAssistants": {
+      "title": "AI Assistant Configuration",
+      "description": "We create intelligent assistants adapted to your organization’s needs and most relevant topics.",
+      "bullets": {
+        "0": "Assistants by area, such as HR, training or support",
+        "1": "Definition of behavior and tone of voice",
+        "2": "Automatic notifications",
+        "3": "Reminders and follow-ups",
+        "4": "Answers to frequently asked questions"
+      }
+    },
+    "testingLaunch": {
+      "title": "Testing and Launch",
+      "description": "We validate the main flows with your team, adjust the details and prepare real everyday use.",
+      "bullets": {
+        "0": "Testing with pilot users",
+        "1": "Validation of channels and messages",
+        "2": "Adjustments before launch",
+        "3": "Support during rollout"
+      }
+    },
+    "optimization": {
+      "title": "Monitoring and Optimization",
+      "description": "After launch, we monitor usage to improve messages, assistants and results.",
+      "bullets": {
+        "0": "Usage and adoption analysis",
+        "1": "Continuous content improvement",
+        "2": "Assistant tuning based on interactions",
+        "3": "Identification of new automation opportunities"
+      }
+    }
+  },
+  "cta": {
+    "title": "No technical complexity",
+    "text": "MyDigitalBot is designed to work with the systems and channels you already use, without complex implementations or changes to existing processes.",
+    "button": "Book a demo",
+    "alt": "Simple integrations with existing channels and systems"
+  }
+},
+
+
+
+
+
+
   "Public": {
     "Dpa": {
       "Title": "Data Processing Agreement (DPA)",
@@ -753,6 +963,13 @@
       "tags": "Tags",
       "assistant": "Assistant"
     },
+
+    "pagination": {
+  "summary": "Page {page} of {totalPages} · {totalUsers} users",
+  "perPage": "{count} / page",
+  "previous": "Previous",
+  "next": "Next"
+},
     "row": {
       "more": "More options",
       "view": "View",
@@ -849,71 +1066,155 @@
     "removeLabel": "Remove {name}"
   },
 
-  "Templates": {
-    "title": "WhatsApp Templates",
-    "tabList": "List",
-    "tabCreate": "Create",
-    "sync": "Sync",
-    "syncing": "Syncing…",
-    "empty": "No templates. Go to \"Create\" to add one.",
+ "Templates": {
+  "title": "WhatsApp Templates",
+  "tabList": "List",
+  "tabCreate": "Create",
+  "sync": "Sync",
+  "syncing": "Syncing…",
+
+  "name": "Name",
+  "language": "Language",
+  "category": "Category",
+  "status": "Status",
+
+  "noTemplates": "No templates. Go to \"Create\" to add one.",
+  "sendTest": "Send test",
+
+  "MARKETING": "Marketing",
+  "UTILITY": "Utility",
+  "AUTHENTICATION": "Authentication",
+
+  "model": "Model",
+  "Model": "Model",
+
+  "text_quickreplies": "Text + quick replies",
+  "image_header_quickreplies": "Image header + quick replies",
+  "quiz_url_button": "Quiz with variable URL button",
+
+  "notices": {
+    "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
+    "submitted": "Template \"{name}\" submitted. Status: {status}",
+    "sent": "Template sent."
+  },
+
+  "statuses": {
+    "new": "New",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "paused": "Paused",
+    "disabled": "Disabled",
+    "in_appeal": "In appeal",
+    "pending_deletion": "Pending deletion",
+    "unknown": "Unknown"
+  },
+
+  "createForm": {
     "name": "Name",
     "language": "Language",
     "category": "Category",
-    "status": "Status",
-    "sendTest": "Send test",
-    "createForm": {
-      "name": "Name",
-      "language": "Language",
-      "category": "Category",
-      "preset": "Preset",
-      "components": "Components (JSON)",
-      "submit": "Submit for approval",
-      "reset": "Reset example",
-      "creating": "Creating…"
-    },
-    "modal": {
-      "title": "Send test",
-      "to": "To (E.164 or national)",
-      "bodyParams": "Body parameters (comma separated)",
-      "urlVar": "URL button variable (optional)",
-      "cancel": "Cancel",
-      "send": "Send",
-      "sending": "Sending…",
-      "close": "Close"
-    }
+    "preset": "Model",
+    "components": "Components (JSON)",
+    "submit": "Submit for approval",
+    "reset": "Reset example",
+    "creating": "Creating…"
   },
-  "Automations": {
-    "searchAutomations": "Search automations...",
-    "refresh": "Refresh",
-    "runInactivity": "Run inactivity",
-    "materialize": "Materialize",
-    "newAutomation": "New automation",
+
+  "modal": {
+    "title": "Send test",
+    "to": "To (E.164 or national)",
+    "bodyParams": "Body parameters (comma-separated)",
+    "urlVar": "URL button variable (optional)",
+    "cancel": "Cancel",
+    "send": "Send",
+    "sending": "Sending…",
+    "close": "Close"
+  },
+
+  "errors": {
+    "noOrg": "No organization found.",
+    "fetch": "Failed to fetch templates: {message}",
+    "componentsArray": "Components must be an array.",
+    "invalidComponents": "Invalid components JSON: {message}",
+    "nameRequired": "Name is required.",
+    "createFailed": "Create failed: {message}",
+    "sendFailed": "Send failed: {message}"
+  }
+},
+
+
+
+ "Automations": {
+  "searchAutomations": "Search automations...",
+  "refresh": "Refresh",
+  "runInactivity": "Run inactivity",
+  "materialize": "Materialize",
+  "newAutomation": "New automation",
+  "createAutomation": "Create automation",
+  "rules": "Rules",
+  "queue": "Queue",
+  "deliveries": "Deliveries",
+
+  "userCreated": "User created",
+  "userInactive": "User inactive",
+  "messageRead": "Message read",
+  "messageUnread": "Message unread",
+  "unknown": "Other / unknown",
+
+  "triggerDescriptions": {
+    "userCreated": "Send X minutes after a user is created.",
+    "userInactive": "Send X minutes without a user inbound message.",
+    "messageRead": "Reserved for future read-receipt automations.",
+    "messageUnread": "Reserved for future unread-message automations."
+  },
+
+  "rulesTable": {
+    "name": "Name",
+    "trigger": "Trigger",
+    "channel": "Channel",
+    "delay": "Delay",
+    "assistant": "Assistant",
+    "message": "Message",
+    "active": "Active",
+    "activate": "Activate",
+    "paused": "Paused",
+    "pause": "Pause",
+    "any": "Any",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+
+  "queueTable": {},
+
+  "modal": {
+    "newTitle": "New automation",
+    "editTitle": "Edit automation",
+    "name": "Name",
+    "trigger": "Trigger",
+    "channel": "Channel",
+    "assistantScope": "Assistant scope",
+    "anyAssistant": "Any assistant",
+    "anyAssistantFallback": "Any assistant (fallback)",
+    "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
+    "delay": "Delay (minutes)",
+    "message": "Message",
+    "whatsappTemplate": "WhatsApp template",
+    "noTemplate": "No template",
+    "templateBindings": "Template bindings",
+    "comingSoon": "coming soon",
+    "staticText": "Static text",
+    "systemUserName": "System: user.name",
+    "systemOrganizationName": "System: organization.name",
+    "systemUserEmail": "System: user.email",
+    "systemUserPhone": "System: user.phone",
+    "valueFor": "Value for {key}",
     "createAutomation": "Create automation",
-    "rules": "Rules",
-    "queue": "Queue",
-    "deliveries": "Deliveries",
-    "userCreated": "User created",
-    "userInactive": "User inactive",
-    "messageRead": "Mensagem read",
-    "messageUnread": "Mensagem not read",
-    "unknown": "Other / unknown",
-    "rulesTable": {
-      "name": "Name",
-      "trigger": "Trigger",
-      "channel": "Channel",
-      "delay": "Delay",
-      "assistant": "Assistant",
-      "message": "Message",
-      "active": "Active",
-      "activate": "Activate",
-      "paused": "Paused",
-      "pause": "Pause",
-      "any": "Any",
-      "edit": "Edit",
-      "delete": "Delete"
-    },
-    "queueTable": {}
-  },
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel"
+  }
+},
   "Broadcast": {
     "title": "WhatsApp Messages",
     "selected": "Selected:",
@@ -1305,24 +1606,33 @@
       "assistantsCount": "Assistants"
     }
   },
-  "Admin": {
-    "title": "Admin",
-    "newOrg": "New organization",
-    "orgNamePlaceholder": "Organization name…",
-    "create": "Create",
-    "creating": "Creating…",
-    "themes": "Themes",
+  "AdminPage": {
+  "title": "Admin",
+  "newOrganization": {
+  "title": "New organization",
+  "placeholder": "Organization name…",
+  "create": "Create",
+  "creating": "Creating…",
+  "required": "Please enter the organization name."
+    },
+  "themes": {
+    "title": "Themes",
     "loading": "Loading…",
-    "noOrgs": "No organizations.",
+    "empty": "No organizations.",
     "primary": "Primary",
     "secondary": "Secondary",
     "save": "Save",
-    "saving": "Saving…",
-    "savedFor": "✓ Theme saved for \"{name}\".",
-    "saveError": "❌ Couldn't save theme.",
-    "createOk": "✓ Organization #{id} created: \"{name}\"",
-    "createErr": "❌ Error creating organization."
+    "saving": "Saving…"
   },
+  "messages": {
+    "loadOrganizationsError": "❌ Failed to load organizations",
+    "themeSaved": "✓ Theme saved for “{name}”.",
+    "themeSaveError": "❌ Could not save the theme.",
+    "organizationCreated": "✓ Organization #{id} created: “{name}”",
+    "organizationCreateError": "❌ Error creating organization."
+  }
+},
+
   "Auth": {
     "brand": "MyDigitalBot",
     "example": "example@example.com",
