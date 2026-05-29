@@ -1,0 +1,61 @@
+[
+  {
+    "id": 1,
+    "titleKey": "cards.messages.title",
+    "descriptionKey": "cards.messages.description",
+    "checksKeys": [
+      "cards.messages.checks.0",
+      "cards.messages.checks.1",
+      "cards.messages.checks.2",
+      "cards.messages.checks.3"
+    ],
+    "image": "/images/Produto1.Png",
+    "altKey": "cards.messages.alt"
+  },
+  {
+    "id": 2,
+    "titleKey": "cards.assistants.title",
+    "descriptionKey": "cards.assistants.description",
+    "checksKeys": [
+      "cards.assistants.checks.0",
+      "cards.assistants.checks.1",
+      "cards.assistants.checks.2",
+      "cards.assistants.checks.3"
+    ],
+    "image": "/images/Produto2.Png",
+    "altKey": "cards.assistants.alt"
+  },
+  {
+    "id": 3,
+    "titleKey": "cards.knowledge.title",
+    "descriptionKey": "cards.knowledge.description",
+    "checksKeys": [
+      "cards.knowledge.checks.0",
+      "cards.knowledge.checks.1",
+      "cards.knowledge.checks.2"
+    ],
+    "image": "/images/Produto3.Png",
+    "altKey": "cards.knowledge.alt"
+  },
+  {
+    "id": 4,
+    "titleKey": "cards.channels.title",
+    "descriptionKey": "cards.channels.description",
+    "checksKeys": [
+      "cards.channels.checks.0",
+      "cards.channels.checks.1",
+      "cards.channels.checks.2",
+      "cards.channels.checks.3"
+    ],
+    "image": "/images/Produto4.Png",
+    "altKey": "cards.channels.alt"
+  }
+ 
+]
+  
+
+
+
+
+  
+

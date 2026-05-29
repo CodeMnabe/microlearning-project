@@ -1,5 +1,5 @@
 "use client";
-
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import styles from "../automations.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
@@ -31,7 +31,7 @@ export function RuleModal({
   safeJsonParse,
 }) {
   const isEdit = Boolean(initialRule?.id);
-
+  const translation = useTranslations("Automations.modal");
   const [name, setName] = useState("");
   const [triggerType, setTriggerType] = useState("user.created");
   const [channel, setChannel] = useState("whatsapp");
@@ -111,16 +111,16 @@ export function RuleModal({
       label: `${t.name} (${t.language || "pt-PT"})`,
     }));
 
-  const assistantOptions = [
-    {
-      value: "",
-      label:
-        triggerType === "user.inactive"
-          ? "Any assistant (fallback)"
-          : "Any assistant",
-    },
-    ...assistants.map((a) => ({ value: a.id, label: a.name })),
-  ];
+const assistantOptions = [
+  {
+    value: "",
+    label:
+      triggerType === "user.inactive"
+        ? translation("anyAssistantFallback")
+        : translation("anyAssistant"),
+  },
+  ...assistants.map((a) => ({ value: a.id, label: a.name })),
+];
 
   const disabledTrigger = triggerOptions.find(
     (t) => t.value === triggerType,
@@ -156,12 +156,12 @@ export function RuleModal({
     >
       <div className={styles.modalContent} role="dialog" aria-modal="true">
         <h3 className={styles.modalTitle}>
-          {isEdit ? "Edit automation" : "New automation"}
+          {isEdit ? translation("editTitle") : translation("newTitle")}
         </h3>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
-            <label>Name</label>
+            <label>{translation("name")}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -170,7 +170,7 @@ export function RuleModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Trigger</label>
+           <label>{translation("trigger")}</label>
             <PillSelect
               options={triggerOptions.map((t) => ({
                 value: t.value,
@@ -184,7 +184,7 @@ export function RuleModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Channel</label>
+           <label>{translation("channel")}</label>
             <PillSelect
               options={CHANNEL_OPTIONS}
               value={channel}
@@ -195,7 +195,7 @@ export function RuleModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Assistant scope</label>
+            <label>{translation("assistantScope")}</label>
             <PillSelect
               options={assistantOptions}
               value={assistantId}
@@ -213,7 +213,7 @@ export function RuleModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Delay (minutes)</label>
+            <label>{translation("delay")}</label>
             <input
               type="number"
               min="0"
@@ -224,7 +224,7 @@ export function RuleModal({
           </div>
 
           <div className={styles.formGroup}>
-            <label>Message</label>
+            <label>{translation("message")}</label>
             <textarea
               rows={6}
               value={message}
@@ -236,10 +236,10 @@ export function RuleModal({
           {channel === "whatsapp" && (
             <>
               <div className={styles.formGroup}>
-                <label>WhatsApp template</label>
+                <label>{translation("whatsappTemplate")}</label>
                 <PillSelect
                   options={[
-                    { value: "", label: "No template" },
+                    { value: "", label: translation("noTemplate") },
                     ...templateOptions,
                   ]}
                   value={whatsappTemplateId}
@@ -251,7 +251,7 @@ export function RuleModal({
 
               {templateOrder.length > 0 && (
                 <div className={styles.formGroup}>
-                  <label>Template bindings</label>
+                  <label>{translation("templateBindings")}</label>
                   <div style={{ display: "grid", gap: 10 }}>
                     {templateOrder.map((key) => {
                       const binding = templateBindings[key] || {
@@ -282,29 +282,29 @@ export function RuleModal({
                           {locked ? (
                             <div className={styles.lockedField}>
                               {lockedName
-                                ? "System: user.name"
-                                : "System: organization.name"}
+                                ? translation("systemUserName")
+                                : translation("systemOrganizationName")}
                             </div>
                           ) : (
                             <>
                               <PillSelect
                                 options={[
-                                  { value: "static", label: "Static text" },
+                                  { value: "static", label: translation("staticText") },
                                   {
                                     value: "system:user.name",
-                                    label: "System: user.name",
+                                    label: translation("systemUserName"),
                                   },
                                   {
                                     value: "system:organization.name",
-                                    label: "System: organization.name",
+                                    label: translation("systemOrganizationName"),
                                   },
                                   {
                                     value: "system:user.email",
-                                    label: "System: user.email",
+                                    label: translation("systemUserEmail"),
                                   },
                                   {
                                     value: "system:user.phone",
-                                    label: "System: user.phone",
+                                    label: translation("systemUserPhone"),
                                   },
                                 ]}
                                 value={
@@ -349,7 +349,7 @@ export function RuleModal({
                                       },
                                     }))
                                   }
-                                  placeholder={`Value for ${key}`}
+                                 placeholder={translation("valueFor", { key })}
                                 />
                               )}
                             </>
@@ -365,10 +365,10 @@ export function RuleModal({
 
           <div className={styles.buttonGroup}>
             <button type="submit" disabled={saving || disabledTrigger}>
-              {saving ? "Saving..." : isEdit ? "Save" : "Create automation"}
+              {saving ? translation("saving") : isEdit ? translation("save") : translation("createAutomation")}
             </button>
             <button type="button" onClick={onClose} disabled={saving}>
-              Cancel
+              {translation("cancel")}
             </button>
           </div>
         </form>

@@ -28,32 +28,31 @@ import { useTranslations } from "next-intl";
 const TRIGGER_OPTIONS = [
   {
     value: "user.created",
-    label: "User created",
+    labelKey: "userCreated",
+    descriptionKey: "triggerDescriptions.userCreated",
     icon: UserPlus,
-    description: "Send X minutes after a user is created.",
   },
   {
     value: "user.inactive",
-    label: "User inactive",
+    labelKey: "userInactive",
+    descriptionKey: "triggerDescriptions.userInactive",
     icon: Clock3,
-    description: "Send X minutes without a user inbound message.",
   },
   {
     value: "message.read",
-    label: "Message read",
+    labelKey: "messageRead",
+    descriptionKey: "triggerDescriptions.messageRead",
     icon: Eye,
-    description: "Reserved for future read-receipt automations.",
     disabled: true,
   },
   {
     value: "message.unread",
-    label: "Message unread",
+    labelKey: "messageUnread",
+    descriptionKey: "triggerDescriptions.messageUnread",
     icon: MessageSquare,
-    description: "Reserved for future read-receipt automations",
     disabled: true,
   },
 ];
-
 const STATUS_META = {
   queued: { label: "Queued", className: styles.chipDark },
   materialized: { label: "Materialized", className: styles.chip },
@@ -147,7 +146,17 @@ export default function AutomationsPage() {
   const { org, loading: orgLoading } = useOrganization(user);
   const { startLoading, stopLoading } = useGlobalLoader();
   const confirm = useConfirm();
+
   const translation = useTranslations("Automations");
+  const translatedTriggerOptions = useMemo(
+  () =>
+    TRIGGER_OPTIONS.map((option) => ({
+      ...option,
+      label: translation(option.labelKey),
+      description: translation(option.descriptionKey),
+    })),
+  [translation]
+);
 
   const [rules, setRules] = useState([]);
   const [runs, setRuns] = useState([]);
@@ -570,9 +579,8 @@ export default function AutomationsPage() {
                 : null;
               const payload = safeJsonParse(rule.payload, {});
               const TriggerIcon =
-                TRIGGER_OPTIONS.find((t) => t.value === rule.trigger_type)
-                  ?.icon || Bot;
-
+                translatedTriggerOptions.find((t) => t.value === rule.trigger_type)?.icon ||
+                Bot;
               return (
                 <div
                   key={rule.id}
@@ -792,7 +800,7 @@ export default function AutomationsPage() {
         whatsappTemplates={templates}
         initialRule={editingRule}
         saving={saving}
-        triggerOptions={TRIGGER_OPTIONS}
+        triggerOptions={translatedTriggerOptions}
         safeJsonParse={safeJsonParse}
       />
     </div>
