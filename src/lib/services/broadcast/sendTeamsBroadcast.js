@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { getBotToken } from "@/lib/teams/auth";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { getTeamsUserInstallation } from "@/lib/repos/teamsInstallations.repo";
@@ -21,6 +22,7 @@ export async function sendTeamsBroadcast(input = {}) {
     imageUrls = [],
     trackedLinks = [],
     scheduledBroadcastId = null,
+    sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
 
@@ -103,6 +105,7 @@ export async function sendTeamsBroadcast(input = {}) {
         channel: "teams",
         recipientUserId: userId,
         scheduledBroadcastId,
+        sendGroupId,
         createdByUserId,
       });
 
@@ -122,6 +125,7 @@ export async function sendTeamsBroadcast(input = {}) {
       if (!text) text = " ";
 
       console.log("[Teams final message]", {
+        sendGroupId,
         userId,
         text,
         resolvedTrackedLinks,
@@ -171,6 +175,7 @@ export async function sendTeamsBroadcast(input = {}) {
   const failedCount = results.length - okCount;
 
   return {
+    sendGroupId,
     ok: okCount,
     failed: failedCount,
     results,

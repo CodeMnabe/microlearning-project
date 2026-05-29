@@ -93,6 +93,7 @@ export default function TrackedLinksPage() {
     });
   }, [items, q]);
 
+  // console.log(items);
   return (
     <div className={styles.screen}>
       <div className={styles.header}>
