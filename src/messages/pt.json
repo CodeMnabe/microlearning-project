@@ -39,6 +39,7 @@
       },
       "Nav": {
         "learn": "Aprender",
+        "solution": "Solução",
         "product": "Produto",
         "pricing": "Preços",
         "support": "Suporte",
@@ -46,7 +47,9 @@
         "blog": "Blog",
         "login": "Entrar",
         "book": "Pedir demonstração",
-        "dashboard": "Ir para o painel"
+        "dashboard": "Ir para o painel",
+        "how-it-works": "Como funciona"
+
       }
     },
 
@@ -202,6 +205,128 @@
       }
     }
   },
+
+  "SolutionsPage": {
+    "hero": {
+      "eyebrow": "Soluções",
+      "title": "Como o MyDigitalBot se adapta aos desafios da sua organização",
+      "subhead": "Descubra como aplicar comunicação inteligente, automação e assistentes AI em formação, suporte e operações internas.",
+      "primaryCta": "Agendar demo",
+      "secondaryCta": "Falar com a equipa"
+    },
+
+    
+
+    "overview": {
+      "eyebrow": "Explore as nossas soluções",
+      "title": "Como o MyDigitalBot se adapta aos desafios da sua organização",
+      "subtitle": "Descubra como aplicar comunicação inteligente, automação e assistentes AI em diferentes áreas dentro dos canais que as equipas já usam."
+    },
+    "cards": {
+      "microlearning": {
+        "title": "Formação & Microlearning",
+        "description": "Transforme conteúdos formativos em experiências contínuas dentro do fluxo de trabalho.",
+        "bullets": {
+          "0": "Envio de conteúdos via Teams",
+          "1": "Acesso direto a cursos e materiais",
+          "2": "Refôrço constante da aprendizagem"
+        }
+      },
+      "internalCommunication": {
+        "title": "Comunicação Interna",
+        "description": "Estruture e amplie a comunicação com as equipas em tempo real.",
+        "bullets": {
+          "0": "Campanhas internas segmentadas",
+          "1": "Mensagens personalizadas por equipa",
+          "2": "Feedback e engagement contínuo"
+        }
+      },
+      "automatedSupport": {
+        "title": "Suporte Automatizado",
+        "description": "Reduza o esforço do suporte com assistentes inteligentes prontos a responder.",
+        "bullets": {
+          "0": "Respostas rápidas a dúvidas comuns",
+          "1": "Acesso imediato a informação relevante",
+          "2": "Disponibilidade 24/7 para colaboradores"
+        }
+      },
+      "onboarding": {
+        "title": "RH & Onboarding",
+        "description": "Apoie colaboradores desde o primeiro dia com comunicação orientada.",
+        "bullets": {
+          "0": "Guias de integração passo a passo",
+          "1": "Onboarding automatizado e escalável",
+          "2": "Comunicação contínua ao longo da jornada"
+        }
+      }
+    }
+  },
+
+"ProductPage": {
+  "hero": {
+    "eyebrow": "Produto",
+    "title": "Uma plataforma única para comunicação, aprendizagem e automação",
+    "subhead": "Centralize mensagens, assistentes AI e conhecimento numa solução integrada, diretamente nos canais onde as equipas já trabalham.",
+    "primaryCta": "Agendar demo",
+    "secondaryCta": "Falar com a equipa"
+  },
+
+  "explorer": {
+    "eyebrow": "DESCUBRA COMO FUNCIONA",
+    "title": "Produto",
+    "subhead": "Como o MyDigitalBot funciona na prática"
+  },
+
+  "cards": {
+    "messages": {
+      "title": "Mensagens que geram interação",
+      "description": "Envie comunicações que não ficam sem resposta. Cada mensagem pode transformar-se numa conversa com contexto e continuidade.",
+      "checks": {
+        "0": "Envio de campanhas e notificações",
+        "1": "Comunicação direta via Teams ou WhatsApp",
+        "2": "Interação bidirecional com utilizadores",
+        "3": "Contexto associado a cada mensagem"
+      },
+      "alt": "Mockup de mensagens no MyDigitalBot"
+    },
+
+    "assistants": {
+      "title": "Assistentes inteligentes à medida da sua organização",
+      "description": "Crie assistentes configuráveis por tema, como RH, formação ou suporte.",
+      "checks": {
+        "0": "Assistentes configuráveis por tema",
+        "1": "Respostas automáticas e contextualizadas",
+        "2": "Integração com documentos e conhecimento interno",
+        "3": "Aprendizagem contínua com base nas interações"
+      },
+      "alt": "Mockup de assistentes inteligentes no MyDigitalBot"
+    },
+
+    "knowledge": {
+      "title": "Conhecimento acessível no momento certo",
+      "description": "FAQs, documentos e conteúdos internos sempre disponíveis para os utilizadores.",
+      "checks": {
+        "0": "Acesso imediato via chat",
+        "1": "Suporte contextual ao utilizador",
+        "2": "Redução de dependência de suporte humano"
+      },
+      "alt": "Mockup de conhecimento interno no MyDigitalBot"
+    },
+
+    "channels": {
+      "title": "Onde os utilizadores já estão",
+      "description": "Leve a comunicação e os assistentes para os canais que as equipas já usam.",
+      "checks": {
+        "0": "Microsoft Teams",
+        "1": "WhatsApp",
+        "2": "Outros canais integráveis",
+        "3": "Sem necessidade de novas apps"
+      },
+      "alt": "Mockup de integração com canais como Teams e WhatsApp"
+    }
+  }
+},
+
   "PricingPage": {
     "hero": {
       "eyebrow": "Preços",
@@ -361,6 +486,83 @@
       "secondary": "Voltar à homepage"
     }
   },
+
+  "HowItWorksPage": {
+  "hero": {
+    "eyebrow": "Como funciona",
+    "title": "Como implementamos o MyDigitalBot na sua organização",
+    "subhead": "Um processo simples, estruturado e adaptado à realidade de cada organização, desde a configuração inicial até à utilização no dia a dia.",
+    "primaryCta": "Agendar demonstração",
+    "secondaryCta": "Falar com a equipa"
+  },
+  "explorer": {
+    "eyebrow": "Descubra como funciona",
+    "title": "Como Funciona",
+    "subhead": "Um processo claro e estruturado para implementar e começar a utilizar rapidamente"
+  },
+  "steps": {
+    "initialSetup": {
+      "title": "Configuração Inicial",
+      "description": "Começamos por configurar o MyDigitalBot de acordo com a sua organização, definindo canais, utilizadores e objetivos principais.",
+      "bullets": {
+        "0": "Ligação aos canais, como Teams e WhatsApp",
+        "1": "Criação de utilizadores e grupos",
+        "2": "Definição de objetivos de comunicação",
+        "3": "Configuração inicial da organização"
+      }
+    },
+    "communicationStructure": {
+      "title": "Estruturação da Comunicação",
+      "description": "Organizamos a forma como a comunicação é feita, garantindo clareza, consistência e contexto.",
+      "bullets": {
+        "0": "Definição de tipos de mensagens",
+        "1": "Planeamento de comunicações",
+        "2": "Segmentação de utilizadores",
+        "3": "Integração com conteúdos e conhecimento"
+      }
+    },
+    "aiAssistants": {
+      "title": "Configuração dos Assistentes AI",
+      "description": "Criamos assistentes inteligentes adaptados às necessidades da sua organização e aos temas mais relevantes.",
+      "bullets": {
+        "0": "Assistentes por área, como RH, formação ou suporte",
+        "1": "Definição de comportamento e linguagem",
+        "2": "Notificações automáticas",
+        "3": "Lembretes e seguimentos",
+        "4": "Respostas a perguntas frequentes"
+      }
+    },
+    "testingLaunch": {
+      "title": "Testes e Lançamento",
+      "description": "Validamos os fluxos principais com a equipa, ajustamos detalhes e preparamos a utilização real no dia a dia.",
+      "bullets": {
+        "0": "Testes com utilizadores-piloto",
+        "1": "Validação dos canais e mensagens",
+        "2": "Ajustes antes do lançamento",
+        "3": "Apoio no arranque da utilização"
+      }
+    },
+    "optimization": {
+      "title": "Acompanhamento e Otimização",
+      "description": "Depois do lançamento, acompanhamos a utilização para melhorar mensagens, assistentes e resultados.",
+      "bullets": {
+        "0": "Análise de utilização e adesão",
+        "1": "Melhoria contínua dos conteúdos",
+        "2": "Ajuste dos assistentes com base nas interações",
+        "3": "Identificação de novas oportunidades de automação"
+      }
+    }
+  },
+  "cta": {
+    "title": "Sem complexidade técnica",
+    "text": "O MyDigitalBot foi concebido para funcionar com os sistemas e canais que já utiliza, sem necessidade de implementações complexas ou mudanças nos processos existentes.",
+    "button": "Agendar demonstração",
+    "alt": "Integrações simples com canais e sistemas existentes"
+  }
+},
+
+
+
   "Public": {
     "Dpa": {
       "Title": "Acordo de Tratamento de Dados (DPA)",
@@ -753,16 +955,25 @@
     "orgUnknown": "-"
   },
   "Users": {
-    "title": "Utilizadores",
-    "searchPlaceholder": "Procurar",
-    "manageTags": "Gerir Tags",
-    "newUser": "Novo Utilizador",
-    "list": {
-      "name": "Nome",
-      "phone": "Nº. Telemóvel",
-      "tags": "Tags",
-      "assistant": "Assistente"
-    },
+  "title": "Utilizadores",
+  "searchPlaceholder": "Procurar",
+  "manageTags": "Gerir Tags",
+  "newUser": "Novo Utilizador",
+
+  "pagination": {
+    "summary": "Página {page} de {totalPages} · {totalUsers} utilizadores",
+    "perPage": "{count} / página",
+    "previous": "Anterior",
+    "next": "Seguinte"
+  },
+
+  "list": {
+    "name": "Nome",
+    "phone": "Nº. Telemóvel",
+    "tags": "Tags",
+    "assistant": "Assistente"
+  },
+
     "row": {
       "more": "Mais opções",
       "view": "Ver",
@@ -857,71 +1068,204 @@
     "cancel": "Cancelar",
     "removeLabel": "Remover {name}"
   },
+
+  
   "Templates": {
-    "title": "WhatsApp Templates",
-    "tabList": "Lista",
-    "tabCreate": "Criar",
-    "sync": "Sincronizar",
-    "syncing": "A sincronizar…",
-    "empty": "Sem templates. Vá a \"Criar\" para adicionar um.",
+  "title": "WhatsApp Templates",
+  "tabList": "Lista",
+  "tabCreate": "Criar",
+  "sync": "Sincronizar",
+  "syncing": "A sincronizar…",
+
+  "name": "Nome",
+  "language": "Idioma",
+  "category": "Categoria",
+  "status": "Estado",
+
+  "noTemplates": "Sem templates. Vá a \"Criar\" para adicionar um.",
+  "sendTest": "Enviar teste",
+
+  "MARKETING": "Marketing",
+  "UTILITY": "Utilidade",
+  "AUTHENTICATION": "Autenticação",
+
+  "model": "Modelo",
+  "Model": "Modelo",
+
+  "text_quickreplies": "Texto + respostas rápidas",
+  "image_header_quickreplies": "Imagem no cabeçalho + respostas rápidas",
+  "quiz_url_button": "Quiz com botão URL variável",
+
+  "notices": {
+    "synced": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}",
+    "submitted": "Template \"{name}\" submetido. Estado: {status}",
+    "sent": "Template enviado."
+  },
+
+  "statuses": {
+    "new": "Novo",
+    "approved": "Aprovado",
+    "pending": "Pendente",
+    "rejected": "Rejeitado",
+    "paused": "Pausado",
+    "disabled": "Desativado",
+    "in_appeal": "Em recurso",
+    "pending_deletion": "A aguardar eliminação",
+    "unknown": "Desconhecido"
+  },
+
+  "createForm": {
     "name": "Nome",
     "language": "Idioma",
     "category": "Categoria",
-    "status": "Estado",
-    "sendTest": "Enviar teste",
-    "createForm": {
-      "name": "Nome",
-      "language": "Idioma",
-      "category": "Categoria",
-      "preset": "Modelo",
-      "components": "Components (JSON)",
-      "submit": "Submeter para aprovação",
-      "reset": "Repor exemplo",
-      "creating": "A criar…"
-    },
-    "modal": {
-      "title": "Enviar teste",
-      "to": "Para (E.164 ou nacional)",
-      "bodyParams": "Parâmetros do corpo (separados por vírgula)",
-      "urlVar": "Variável do botão URL (opcional)",
-      "cancel": "Cancelar",
-      "send": "Enviar",
-      "sending": "A enviar…",
-      "close": "Fechar"
-    }
+    "preset": "Modelo",
+    "components": "Components (JSON)",
+    "submit": "Submeter para aprovação",
+    "reset": "Repor exemplo",
+    "creating": "A criar…"
   },
-  "Automations": {
-    "searchAutomations": "Pesquisar automações...",
-    "refresh": "Atualizar",
-    "runInactivity": "Correr inatividade",
-    "materialize": "Materializar",
-    "newAutomation": "Nova automação",
+
+  "modal": {
+    "title": "Enviar teste",
+    "to": "Para (E.164 ou nacional)",
+    "bodyParams": "Parâmetros do corpo (separados por vírgula)",
+    "urlVar": "Variável do botão URL (opcional)",
+    "cancel": "Cancelar",
+    "send": "Enviar",
+    "sending": "A enviar…",
+    "close": "Fechar"
+  },
+
+  "errors": {
+    "noOrg": "Não foi encontrada uma organização.",
+    "fetch": "Falha ao carregar templates: {message}",
+    "componentsArray": "Os componentes devem ser um array.",
+    "invalidComponents": "JSON de componentes inválido: {message}",
+    "nameRequired": "O nome é obrigatório.",
+    "createFailed": "Falha ao criar template: {message}",
+    "sendFailed": "Falha ao enviar template: {message}"
+  }
+},
+
+
+
+ "Automations": {
+  "searchAutomations": "Pesquisar automações...",
+  "refresh": "Atualizar",
+  "runInactivity": "Correr inatividade",
+  "materialize": "Materializar",
+  "newAutomation": "Nova automação",
+  "createAutomation": "Criar automação",
+  "rules": "Regras",
+  "queue": "Fila",
+  "deliveries": "Entregas",
+
+  "userCreated": "Utilizador criado",
+  "userInactive": "Utilizador inativo",
+  "messageRead": "Mensagem lida",
+  "messageUnread": "Mensagem não lida",
+  "unknown": "Outro / desconhecido",
+
+  "triggerDescriptions": {
+    "userCreated": "Enviar X minutos depois de um utilizador ser criado.",
+    "userInactive": "Enviar X minutos após ausência de mensagem recebida do utilizador.",
+    "messageRead": "Reservado para futuras automações com confirmação de leitura.",
+    "messageUnread": "Reservado para futuras automações com mensagens não lidas."
+  },
+
+  "rulesTable": {
+    "name": "Nome",
+    "trigger": "Ação",
+    "channel": "Canal",
+    "delay": "Atraso",
+    "assistant": "Assistente",
+    "message": "Mensagem",
+    "active": "Ativo",
+    "activate": "Ativar",
+    "paused": "Pausado",
+    "pause": "Pausar",
+    "any": "Qualquer",
+    "edit": "Editar",
+    "delete": "Apagar"
+  },
+
+  "queueTable": {
+    "rule": "Regra",
+    "trigger": "Gatilho",
+    "channel": "Canal",
+    "dueAt": "Agendado para",
+    "runStatus": "Estado da execução",
+    "queueDetails": "Detalhes da fila"
+  },
+
+  "deliveriesTable": {
+    "rule": "Regra",
+    "user": "Utilizador",
+    "channel": "Canal",
+    "scheduledFor": "Agendado para",
+    "broadcastStatus": "Estado do envio",
+    "message": "Mensagem"
+  },
+
+  "statuses": {
+    "queued": "Em fila",
+    "materialized": "Materializado",
+    "processing": "Em processamento",
+    "sent": "Enviado",
+    "partial": "Parcial",
+    "failed": "Falhado",
+    "cancelled": "Cancelado",
+    "skipped": "Ignorado"
+  },
+
+  "deletedRule": "Regra eliminada",
+  "userFallback": "Utilizador #{id}",
+
+  "confirmDelete": {
+    "title": "Eliminar \"{name}\"?",
+    "message": "Isto vai remover a regra de automação. As execuções existentes permanecem no histórico.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
+  },
+
+  "errors": {
+    "saveRule": "Não foi possível guardar a regra de automação.",
+    "deleteRule": "Não foi possível eliminar a regra de automação.",
+    "updateRule": "Não foi possível atualizar a regra de automação.",
+    "cron": "A execução do cron falhou."
+  },
+
+  "modal": {
+    "newTitle": "Nova automação",
+    "editTitle": "Editar automação",
+    "name": "Nome",
+    "trigger": "Gatilho",
+    "channel": "Canal",
+    "assistantScope": "Âmbito do assistente",
+    "anyAssistant": "Qualquer assistente",
+    "anyAssistantFallback": "Qualquer assistente (fallback)",
+    "assistantFallbackHelp": "As regras de inatividade específicas por assistente têm prioridade. “Qualquer assistente (fallback)” só se aplica quando o assistente atual do utilizador não tem uma regra de inatividade específica neste canal.",
+    "delay": "Atraso (minutos)",
+    "message": "Mensagem",
+    "whatsappTemplate": "Template WhatsApp",
+    "noTemplate": "Sem template",
+    "templateBindings": "Variáveis do template",
+    "comingSoon": "em breve",
+    "staticText": "Texto fixo",
+    "systemUserName": "Sistema: nome do utilizador",
+    "systemOrganizationName": "Sistema: nome da organização",
+    "systemUserEmail": "Sistema: email do utilizador",
+    "systemUserPhone": "Sistema: telefone do utilizador",
+    "valueFor": "Valor para {key}",
     "createAutomation": "Criar automação",
-    "rules": "Regras",
-    "queue": "Fila",
-    "deliveries": "Entregas",
-    "userCreated": "User criado",
-    "userInactive": "User inatividade",
-    "messageRead": "Mensagem lida",
-    "messageUnread": "Mensagem não lida",
-    "unknown": "Outro / desconhecido",
-    "rulesTable": {
-      "name": "Nome",
-      "trigger": "Ação",
-      "channel": "Canal",
-      "delay": "Atraso",
-      "assistant": "Assistente",
-      "message": "Mensagem",
-      "active": "Ativo",
-      "activate": "Ativar",
-      "paused": "Pausado",
-      "pause": "Pausar",
-      "any": "Qualquer",
-      "edit": "Editar",
-      "delete": "Apagar"
-    },
-    "queueTable": {}
-  },
+    "save": "Guardar",
+    "saving": "A guardar...",
+    "cancel": "Cancelar"
+  }
+},
+
+
+
   "Broadcast": {
     "title": "Mensagens WhatsApp",
     "selected": "Selecionados:",
@@ -1313,24 +1657,33 @@
       "assistantsCount": "Assistentes"
     }
   },
-  "Admin": {
-    "title": "Admin",
-    "newOrg": "Nova organização",
-    "orgNamePlaceholder": "Nome da organização…",
+  "AdminPage": {
+  "title": "Admin",
+  
+  "newOrganization": {
+    "title": "Nova organização",
+    "placeholder": "Nome da organização…",
     "create": "Criar",
     "creating": "A criar…",
-    "themes": "Temas",
-    "loading": "A carregar…",
-    "noOrgs": "Sem organizações.",
-    "primary": "Primary",
-    "secondary": "Secondary",
-    "save": "Guardar",
-    "saving": "A guardar…",
-    "savedFor": "✓ Tema guardado para «{name}».",
-    "saveError": "❌ Não foi possível guardar o tema.",
-    "createOk": "✓ Criada organização #{id}: «{name}»",
-    "createErr": "❌ Erro ao criar organização."
+    "required": "Preencha o nome da organização."
   },
+  "themes": {
+    "title": "Temas",
+    "loading": "A carregar…",
+    "empty": "Sem organizações.",
+    "primary": "Primária",
+    "secondary": "Secundária",
+    "save": "Guardar",
+    "saving": "A guardar…"
+  },
+  "messages": {
+    "loadOrganizationsError": "❌ Falha a carregar as organizações",
+    "themeSaved": "✓ Tema guardado para «{name}».",
+    "themeSaveError": "❌ Não foi possível guardar o tema.",
+    "organizationCreated": "✓ Criada organização #{id}: «{name}»",
+    "organizationCreateError": "❌ Erro ao criar organização."
+  }
+},
 
   "Auth": {
     "brand": "MyDigitalBot",

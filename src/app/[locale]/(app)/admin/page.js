@@ -4,8 +4,13 @@ import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./admin.module.css";
 import ThemePreview from "./ThemePreview/ThemePreview";
+import { useTranslations } from "next-intl";
+
 
 export default function AdminPage() {
+ 
+  const translation = useTranslations("AdminPage");
+
   const supabase = createClient();
   const { stopLoading } = useGlobalLoader();
 
@@ -49,7 +54,7 @@ export default function AdminPage() {
 
       if (error) {
         console.error(error);
-        setMsg("❌ Falha a carregar as organizações");
+        setMsg(translation("messages.loadOrganizationsError"));
       } else {
         // ensure theme defaults exist for UI
         const withDefaults = (data || []).map((o) => ({
@@ -111,10 +116,10 @@ export default function AdminPage() {
       // reflect immediately in app theme (optional)
       setCssVars(data.theme);
 
-      setMsg(`✓ Tema guardado para «${org.name}».`);
+      setMsg(translation("messages.themeSaved", { name: org.name }));
     } catch (err) {
       console.error(err);
-      setMsg("❌ Não foi possível guardar o tema.");
+     setMsg(translation("messages.themeSaveError"));
     } finally {
       setSavingId(null);
     }
@@ -141,10 +146,15 @@ export default function AdminPage() {
       if (error) throw error;
       setOrgs((prev) => [...prev, data]);
       setName("");
-      setMsg(`✓ Criada organização #${data.id}: «${data.name}»`);
+      setMsg(
+      translation("messages.organizationCreated", {
+        id: data.id,
+        name: data.name,
+      })
+    );
     } catch (err) {
       console.error(err);
-      setMsg("❌ Erro ao criar organização.");
+      setMsg(translation("messages.organizationCreateError"));
     } finally {
       setCreating(false);
     }
@@ -152,29 +162,40 @@ export default function AdminPage() {
 
   return (
     <main className={styles.pageWrapper}>
-      <h1 className={styles.header}>Admin</h1>
+      <h1 className={styles.header}>{translation("title")}</h1>
 
       <section className={styles.formContainer}>
-        <h2 className={styles.title}>Nova organização</h2>
+       <h2 className={styles.title}>{translation("newOrganization.title")}</h2>
         <form onSubmit={handleCreate} className={styles.form}>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nome da organização…"
+            onChange={(e) => {
+              setName(e.target.value);
+              e.target.setCustomValidity("");
+            }}
+            onInvalid={(e) => {
+              e.target.setCustomValidity(
+                translation("newOrganization.required")
+              );
+            }}
+            placeholder={translation("newOrganization.placeholder")}
             required
             className={styles.input}
           />
           <button disabled={creating} className={styles.formButton}>
-            {creating ? "A criar…" : "Criar"}
+           {creating
+            ? translation("newOrganization.creating")
+            : translation("newOrganization.create")}
           </button>
         </form>
       </section>
 
       <section>
-        <h2 className={styles.title}>Temas</h2>
-        {loading && <p>A carregar…</p>}
-        {!loading && orgs.length === 0 && <p>Sem organizações.</p>}
-
+        <h2 className={styles.title}>{translation("themes.title")}</h2>
+        {loading && <p>{translation("themes.loading")}</p>}
+       {!loading && orgs.length === 0 && (
+          <p>{translation("themes.empty")}</p>
+        )}
         {orgs.map((org) => (
           <div key={org.id} className={styles.changeThemesWrapper}>
             <div>
@@ -184,7 +205,7 @@ export default function AdminPage() {
 
               <div className={styles.themesQuery}>
                 <label className={styles.colorPicker}>
-                  <span style={{ width: 80 }}>Primary</span>
+                 <span style={{ width: 80 }}>{translation("themes.primary")}</span>
                   <input
                     type="color"
                     value={org.theme.primary}
@@ -203,7 +224,7 @@ export default function AdminPage() {
                 </label>
 
                 <label className={styles.colorPicker}>
-                  <span style={{ width: 80 }}>Secondary</span>
+                  <span style={{ width: 80 }}>{translation("themes.secondary")}</span>
                   <input
                     type="color"
                     value={org.theme.secondary}
@@ -225,7 +246,9 @@ export default function AdminPage() {
                   disabled={savingId === org.id}
                   className={styles.saveButton}
                 >
-                  {savingId === org.id ? "A guardar…" : "Guardar"}
+                 {savingId === org.id
+                    ? translation("themes.saving")
+                    : translation("themes.save")}
                 </button>
               </div>
             </div>

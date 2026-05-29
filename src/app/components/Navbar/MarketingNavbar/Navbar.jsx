@@ -9,12 +9,16 @@ import { Menu, X } from "lucide-react";
 import createClient from "@/utils/supabase/client";
 
 const NAV = [
-  { href: "/learn", key: "learn" },
+  { href: "/solution", key: "solution" },
   { href: "/product", key: "product" },
+  { href: "/how-it-works", key: "how-it-works" },
+
   { href: "/pricing", key: "pricing" },
-  { href: "/support", key: "support" },
-  { href: "/company", key: "company" },
-  // { href: "/blog", key: "blog" },
+
+//{ href: "/company", key: "company" },
+//{ href: "/support", key: "support" },
+//{ href: "/learn", key: "learn" },
+// { href: "/blog", key: "blog" },
 ];
 
 export default function MarketingNavbar() {

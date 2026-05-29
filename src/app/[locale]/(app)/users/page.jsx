@@ -628,47 +628,51 @@ export default function UsersPage() {
           </div>
 
           <div className={styles.pagination}>
-            <div className={styles.paginationLeft}>
-              <span>
-                Page {page} of {totalPages} · {totalUsers} users
-              </span>
-            </div>
-
-            <div className={styles.paginationRight}>
-              <PillSelect
-                value={pageSize}
-                options={[
-                  { value: 50, label: "50 / page" },
-                  { value: 100, label: "100 / page" },
-                  { value: 200, label: "200 / page" },
-                ]}
-                onChange={(newValue) => {
-                  setPageSize(Number(newValue));
-                  setPage(1);
-                }}
-              />
-
-              <button
-                type="button"
-                className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                Next
-              </button>
-            </div>
+           <div className={styles.paginationLeft}>
+            <span>
+              {translation("Users.pagination.summary", {
+                page,
+                totalPages,
+                totalUsers,
+              })}
+            </span>
           </div>
-        </div>
-      )}
+
+          <div className={styles.paginationRight}>
+            <PillSelect
+              value={pageSize}
+              options={[
+                { value: 50, label: translation("Users.pagination.perPage", { count: 50 }) },
+                { value: 100, label: translation("Users.pagination.perPage", { count: 100 }) },
+                { value: 200, label: translation("Users.pagination.perPage", { count: 200 }) },
+              ]}
+              onChange={(newValue) => {
+                setPageSize(Number(newValue));
+                setPage(1);
+              }}
+            />
+
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              >
+              {translation("Users.pagination.previous")}
+              </button>
+
+              <button
+              type="button"
+              className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              >
+              {translation("Users.pagination.next")}
+              </button>
+                </div>
+                    </div>
+                  </div>
+                )}
 
       {/* Popover filter */}
       <FilterMenu
