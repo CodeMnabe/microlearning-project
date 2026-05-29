@@ -12,6 +12,54 @@ import {
   mapRecipientsToEntries,
 } from "../helpers/recipient.helpers";
 
+function normalizeRecipientValue(recipient, channel) {
+  if (typeof recipient === "string") return recipient;
+  if (typeof recipient === "number") return String(recipient);
+
+  if (!recipient || typeof recipient !== "object") return "";
+
+  if (channel === "whatsapp") {
+    return (
+      recipient.whatsappBsuid ||
+      recipient.whatsappPsuid ||
+      recipient.phoneNumber ||
+      recipient.birdContactId ||
+      ""
+    );
+  }
+
+  if (channel === "teams") {
+    return recipient.userId ? String(recipient.userId) : "";
+  }
+
+  return (
+    recipient.whatsappBsuid ||
+    recipient.whatsappPsuid ||
+    recipient.phoneNumber ||
+    recipient.userId ||
+    recipient.birdContactId ||
+    ""
+  );
+}
+
+function normalizeDisplayText(value, fallback = "") {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+
+  if (!value || typeof value !== "object") return fallback;
+
+  return (
+    value.name ||
+    value.whatsappUsername ||
+    value.phoneNumber ||
+    value.whatsappBsuid ||
+    value.whatsappPsuid ||
+    value.birdContactId ||
+    value.userId ||
+    fallback
+  );
+}
+
 export default function ScheduledEditModal({
   item,
   orgUsers,
@@ -41,14 +89,19 @@ export default function ScheduledEditModal({
 
     const timeParts = toTimeParts(item.scheduledFor);
     const payload = item.payload || {};
+    const channel = item.channel ?? "teams";
+
     const recipients = Array.isArray(payload.recipients)
       ? payload.recipients
+          .map((recipient) => normalizeRecipientValue(recipient, channel))
+          .filter(Boolean)
       : [];
+
     const files = Array.isArray(payload.files) ? payload.files : [];
 
     setEditForm({
       message: item.message ?? "",
-      channel: item.channel ?? "teams",
+      channel,
       date: toDateInputValue(item.scheduledFor),
       hour: timeParts.hour,
       minute: timeParts.minute,
@@ -64,13 +117,19 @@ export default function ScheduledEditModal({
   const recipientCandidates = useMemo(() => {
     return orgUsers
       .map((orgUser) => {
-        const recipient = getRecipientForChannel(orgUser, editForm.channel);
+        const recipient = normalizeRecipientValue(
+          getRecipientForChannel(orgUser, editForm.channel),
+          editForm.channel,
+        );
+
         if (!recipient) return null;
 
         return {
           ...orgUser,
           recipient,
-          secondary: getRecipientSecondary(orgUser, editForm.channel),
+          secondary: normalizeDisplayText(
+            getRecipientSecondary(orgUser, editForm.channel),
+          ),
         };
       })
       .filter(Boolean);
@@ -157,25 +216,39 @@ export default function ScheduledEditModal({
             <div className={styles.recipientSummaryBox}>
               {currentEditRecipientEntries.length ? (
                 <div className={styles.recipientPreviewList}>
-                  {currentEditRecipientEntries.map((entry) => (
-                    <div
-                      key={entry.recipient}
-                      className={styles.recipientPreviewItem}
-                    >
-                      <div className={styles.recipientPreviewInfo}>
-                        <strong>{entry.name}</strong>
-                        <span>{entry.secondary}</span>
-                      </div>
+                  {currentEditRecipientEntries.map((entry) => {
+                    const recipient = normalizeRecipientValue(
+                      entry.recipient,
+                      editForm.channel,
+                    );
 
-                      <button
-                        type="button"
-                        className={styles.recipientPreviewRemove}
-                        onClick={() => removeRecipientFromEdit(entry.recipient)}
+                    const name = normalizeDisplayText(
+                      entry.name,
+                      recipient || translation("EditModal.noRecipients"),
+                    );
+
+                    const secondary = normalizeDisplayText(entry.secondary);
+
+                    return (
+                      <div
+                        key={recipient || String(entry.id)}
+                        className={styles.recipientPreviewItem}
                       >
-                        {translation("EditModal.remove")}
-                      </button>
-                    </div>
-                  ))}
+                        <div className={styles.recipientPreviewInfo}>
+                          <strong>{name}</strong>
+                          <span>{secondary}</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={styles.recipientPreviewRemove}
+                          onClick={() => removeRecipientFromEdit(recipient)}
+                        >
+                          {translation("EditModal.remove")}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className={styles.recipientEmptyText}>
@@ -359,7 +432,11 @@ export default function ScheduledEditModal({
           onApply={(nextRecipients) => {
             setEditForm((prev) => ({
               ...prev,
-              recipients: nextRecipients,
+              recipients: nextRecipients
+                .map((recipient) =>
+                  normalizeRecipientValue(recipient, editForm.channel),
+                )
+                .filter(Boolean),
             }));
             setRecipientPickerOpen(false);
           }}

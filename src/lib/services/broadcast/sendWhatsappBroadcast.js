@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 import { splitE164, toE164 } from "@/lib/whatsapp/E164";
 import {
   getUserById,
@@ -208,16 +209,6 @@ function getMessagesEndpoint(channelId) {
   };
 }
 
-async function readBirdResponse(res) {
-  const raw = await res.text();
-
-  try {
-    return json.parse(raw);
-  } catch {
-    return raw;
-  }
-}
-
 async function sendFreeform({
   endpoint,
   accessKey,
@@ -315,6 +306,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     whatsappTemplateId = null,
     trackedLinks = [],
     scheduledBroadcastId = null,
+    sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
 
@@ -473,6 +465,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       channel: "whatsapp",
       recipientUserId: user?.id || recipient.userId || null,
       scheduledBroadcastId,
+      sendGroupId,
       createdByUserId,
     });
 
@@ -506,6 +499,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA freeform result]", {
+        sendGroupId,
         recipient: label,
         to,
         whatsappBsuid,
@@ -556,6 +550,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA template final]", {
+        sendGroupId,
         recipient: label,
         to,
         whatsappBsuid,
@@ -577,6 +572,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       console.log("[WA template result]", {
+        sendGroupId,
         recipient: label,
         to,
         whatsappBsuid,
@@ -662,6 +658,7 @@ export async function sendWhatsappBroadcast(input = {}) {
   const failedCount = results.length - okCount;
 
   return {
+    sendGroupId,
     ok: okCount,
     failed: failedCount,
     results,
