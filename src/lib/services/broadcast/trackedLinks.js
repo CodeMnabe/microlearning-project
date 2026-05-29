@@ -36,6 +36,7 @@ export async function createTrackedLinkForRecipient({
   channel,
   recipientUserId = null,
   scheduledBroadcastId = null,
+  sendGroupId = null,
   destinationUrl,
   linkLabel,
   linkKey = null,
@@ -48,6 +49,7 @@ export async function createTrackedLinkForRecipient({
     channel,
     recipient_user_id: recipientUserId,
     scheduled_broadcast_id: scheduledBroadcastId,
+    send_group_id: sendGroupId,
     destination_url: destinationUrl,
     link_label: linkLabel,
     token,
@@ -68,6 +70,7 @@ export async function resolveTrackedLinksForRecipient({
   channel,
   recipientUserId = null,
   scheduledBroadcastId = null,
+  sendGroupId = null,
   createdByUserId = null,
 }) {
   const resolved = [];
@@ -84,6 +87,7 @@ export async function resolveTrackedLinksForRecipient({
       channel,
       recipientUserId,
       scheduledBroadcastId,
+      sendGroupId,
       destinationUrl,
       linkLabel: label,
       linkKey: key,
