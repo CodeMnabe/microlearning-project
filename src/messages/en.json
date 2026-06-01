@@ -1052,7 +1052,8 @@
     "chooseAssistant": "Choose assistant",
     "create": "Create",
     "creating": "Creating…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "communicationChannels": "Communication Channels"
   },
   "ManageTagsModal": {
     "title": "Manage Tags",
@@ -1170,12 +1171,20 @@
   },
 
   "rulesTable": {
+    "rule": "Rule",
+    "user": "User",
+    "channel": "Channel",
+    "scheduled for": "Scheduled for",
+    "broadcast status": "Broadcast status",
+    "message": "Message",
+    "Rules": "Rules",
     "name": "Name",
     "trigger": "Trigger",
-    "channel": "Channel",
+    "due at": "Due at",
+    "run status": "Run status",
+    "queue details": "Queue details",
     "delay": "Delay",
     "assistant": "Assistant",
-    "message": "Message",
     "active": "Active",
     "activate": "Activate",
     "paused": "Paused",
@@ -1185,7 +1194,14 @@
     "delete": "Delete"
   },
 
-  "queueTable": {},
+  "queueTable": {
+  "rule": "Rule",
+  "trigger": "Event",
+  "channel": "Channel",
+  "dueAt": "Due at",
+  "runStatus": "Run status",
+  "queueDetails": "Queue details"
+  },
 
   "modal": {
     "newTitle": "New automation",
@@ -1212,9 +1228,50 @@
     "createAutomation": "Create automation",
     "save": "Save",
     "saving": "Saving...",
+    "messagePlaceholder": "Welcome {userName} to {organizationName}!",
     "cancel": "Cancel"
-  }
+  },
+  "deliveriesTable": {
+  "rule": "Rule",
+  "user": "User",
+  "channel": "Channel",
+  "scheduledFor": "Scheduled for",
+  "broadcastStatus": "Broadcast status",
+  "message": "Message"
 },
+
+"statuses": {
+  "queued": "Queued",
+  "materialized": "Materialized",
+  "processing": "Processing",
+  "sent": "Sent",
+  "partial": "Partial",
+  "failed": "Failed",
+  "cancelled": "Cancelled",
+  "skipped": "Skipped"
+},
+
+"deletedRule": "Deleted rule",
+"userFallback": "User #{id}",
+
+"confirmDelete": {
+  "title": "Delete \"{name}\"?",
+  "message": "This will remove the automation rule. Existing runs will remain in the history.",
+  "confirm": "Delete",
+  "cancel": "Cancel"
+},
+
+"errors": {
+  "saveRule": "Could not save the automation rule.",
+  "deleteRule": "Could not delete the automation rule.",
+  "updateRule": "Could not update the automation rule.",
+  "cron": "Cron execution failed."
+}
+
+
+},
+
+
   "Broadcast": {
     "title": "WhatsApp Messages",
     "selected": "Selected:",

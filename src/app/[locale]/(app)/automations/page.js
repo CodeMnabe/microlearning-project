@@ -662,12 +662,12 @@ export default function AutomationsPage() {
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
-              <div className={styles.cellHead}>Rule</div>
-              <div className={styles.cellHead}>Trigger</div>
-              <div className={styles.cellHead}>Channel</div>
-              <div className={styles.cellHead}>Due at</div>
-              <div className={styles.cellHead}>Run status</div>
-              <div className={styles.cellHead}>Queue details</div>
+              <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.trigger")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.due at")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.run status")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.queue details")}</div>
             </div>
 
             {filteredQueueRuns.map((run, i) => {
@@ -723,12 +723,12 @@ export default function AutomationsPage() {
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
-              <div className={styles.cellHead}>Rule</div>
-              <div className={styles.cellHead}>User</div>
-              <div className={styles.cellHead}>Channel</div>
-              <div className={styles.cellHead}>Scheduled for</div>
-              <div className={styles.cellHead}>Broadcast status</div>
-              <div className={styles.cellHead}>Message</div>
+              <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.user")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.scheduled for")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.broadcast status")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.message")}</div>
             </div>
 
             {filteredDeliveries.map((item, i) => {

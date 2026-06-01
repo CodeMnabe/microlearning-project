@@ -1055,7 +1055,8 @@
     "chooseAssistant": "Escolher assistente",
     "create": "Criar",
     "creating": "A criar…",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "communicationChannels": "Canais de Comunicação"
   },
   "ManageTagsModal": {
     "title": "Gerir Tags",
@@ -1160,26 +1161,33 @@
   "queue": "Fila",
   "deliveries": "Entregas",
 
-  "userCreated": "Utilizador criado",
-  "userInactive": "Utilizador inativo",
-  "messageRead": "Mensagem lida",
-  "messageUnread": "Mensagem não lida",
-  "unknown": "Outro / desconhecido",
+  "userCreated": "Novo utilizador",
+"userInactive": "Utilizador inativo",
+"messageRead": "Mensagem lida",
+"messageUnread": "Mensagem por ler",
 
   "triggerDescriptions": {
-    "userCreated": "Enviar X minutos depois de um utilizador ser criado.",
-    "userInactive": "Enviar X minutos após ausência de mensagem recebida do utilizador.",
-    "messageRead": "Reservado para futuras automações com confirmação de leitura.",
-    "messageUnread": "Reservado para futuras automações com mensagens não lidas."
+    "userCreated": "Enviar X minutos depois de um novo utilizador ser criado.",
+  "userInactive": "Enviar X minutos após um período de inatividade do utilizador.",
+  "messageRead": "Reservado para futuras automações com confirmação de leitura.",
+  "messageUnread": "Reservado para futuras automações com mensagens por ler."
   },
 
   "rulesTable": {
-    "name": "Nome",
-    "trigger": "Ação",
+    "rule": "Regra",
+    "user": "Utilizador",
     "channel": "Canal",
+    "scheduled for": "Agendado para",
+    "broadcast status": "Estado do envio",
+    "message": "Mensagem",
+    "Rules": "Regras",
+    "name": "Nome",
+    "trigger": "Evento",
+  "due at": "Agendado para",
+  "run status": "Estado da execução",
+  "queue details": "Detalhes da fila",
     "delay": "Atraso",
     "assistant": "Assistente",
-    "message": "Mensagem",
     "active": "Ativo",
     "activate": "Ativar",
     "paused": "Pausado",
@@ -1191,11 +1199,40 @@
 
   "queueTable": {
     "rule": "Regra",
-    "trigger": "Gatilho",
+    "trigger": "Evento",
     "channel": "Canal",
     "dueAt": "Agendado para",
     "runStatus": "Estado da execução",
     "queueDetails": "Detalhes da fila"
+  },
+
+   "modal": {
+    "newTitle": "Nova automação",
+    "editTitle": "Editar automação",
+    "name": "Nome",
+    "trigger": "Evento",
+    "channel": "Canal",
+    "assistantScope": "Âmbito do assistente",
+    "anyAssistant": "Qualquer assistente",
+    "anyAssistantFallback": "Qualquer assistente (fallback)",
+    "assistantFallbackHelp": "As regras de inatividade específicas por assistente têm prioridade. “Qualquer assistente (fallback)” só se aplica quando o assistente atual do utilizador não tem uma regra de inatividade específica neste canal.",
+    "delay": "Atraso (minutos)",
+    "message": "Mensagem",
+    "whatsappTemplate": "Template WhatsApp",
+    "noTemplate": "Sem template",
+    "templateBindings": "Variáveis do template",
+    "comingSoon": "em breve",
+    "staticText": "Texto fixo",
+    "systemUserName": "Sistema: nome do utilizador",
+    "systemOrganizationName": "Sistema: nome da organização",
+    "systemUserEmail": "Sistema: email do utilizador",
+    "systemUserPhone": "Sistema: telefone do utilizador",
+    "valueFor": "Valor para {key}",
+    "createAutomation": "Criar automação",
+    "save": "Guardar",
+    "saving": "A guardar...",
+    "messagePlaceholder": "Bem-vindo {userName} à {organizationName}!",
+    "cancel": "Cancelar"
   },
 
   "deliveriesTable": {
@@ -1233,35 +1270,9 @@
     "deleteRule": "Não foi possível eliminar a regra de automação.",
     "updateRule": "Não foi possível atualizar a regra de automação.",
     "cron": "A execução do cron falhou."
-  },
-
-  "modal": {
-    "newTitle": "Nova automação",
-    "editTitle": "Editar automação",
-    "name": "Nome",
-    "trigger": "Gatilho",
-    "channel": "Canal",
-    "assistantScope": "Âmbito do assistente",
-    "anyAssistant": "Qualquer assistente",
-    "anyAssistantFallback": "Qualquer assistente (fallback)",
-    "assistantFallbackHelp": "As regras de inatividade específicas por assistente têm prioridade. “Qualquer assistente (fallback)” só se aplica quando o assistente atual do utilizador não tem uma regra de inatividade específica neste canal.",
-    "delay": "Atraso (minutos)",
-    "message": "Mensagem",
-    "whatsappTemplate": "Template WhatsApp",
-    "noTemplate": "Sem template",
-    "templateBindings": "Variáveis do template",
-    "comingSoon": "em breve",
-    "staticText": "Texto fixo",
-    "systemUserName": "Sistema: nome do utilizador",
-    "systemOrganizationName": "Sistema: nome da organização",
-    "systemUserEmail": "Sistema: email do utilizador",
-    "systemUserPhone": "Sistema: telefone do utilizador",
-    "valueFor": "Valor para {key}",
-    "createAutomation": "Criar automação",
-    "save": "Guardar",
-    "saving": "A guardar...",
-    "cancel": "Cancelar"
   }
+
+ 
 },
 
 
