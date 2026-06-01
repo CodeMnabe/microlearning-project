@@ -229,7 +229,10 @@ const assistantOptions = [
               rows={6}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Bem-vindo {{user_name}} à {{organization_name}}!"
+               placeholder={translation("messagePlaceholder",{
+                userName: "{userName}",
+                organizationName: "{organizationName}",
+               })}
             />
           </div>
 

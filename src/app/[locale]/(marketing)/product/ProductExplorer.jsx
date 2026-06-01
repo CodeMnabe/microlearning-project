@@ -4,12 +4,30 @@ import { useTranslations } from "next-intl";
 import styles from "./productPage.module.css";
 import items from "./productPage.json";
 
+
+import {
+  MessageCircle,
+  Bot,
+  BookOpen,
+  MapPin,
+} from "lucide-react";
+
+const icons = {
+  1: MessageCircle,
+  2: Bot,
+  3: BookOpen,
+  4: MapPin,
+  5: MessageCircle,
+  6: Bot,
+};
+
 function ProductCard({ item, index }) {
   const t = useTranslations("ProductPage");
 
   const imageLeft = index % 2 === 1;
 
   const checks = item.checksKeys?.map((key) => t(key)) || [];
+ const Icon = icons[item.id] || MessageCircle;
 
   return (
     <article
@@ -18,10 +36,12 @@ function ProductCard({ item, index }) {
       }`}
     >
       <div className={styles.productContent}>
-        <h3 className={styles.productTitle}>
-          <span className={styles.productIcon} aria-hidden="true" />
-          {t(item.titleKey)}
-        </h3>
+       <h3 className={styles.productTitle}>
+        <span className={styles.productIcon} aria-hidden="true">
+          <Icon size={18} strokeWidth={2.5} />
+        </span>
+        {t(item.titleKey)}
+      </h3>
 
         <p className={styles.productDescription}>
           {t(item.descriptionKey)}
