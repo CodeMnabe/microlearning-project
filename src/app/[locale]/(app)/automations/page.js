@@ -665,9 +665,9 @@ export default function AutomationsPage() {
               <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
               <div className={styles.cellHead}>{translation("rulesTable.trigger")}</div>
               <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.due at")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.run status")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.queue details")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.dueAt")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.runStatus")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.queueDetails")}</div>
             </div>
 
             {filteredQueueRuns.map((run, i) => {
@@ -726,8 +726,8 @@ export default function AutomationsPage() {
               <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
               <div className={styles.cellHead}>{translation("rulesTable.user")}</div>
               <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.scheduled for")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.broadcast status")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.scheduledFor")}</div>
+              <div className={styles.cellHead}>{translation("rulesTable.broadcastStatus")}</div>
               <div className={styles.cellHead}>{translation("rulesTable.message")}</div>
             </div>
 

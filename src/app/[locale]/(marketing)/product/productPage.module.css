@@ -198,20 +198,18 @@
 
 .productIcon {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   background: var(--brand-1);
-  position: relative;
+  color: white;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.productIcon::after {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border-radius: 999px;
-  border: 2px solid white;
-}
+
 
 .productDescription {
   margin: 16px 0 0;
