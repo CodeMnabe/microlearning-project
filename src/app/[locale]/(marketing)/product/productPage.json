@@ -9,7 +9,7 @@
       "cards.messages.checks.2",
       "cards.messages.checks.3"
     ],
-    "image": "/images/Produto1.Png",
+    "image": "/images/Produto1.png",
     "altKey": "cards.messages.alt"
   },
   {
@@ -22,7 +22,7 @@
       "cards.assistants.checks.2",
       "cards.assistants.checks.3"
     ],
-    "image": "/images/Produto2.Png",
+    "image": "/images/Produto2.png",
     "altKey": "cards.assistants.alt"
   },
   {
@@ -34,7 +34,7 @@
       "cards.knowledge.checks.1",
       "cards.knowledge.checks.2"
     ],
-    "image": "/images/Produto3.Png",
+    "image": "/images/Produto3.png",
     "altKey": "cards.knowledge.alt"
   },
   {
@@ -47,7 +47,7 @@
       "cards.channels.checks.2",
       "cards.channels.checks.3"
     ],
-    "image": "/images/Produto4.Png",
+    "image": "/images/Produto4.png",
     "altKey": "cards.channels.alt"
   }
  
