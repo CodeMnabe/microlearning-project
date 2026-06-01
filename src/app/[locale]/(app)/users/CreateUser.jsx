@@ -172,7 +172,7 @@ export default function CreateUserModal({
           {/* ───── Canais de Comunicação (accordion) ───── */}
           <div className={styles.sectionDivider}>
             <span className={styles.sectionDividerLabel}>
-              Canais de Comunicação
+              {translation("CreateUserModal.communicationChannels")}
             </span>
           </div>
 
