@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { Search } from "lucide-react";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
@@ -27,9 +28,18 @@ function getRateClass(rate) {
 
 export default function TrackedLinksPage() {
   const { user } = useAuth();
-  const { org } = useOrganization(user);
+
+ const { org, loading: orgLoading } = useOrganization(user);
+
   const { stopLoading } = useGlobalLoader();
   const translation = useTranslations();
+  const showAlert = useAlert();
+
+  const showAlertRef = useRef(showAlert);
+
+      useEffect(() => {
+        showAlertRef.current = showAlert;
+      }, [showAlert]);
 
   const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
@@ -37,41 +47,65 @@ export default function TrackedLinksPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!org?.id) return;
+  if (orgLoading) return;
 
-    let alive = true;
+  if (!org?.id) {
+    setLoading(false);
+    stopLoading();
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError("");
+    void showAlertRef.current({
+      title: translation("TrackedLinks.alerts.noOrg.title"),
+      message: translation("TrackedLinks.alerts.noOrg.message"),
+      tone: "warning",
+    });
 
-        const res = await fetch(`/api/tracked-links/reports?orgId=${org.id}`, {
-          cache: "no-store",
-        });
+    return;
+  }
 
-        const data = await res.json().catch(() => ({}));
+  let alive = true;
 
-        if (!res.ok) {
-          throw new Error(data?.error || "Failed to load tracked links.");
-        }
+  (async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        if (!alive) return;
-        setItems(Array.isArray(data?.items) ? data.items : []);
-      } catch (err) {
-        if (!alive) return;
-        setError(err?.message || "Failed to load tracked links.");
-      } finally {
-        if (!alive) return;
-        setLoading(false);
-        stopLoading();
+      const res = await fetch(`/api/tracked-links/reports?orgId=${org.id}`, {
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to load tracked links.");
       }
-    })();
 
-    return () => {
-      alive = false;
-    };
-  }, [org?.id, stopLoading]);
+      if (!alive) return;
+
+      setItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (err) {
+      if (!alive) return;
+
+      setError(translation("TrackedLinks.alerts.loadFailed.message"));
+
+      void showAlertRef.current({
+        title: translation("TrackedLinks.alerts.loadFailed.title"),
+        message: translation("TrackedLinks.alerts.loadFailed.message"),
+        tone: "danger",
+      });
+    } finally {
+      if (!alive) return;
+
+      setLoading(false);
+      stopLoading();
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, [org?.id, orgLoading, stopLoading, translation]);
+
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();

@@ -25,6 +25,8 @@ import ScheduledTable from "./components/ScheduledTable";
 import ScheduledViewModal from "./components/ScheduledViewModal";
 import ScheduledEditModal from "./components/ScheduledEditModal";
 
+import {useAlert} from "@/app/components/Alert/AlertProvider";
+
 const MODAL_CLOSE_MS = 280;
 
 export default function ScheduledPage() {
@@ -32,6 +34,13 @@ export default function ScheduledPage() {
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const confirm = useConfirm();
+  const showAlert = useAlert();
+
+  const showAlertRef = useRef(showAlert);
+
+  useEffect(() => {
+    showAlertRef.current = showAlert;
+  }, [showAlert]);
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,37 +64,64 @@ export default function ScheduledPage() {
 
   const closeTimersRef = useRef({ view: null, edit: null });
 
-  const loadItems = useCallback(async () => {
-    if (!org?.id) return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(
-        `/api/scheduled-broadcasts?orgId=${org.id}&source=manual`,
-        {
-          method: "GET",
-          cache: "no-store",
-        },
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result?.error || "Failed to load scheduled broadcasts.",
-        );
-      }
-
-      setItems((result.items ?? []).map(normalizeBroadcast));
-    } catch (err) {
-      console.error(err);
-      setError(t("Errors.load"));
-    } finally {
-      setLoading(false);
+  const loadItems = useCallback(async (showSuccessAlert = false) => {
+  if (!org?.id) {
+    if (showSuccessAlert) {
+      await showAlertRef.current({
+        title: t("Alerts.noOrg.title"),
+        message: t("Alerts.noOrg.message"),
+        tone: "warning",
+      });
     }
-  }, [org?.id, t]);
+
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const response = await fetch(
+      `/api/scheduled-broadcasts?orgId=${org.id}&source=manual`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result?.error || "Failed to load scheduled broadcasts.");
+    }
+
+    const normalizedItems = (result.items ?? []).map(normalizeBroadcast);
+
+    setItems(normalizedItems);
+
+    if (showSuccessAlert) {
+      await showAlertRef.current({
+        title: t("Alerts.refreshSuccess.title"),
+        message: t("Alerts.refreshSuccess.message", {
+          count: normalizedItems.length,
+        }),
+        tone: "success",
+      });
+    }
+  } catch (err) {
+    console.warn("[Scheduled] load items error:", err);
+
+    setError(t("Errors.load"));
+
+    await showAlertRef.current({
+      title: t("Alerts.loadError.title"),
+      message: t("Alerts.loadError.message"),
+      tone: "danger",
+    });
+  } finally {
+    setLoading(false);
+  }
+}, [org?.id, t]);
 
   useEffect(() => {
     if (orgLoading) return;
@@ -122,10 +158,22 @@ export default function ScheduledPage() {
             : [];
 
         setOrgUsers(list.map(normalizeUser));
+
       } catch (err) {
-        console.error(err);
-        if (!cancelled) setOrgUsers([]);
+        console.warn("[Scheduled] load users error:", err);
+
+        if (!cancelled) {
+          setOrgUsers([]);
+
+          await showAlertRef.current({
+            title: t("Alerts.usersLoadError.title"),
+            message: t("Alerts.usersLoadError.message"),
+            tone: "danger",
+          });
+        }
       } finally {
+
+
         if (!cancelled) setUsersLoading(false);
       }
     }
@@ -135,7 +183,7 @@ export default function ScheduledPage() {
     return () => {
       cancelled = true;
     };
-  }, [org?.id]);
+  }, [org?.id, t]);
 
   useEffect(() => {
     const timers = closeTimersRef.current;
@@ -249,8 +297,15 @@ export default function ScheduledPage() {
 
     const recipients = [...new Set(formData.recipients)];
 
-    if (!formData.message.trim() || !scheduledIso) {
+        if (!formData.message.trim() || !scheduledIso) {
       setError(t("Errors.invalidForm"));
+
+      await showAlert({
+        title: t("Alerts.invalidForm.title"),
+        message: t("Alerts.invalidForm.message"),
+        tone: "warning",
+      });
+
       return;
     }
 
@@ -301,14 +356,32 @@ export default function ScheduledPage() {
       const normalized = normalizeBroadcast(result.item);
 
       setItems((prev) =>
-        prev.map((item) => (item.id === normalized.id ? normalized : item)),
+        prev.map((item) => (item.id === normalized.id ? normalized : item))
       );
 
       closeEditModal();
-    } catch (err) {
-      console.error(err);
-      setError(t("Errors.save"));
-    } finally {
+
+      await showAlert({
+        title: t("Alerts.saveSuccess.title"),
+        message: t("Alerts.saveSuccess.message"),
+        tone: "success",
+      });
+
+
+          } catch (err) {
+        console.warn("[Scheduled] save edit error:", err);
+
+        setError(t("Errors.save"));
+
+        await showAlert({
+          title: t("Alerts.saveError.title"),
+          message: t("Alerts.saveError.message"),
+          tone: "danger",
+        });
+      } finally {
+
+
+
       setSaving(false);
     }
   }
@@ -352,11 +425,23 @@ export default function ScheduledPage() {
       if (editingItem?.id === item.id) {
         setIsEditModalOpen(false);
         setEditingItem(null);
+        await showAlert({
+          title: t("Alerts.deleteSuccess.title"),
+          message: t("Alerts.deleteSuccess.message"),
+          tone: "success",
+        });
       }
-    } catch (err) {
-      console.error(err);
-      setError(t("Errors.delete"));
-    } finally {
+          } catch (err) {
+        console.warn("[Scheduled] delete error:", err);
+
+        setError(t("Errors.delete"));
+
+        await showAlert({
+          title: t("Alerts.deleteError.title"),
+          message: t("Alerts.deleteError.message"),
+          tone: "danger",
+        });
+      } finally {
       setDeletingId(null);
     }
   }
@@ -380,7 +465,7 @@ export default function ScheduledPage() {
         dateFilter={dateFilter}
         onDateChange={setDateFilter}
         onClearDate={() => setDateFilter("")}
-        onRefresh={loadItems}
+        onRefresh={() => loadItems(true)}
       />
 
       {error ? <div className={styles.errorBox}>{error}</div> : null}

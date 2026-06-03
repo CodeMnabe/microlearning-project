@@ -984,8 +984,69 @@
     "empty": "No users.",
     "assistantUpdateFailed": "Failed to update assistant",
     "confirmDeleteTitle": "Delete {name}?",
-    "confirmDeleteMessage": "This action cannot be undone."
+    "confirmDeleteMessage": "This action cannot be undone.",
+
+    "alerts": {
+  "noOrg": {
+    "title": "Missing organization",
+    "message": "The organization could not be identified yet. Please try again in a few seconds."
   },
+  "assistantsLoadFailed": {
+    "title": "Failed to load assistants",
+    "message": "The assistant list could not be loaded."
+  },
+  "tagsLoadFailed": {
+    "title": "Failed to load tags",
+    "message": "User tags could not be loaded."
+  },
+  "usersLoadFailed": {
+    "title": "Failed to load users",
+    "message": "The user list could not be loaded. Please try again in a few seconds."
+  },
+  "usersRefreshSuccess": {
+    "title": "Users updated",
+    "message": "The user list was refreshed successfully."
+  },
+  "userCreated": {
+    "title": "User created",
+    "message": "The user \"{name}\" was created successfully."
+  },
+  "createUserFailed": {
+    "title": "Failed to create user",
+    "message": "The user could not be created. Check the data and try again."
+  },
+  "userDeleted": {
+    "title": "User deleted",
+    "message": "The user \"{name}\" was deleted successfully."
+  },
+  "deleteUserFailed": {
+    "title": "Failed to delete user",
+    "message": "The user could not be deleted."
+  },
+  "assistantUpdated": {
+    "title": "Assistant updated",
+    "message": "The assistant for \"{name}\" was updated successfully."
+  },
+  "assistantUpdateFailed": {
+    "title": "Failed to update assistant",
+    "message": "The user's assistant could not be updated."
+  },
+  "importSuccess": {
+    "title": "Import completed",
+    "message": "Users were imported successfully."
+  },
+  "userUpdated": {
+    "title": "User updated",
+    "message": "The user changes were saved successfully."
+  }
+}
+
+
+
+  },
+
+
+  
   "UserPage": {
     "selectUser": "Select a user.",
     "id": "ID",
@@ -1141,7 +1202,64 @@
     "nameRequired": "Name is required.",
     "createFailed": "Create failed: {message}",
     "sendFailed": "Send failed: {message}"
-  }
+  },
+
+    
+
+
+      "alerts": {
+      "syncFailed": {
+        "title": "Failed to sync templates",
+        "message": "Templates could not be loaded. Please try again in a few seconds."
+      },
+      "syncSuccess": {
+        "title": "Templates synced",
+        "message": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}"
+      },
+      "invalidJson": {
+        "title": "Invalid JSON",
+        "message": "The Components field has a formatting error. Check commas, quotes and brackets."
+      },
+      "componentsNotArray": {
+        "title": "Invalid format",
+        "message": "Components must be inside a JSON array."
+      },
+      "nameRequired": {
+        "title": "Missing name",
+        "message": "Fill in the template name before submitting."
+      },
+      "templateSubmitted": {
+        "title": "Template submitted",
+        "message": "The template \"{name}\" was submitted with status: {status}."
+      },
+      "createFailed": {
+        "title": "Failed to create template",
+        "message": "The template could not be submitted. Check the data and try again."
+      },
+      "recipientRequired": {
+        "title": "Missing recipient",
+        "message": "Enter the number where you want to send the test."
+      },
+      "noTemplateSelected": {
+        "title": "Missing template",
+        "message": "The template to test could not be identified. Close the modal and try again."
+      },
+      "testSent": {
+        "title": "Test sent",
+        "message": "The test template was sent successfully."
+      },
+      "testSendFailed": {
+        "title": "Failed to send test",
+        "message": "The test template could not be sent. Check the number and try again."
+      },
+      "noOrg": {
+      "title": "Missing organization",
+      "message": "The organization could not be identified yet. Please try again in a few seconds."
+}
+
+
+    }
+
 },
 
 
@@ -1229,7 +1347,33 @@
     "save": "Save",
     "saving": "Saving...",
     "messagePlaceholder": "Welcome {userName} to {organizationName}!",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "alerts": {
+  "disabledTrigger": {
+    "title": "Unavailable event",
+    "message": "This event is not available for automations yet."
+  },
+  "nameRequired": {
+    "title": "Missing name",
+    "message": "Fill in the automation name before saving."
+  },
+  "invalidDelay": {
+    "title": "Invalid delay",
+    "message": "Delay must be a number equal to or greater than 0 minutes."
+  },
+  "contentRequired": {
+    "title": "Missing content",
+    "message": "Write a message or choose a WhatsApp template before saving."
+  },
+  "templateRequired": {
+    "title": "Missing template",
+    "message": "Choose a WhatsApp template or write a manual message."
+  },
+  "templateBindingsRequired": {
+    "title": "Missing template fields",
+    "message": "Fill in the required template fields: {fields}."
+  }
+}
   },
   "deliveriesTable": {
   "rule": "Rule",
@@ -1266,6 +1410,64 @@
   "deleteRule": "Could not delete the automation rule.",
   "updateRule": "Could not update the automation rule.",
   "cron": "Cron execution failed."
+},
+"alerts": {
+  "noOrg": {
+    "title": "Missing organization",
+    "message": "The organization could not be identified yet. Please try again in a few seconds."
+  },
+  "refreshSuccess": {
+    "title": "Automations updated",
+    "message": "Rules, queue and deliveries were updated successfully."
+  },
+  "loadFailed": {
+    "title": "Failed to load automations",
+    "message": "Automation data could not be loaded. Please try again in a few seconds."
+  },
+  "ruleCreated": {
+    "title": "Automation created",
+    "message": "The automation rule was created successfully."
+  },
+  "ruleUpdated": {
+    "title": "Automation updated",
+    "message": "The automation rule changes were saved successfully."
+  },
+  "saveRuleError": {
+    "title": "Failed to save automation",
+    "message": "The automation rule could not be saved."
+  },
+  "ruleDeleted": {
+    "title": "Automation deleted",
+    "message": "The automation rule was deleted successfully."
+  },
+  "deleteRuleError": {
+    "title": "Failed to delete automation",
+    "message": "The automation rule could not be deleted."
+  },
+  "ruleActivated": {
+    "title": "Automation activated",
+    "message": "The automation rule was activated successfully."
+  },
+  "rulePaused": {
+    "title": "Automation paused",
+    "message": "The automation rule was paused successfully."
+  },
+  "updateRuleError": {
+    "title": "Failed to update automation",
+    "message": "The automation rule could not be updated."
+  },
+  "inactivitySuccess": {
+    "title": "Inactivity processed",
+    "message": "The inactivity routine ran successfully."
+  },
+  "materializeSuccess": {
+    "title": "Deliveries materialized",
+    "message": "The materialization routine ran successfully."
+  },
+  "cronError": {
+    "title": "Routine failed",
+    "message": "The automation routine could not be executed."
+  }
 }
 
 
@@ -1318,7 +1520,39 @@
     "addPlaceholders": {
       "first": "Add placeholders like",
       "second": "inside the message."
-    }
+    },
+
+    "alerts": {
+  "usersLoadFailed": {
+    "title": "Failed to load recipients",
+    "message": "The user list could not be loaded. Please try again in a few seconds."
+  },
+  "filtersLoadFailed": {
+    "title": "Failed to load filters",
+    "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
+  },
+  "templatesLoadFailed": {
+    "title": "Failed to load templates",
+    "message": "WhatsApp templates could not be loaded. Please try again in a few seconds."
+  },
+  "templateDetailsFailed": {
+    "title": "Template error",
+    "message": "Could not load this template's details. Choose another template or try again."
+  },
+  "contentMissing": {
+    "title": "Missing content",
+    "sendMessage": "Write a message, add a file or choose a valid template before sending.",
+    "scheduleMessage": "Write a message, add a file or choose a valid template before scheduling."
+  },
+  "templateParamsMissing": {
+    "title": "Missing parameters",
+    "message": "Fill in all required template parameters before continuing."
+  },
+  "trackedLinkRemoved": {
+    "title": "Link removed",
+    "message": "The link used in the template URL button was removed. Choose another link before sending."
+  }
+}
   },
   "BroadcastScheduled": {
     "Title": "Scheduled messages",
@@ -1336,7 +1570,8 @@
     },
     "Filters": {
       "searchPlaceholder": "Search by message, status, channel or creator...",
-      "datePlaceholder": "Date"
+      "datePlaceholder": "Date",
+       "clearDate": "Clear date"
     },
     "Channels": {
       "all": "All channels",
@@ -1419,8 +1654,49 @@
       "save": "Could not save the changes.",
       "delete": "Could not delete the scheduled message.",
       "invalidForm": "Please fill in the message and a valid date/time."
-    }
+    },
+      "Alerts": {
+  "noOrg": {
+    "title": "Missing organization",
+    "message": "The organization could not be identified yet. Please try again in a few seconds."
   },
+  "refreshSuccess": {
+    "title": "Messages updated",
+    "message": "{count, plural, =0 {There are no scheduled messages.} one {# scheduled message loaded.} other {# scheduled messages loaded.}}"
+  },
+  "loadError": {
+    "title": "Failed to load messages",
+    "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
+  },
+  "usersLoadError": {
+    "title": "Failed to load recipients",
+    "message": "The user list for editing recipients could not be loaded."
+  },
+  "invalidForm": {
+    "title": "Missing information",
+    "message": "Fill in the message and choose a valid date and time before saving."
+  },
+  "saveSuccess": {
+    "title": "Message updated",
+    "message": "The scheduled message changes were saved successfully."
+  },
+  "saveError": {
+    "title": "Failed to save changes",
+    "message": "The scheduled message changes could not be saved."
+  },
+  "deleteSuccess": {
+    "title": "Message deleted",
+    "message": "The scheduled message was deleted successfully."
+  },
+  "deleteError": {
+    "title": "Failed to delete message",
+    "message": "The scheduled message could not be deleted."
+  }
+}
+
+  },
+
+
   "TrackedLinks": {
     "title": "Tracked Links",
     "subtitle": "View click performance for your organization's tracked links.",
@@ -1440,8 +1716,23 @@
       "created": "Created"
     },
     "view": "View",
+
     "detail": {
-      "back": "Back",
+            "alerts": {
+        "noOrg": {
+          "title": "Missing organization",
+          "message": "The organization could not be identified yet. Please try again in a few seconds."
+        },
+        "missingSendGroup": {
+          "title": "Invalid link",
+          "message": "The send group for this tracked link could not be identified."
+        },
+        "loadFailed": {
+          "title": "Failed to load details",
+          "message": "This tracked link's details could not be loaded. Please try again in a few seconds."
+        }
+      },
+            "back": "Back",
       "loading": "Loading tracked link details...",
       "trackedLink": "Tracked Link",
       "key": "key",
@@ -1461,7 +1752,18 @@
       "firstClick": "First Click",
       "lastClick": "Last Click",
       "sentAt": "Sent at"
-    }
+    },
+      "alerts": {
+  "noOrg": {
+    "title": "Missing organization",
+    "message": "The organization could not be identified yet. Please try again in a few seconds."
+  },
+  "loadFailed": {
+    "title": "Failed to load tracked links",
+    "message": "Tracked links could not be loaded. Please try again in a few seconds."
+  }
+}
+
   },
   "Assistants": {
     "myAssistants": "My Assistants",
@@ -1520,7 +1822,33 @@
     "placeholder": "Type your message...",
     "send": "Send",
     "errorReply": "Error in reply",
-    "errorApi": "Error communicating with the API."
+    "errorApi": "Error communicating with the API.",
+    "alerts": {
+  "emptyMessage": {
+    "title": "Empty message",
+    "message": "Write a message before sending."
+  },
+  "missingAssistant": {
+    "title": "Missing assistant",
+    "message": "The selected assistant could not be identified."
+  },
+  "missingOpenAiId": {
+    "title": "Incomplete configuration",
+    "message": "This assistant does not have an OpenAI ID associated with it."
+  },
+  "apiError": {
+    "title": "Failed to get reply",
+    "message": "The assistant could not reply. Please try again."
+  },
+  "emptyReply": {
+    "title": "Empty reply",
+    "message": "The assistant returned no content."
+  },
+  "networkError": {
+    "title": "Connection error",
+    "message": "The API could not be reached. Check the connection and try again."
+  }
+}
   },
   "Reports": {
     "eyebrow": "Metrics and reports",
@@ -1687,7 +2015,42 @@
     "themeSaveError": "❌ Could not save the theme.",
     "organizationCreated": "✓ Organization #{id} created: “{name}”",
     "organizationCreateError": "❌ Error creating organization."
-  }
+  },
+    "alerts": {
+      "loadOrganizationsError": {
+        "title": "Failed to load organizations",
+        "message": "Organizations could not be loaded. Please try again in a few seconds."
+      },
+      "organizationNameRequired": {
+        "title": "Missing name",
+        "message": "Fill in the organization name before creating it."
+      },
+      "organizationCreated": {
+        "title": "Organization created",
+        "message": "The organization \"{name}\" was created successfully."
+      },
+      "organizationCreateError": {
+        "title": "Failed to create organization",
+        "message": "The organization could not be created. Check the data and try again."
+      },
+      "themeSaved": {
+        "title": "Theme saved",
+        "message": "The theme for \"{name}\" was saved successfully."
+      },
+      "themeSaveError": {
+        "title": "Failed to save theme",
+        "message": "The theme could not be saved. Please try again in a few seconds."
+      },
+      "invalidColor": {
+        "title": "Invalid color",
+        "message": "Colors must use hexadecimal format, for example #4f46e5."
+      },
+      "notAuthenticated": {
+        "title": "Invalid session",
+        "message": "The authenticated user could not be identified. Please sign in again."
+      }
+    }
+
 },
 
   "Auth": {
@@ -1721,6 +2084,11 @@
       "updated": "Password updated! Redirecting…"
     }
   },
+
+
+  
+
+
   "Alert": {
     "noContact": {
       "title": "Missing Contact",
@@ -1733,6 +2101,11 @@
       "ok": "OK"
     }
   },
+  
+  
+  
+  
+  
   "PillSelect": {
     "placeholder": "Select…",
     "empty": "No options."

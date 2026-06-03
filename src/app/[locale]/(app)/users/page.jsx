@@ -24,6 +24,7 @@ import {
 import useOrganization from "@/app/hooks/useOrganization";
 import { useAuth } from "@/app/AuthContext.jsx";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 import FilterMenu from "./FilterMenu";
 import QuickActionsBar from "./QuickActions/QuickActions";
 
@@ -68,6 +69,13 @@ export default function UsersPage() {
   const [totalUsers, setTotalUsers] = useState(0);
 
   const confirm = useConfirm();
+  const showAlert = useAlert();
+
+    const showAlertRef = useRef(null);
+
+    useEffect(() => {
+      showAlertRef.current = showAlert;
+    }, [showAlert]);
 
   // how many tags to show before "+n"
   const MAX_TAGS = 6;
@@ -89,29 +97,84 @@ export default function UsersPage() {
   const defaultPhoneCode = org?.default_phone_country_code || "+351";
 
   // assistants
-  useEffect(() => {
-    if (authLoading || orgLoading || !orgId) return;
-    (async () => {
+    useEffect(() => {
+  if (authLoading || orgLoading || !orgId) return;
+
+  let alive = true;
+
+  (async () => {
+    try {
       const res = await fetch(`/api/assistants?orgId=${orgId}`);
-      const data = await res.json();
-      setAssistantsList(data || []);
-    })().catch(console.error);
-  }, [authLoading, orgLoading, orgId]);
+      const data = await res.json().catch(() => []);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to load assistants.");
+      }
+
+      if (!alive) return;
+
+      setAssistantsList(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn("[Users] assistants load error:", err);
+
+      if (!alive) return;
+
+      setAssistantsList([]);
+
+      if (typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("Users.alerts.assistantsLoadFailed.title"),
+          message: translation("Users.alerts.assistantsLoadFailed.message"),
+          tone: "danger",
+        });
+      }
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, [authLoading, orgLoading, orgId, translation]);
 
   // tags for filter
   useEffect(() => {
-    if (!orgId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/tags?orgId=${orgId}`);
-        const data = await r.json();
-        setAllTags(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error(e);
-        setAllTags([]);
+  if (!orgId) return;
+
+  let alive = true;
+
+  (async () => {
+    try {
+      const r = await fetch(`/api/tags?orgId=${orgId}`);
+      const data = await r.json().catch(() => []);
+
+      if (!r.ok) {
+        throw new Error(data?.error || "Failed to load tags.");
       }
-    })();
-  }, [orgId]);
+
+      if (!alive) return;
+
+      setAllTags(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn("[Users] tags load error:", err);
+
+      if (!alive) return;
+
+      setAllTags([]);
+
+      if (typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("Users.alerts.tagsLoadFailed.title"),
+          message: translation("Users.alerts.tagsLoadFailed.message"),
+          tone: "danger",
+        });
+      }
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, [orgId, translation]);
 
   useEffect(() => {
     if (!createMenuOpen) return;
@@ -135,22 +198,62 @@ export default function UsersPage() {
     };
   }, [createMenuOpen]);
 
-  const refreshUsers = useCallback(async () => {
-    if (!orgId) return;
+  const refreshUsers = useCallback(
+  async (showSuccessAlert = false) => {
+    if (!orgId) {
+      if (showSuccessAlert && typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("Users.alerts.noOrg.title"),
+          message: translation("Users.alerts.noOrg.message"),
+          tone: "warning",
+        });
+      }
+
+      return;
+    }
 
     startLoading();
+
     try {
       const res = await fetch(
         `/api/users?orgId=${orgId}&page=${page}&pageSize=${pageSize}`,
       );
-      const data = await res.json();
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to load users.");
+      }
 
       setUsers(Array.isArray(data?.items) ? data.items : []);
       setTotalUsers(Number(data?.total || 0));
+
+      if (showSuccessAlert && typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("Users.alerts.usersRefreshSuccess.title"),
+          message: translation("Users.alerts.usersRefreshSuccess.message"),
+          tone: "success",
+        });
+      }
+    } catch (err) {
+      console.warn("[Users] refresh users error:", err);
+
+      setUsers([]);
+      setTotalUsers(0);
+
+      if (typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("Users.alerts.usersLoadFailed.title"),
+          message: translation("Users.alerts.usersLoadFailed.message"),
+          tone: "danger",
+        });
+      }
     } finally {
       stopLoading();
     }
-  }, [orgId, page, pageSize, startLoading, stopLoading]);
+  },
+  [orgId, page, pageSize, startLoading, stopLoading, translation],
+);
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
@@ -227,47 +330,90 @@ export default function UsersPage() {
     });
   }
 
-  async function handleCreateUser({
-    userName,
-    phoneCode,
-    phoneNational,
-    email,
-    assistantId,
-    teamsAadObjectId,
-    teamsFromId,
-  }) {
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        organizationId: org.id,
-        name: userName,
-        email: email || null,
-        assistantId,
-        phoneCountryCode: phoneCode,
-        phoneNational,
-        teamsAadObjectId: teamsAadObjectId || null,
-        teamsFromId: teamsFromId || null,
-      }),
-    });
+      async function handleCreateUser({
+      userName,
+      phoneCode,
+      phoneNational,
+      email,
+      assistantId,
+      teamsAadObjectId,
+      teamsFromId,
+    }) {
+      if (!org?.id) {
+        await showAlert({
+          title: translation("Users.alerts.noOrg.title"),
+          message: translation("Users.alerts.noOrg.message"),
+          tone: "warning",
+        });
 
-    if (!res.ok) {
-      let errMsg = "Failed to create user.";
-      try {
-        const err = await res.json();
-        errMsg = err?.error || errMsg;
-      } catch {
-        // ignore JSON parse failure, keep fallback message
+        return {
+          ok: false,
+          error: translation("Users.alerts.noOrg.message"),
+        };
       }
 
-      console.error(`Error creating user: ${errMsg}`);
-      return { ok: false, error: errMsg };
-    }
+      try {
+        const res = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            organizationId: org.id,
+            name: userName,
+            email: email || null,
+            assistantId,
+            phoneCountryCode: phoneCode,
+            phoneNational,
+            teamsAadObjectId: teamsAadObjectId || null,
+            teamsFromId: teamsFromId || null,
+          }),
+        });
 
-    await refreshUsers();
-    setIsCreateOpen(false);
-    return { ok: true };
-  }
+        if (!res.ok) {
+          let errMsg = "Failed to create user.";
+
+          try {
+            const err = await res.json();
+            errMsg = err?.error || errMsg;
+          } catch {
+            // manter fallback
+          }
+
+          await showAlert({
+            title: translation("Users.alerts.createUserFailed.title"),
+            message: translation("Users.alerts.createUserFailed.message"),
+            tone: "danger",
+          });
+
+          return { ok: false, error: errMsg };
+        }
+
+        await refreshUsers();
+        setIsCreateOpen(false);
+
+        await showAlert({
+          title: translation("Users.alerts.userCreated.title"),
+          message: translation("Users.alerts.userCreated.message", {
+            name: userName,
+          }),
+          tone: "success",
+        });
+
+        return { ok: true };
+      } catch (err) {
+        console.warn("[Users] create user error:", err);
+
+        await showAlert({
+          title: translation("Users.alerts.createUserFailed.title"),
+          message: translation("Users.alerts.createUserFailed.message"),
+          tone: "danger",
+        });
+
+        return {
+          ok: false,
+          error: err?.message || "Failed to create user.",
+        };
+      }
+    }
 
   function openEditFor(u) {
     setEditingUser(u);
@@ -280,23 +426,95 @@ export default function UsersPage() {
     setViewOpen(true);
   }
 
-  async function deleteUserById(u) {
-    const ok = await confirm({
-      title: translation("Users.confirmDeleteTitle", { name: u.name }),
-      message: translation("Users.confirmDeleteMessage"),
-      confirmText: translation("Common.delete"),
-      cancelText: translation("Common.cancel"),
+      async function deleteUserById(u) {
+      const ok = await confirm({
+        title: translation("Users.confirmDeleteTitle", { name: u.name }),
+        message: translation("Users.confirmDeleteMessage"),
+        confirmText: translation("Common.delete"),
+        cancelText: translation("Common.cancel"),
+        tone: "danger",
+      });
+
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`/api/users?id=${u.id}`, { method: "DELETE" });
+
+        if (!res.ok) {
+          const errorText = await res.text().catch(() => "");
+          throw new Error(errorText || "Failed to delete user.");
+        }
+
+        await refreshUsers();
+
+        await showAlert({
+          title: translation("Users.alerts.userDeleted.title"),
+          message: translation("Users.alerts.userDeleted.message", {
+            name: u.name,
+          }),
+          tone: "success",
+        });
+      } catch (err) {
+        console.warn("[Users] delete user error:", err);
+
+        await showAlert({
+          title: translation("Users.alerts.deleteUserFailed.title"),
+          message: translation("Users.alerts.deleteUserFailed.message"),
+          tone: "danger",
+        });
+      }
+    }
+
+async function handleUserAssistantChange(u, newAssistantId) {
+  try {
+    const res = await fetch("/api/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: u.id,
+        assistantId: newAssistantId,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to update assistant.");
+    }
+
+    await refreshUsers();
+
+    await showAlert({
+      title: translation("Users.alerts.assistantUpdated.title"),
+      message: translation("Users.alerts.assistantUpdated.message", {
+        name: u.name,
+      }),
+      tone: "success",
+    });
+  } catch (err) {
+    console.warn("[Users] update assistant error:", err);
+
+    await showAlert({
+      title: translation("Users.alerts.assistantUpdateFailed.title"),
+      message: translation("Users.alerts.assistantUpdateFailed.message"),
       tone: "danger",
     });
-    if (!ok) return;
-
-    const res = await fetch(`/api/users?id=${u.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      console.error(await res.text());
-      return;
-    }
-    await refreshUsers();
   }
+}
+
+async function openCreateUserModal() {
+  if (!orgId) {
+    await showAlert({
+      title: translation("Users.alerts.noOrg.title"),
+      message: translation("Users.alerts.noOrg.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  setIsCreateOpen(true);
+}
 
   const selectedCount = selected.size;
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
@@ -385,7 +603,7 @@ export default function UsersPage() {
                   role="menuitem"
                   onClick={() => {
                     setCreateMenuOpen(false);
-                    setIsCreateOpen(true);
+                    openCreateUserModal();
                   }}
                 >
                   <Plus size={16} />
@@ -556,30 +774,7 @@ export default function UsersPage() {
                         value: a.id,
                         label: a.name,
                       }))}
-                      onChange={async (newAssistantId) => {
-                        try {
-                          const res = await fetch("/api/users", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              id: u.id,
-                              assistantId: newAssistantId,
-                            }),
-                          });
-
-                          if (!res.ok) {
-                            const err = await res.json();
-                            console.error(
-                              "Falha ao atualizar assistente:",
-                              err.error,
-                            );
-                          } else {
-                            await refreshUsers();
-                          }
-                        } catch (e) {
-                          console.error(e);
-                        }
-                      }}
+                      onChange={(newAssistantId) => handleUserAssistantChange(u, newAssistantId)}
                     />
                   </div>
 
@@ -707,8 +902,14 @@ export default function UsersPage() {
         assistants={assistantsList}
         defaultPhoneCode={defaultPhoneCode}
         onImported={async () => {
-          await refreshUsers();
-        }}
+        await refreshUsers();
+
+        await showAlert({
+          title: translation("Users.alerts.importSuccess.title"),
+          message: translation("Users.alerts.importSuccess.message"),
+          tone: "success",
+        });
+      }}
       />
 
       {orgId && (
@@ -730,8 +931,14 @@ export default function UsersPage() {
           onDelete={deleteUserById}
           onClose={() => setEditOpen(false)}
           onSaved={async () => {
-            await refreshUsers();
-          }}
+          await refreshUsers();
+
+          await showAlert({
+            title: translation("Users.alerts.userUpdated.title"),
+            message: translation("Users.alerts.userUpdated.message"),
+            tone: "success",
+          });
+        }}
           defaultPhoneCode={defaultPhoneCode}
         />
       )}

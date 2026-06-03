@@ -892,6 +892,7 @@
       }
     }
   },
+
   "Nav": {
     "home": "Início",
     "users": "Colaboradores",
@@ -907,6 +908,7 @@
     "options": "Definições",
     "logout": "Sair"
   },
+
   "Common": {
     "search": "Procurar",
     "filter": "Filtrar",
@@ -941,6 +943,7 @@
     "error": "Erro",
     "areYouSure": "Tem a certeza?"
   },
+
   "Lang": {
     "pt": "PT",
     "en": "EN",
@@ -954,11 +957,14 @@
   "Navbar": {
     "orgUnknown": "-"
   },
+
+
   "Users": {
   "title": "Utilizadores",
   "searchPlaceholder": "Procurar",
   "manageTags": "Gerir Tags",
   "newUser": "Novo Utilizador",
+
 
   "pagination": {
     "summary": "Página {page} de {totalPages} · {totalUsers} utilizadores",
@@ -988,8 +994,67 @@
     "empty": "Sem utilizadores.",
     "assistantUpdateFailed": "Falha ao atualizar assistente",
     "confirmDeleteTitle": "Eliminar {name}?",
-    "confirmDeleteMessage": "Esta ação não pode ser desfeita."
+    "confirmDeleteMessage": "Esta ação não pode ser desfeita.",
+
+    "alerts": {
+  "noOrg": {
+    "title": "Organização em falta",
+    "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
   },
+  "assistantsLoadFailed": {
+    "title": "Erro ao carregar assistentes",
+    "message": "Não foi possível carregar a lista de assistentes."
+  },
+  "tagsLoadFailed": {
+    "title": "Erro ao carregar tags",
+    "message": "Não foi possível carregar as tags dos utilizadores."
+  },
+  "usersLoadFailed": {
+    "title": "Erro ao carregar utilizadores",
+    "message": "Não foi possível carregar a lista de utilizadores. Tenta novamente dentro de alguns segundos."
+  },
+  "usersRefreshSuccess": {
+    "title": "Utilizadores atualizados",
+    "message": "A lista de utilizadores foi atualizada com sucesso."
+  },
+  "userCreated": {
+    "title": "Utilizador criado",
+    "message": "O utilizador \"{name}\" foi criado com sucesso."
+  },
+  "createUserFailed": {
+    "title": "Erro ao criar utilizador",
+    "message": "Não foi possível criar o utilizador. Verifica os dados e tenta novamente."
+  },
+  "userDeleted": {
+    "title": "Utilizador eliminado",
+    "message": "O utilizador \"{name}\" foi eliminado com sucesso."
+  },
+  "deleteUserFailed": {
+    "title": "Erro ao eliminar utilizador",
+    "message": "Não foi possível eliminar o utilizador."
+  },
+  "assistantUpdated": {
+    "title": "Assistente atualizado",
+    "message": "O assistente do utilizador \"{name}\" foi atualizado com sucesso."
+  },
+  "assistantUpdateFailed": {
+    "title": "Erro ao atualizar assistente",
+    "message": "Não foi possível atualizar o assistente do utilizador."
+  },
+  "importSuccess": {
+    "title": "Importação concluída",
+    "message": "Os utilizadores foram importados com sucesso."
+  },
+  "userUpdated": {
+    "title": "Utilizador atualizado",
+    "message": "As alterações ao utilizador foram guardadas com sucesso."
+  }
+}
+  },
+
+
+
+
   "UserPage": {
     "selectUser": "Selecione um utilizador.",
     "id": "ID",
@@ -1145,7 +1210,59 @@
     "nameRequired": "O nome é obrigatório.",
     "createFailed": "Falha ao criar template: {message}",
     "sendFailed": "Falha ao enviar template: {message}"
-  }
+  },
+          "alerts": {
+      "syncFailed": {
+        "title": "Erro ao sincronizar templates",
+        "message": "Não foi possível carregar os templates. Tenta novamente dentro de alguns segundos."
+      },
+      "syncSuccess": {
+        "title": "Templates sincronizados",
+        "message": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}"
+      },
+      "invalidJson": {
+        "title": "JSON inválido",
+        "message": "O campo Components tem um erro de formato. Verifica vírgulas, aspas e chavetas."
+      },
+      "componentsNotArray": {
+        "title": "Formato inválido",
+        "message": "Os componentes devem estar dentro de um array JSON."
+      },
+      "nameRequired": {
+        "title": "Nome em falta",
+        "message": "Preenche o nome do template antes de submeter."
+      },
+      "templateSubmitted": {
+        "title": "Template submetido",
+        "message": "O template \"{name}\" foi submetido com o estado: {status}."
+      },
+      "createFailed": {
+        "title": "Erro ao criar template",
+        "message": "Não foi possível submeter o template. Verifica os dados e tenta novamente."
+      },
+      "recipientRequired": {
+        "title": "Destinatário em falta",
+        "message": "Indica o número para onde queres enviar o teste."
+      },
+      "noTemplateSelected": {
+        "title": "Template em falta",
+        "message": "Não foi possível identificar o template a testar. Fecha o modal e tenta novamente."
+      },
+      "testSent": {
+        "title": "Teste enviado",
+        "message": "O template de teste foi enviado com sucesso."
+      },
+      "testSendFailed": {
+        "title": "Erro ao enviar teste",
+        "message": "Não foi possível enviar o template de teste. Verifica o número e tenta novamente."
+      },
+
+        "noOrg": {
+        "title": "Organização em falta",
+        "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+      }
+    }
+
 },
 
 
@@ -1232,7 +1349,33 @@
     "save": "Guardar",
     "saving": "A guardar...",
     "messagePlaceholder": "Bem-vindo {userName} à {organizationName}!",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+      "alerts": {
+  "disabledTrigger": {
+    "title": "Evento indisponível",
+    "message": "Este evento ainda não está disponível para automações."
+  },
+  "nameRequired": {
+    "title": "Nome em falta",
+    "message": "Preenche o nome da automação antes de guardar."
+  },
+  "invalidDelay": {
+    "title": "Atraso inválido",
+    "message": "O atraso deve ser um número igual ou superior a 0 minutos."
+  },
+  "contentRequired": {
+    "title": "Conteúdo em falta",
+    "message": "Escreve uma mensagem ou escolhe um template WhatsApp antes de guardar."
+  },
+  "templateRequired": {
+    "title": "Template em falta",
+    "message": "Escolhe um template WhatsApp ou escreve uma mensagem manual."
+  },
+  "templateBindingsRequired": {
+    "title": "Campos do template em falta",
+    "message": "Preenche os campos obrigatórios do template: {fields}."
+  }
+}
   },
 
   "deliveriesTable": {
@@ -1270,7 +1413,65 @@
     "deleteRule": "Não foi possível eliminar a regra de automação.",
     "updateRule": "Não foi possível atualizar a regra de automação.",
     "cron": "A execução do cron falhou."
+  },
+  "alerts": {
+  "noOrg": {
+    "title": "Organização em falta",
+    "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+  },
+  "refreshSuccess": {
+    "title": "Automações atualizadas",
+    "message": "As regras, filas e envios foram atualizados com sucesso."
+  },
+  "loadFailed": {
+    "title": "Erro ao carregar automações",
+    "message": "Não foi possível carregar os dados das automações. Tenta novamente dentro de alguns segundos."
+  },
+  "ruleCreated": {
+    "title": "Automação criada",
+    "message": "A regra de automação foi criada com sucesso."
+  },
+  "ruleUpdated": {
+    "title": "Automação atualizada",
+    "message": "As alterações à regra de automação foram guardadas com sucesso."
+  },
+  "saveRuleError": {
+    "title": "Erro ao guardar automação",
+    "message": "Não foi possível guardar a regra de automação."
+  },
+  "ruleDeleted": {
+    "title": "Automação eliminada",
+    "message": "A regra de automação foi eliminada com sucesso."
+  },
+  "deleteRuleError": {
+    "title": "Erro ao eliminar automação",
+    "message": "Não foi possível eliminar a regra de automação."
+  },
+  "ruleActivated": {
+    "title": "Automação ativada",
+    "message": "A regra de automação foi ativada com sucesso."
+  },
+  "rulePaused": {
+    "title": "Automação pausada",
+    "message": "A regra de automação foi pausada com sucesso."
+  },
+  "updateRuleError": {
+    "title": "Erro ao atualizar automação",
+    "message": "Não foi possível atualizar a regra de automação."
+  },
+  "inactivitySuccess": {
+    "title": "Inatividade processada",
+    "message": "A rotina de inatividade foi executada com sucesso."
+  },
+  "materializeSuccess": {
+    "title": "Envios materializados",
+    "message": "A rotina de materialização foi executada com sucesso."
+  },
+  "cronError": {
+    "title": "Erro na rotina",
+    "message": "Não foi possível executar a rotina de automações."
   }
+}
 
  
 },
@@ -1323,8 +1524,44 @@
     "addPlaceholders": {
       "first": "Adiciona o placeholder tipo",
       "second": "dentro da mensagem"
+    },
+      "alerts": {
+      "usersLoadFailed": {
+        "title": "Erro ao carregar destinatários",
+        "message": "Não foi possível carregar a lista de utilizadores. Tenta novamente dentro de alguns segundos."
+      },
+      "filtersLoadFailed": {
+        "title": "Erro ao carregar filtros",
+        "message": "Não foi possível carregar as tags ou assistentes. Alguns filtros podem não estar disponíveis."
+      },
+      "templatesLoadFailed": {
+        "title": "Erro ao carregar templates",
+        "message": "Não foi possível carregar os templates de WhatsApp. Tenta novamente dentro de alguns segundos."
+      },
+      "templateDetailsFailed": {
+        "title": "Erro no template",
+        "message": "Não foi possível carregar os detalhes deste template. Escolhe outro template ou tenta novamente."
+      },
+      "contentMissing": {
+        "title": "Conteúdo em falta",
+        "sendMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de enviar.",
+        "scheduleMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de agendar."
+      },
+      "templateParamsMissing": {
+        "title": "Parâmetros em falta",
+        "message": "Preenche todos os parâmetros obrigatórios do template antes de continuar."
+      },
+      "trackedLinkRemoved": {
+        "title": "Link removido",
+        "message": "O link usado no botão URL do template foi removido. Escolhe outro link antes de enviar."
+      }
     }
+
   },
+
+
+
+
   "BroadcastScheduled": {
     "Title": "Mensagens agendadas",
     "Subtitle": "Mensagens agendadas da organização {organization}",
@@ -1341,7 +1578,8 @@
     },
     "Filters": {
       "searchPlaceholder": "Pesquisar por mensagem, estado, canal ou criador...",
-      "datePlaceholder": "Data"
+      "datePlaceholder": "Data",
+      "clearDate": "Limpar data"
     },
     "Channels": {
       "all": "Todos os canais",
@@ -1424,8 +1662,52 @@
       "save": "Não foi possível guardar as alterações.",
       "delete": "Não foi possível eliminar a mensagem agendada.",
       "invalidForm": "Preenche a mensagem e uma data/hora válida."
-    }
+    },
+      "Alerts": {
+        "noOrg": {
+          "title": "Organização em falta",
+          "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+        },
+        "refreshSuccess": {
+          "title": "Mensagens atualizadas",
+          "message": "{count, plural, =0 {Não existem mensagens agendadas.} one {# mensagem agendada carregada.} other {# mensagens agendadas carregadas.}}"
+        },
+        "loadError": {
+          "title": "Erro ao carregar mensagens",
+          "message": "Não foi possível carregar as mensagens agendadas. Tenta novamente dentro de alguns segundos."
+        },
+        "usersLoadError": {
+          "title": "Erro ao carregar destinatários",
+          "message": "Não foi possível carregar a lista de utilizadores para edição de destinatários."
+        },
+        "invalidForm": {
+          "title": "Dados em falta",
+          "message": "Preenche a mensagem e escolhe uma data e hora válidas antes de guardar."
+        },
+        "saveSuccess": {
+          "title": "Mensagem atualizada",
+          "message": "As alterações à mensagem agendada foram guardadas com sucesso."
+        },
+        "saveError": {
+          "title": "Erro ao guardar alterações",
+          "message": "Não foi possível guardar as alterações à mensagem agendada."
+        },
+        "deleteSuccess": {
+          "title": "Mensagem eliminada",
+          "message": "A mensagem agendada foi eliminada com sucesso."
+        },
+        "deleteError": {
+          "title": "Erro ao eliminar mensagem",
+          "message": "Não foi possível eliminar a mensagem agendada."
+        }
+      }
+
+
+
   },
+
+
+
   "TrackedLinks": {
     "title": "Links Rastreados",
     "subtitle": "Vê as estatísticas do links rastreados da tua organização.",
@@ -1445,7 +1727,22 @@
       "created": "Criado"
     },
     "view": "Ver",
+
     "detail": {
+      "alerts": {
+      "noOrg": {
+        "title": "Organização em falta",
+        "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+      },
+        "missingSendGroup": {
+          "title": "Link inválido",
+          "message": "Não foi possível identificar o grupo de envio deste link rastreado."
+        },
+        "loadFailed": {
+          "title": "Erro ao carregar detalhe",
+          "message": "Não foi possível carregar os detalhes deste link rastreado. Tenta novamente dentro de alguns segundos."
+        }
+      },
       "back": "Voltar",
       "loading": "A carregar os detalhes do link...",
       "trackedLink": "Link Rastreado",
@@ -1466,8 +1763,25 @@
       "firstClick": "Primeiro Clique",
       "lastClick": "Último Clique",
       "sentAt": "Enviado"
-    }
-  },
+    },
+          "alerts": {
+        "noOrg": {
+          "title": "Organização em falta",
+          "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+        },
+        "loadFailed": {
+          "title": "Erro ao carregar links rastreados",
+          "message": "Não foi possível carregar os links rastreados. Tenta novamente dentro de alguns segundos."
+        }
+      }
+
+      },
+
+
+
+
+
+
   "Assistants": {
     "myAssistants": "Os meus Assistentes",
     "createAssistant": "Criar Assistente",
@@ -1525,7 +1839,33 @@
     "placeholder": "Escreva a sua mensagem...",
     "send": "Enviar",
     "errorReply": "Erro na resposta",
-    "errorApi": "Erro ao comunicar com a API."
+    "errorApi": "Erro ao comunicar com a API.",
+    "alerts": {
+  "emptyMessage": {
+    "title": "Mensagem vazia",
+    "message": "Escreve uma mensagem antes de enviar."
+  },
+  "missingAssistant": {
+    "title": "Assistente em falta",
+    "message": "Não foi possível identificar o assistente selecionado."
+  },
+  "missingOpenAiId": {
+    "title": "Configuração incompleta",
+    "message": "Este assistente não tem um ID da OpenAI associado."
+  },
+  "apiError": {
+    "title": "Erro ao obter resposta",
+    "message": "Não foi possível obter resposta do assistente. Tenta novamente."
+  },
+  "emptyReply": {
+    "title": "Resposta vazia",
+    "message": "O assistente respondeu sem conteúdo."
+  },
+  "networkError": {
+    "title": "Erro de ligação",
+    "message": "Não foi possível contactar a API. Verifica a ligação e tenta novamente."
+  }
+}
   },
   "Reports": {
     "eyebrow": "Métricas e relatórios",
@@ -1693,7 +2033,42 @@
     "themeSaveError": "❌ Não foi possível guardar o tema.",
     "organizationCreated": "✓ Criada organização #{id}: «{name}»",
     "organizationCreateError": "❌ Erro ao criar organização."
+  },
+  "alerts": {
+  "loadOrganizationsError": {
+    "title": "Erro ao carregar organizações",
+    "message": "Não foi possível carregar as organizações. Tenta novamente dentro de alguns segundos."
+  },
+  "organizationNameRequired": {
+    "title": "Nome em falta",
+    "message": "Preenche o nome da organização antes de criar."
+  },
+  "organizationCreated": {
+    "title": "Organização criada",
+    "message": "A organização \"{name}\" foi criada com sucesso."
+  },
+  "organizationCreateError": {
+    "title": "Erro ao criar organização",
+    "message": "Não foi possível criar a organização. Verifica os dados e tenta novamente."
+  },
+  "themeSaved": {
+    "title": "Tema guardado",
+    "message": "O tema da organização \"{name}\" foi guardado com sucesso."
+  },
+  "themeSaveError": {
+    "title": "Erro ao guardar tema",
+    "message": "Não foi possível guardar o tema. Tenta novamente dentro de alguns segundos."
+  },
+  "invalidColor": {
+    "title": "Cor inválida",
+    "message": "As cores devem estar no formato hexadecimal, por exemplo #4f46e5."
+  },
+  "notAuthenticated": {
+    "title": "Sessão inválida",
+    "message": "Não foi possível identificar o utilizador autenticado. Inicia sessão novamente."
   }
+}
+
 },
 
   "Auth": {

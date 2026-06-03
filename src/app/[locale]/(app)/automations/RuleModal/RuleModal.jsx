@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import styles from "../automations.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 const CHANNEL_OPTIONS = [
   {
@@ -32,6 +33,7 @@ export function RuleModal({
 }) {
   const isEdit = Boolean(initialRule?.id);
   const translation = useTranslations("Automations.modal");
+  const showAlert = useAlert();
   const [name, setName] = useState("");
   const [triggerType, setTriggerType] = useState("user.created");
   const [channel, setChannel] = useState("whatsapp");
@@ -126,29 +128,104 @@ const assistantOptions = [
     (t) => t.value === triggerType,
   )?.disabled;
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (disabledTrigger) return;
+ async function handleSubmit(e) {
+  e.preventDefault();
 
-    const payload = {
-      message,
-      templateBindings,
-    };
-
-    await onSave({
-      id: initialRule?.id,
-      name: name.trim(),
-      trigger_type: triggerType,
-      channel,
-      assistant_id: assistantId === "" ? null : Number(assistantId),
-      delay_minutes: Math.max(0, Number(delayMinutes || 0)),
-      payload,
-      whatsapp_template_id:
-        channel === "whatsapp" && whatsappTemplateId
-          ? whatsappTemplateId
-          : null,
+  if (disabledTrigger) {
+    await showAlert({
+      title: translation("alerts.disabledTrigger.title"),
+      message: translation("alerts.disabledTrigger.message"),
+      tone: "warning",
     });
+
+    return;
   }
+
+  if (!name.trim()) {
+    await showAlert({
+      title: translation("alerts.nameRequired.title"),
+      message: translation("alerts.nameRequired.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  const parsedDelay = Number(delayMinutes);
+
+  if (!Number.isFinite(parsedDelay) || parsedDelay < 0) {
+    await showAlert({
+      title: translation("alerts.invalidDelay.title"),
+      message: translation("alerts.invalidDelay.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  const hasMessage = message.trim().length > 0;
+  const hasWhatsappTemplate = channel === "whatsapp" && whatsappTemplateId;
+
+  if (!hasMessage && !hasWhatsappTemplate) {
+    await showAlert({
+      title: translation("alerts.contentRequired.title"),
+      message: translation("alerts.contentRequired.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  if (channel === "whatsapp" && !hasMessage && !whatsappTemplateId) {
+    await showAlert({
+      title: translation("alerts.templateRequired.title"),
+      message: translation("alerts.templateRequired.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  const missingStaticBindings = templateOrder.filter((key) => {
+    const binding = templateBindings[key];
+
+    if (!binding) return true;
+    if (binding.type !== "static") return false;
+
+    return !String(binding.value || "").trim();
+  });
+
+  if (channel === "whatsapp" && whatsappTemplateId && missingStaticBindings.length > 0) {
+    await showAlert({
+      title: translation("alerts.templateBindingsRequired.title"),
+      message: translation("alerts.templateBindingsRequired.message", {
+        fields: missingStaticBindings.join(", "),
+      }),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  const payload = {
+    message,
+    templateBindings,
+  };
+
+  await onSave({
+    id: initialRule?.id,
+    name: name.trim(),
+    trigger_type: triggerType,
+    channel,
+    assistant_id: assistantId === "" ? null : Number(assistantId),
+    delay_minutes: parsedDelay,
+    payload,
+    whatsapp_template_id:
+      channel === "whatsapp" && whatsappTemplateId ? whatsappTemplateId : null,
+  });
+}
+
+
   return (
     <div
       className={styles.modalOverlay}
@@ -159,13 +236,13 @@ const assistantOptions = [
           {isEdit ? translation("editTitle") : translation("newTitle")}
         </h3>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form} noValidate>
           <div className={styles.formGroup}>
             <label>{translation("name")}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
+              
             />
           </div>
 
