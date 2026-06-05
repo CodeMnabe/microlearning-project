@@ -4,60 +4,118 @@ import { useState } from "react";
 import styles from "./chatbox.module.css";
 import ui from "../assistants.module.css";
 import { useTranslations } from "next-intl";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 export default function ChatSandbox({ assistant }) {
   const translation = useTranslations();
+  const showAlert = useAlert();
   const [threadId, setThreadId] = useState("");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const trimmedInput = input.trim();
 
   async function handleSend(e) {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const newUserMsg = { role: "user", content: input };
+  e.preventDefault();
 
-    setMessages((prev) => [newUserMsg, ...prev]);
-    setInput("");
-    setIsSending(true);
+  
 
-    try {
-      const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assistantId: assistant.open_ai_id,
-          message: input,
-          threadId,
-        }),
-      });
+  
 
-      const data = await res.json();
+  if (!assistant?.id) {
+    await showAlert({
+      title: translation("Chatbox.alerts.missingAssistant.title"),
+      message: translation("Chatbox.alerts.missingAssistant.message"),
+      tone: "warning",
+    });
 
-      if (res.ok && data.reply) {
-        setMessages((prev) => [
-          { role: "assistant", content: data.reply },
-          ...prev,
-        ]);
-        setThreadId(data.threadId);
-      } else {
-        setMessages((prev) => [
-          {
-            role: "system",
-            content: data.error || `${translation("Chatbox.errorReply")}`,
-          },
-          ...prev,
-        ]);
-      }
-    } catch {
+    return;
+  }
+
+  if (!assistant?.open_ai_id) {
+    await showAlert({
+      title: translation("Chatbox.alerts.missingOpenAiId.title"),
+      message: translation("Chatbox.alerts.missingOpenAiId.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  const newUserMsg = { role: "user", content: trimmedInput };
+
+  setMessages((prev) => [newUserMsg, ...prev]);
+  setInput("");
+  setIsSending(true);
+
+  try {
+    const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        assistantId: assistant.open_ai_id,
+        message: trimmedInput,
+        threadId,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+   if (!res.ok) {
+  setMessages((prev) => [
+    {
+      role: "system",
+      content: translation("Chatbox.alerts.apiError.message"),
+    },
+    ...prev,
+  ]);
+
+  return;
+}
+    
+   
+
+    if (!data.reply) {
       setMessages((prev) => [
-        { role: "system", content: `${translation("Chatbox.errorApi")}` },
+        {
+          role: "system",
+          content: translation("Chatbox.errorReply"),
+        },
         ...prev,
       ]);
-    } finally {
-      setIsSending(false);
+
+      await showAlert({
+        title: translation("Chatbox.alerts.emptyReply.title"),
+        message: translation("Chatbox.alerts.emptyReply.message"),
+        tone: "warning",
+      });
+
+      return;
     }
-  }
+
+    setMessages((prev) => [
+      { role: "assistant", content: data.reply },
+      ...prev,
+    ]);
+
+        setThreadId(data.threadId || threadId);
+      } catch (err) {
+        console.warn("[Chatbox] send message error:", err);
+
+        setMessages((prev) => [
+          { role: "system", content: translation("Chatbox.errorApi") },
+          ...prev,
+        ]);
+
+        await showAlert({
+          title: translation("Chatbox.alerts.networkError.title"),
+          message: translation("Chatbox.alerts.networkError.message"),
+          tone: "danger",
+        });
+      } finally {
+        setIsSending(false);
+      }
+    }
 
   return (
     <div className={styles.wrapper}>

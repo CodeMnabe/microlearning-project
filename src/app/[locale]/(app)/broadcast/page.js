@@ -39,9 +39,17 @@ import {
 export default function BroadcastPage() {
   const { user } = useAuth();
   const { org } = useOrganization(user);
+
   const translation = useTranslations();
   const showAlert = useAlert();
-  const supabase = useMemo(() => createClient(), []);
+
+  const showAlertRef = useRef(showAlert);
+
+  useEffect(() => {
+    showAlertRef.current = showAlert;
+  }, [showAlert]);
+
+const supabase = useMemo(() => createClient(), []);
   const { stopLoading } = useGlobalLoader();
 
   const [users, setUsers] = useState([]);
@@ -152,12 +160,29 @@ export default function BroadcastPage() {
   const trackedLinksCount = normalizedTrackedLinks.length;
 
   const getUsers = useCallback(async () => {
-    if (!org?.id) return;
+  if (!org?.id) return;
 
+  try {
     const res = await fetch(`/api/users?orgId=${org.id}`);
     const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to fetch users");
+    }
+
     setUsers(asList(data, "items"));
-  }, [org?.id]);
+  } catch (err) {
+    console.warn("[Broadcast] users load error:", err);
+
+    setUsers([]);
+
+    await showAlertRef.current({
+      title: translation("Broadcast.alerts.usersLoadFailed.title"),
+      message: translation("Broadcast.alerts.usersLoadFailed.message"),
+      tone: "danger",
+    });
+  }
+}, [org?.id, translation]);
 
   useEffect(() => {
     if (!org?.id) return;
@@ -175,19 +200,26 @@ export default function BroadcastPage() {
 
         setAssistantsList(asList(assistantsData, "items"));
         setAllTags(asList(tagsData, "items"));
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        console.warn("[Broadcast] filters load error:", err);
 
         if (!alive) return;
+
         setAssistantsList([]);
         setAllTags([]);
-      }
+
+  await showAlertRef.current({
+    title: translation("Broadcast.alerts.filtersLoadFailed.title"),
+    message: translation("Broadcast.alerts.filtersLoadFailed.message"),
+    tone: "danger",
+  });
+}
     })();
 
     return () => {
       alive = false;
     };
-  }, [org?.id]);
+  }, [org?.id,translation]);
 
   const loadTemplates = useCallback(async () => {
     if (!org?.id) return;
@@ -216,13 +248,22 @@ export default function BroadcastPage() {
         setTplName(best.name);
         setTplLang("pt-PT");
       }
-    } catch (e) {
-      setTplErr(e.message);
-    } finally {
+    } catch (err) {
+        console.warn("[Broadcast] templates load error:", err);
+
+        setTplErr(err.message);
+
+        await showAlertRef.current({
+          title: translation("Broadcast.alerts.templatesLoadFailed.title"),
+          message: translation("Broadcast.alerts.templatesLoadFailed.message"),
+          tone: "danger",
+        });
+      } finally {
+    
       setTplLoading(false);
       stopLoading();
     }
-  }, [org?.id, stopLoading]);
+  }, [org?.id, stopLoading,translation]);
 
   useEffect(() => {
     if (!org?.id) return;
@@ -360,15 +401,23 @@ export default function BroadcastPage() {
           ) || (data.platformContent || [])[0];
 
         setNeedsUrlVar(blocksHaveUrlVariable(blocksForLocale?.blocks || []));
-      } catch (e) {
-        console.error(e);
-      }
-    })();
+      } catch (err) {
+        console.warn("[Broadcast] template details load error:", err);
 
-    return () => {
-      alive = false;
-    };
-  }, [org?.id, chosenTemplate, tplLang, channel]);
+        if (!alive) return;
+
+        await showAlertRef.current({
+          title: translation("Broadcast.alerts.templateDetailsFailed.title"),
+          message: translation("Broadcast.alerts.templateDetailsFailed.message"),
+          tone: "danger",
+        });
+        }
+            })();
+
+            return () => {
+              alive = false;
+            };
+          }, [org?.id, chosenTemplate, tplLang, channel,translation]);
 
   useEffect(() => {
     if (!needsUrlVar) return;
@@ -456,20 +505,23 @@ export default function BroadcastPage() {
   }
 
   function removeTrackedLink(id) {
-    setTrackedLinks((prev) => {
-      const removed = prev.find((x) => x.id === id);
-      const next = prev.filter((x) => x.id !== id);
+  const removed = trackedLinks.find((x) => x.id === id);
 
-      if (
-        removed &&
-        selectedTrackedUrlKey === sanitizeTrackedKey(removed.key)
-      ) {
-        setSelectedTrackedUrlKey("");
-      }
+  const removedSelectedUrlLink =
+    removed && selectedTrackedUrlKey === sanitizeTrackedKey(removed.key);
 
-      return next;
+  setTrackedLinks((prev) => prev.filter((x) => x.id !== id));
+
+  if (removedSelectedUrlLink) {
+    setSelectedTrackedUrlKey("");
+
+    void showAlert({
+      title: translation("Broadcast.alerts.trackedLinkRemoved.title"),
+      message: translation("Broadcast.alerts.trackedLinkRemoved.message"),
+      tone: "warning",
     });
   }
+}
 
   function toggleToolPanel(panel) {
     setActiveToolPanel((prev) => (prev === panel ? null : panel));
@@ -1044,15 +1096,52 @@ export default function BroadcastPage() {
     return [mainMessage, note, failureDetails].filter(Boolean).join("\n\n");
   }
 
-  async function handleSend() {
-    if (!selectedUsers.length) {
-      await showAlert({
-        title: "Choose recipients",
-        message: translation("Broadcast.chooseRecipients"),
-        tone: "warning",
-      });
-      return;
-    }
+        async function validateContentBeforeAction(action) {
+        const hasManualContent = message.trim().length > 0 || files.length > 0;
+
+        const hasValidTemplate =
+          channel === "whatsapp" && tplName && tplLang && paramsComplete;
+
+        const hasSelectedIncompleteTemplate =
+          channel === "whatsapp" && tplName && tplLang && !paramsComplete;
+
+        if (hasSelectedIncompleteTemplate && !hasManualContent) {
+          await showAlert({
+            title: translation("Broadcast.alerts.templateParamsMissing.title"),
+            message: translation("Broadcast.alerts.templateParamsMissing.message"),
+            tone: "warning",
+          });
+
+          return false;
+        }
+
+        if (!hasManualContent && !hasValidTemplate) {
+          await showAlert({
+            title: translation("Broadcast.alerts.contentMissing.title"),
+            message:
+              action === "schedule"
+                ? translation("Broadcast.alerts.contentMissing.scheduleMessage")
+                : translation("Broadcast.alerts.contentMissing.sendMessage"),
+            tone: "warning",
+          });
+
+          return false;
+        }
+
+        return true;
+      }
+
+      async function handleSend() {
+          if (!selectedUsers.length) {
+          await showAlert({
+            title: "Choose recipients",
+            message: translation("Broadcast.chooseRecipients"),
+            tone: "warning",
+          });
+          return;
+        }
+
+    if (!(await validateContentBeforeAction("send"))) return;
 
     if (!trackedLinksValid) {
       await showAlert({
@@ -1155,7 +1244,7 @@ export default function BroadcastPage() {
         tone: "warning",
       });
       return;
-    }
+    }if (!(await validateContentBeforeAction("schedule"))) return;
 
     if (!trackedLinksValid) {
       await showAlert({
@@ -1338,7 +1427,7 @@ export default function BroadcastPage() {
         setChannel={setChannel}
         selectedCount={selected.size}
         sending={sending}
-        canSend={canSend}
+        canSend={true}
         deliveryMode={deliveryMode}
         onPrimaryClick={
           deliveryMode === "schedule" ? handleSchedule : handleSend

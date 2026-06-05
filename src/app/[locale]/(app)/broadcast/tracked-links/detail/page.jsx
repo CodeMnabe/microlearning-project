@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
@@ -24,11 +25,17 @@ function personLine(item) {
 
 export default function TrackedLinkDetailPage() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const { org } = useOrganization(user);
-  const { stopLoading } = useGlobalLoader();
-  const translation = useTranslations("TrackedLinks.detail");
+      const { user } = useAuth();
+    const { org, loading: orgLoading } = useOrganization(user);
+    const { stopLoading } = useGlobalLoader();
+    const translation = useTranslations("TrackedLinks.detail");
+    const showAlert = useAlert();
 
+    const showAlertRef = useRef(showAlert);
+
+    useEffect(() => {
+      showAlertRef.current = showAlert;
+    }, [showAlert]);
   const sendGroupId = searchParams.get("sendGroupId") || "";
 
   const [data, setData] = useState(null);
@@ -38,48 +45,84 @@ export default function TrackedLinkDetailPage() {
   const backHref = "/broadcast/tracked-links";
 
   useEffect(() => {
-    if (!org?.id || !sendGroupId) return;
+  if (orgLoading) return;
 
-    let alive = true;
+  if (!org?.id) {
+    setLoading(false);
+    stopLoading();
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError("");
+    void showAlertRef.current({
+      title: translation("alerts.noOrg.title"),
+      message: translation("alerts.noOrg.message"),
+      tone: "warning",
+    });
 
-        const query = new URLSearchParams({
-          orgId: String(org.id),
-          sendGroupId,
-        });
+    return;
+  }
 
-        const res = await fetch(`/api/tracked-links/report-detail?${query}`, {
-          cache: "no-store",
-        });
+  if (!sendGroupId) {
+    setLoading(false);
+    stopLoading();
+    setError(translation("alerts.missingSendGroup.message"));
 
-        const result = await res.json().catch(() => ({}));
+    void showAlertRef.current({
+      title: translation("alerts.missingSendGroup.title"),
+      message: translation("alerts.missingSendGroup.message"),
+      tone: "warning",
+    });
 
-        if (!res.ok) {
-          throw new Error(
-            result?.error || "Failed to load tracked link detail.",
-          );
-        }
+    return;
+  }
 
-        if (!alive) return;
-        setData(result);
-      } catch (err) {
-        if (!alive) return;
-        setError(err?.message || "Failed to load tracked link detail.");
-      } finally {
-        if (!alive) return;
-        setLoading(false);
-        stopLoading();
+  let alive = true;
+
+  (async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const query = new URLSearchParams({
+        orgId: String(org.id),
+        sendGroupId,
+      });
+
+      const res = await fetch(`/api/tracked-links/report-detail?${query}`, {
+        cache: "no-store",
+      });
+
+      const result = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(
+          result?.error || "Failed to load tracked link detail."
+        );
       }
-    })();
 
-    return () => {
-      alive = false;
-    };
-  }, [org?.id, sendGroupId, stopLoading]);
+      if (!alive) return;
+
+      setData(result);
+    } catch (err) {
+      if (!alive) return;
+
+      setError(translation("alerts.loadFailed.message"));
+
+      void showAlertRef.current({
+        title: translation("alerts.loadFailed.title"),
+        message: translation("alerts.loadFailed.message"),
+        tone: "danger",
+      });
+    } finally {
+      if (!alive) return;
+
+      setLoading(false);
+      stopLoading();
+        }
+      })();
+
+      return () => {
+        alive = false;
+      };
+    }, [org?.id, orgLoading, sendGroupId, stopLoading, translation]);
 
   const summary = useMemo(() => data?.summary || null, [data]);
   const clicked = useMemo(() => data?.clicked || [], [data]);

@@ -17,13 +17,14 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import styles from "./automations.module.css";
-import { useAuth } from "@/app/AuthContext";
-import useOrganization from "@/app/hooks/useOrganization";
-import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-import { RuleModal } from "./RuleModal/RuleModal";
-import { useTranslations } from "next-intl";
+    import styles from "./automations.module.css";
+    import { useAuth } from "@/app/AuthContext";
+    import useOrganization from "@/app/hooks/useOrganization";
+    import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+    import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+    import { useAlert } from "@/app/components/Alert/AlertProvider";
+    import { RuleModal } from "./RuleModal/RuleModal";
+    import { useTranslations } from "next-intl";
 
 const TRIGGER_OPTIONS = [
   {
@@ -146,8 +147,16 @@ export default function AutomationsPage() {
   const { org, loading: orgLoading } = useOrganization(user);
   const { startLoading, stopLoading } = useGlobalLoader();
   const confirm = useConfirm();
+  const showAlert = useAlert();
+
+const showAlertRef = useRef(showAlert);
+
+useEffect(() => {
+  showAlertRef.current = showAlert;
+}, [showAlert]);
 
   const translation = useTranslations("Automations");
+  
   const translatedTriggerOptions = useMemo(
   () =>
     TRIGGER_OPTIONS.map((option) => ({
@@ -186,19 +195,38 @@ export default function AutomationsPage() {
     return map;
   }, [rules]);
 
-  const refreshAll = useCallback(async () => {
-    if (!orgId) return;
+ const refreshAll = useCallback(
+  async (showSuccessAlert = false) => {
+    if (!orgId) {
+      if (showSuccessAlert && typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("alerts.noOrg.title"),
+          message: translation("alerts.noOrg.message"),
+          tone: "warning",
+        });
+      }
+
+      return;
+    }
 
     startLoading();
+
     try {
-      const [rulesRes, runsRes, materializedRes, assistantsRes, templatesRes] =
-        await Promise.all([
-          fetch(`/api/automations/rules?orgId=${orgId}`),
-          fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
-          fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
-          fetch(`/api/assistants?orgId=${orgId}`),
-          fetch(`/api/template/list?orgId=${orgId}`),
-        ]);
+      const responses = await Promise.all([
+        fetch(`/api/automations/rules?orgId=${orgId}`),
+        fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
+        fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
+        fetch(`/api/assistants?orgId=${orgId}`),
+        fetch(`/api/template/list?orgId=${orgId}`),
+      ]);
+
+      const [
+        rulesRes,
+        runsRes,
+        materializedRes,
+        assistantsRes,
+        templatesRes,
+      ] = responses;
 
       const [
         rulesData,
@@ -206,27 +234,63 @@ export default function AutomationsPage() {
         materializedData,
         assistantsData,
         templatesData,
-      ] = await Promise.all([
-        rulesRes.json(),
-        runsRes.json(),
-        materializedRes.json(),
-        assistantsRes.json(),
-        templatesRes.json(),
-      ]);
+      ] = await Promise.all(responses.map((res) => res.json().catch(() => ({}))));
+
+      if (!rulesRes.ok) {
+        throw new Error(rulesData?.error || "Failed to load automation rules.");
+      }
+
+      if (!runsRes.ok) {
+        throw new Error(runsData?.error || "Failed to load automation queue.");
+      }
+
+      if (!materializedRes.ok) {
+        throw new Error(
+          materializedData?.error || "Failed to load automation deliveries."
+        );
+      }
+
+      if (!assistantsRes.ok) {
+        throw new Error(assistantsData?.error || "Failed to load assistants.");
+      }
+
+      if (!templatesRes.ok) {
+        throw new Error(templatesData?.error || "Failed to load templates.");
+      }
 
       setRules(Array.isArray(rulesData?.items) ? rulesData.items : []);
       setRuns(Array.isArray(runsData?.items) ? runsData.items : []);
       setMaterialized(
-        Array.isArray(materializedData?.items) ? materializedData.items : [],
+        Array.isArray(materializedData?.items) ? materializedData.items : []
       );
       setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
       setTemplates(
-        Array.isArray(templatesData?.items) ? templatesData.items : [],
+        Array.isArray(templatesData?.items) ? templatesData.items : []
       );
+
+      if (showSuccessAlert && typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("alerts.refreshSuccess.title"),
+          message: translation("alerts.refreshSuccess.message"),
+          tone: "success",
+        });
+      }
+    } catch (err) {
+      console.warn("[Automations] refresh error:", err);
+
+      if (typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("alerts.loadFailed.title"),
+          message: translation("alerts.loadFailed.message"),
+          tone: "danger",
+        });
+      }
     } finally {
       stopLoading();
     }
-  }, [orgId, startLoading, stopLoading]);
+  },
+  [orgId, startLoading, stopLoading, translation]
+);
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
@@ -340,82 +404,141 @@ export default function AutomationsPage() {
   }
 
   async function handleSaveRule(ruleInput) {
-    if (!orgId) return;
-
-    setSaving(true);
-    try {
-      const endpoint = ruleInput.id
-        ? `/api/automations/rules/${ruleInput.id}`
-        : "/api/automations/rules";
-
-      const method = ruleInput.id ? "PATCH" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organization_id: orgId,
-          ...ruleInput,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to save automation rule");
-      }
-
-      setModalOpen(false);
-      setEditingRule(null);
-      await refreshAll();
-    } catch (error) {
-      alert(error.message || "Failed to save automation rule");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDeleteRule(rule) {
-    const ok = await confirm({
-      title: `Delete "${rule.name}"?`,
-      message:
-        "This will remove the automation rule. Existing runs stay in history.",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      tone: "danger",
+  if (!orgId) {
+    await showAlert({
+      title: translation("alerts.noOrg.title"),
+      message: translation("alerts.noOrg.message"),
+      tone: "warning",
     });
 
-    if (!ok) return;
+    return;
+  }
 
+  const isEdit = Boolean(ruleInput.id);
+
+  setSaving(true);
+
+  try {
+    const endpoint = isEdit
+      ? `/api/automations/rules/${ruleInput.id}`
+      : "/api/automations/rules";
+
+    const method = isEdit ? "PATCH" : "POST";
+
+    const res = await fetch(endpoint, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        organization_id: orgId,
+        ...ruleInput,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to save automation rule");
+    }
+
+    setModalOpen(false);
+    setEditingRule(null);
+
+    await refreshAll();
+
+    await showAlert({
+      title: isEdit
+        ? translation("alerts.ruleUpdated.title")
+        : translation("alerts.ruleCreated.title"),
+      message: isEdit
+        ? translation("alerts.ruleUpdated.message")
+        : translation("alerts.ruleCreated.message"),
+      tone: "success",
+    });
+  } catch (err) {
+    console.warn("[Automations] save rule error:", err);
+
+    await showAlert({
+      title: translation("alerts.saveRuleError.title"),
+      message: translation("alerts.saveRuleError.message"),
+      tone: "danger",
+    });
+  } finally {
+    setSaving(false);
+  }
+}
+
+  async function handleDeleteRule(rule) {
+  const ok = await confirm({
+    title: translation("confirmDelete.title", { name: rule.name }),
+    message: translation("confirmDelete.message"),
+    confirmText: translation("confirmDelete.confirm"),
+    cancelText: translation("confirmDelete.cancel"),
+    tone: "danger",
+  });
+
+  if (!ok) return;
+
+  try {
     const res = await fetch(`/api/automations/rules/${rule.id}`, {
       method: "DELETE",
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert(data?.error || "Failed to delete automation rule");
-      return;
+      throw new Error(data?.error || "Failed to delete automation rule");
     }
 
     await refreshAll();
+
+    await showAlert({
+      title: translation("alerts.ruleDeleted.title"),
+      message: translation("alerts.ruleDeleted.message"),
+      tone: "success",
+    });
+  } catch (err) {
+    console.warn("[Automations] delete rule error:", err);
+
+    await showAlert({
+      title: translation("alerts.deleteRuleError.title"),
+      message: translation("alerts.deleteRuleError.message"),
+      tone: "danger",
+    });
   }
+}
 
   async function toggleRule(rule) {
+  const nextActive = !rule.is_active;
+
+  try {
     const res = await fetch(`/api/automations/rules/${rule.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: !rule.is_active }),
+      body: JSON.stringify({ is_active: nextActive }),
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert(data?.error || "Failed to update automation rule");
-      return;
+      throw new Error(data?.error || "Failed to update automation rule");
     }
 
     await refreshAll();
-  }
 
-  async function runCron(path) {
+   
+  } catch (err) {
+    console.warn("[Automations] toggle rule error:", err);
+
+    await showAlert({
+      title: translation("alerts.updateRuleError.title"),
+      message: translation("alerts.updateRuleError.message"),
+      tone: "danger",
+    });
+  }
+}
+
+ async function runCron(path, type) {
+  try {
     const res = await fetch(path, {
       method: "POST",
       headers: {
@@ -430,14 +553,20 @@ export default function AutomationsPage() {
     });
 
     const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      alert(data?.error || "Cron failed");
-      return;
+      throw new Error(data?.error || "Cron failed");
     }
 
     await refreshAll();
-  }
 
+    
+  } catch (err) {
+    console.warn("[Automations] cron error:", err);
+
+  
+  }
+}
   return (
     <div className={styles.usersScreen}>
       <div className={styles.toolbarRow}>
@@ -467,7 +596,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => refreshAll()}
+            onClick={() => refreshAll(true)}
           >
             <RefreshCw size={16} />
             <span>{translation("refresh")}</span>
@@ -476,7 +605,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/inactivity")}
+            onClick={() => runCron("/api/cron/automations/inactivity", "inactivity")}
           >
             <Clock3 size={16} />
             <span>{translation("runInactivity")}</span>
@@ -485,7 +614,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/materialize")}
+            onClick={() => runCron("/api/cron/automations/materialize", "materialize" )}
           >
             <PlayCircle size={16} />
             <span>{translation("materialize")}</span>

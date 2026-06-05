@@ -5,12 +5,13 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./admin.module.css";
 import ThemePreview from "./ThemePreview/ThemePreview";
 import { useTranslations } from "next-intl";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 
 export default function AdminPage() {
  
   const translation = useTranslations("AdminPage");
-
+  const  showAlert  = useAlert();
   const supabase = createClient();
   const { stopLoading } = useGlobalLoader();
 
@@ -52,10 +53,20 @@ export default function AdminPage() {
         .eq("owner_user_id", user.id)
         .order("id", { ascending: true });
 
-      if (error) {
+            if (error) {
         console.error(error);
+
         setMsg(translation("messages.loadOrganizationsError"));
+
+        await showAlert({
+          title: translation("alerts.loadOrganizationsError.title"),
+          message: translation("alerts.loadOrganizationsError.message"),
+          tone: "danger",
+        });
       } else {
+
+
+
         // ensure theme defaults exist for UI
         const withDefaults = (data || []).map((o) => ({
           ...o,
@@ -72,7 +83,7 @@ export default function AdminPage() {
     return () => {
       mounted = false;
     };
-  }, [user, supabase]);
+  }, [user, supabase, translation, showAlert]);
 
   // Helpers
   function setCssVars(theme) {
@@ -83,82 +94,153 @@ export default function AdminPage() {
 
   // 3) local edit handlers
   function handleColorChange(orgId, key, value) {
-    setOrgs((prev) =>
-      prev.map((o) =>
-        o.id === orgId ? { ...o, theme: { ...o.theme, [key]: value } } : o
-      )
-    );
-  }
+  setOrgs((prev) =>
+    prev.map((o) =>
+      o.id === orgId ? { ...o, theme: { ...o.theme, [key]: value } } : o
+    )
+  );
+}
+
+function isValidHexColor(value) {
+  return /^#[0-9A-Fa-f]{6}$/.test(value);
+}
 
   // 4) save to supabase
   async function handleSave(org) {
-    setSavingId(org.id);
-    setMsg(null);
-    try {
-      const payload = {
-        theme: { primary: org.theme.primary, secondary: org.theme.secondary },
-      };
+  if (
+    !isValidHexColor(org.theme.primary) ||
+    !isValidHexColor(org.theme.secondary)
+  ) {
+    await showAlert({
+      title: translation("alerts.invalidColor.title"),
+      message: translation("alerts.invalidColor.message"),
+      tone: "warning",
+    });
 
-      const { data, error } = await supabase
-        .from("organization")
-        .update(payload)
-        .eq("id", org.id)
-        .select("id, name, theme")
-        .single();
-
-      if (error) throw error;
-
-      // update local list with canonical values from DB
-      setOrgs((prev) =>
-        prev.map((o) => (o.id === org.id ? { ...o, theme: data.theme } : o))
-      );
-
-      // reflect immediately in app theme (optional)
-      setCssVars(data.theme);
-
-      setMsg(translation("messages.themeSaved", { name: org.name }));
-    } catch (err) {
-      console.error(err);
-     setMsg(translation("messages.themeSaveError"));
-    } finally {
-      setSavingId(null);
-    }
+    return;
   }
+
+  setSavingId(org.id);
+  setMsg(null);
+
+  try {
+    const payload = {
+      theme: { primary: org.theme.primary, secondary: org.theme.secondary },
+    };
+
+    const { data, error } = await supabase
+      .from("organization")
+      .update(payload)
+      .eq("id", org.id)
+      .select("id, name, theme")
+      .single();
+
+    if (error) throw error;
+
+    setOrgs((prev) =>
+      prev.map((o) => (o.id === org.id ? { ...o, theme: data.theme } : o))
+    );
+
+    setCssVars(data.theme);
+
+    setMsg(translation("messages.themeSaved", { name: org.name }));
+
+    await showAlert({
+      title: translation("alerts.themeSaved.title"),
+      message: translation("alerts.themeSaved.message", {
+        name: org.name,
+      }),
+      tone: "success",
+    });
+  } catch (err) {
+    //console.error(err);
+
+    setMsg(translation("messages.themeSaveError"));
+
+    await showAlert({
+      title: translation("alerts.themeSaveError.title"),
+      message: translation("alerts.themeSaveError.message"),
+      tone: "danger",
+    });
+  } finally {
+    setSavingId(null);
+  }
+}
 
   // 5) (optional) create org – keep your existing code if you still want it.
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
+
   async function handleCreate(e) {
-    e.preventDefault();
-    if (!name.trim()) return;
+  e.preventDefault();
 
-    setCreating(true);
-    setMsg(null);
-    try {
-      // create via API or directly; here’s a direct insert with defaults:
-      const defTheme = { primary: "#4f46e5", secondary: "#0ea5e9" };
-      const { data, error } = await supabase
-        .from("organization")
-        .insert([{ name, owner_user_id: user.id, theme: defTheme }])
-        .select("id, name, theme")
-        .single();
+  if (!name.trim()) {
+    setMsg(translation("newOrganization.required"));
 
-      if (error) throw error;
-      setOrgs((prev) => [...prev, data]);
-      setName("");
-      setMsg(
+    await showAlert({
+      title: translation("alerts.organizationNameRequired.title"),
+      message: translation("alerts.organizationNameRequired.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  if (!user?.id) {
+    await showAlert({
+      title: translation("alerts.notAuthenticated.title"),
+      message: translation("alerts.notAuthenticated.message"),
+      tone: "warning",
+    });
+
+    return;
+  }
+
+  setCreating(true);
+  setMsg(null);
+
+  try {
+    const defTheme = { primary: "#4f46e5", secondary: "#0ea5e9" };
+
+    const { data, error } = await supabase
+      .from("organization")
+      .insert([{ name, owner_user_id: user.id, theme: defTheme }])
+      .select("id, name, theme")
+      .single();
+
+    if (error) throw error;
+
+    setOrgs((prev) => [...prev, data]);
+    setName("");
+
+    setMsg(
       translation("messages.organizationCreated", {
         id: data.id,
         name: data.name,
       })
     );
-    } catch (err) {
-      console.error(err);
-      setMsg(translation("messages.organizationCreateError"));
-    } finally {
-      setCreating(false);
-    }
+
+    await showAlert({
+      title: translation("alerts.organizationCreated.title"),
+      message: translation("alerts.organizationCreated.message", {
+        name: data.name,
+      }),
+      tone: "success",
+    });
+  } catch (err) {
+   // console.error(err);
+
+    setMsg(translation("messages.organizationCreateError"));
+
+    await showAlert({
+      title: translation("alerts.organizationCreateError.title"),
+      message: translation("alerts.organizationCreateError.message"),
+      tone: "danger",
+    });
+  } finally {
+    setCreating(false);
   }
+}
 
   return (
     <main className={styles.pageWrapper}>

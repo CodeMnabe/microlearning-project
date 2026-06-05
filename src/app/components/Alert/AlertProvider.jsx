@@ -26,9 +26,10 @@ export function AlertProvider({ children }) {
     return new Promise((resolve) => {
       setState({
         open: true,
-        title: opts.title ?? translation("title"),
+        title: opts.title ?? translation("noContact.title"),
         message: opts.message ?? "",
-        buttonText: opts.buttonText ?? translation("ok"),
+        buttonText: opts.buttonText ?? translation("noContact.ok"),
+
         tone: opts.tone ?? "default",
         onResolve: resolve,
       });
