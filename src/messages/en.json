@@ -1448,26 +1448,18 @@
     "title": "Automation activated",
     "message": "The automation rule was activated successfully."
   },
-  "rulePaused": {
-    "title": "Automation paused",
-    "message": "The automation rule was paused successfully."
-  },
+  
+  
   "updateRuleError": {
     "title": "Failed to update automation",
     "message": "The automation rule could not be updated."
   },
-  "inactivitySuccess": {
-    "title": "Inactivity processed",
-    "message": "The inactivity routine ran successfully."
-  },
+  
   "materializeSuccess": {
     "title": "Deliveries materialized",
     "message": "The materialization routine ran successfully."
-  },
-  "cronError": {
-    "title": "Routine failed",
-    "message": "The automation routine could not be executed."
   }
+  
 }
 
 
@@ -1660,10 +1652,7 @@
     "title": "Missing organization",
     "message": "The organization could not be identified yet. Please try again in a few seconds."
   },
-  "refreshSuccess": {
-    "title": "Messages updated",
-    "message": "{count, plural, =0 {There are no scheduled messages.} one {# scheduled message loaded.} other {# scheduled messages loaded.}}"
-  },
+ 
   "loadError": {
     "title": "Failed to load messages",
     "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
@@ -1823,6 +1812,7 @@
     "send": "Send",
     "errorReply": "Error in reply",
     "errorApi": "Error communicating with the API.",
+    
     "alerts": {
   "emptyMessage": {
     "title": "Empty message",
@@ -1834,7 +1824,7 @@
   },
   "missingOpenAiId": {
     "title": "Incomplete configuration",
-    "message": "This assistant does not have an OpenAI ID associated with it."
+    "message": "This assistant is not available right now. Please try again later or recreate the assistant to fix the configuration."
   },
   "apiError": {
     "title": "Failed to get reply",
@@ -1846,7 +1836,7 @@
   },
   "networkError": {
     "title": "Connection error",
-    "message": "The API could not be reached. Check the connection and try again."
+    "message": " Check the connection and try again."
   }
 }
   },

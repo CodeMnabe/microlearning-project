@@ -13,21 +13,14 @@ export default function ChatSandbox({ assistant }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const trimmedInput = input.trim();
 
   async function handleSend(e) {
   e.preventDefault();
 
-  const trimmedInput = input.trim();
+  
 
-  if (!trimmedInput) {
-    await showAlert({
-      title: translation("Chatbox.alerts.emptyMessage.title"),
-      message: translation("Chatbox.alerts.emptyMessage.message"),
-      tone: "warning",
-    });
-
-    return;
-  }
+  
 
   if (!assistant?.id) {
     await showAlert({
@@ -68,25 +61,19 @@ export default function ChatSandbox({ assistant }) {
 
     const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      const errorMessage = data?.error || translation("Chatbox.errorReply");
+   if (!res.ok) {
+  setMessages((prev) => [
+    {
+      role: "system",
+      content: translation("Chatbox.alerts.apiError.message"),
+    },
+    ...prev,
+  ]);
 
-      setMessages((prev) => [
-        {
-          role: "system",
-          content: errorMessage,
-        },
-        ...prev,
-      ]);
-
-      await showAlert({
-        title: translation("Chatbox.alerts.apiError.title"),
-        message: translation("Chatbox.alerts.apiError.message"),
-        tone: "danger",
-      });
-
-      return;
-    }
+  return;
+}
+    
+   
 
     if (!data.reply) {
       setMessages((prev) => [

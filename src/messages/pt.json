@@ -1017,10 +1017,7 @@
     "title": "Utilizadores atualizados",
     "message": "A lista de utilizadores foi atualizada com sucesso."
   },
-  "userCreated": {
-    "title": "Utilizador criado",
-    "message": "O utilizador \"{name}\" foi criado com sucesso."
-  },
+ 
   "createUserFailed": {
     "title": "Erro ao criar utilizador",
     "message": "Não foi possível criar o utilizador. Verifica os dados e tenta novamente."
@@ -1044,11 +1041,8 @@
   "importSuccess": {
     "title": "Importação concluída",
     "message": "Os utilizadores foram importados com sucesso."
-  },
-  "userUpdated": {
-    "title": "Utilizador atualizado",
-    "message": "As alterações ao utilizador foram guardadas com sucesso."
   }
+  
 }
   },
 
@@ -1451,26 +1445,18 @@
     "title": "Automação ativada",
     "message": "A regra de automação foi ativada com sucesso."
   },
-  "rulePaused": {
-    "title": "Automação pausada",
-    "message": "A regra de automação foi pausada com sucesso."
-  },
+  
+  
   "updateRuleError": {
     "title": "Erro ao atualizar automação",
     "message": "Não foi possível atualizar a regra de automação."
   },
-  "inactivitySuccess": {
-    "title": "Inatividade processada",
-    "message": "A rotina de inatividade foi executada com sucesso."
-  },
+  
   "materializeSuccess": {
     "title": "Envios materializados",
     "message": "A rotina de materialização foi executada com sucesso."
-  },
-  "cronError": {
-    "title": "Erro na rotina",
-    "message": "Não foi possível executar a rotina de automações."
   }
+ 
 }
 
  
@@ -1668,10 +1654,8 @@
           "title": "Organização em falta",
           "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
         },
-        "refreshSuccess": {
-          "title": "Mensagens atualizadas",
-          "message": "{count, plural, =0 {Não existem mensagens agendadas.} one {# mensagem agendada carregada.} other {# mensagens agendadas carregadas.}}"
-        },
+        
+        
         "loadError": {
           "title": "Erro ao carregar mensagens",
           "message": "Não foi possível carregar as mensagens agendadas. Tenta novamente dentro de alguns segundos."
@@ -1851,7 +1835,7 @@
   },
   "missingOpenAiId": {
     "title": "Configuração incompleta",
-    "message": "Este assistente não tem um ID da OpenAI associado."
+    "message": "Este assistente não está disponível neste momento. Tenta novamente mais tarde ou recria o assistente para corrigir a configuração."
   },
   "apiError": {
     "title": "Erro ao obter resposta",
@@ -1863,7 +1847,7 @@
   },
   "networkError": {
     "title": "Erro de ligação",
-    "message": "Não foi possível contactar a API. Verifica a ligação e tenta novamente."
+    "message": "Verifica a ligação e tenta novamente."
   }
 }
   },

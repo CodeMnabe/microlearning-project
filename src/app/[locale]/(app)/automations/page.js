@@ -525,15 +525,7 @@ useEffect(() => {
 
     await refreshAll();
 
-    await showAlert({
-      title: nextActive
-        ? translation("alerts.ruleActivated.title")
-        : translation("alerts.rulePaused.title"),
-      message: nextActive
-        ? translation("alerts.ruleActivated.message")
-        : translation("alerts.rulePaused.message"),
-      tone: "success",
-    });
+   
   } catch (err) {
     console.warn("[Automations] toggle rule error:", err);
 
@@ -568,25 +560,11 @@ useEffect(() => {
 
     await refreshAll();
 
-    await showAlert({
-      title:
-        type === "materialize"
-          ? translation("alerts.materializeSuccess.title")
-          : translation("alerts.inactivitySuccess.title"),
-      message:
-        type === "materialize"
-          ? translation("alerts.materializeSuccess.message")
-          : translation("alerts.inactivitySuccess.message"),
-      tone: "success",
-    });
+    
   } catch (err) {
     console.warn("[Automations] cron error:", err);
 
-    await showAlert({
-      title: translation("alerts.cronError.title"),
-      message: translation("alerts.cronError.message"),
-      tone: "danger",
-    });
+  
   }
 }
   return (

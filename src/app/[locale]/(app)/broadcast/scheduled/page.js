@@ -97,17 +97,7 @@ export default function ScheduledPage() {
 
     const normalizedItems = (result.items ?? []).map(normalizeBroadcast);
 
-    setItems(normalizedItems);
-
-    if (showSuccessAlert) {
-      await showAlertRef.current({
-        title: t("Alerts.refreshSuccess.title"),
-        message: t("Alerts.refreshSuccess.message", {
-          count: normalizedItems.length,
-        }),
-        tone: "success",
-      });
-    }
+   
   } catch (err) {
     console.warn("[Scheduled] load items error:", err);
 

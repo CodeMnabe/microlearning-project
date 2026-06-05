@@ -390,13 +390,7 @@ export default function UsersPage() {
         await refreshUsers();
         setIsCreateOpen(false);
 
-        await showAlert({
-          title: translation("Users.alerts.userCreated.title"),
-          message: translation("Users.alerts.userCreated.message", {
-            name: userName,
-          }),
-          tone: "success",
-        });
+        
 
         return { ok: true };
       } catch (err) {
@@ -933,11 +927,6 @@ async function openCreateUserModal() {
           onSaved={async () => {
           await refreshUsers();
 
-          await showAlert({
-            title: translation("Users.alerts.userUpdated.title"),
-            message: translation("Users.alerts.userUpdated.message"),
-            tone: "success",
-          });
         }}
           defaultPhoneCode={defaultPhoneCode}
         />
