@@ -279,13 +279,13 @@
 .solutionCardSide .solutionMedia {
   right: 0;
   bottom: 0;
-  width: 44%;
+  width: 42%;
   height: 51%;
   border-top-left-radius: 18px;
 }
 
 .solutionCardSide .solutionContent {
-  max-width: 62%;
+  max-width: 64%;
 }
 
 .solutionCardSide .solutionImage {

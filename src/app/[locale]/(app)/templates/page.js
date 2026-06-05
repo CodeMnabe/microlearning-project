@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "../../../AuthContext";
 import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+import { useAlert} from "@/app/components/Alert/AlertProvider";
 
 export default function TemplatesPage() {
   const translation = useTranslations("Templates");
+  const showAlert = useAlert();
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
 
@@ -38,36 +40,72 @@ export default function TemplatesPage() {
     setNotice(null);
   };
 
-  const refresh = useCallback(async () => {
-  if (!org?.id) return console.error("No org passed here");
 
-  clearMessages();
-  setLoading(true);
+const refresh = useCallback(
+  async (showSuccessAlert = false) => {
+    if (!org?.id) {
+      if (showSuccessAlert) {
+        await showAlert({
+          title: translation("alerts.noOrg.title"),
+      message: translation("alerts.noOrg.message"),
+          tone: "warning",
+        });
+      }
 
-  try {
-    const res = await fetch(`/api/template/list?orgId=${org.id}`);
-    const data = await jsonOrThrow(res);
-
-    if (!res.ok) {
-      throw new Error(
-        data?.error ? JSON.stringify(data.error) : `HTTP ${data.status}`
-      );
+      return;
     }
 
-    setItems(data.items || []);
+    clearMessages();
+    setLoading(true);
 
-    setNotice(
-      translation("notices.synced", {
-        count: data.items?.length ?? 0,
-      })
-    );
-  } catch (e) {
-    setError(`failed to fetch templates: ${e.message}`);
-  } finally {
-    setLoading(false);
-    stopLoading();
-  }
-}, [org?.id, stopLoading, translation]);
+    try {
+      const res = await fetch(`/api/template/list?orgId=${org.id}`);
+      const data = await jsonOrThrow(res);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error ? JSON.stringify(data.error) : `HTTP ${data.status}`
+        );
+      }
+
+      const count = data.items?.length ?? 0;
+
+      setItems(data.items || []);
+
+      setNotice(
+        translation("notices.synced", {
+          count,
+        })
+      );
+
+      if (showSuccessAlert) {
+        await showAlert({
+          title: translation("alerts.syncSuccess.title"),
+          message: translation("alerts.syncSuccess.message", {
+            count,
+          }),
+          tone: "success",
+        });
+      }
+    } catch (e) {
+      setError(
+        translation("errors.fetch", {
+          message: e.message,
+        })
+      );
+
+      await showAlert({
+        title: translation("alerts.syncFailed.title"),
+        message: translation("alerts.syncFailed.message"),
+        tone: "danger",
+      });
+    } finally {
+      setLoading(false);
+      stopLoading();
+    }
+  },
+  [org?.id, stopLoading, translation, showAlert]
+);
 
 
   async function jsonOrThrow(res) {
@@ -94,20 +132,48 @@ export default function TemplatesPage() {
     if (!org?.id) return;
     clearMessages();
 
-    let components;
-    try {
-      components = JSON.parse(componentsText);
-      if (!Array.isArray(components))
-        throw new Error("Components must be an array");
-    } catch (err) {
-      setError(`Invalid components JSON: ${err.message}`);
-      return;
-    }
+   let components;
 
-    if (!name.trim()) {
-      setError("Name is required");
-      return;
-    }
+      try {
+        components = JSON.parse(componentsText);
+      } catch (err) {
+        setError(
+          translation("errors.invalidComponents", {
+            message: err.message,
+          })
+        );
+
+        await showAlert({
+          title: translation("alerts.invalidJson.title"),
+          message: translation("alerts.invalidJson.message"),
+          tone: "warning",
+        });
+
+        return;
+      }
+
+      if (!Array.isArray(components)) {
+        setError(translation("errors.componentsArray"));
+
+        await showAlert({
+          title: translation("alerts.componentsNotArray.title"),
+          message: translation("alerts.componentsNotArray.message"),
+          tone: "warning",
+        });
+
+        return;
+      }
+              if (!name.trim()) {
+        setError(translation("errors.nameRequired"));
+
+        await showAlert({
+          title: translation("alerts.nameRequired.title"),
+          message: translation("alerts.nameRequired.message"),
+          tone: "warning",
+        });
+
+        return;
+      }
 
     setLoading(true);
     try {
@@ -131,15 +197,39 @@ export default function TemplatesPage() {
       }
 
       setNotice(
-        `Template \"${name}\" submitted. Status: ${
-          data.template?.status || "NEW"
-        }`
+        translation("notices.templateSubmitted", {
+          name,
+          status:data.template?.status || "NEW",
+        })
+        
       );
+
+      await showAlert({
+        title: translation("alerts.templateSubmitted.title"),
+        message: translation("alerts.templateSubmitted.message", {
+          name,
+          status: data.template?.status || "NEW",
+        }),
+        tone: "success",
+      });
       setView("list");
       refresh();
+
+
+
     } catch (err) {
-      setError(`Create failed: ${e.message}`);
-    } finally {
+  setError(
+    translation("errors.createFailed", {
+      message: err.message,
+    })
+  );
+
+  await showAlert({
+    title: translation("alerts.createFailed.title"),
+    message: translation("alerts.createFailed.message"),
+    tone: "danger",
+  });
+} finally {
       setLoading(false);
     }
   }
@@ -155,6 +245,15 @@ export default function TemplatesPage() {
   async function sendTest(e) {
     e?.preventDefault?.();
     if (!org?.id || !sendTemplate) return;
+    if (!sendTo.trim()) {
+  await showAlert({
+    title: translation("alerts.recipientRequired.title"),
+    message: translation("alerts.recipientRequired.message"),
+    tone: "warning",
+  });
+
+  return;
+}
     clearMessages();
 
     const params = sendParams
@@ -194,10 +293,26 @@ export default function TemplatesPage() {
         );
       }
 
-      setNotice("Template sent");
-      setSendOpen(false);
+      setNotice(translation("notices.sent"));
+    setSendOpen(false);
+
+    await showAlert({
+      title: translation("alerts.testSent.title"),
+      message: translation("alerts.testSent.message"),
+      tone: "success",
+    });
     } catch (err) {
-      setError(`Send failed: ${e.message}`);
+      setError(
+        translation("errors.sendFailed", {
+          message: err.message,
+        })
+      );
+
+      await showAlert({
+        title: translation("alerts.testSendFailed.title"),
+        message: translation("alerts.testSendFailed.message"),
+        tone: "danger",
+      });
     } finally {
       setLoading(false);
     }
@@ -277,9 +392,13 @@ export default function TemplatesPage() {
       {view === "list" ? (
         <section>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button onClick={refresh} disabled={loading} style={primaryBtn()}>
-              {loading ? translation("syncing") : translation("sync")}
-            </button>
+          <button
+          onClick={() => refresh(true)}
+          disabled={loading}
+          style={primaryBtn()}
+        >
+          {loading ? translation("syncing") : translation("sync")}
+        </button>
           </div>
 
           <div
