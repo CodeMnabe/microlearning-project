@@ -25,7 +25,7 @@ import ScheduledTable from "./components/ScheduledTable";
 import ScheduledViewModal from "./components/ScheduledViewModal";
 import ScheduledEditModal from "./components/ScheduledEditModal";
 
-import {useAlert} from "@/app/components/Alert/AlertProvider";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 const MODAL_CLOSE_MS = 280;
 
@@ -64,54 +64,58 @@ export default function ScheduledPage() {
 
   const closeTimersRef = useRef({ view: null, edit: null });
 
-  const loadItems = useCallback(async (showSuccessAlert = false) => {
-  if (!org?.id) {
-    if (showSuccessAlert) {
-      await showAlertRef.current({
-        title: t("Alerts.noOrg.title"),
-        message: t("Alerts.noOrg.message"),
-        tone: "warning",
-      });
-    }
+  const loadItems = useCallback(
+    async (showSuccessAlert = false) => {
+      if (!org?.id) {
+        if (showSuccessAlert) {
+          await showAlertRef.current({
+            title: t("Alerts.noOrg.title"),
+            message: t("Alerts.noOrg.message"),
+            tone: "warning",
+          });
+        }
 
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch(
-      `/api/scheduled-broadcasts?orgId=${org.id}&source=manual`,
-      {
-        method: "GET",
-        cache: "no-store",
+        return;
       }
-    );
 
-    const result = await response.json();
+      setLoading(true);
+      setError("");
 
-    if (!response.ok) {
-      throw new Error(result?.error || "Failed to load scheduled broadcasts.");
-    }
+      try {
+        const response = await fetch(
+          `/api/scheduled-broadcasts?orgId=${org.id}&source=manual`,
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
 
-    const normalizedItems = (result.items ?? []).map(normalizeBroadcast);
+        const result = await response.json();
 
-   
-  } catch (err) {
-    console.warn("[Scheduled] load items error:", err);
+        if (!response.ok) {
+          throw new Error(
+            result?.error || "Failed to load scheduled broadcasts.",
+          );
+        }
 
-    setError(t("Errors.load"));
+        const normalizedItems = (result.items ?? []).map(normalizeBroadcast);
+        setItems(normalizedItems);
+      } catch (err) {
+        console.warn("[Scheduled] load items error:", err);
 
-    await showAlertRef.current({
-      title: t("Alerts.loadError.title"),
-      message: t("Alerts.loadError.message"),
-      tone: "danger",
-    });
-  } finally {
-    setLoading(false);
-  }
-}, [org?.id, t]);
+        setError(t("Errors.load"));
+
+        await showAlertRef.current({
+          title: t("Alerts.loadError.title"),
+          message: t("Alerts.loadError.message"),
+          tone: "danger",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [org?.id, t],
+  );
 
   useEffect(() => {
     if (orgLoading) return;
@@ -148,7 +152,6 @@ export default function ScheduledPage() {
             : [];
 
         setOrgUsers(list.map(normalizeUser));
-
       } catch (err) {
         console.warn("[Scheduled] load users error:", err);
 
@@ -162,8 +165,6 @@ export default function ScheduledPage() {
           });
         }
       } finally {
-
-
         if (!cancelled) setUsersLoading(false);
       }
     }
@@ -287,7 +288,7 @@ export default function ScheduledPage() {
 
     const recipients = [...new Set(formData.recipients)];
 
-        if (!formData.message.trim() || !scheduledIso) {
+    if (!formData.message.trim() || !scheduledIso) {
       setError(t("Errors.invalidForm"));
 
       await showAlert({
@@ -346,7 +347,7 @@ export default function ScheduledPage() {
       const normalized = normalizeBroadcast(result.item);
 
       setItems((prev) =>
-        prev.map((item) => (item.id === normalized.id ? normalized : item))
+        prev.map((item) => (item.id === normalized.id ? normalized : item)),
       );
 
       closeEditModal();
@@ -356,22 +357,17 @@ export default function ScheduledPage() {
         message: t("Alerts.saveSuccess.message"),
         tone: "success",
       });
+    } catch (err) {
+      console.warn("[Scheduled] save edit error:", err);
 
+      setError(t("Errors.save"));
 
-          } catch (err) {
-        console.warn("[Scheduled] save edit error:", err);
-
-        setError(t("Errors.save"));
-
-        await showAlert({
-          title: t("Alerts.saveError.title"),
-          message: t("Alerts.saveError.message"),
-          tone: "danger",
-        });
-      } finally {
-
-
-
+      await showAlert({
+        title: t("Alerts.saveError.title"),
+        message: t("Alerts.saveError.message"),
+        tone: "danger",
+      });
+    } finally {
       setSaving(false);
     }
   }
@@ -415,23 +411,24 @@ export default function ScheduledPage() {
       if (editingItem?.id === item.id) {
         setIsEditModalOpen(false);
         setEditingItem(null);
-        await showAlert({
-          title: t("Alerts.deleteSuccess.title"),
-          message: t("Alerts.deleteSuccess.message"),
-          tone: "success",
-        });
       }
-          } catch (err) {
-        console.warn("[Scheduled] delete error:", err);
 
-        setError(t("Errors.delete"));
+      await showAlert({
+        title: t("Alerts.deleteSuccess.title"),
+        message: t("Alerts.deleteSuccess.message"),
+        tone: "success",
+      });
+    } catch (err) {
+      console.warn("[Scheduled] delete error:", err);
 
-        await showAlert({
-          title: t("Alerts.deleteError.title"),
-          message: t("Alerts.deleteError.message"),
-          tone: "danger",
-        });
-      } finally {
+      setError(t("Errors.delete"));
+
+      await showAlert({
+        title: t("Alerts.deleteError.title"),
+        message: t("Alerts.deleteError.message"),
+        tone: "danger",
+      });
+    } finally {
       setDeletingId(null);
     }
   }
