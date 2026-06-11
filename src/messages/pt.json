@@ -2179,24 +2179,65 @@
     "trackedLinksHelper": "{links} links rastreados.",
     "pendingOutreach": "Mensagens pendentes",
     "pendingOutreachHelper": "{active} ainda ativas.",
-    "health": "Estado geral"
+    "health": "Estado geral",
+    "assistantCoverage": "Cobertura de assistente",
+    "assistantCoverageHelper": "{withAssistant}/{total} utilizadores com assistente.",
+    "readRate": "Taxa de leitura",
+    "readRateHelper": "{read}/{total} mensagens lidas.",
+    "failureRate": "Taxa de falha",
+    "failureRateHelper": "{failed}/{total} mensagens falhadas.",
+    "clickDensity": "Cliques por link",
+    "clickDensityHelper": "{clicks} cliques em {links} links."
   },
   "sections": {
-    "breakdownTitle": "Resumo operacional",
-    "users": {
-      "title": "Contactos dos utilizadores",
-      "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
-    },
-    "messages": {
-      "title": "Origem das mensagens",
-      "text": "{userMessages} mensagens de utilizadores e {assistantMessages} respostas de assistentes."
-    },
-    "next": {
-      "title": "Próximo passo",
-      "text": "Depois desta visão geral, podemos criar métricas por período, gráficos e uma tabela de eventos para análises mais detalhadas."
-    }
+  "breakdownTitle": "Resumo operacional",
+  "users": {
+    "title": "Cobertura",
+    "value": "{withAssistant}/{total} com assistente",
+    "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
+  },
+  "messages": {
+    "title": "Atividade",
+    "value": "{total} mensagens registadas",
+    "text": "{userMessages} mensagens de utilizadores, {assistantMessages} respostas de assistentes, {read} lidas e {failed} falhadas."
+  },
+  "attention": {
+    "title": "Pontos de atenção",
+    "value": "{total} problemas ativos",
+    "text": "{automationFailures} falhas em automações, {scheduledFailures} mensagens agendadas falhadas e {rejectedTemplates} templates rejeitados."
+  },
+  "next": {
+    "title": "Próxima melhoria",
+    "value": "Adicionar gráficos",
+    "text": "O próximo passo é mostrar evolução por período: mensagens por dia, cliques por dia, falhas por dia e automações processadas."
   }
+  
+  },
+    "charts": {
+  "email": "Email",
+  "phone": "Telefone",
+  "teams": "Teams",
+  "whatsapp": "WhatsApp",
+  "active": "Ativos",
+  "pending": "Pendentes",
+  "rejected": "Rejeitados",
+  "assistants": "Assistentes",
+  "templates": "Templates",
+  "messages": "Mensagens",
+  "automations": "Automações",
+  "scheduled": "Agendadas",
+  "contactTitle": "Contactos dos utilizadores",
+  "contactDescription": "Distribuição dos métodos de contacto configurados.",
+  "messagesTitle": "Mensagens por canal",
+  "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
+  "templatesTitle": "Estado dos templates",
+  "templatesDescription": "Distribuição dos templates por estado.",
+  "problemsTitle": "Problemas encontrados",
+  "problemsDescription": "Resumo dos pontos que precisam de atenção."
 }
+
+}
+
 
 
 

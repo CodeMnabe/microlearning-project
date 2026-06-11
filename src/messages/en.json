@@ -2176,24 +2176,65 @@
     "trackedLinksHelper": "{links} tracked links.",
     "pendingOutreach": "Pending messages",
     "pendingOutreachHelper": "{active} still active.",
-    "health": "Overall health"
+    "health": "Overall health",
+    "assistantCoverage": "Assistant coverage",
+    "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
+    "readRate": "Read rate",
+    "readRateHelper": "{read}/{total} messages read.",
+    "failureRate": "Failure rate",
+    "failureRateHelper": "{failed}/{total} failed messages.",
+    "clickDensity": "Clicks per link",
+    "clickDensityHelper": "{clicks} clicks across {links} links."
+    
   },
   "sections": {
-    "breakdownTitle": "Operational summary",
-    "users": {
-      "title": "User contact coverage",
-      "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
-    },
-    "messages": {
-      "title": "Message origin",
-      "text": "{userMessages} user messages and {assistantMessages} assistant replies."
-    },
-    "next": {
-      "title": "Next step",
-      "text": "After this overview, we can add period filters, charts and an events table for deeper analytics."
+  "breakdownTitle": "Operational summary",
+  "users": {
+    "title": "Coverage",
+    "value": "{withAssistant}/{total} with assistant",
+    "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
+  },
+  "messages": {
+    "title": "Activity",
+    "value": "{total} registered messages",
+    "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
+  },
+  "attention": {
+    "title": "Attention points",
+    "value": "{total} active issues",
+    "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
+  },
+  "next": {
+    "title": "Next improvement",
+    "value": "Add charts",
+    "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
+     },
+      "charts": {
+      "email": "Email",
+      "phone": "Phone",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp",
+      "active": "Active",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "assistants": "Assistants",
+      "templates": "Templates",
+      "messages": "Messages",
+      "automations": "Automations",
+      "scheduled": "Scheduled",
+      "contactTitle": "User contact coverage",
+      "contactDescription": "Distribution of configured contact methods.",
+      "messagesTitle": "Messages by channel",
+      "messagesDescription": "Comparison between WhatsApp and Teams messages.",
+      "templatesTitle": "Template status",
+      "templatesDescription": "Distribution of templates by status.",
+      "problemsTitle": "Issues found",
+      "problemsDescription": "Summary of areas that need attention."
     }
+
+    }
+
   }
-}
 
 
 
