@@ -65,3 +65,33 @@ export async function getOrganizationByTeamsTenantId(tenantId) {
   if (error) throw error;
   return data;
 }
+
+export async function getOrganizationBirdConfig(orgId) {
+  if (!orgId) throw new Error("orgId is required");
+
+  const { data, error } = await sb
+    .from("organization")
+    .select("id, name, channel_id, waba_id, waba_namespace")
+    .eq("id", orgId)
+    .single();
+
+  if (error) throw error;
+
+  if (!data) {
+    throw new Error(`Organization not found: ${orgId}`);
+  }
+
+  if (!data.channel_id) {
+    throw new Error(
+      `Organization ${orgId} does not have a channel_id configured`,
+    );
+  }
+
+  return {
+    organizationId: data.id,
+    organizationName: data.name,
+    channelId: data.channel_id,
+    wabaId: data.waba_id,
+    wabaNamespace: data.waba_namespace,
+  };
+}
