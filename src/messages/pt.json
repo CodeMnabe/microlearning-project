@@ -906,7 +906,8 @@
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
-    "logout": "Sair"
+    "logout": "Sair",
+    "analytics": "Métricas"
   },
 
   "Common": {
@@ -2140,5 +2141,63 @@
       "confirm": "Apagar",
       "cancel": "Cancelar"
     }
+  },
+
+"Analytics": {
+  "title": "Métricas",
+  "subtitle": "Visão geral da utilização, mensagens, automações e interações da organização.",
+  "refresh": "Atualizar",
+  "loading": "A carregar métricas...",
+  "errors": {
+    "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
+    "noOrg": "Não foi possível identificar a organização atual."
+  },
+  "health": {
+    "ok": "Tudo OK",
+    "noErrors": "Não foram encontrados problemas nos dados carregados.",
+    "needsAttention": "Atenção",
+    "errorsFound": "{count} problema(s) encontrado(s) nos dados atuais."
+  },
+  "cards": {
+    "users": "Utilizadores",
+    "usersHelper": "{withAssistant} com assistente, {withoutAssistant} sem assistente.",
+    "assistants": "Assistentes",
+    "assistantsHelper": "{withoutOpenAiId} sem OpenAI ID configurado.",
+    "messages": "Mensagens",
+    "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+    "delivery": "Entrega",
+    "deliveryHelper": "{read} lidas, {failed} falhadas.",
+    "templates": "Templates",
+    "templatesHelper": "{active} ativos, {pending} pendentes, {rejected} rejeitados.",
+    "automations": "Automações",
+    "automationsHelper": "{active} ativas, {paused} pausadas.",
+    "automationRuns": "Execuções de automação",
+    "automationRunsHelper": "{processed} processadas, {failed} falhadas.",
+    "scheduledBroadcasts": "Mensagens agendadas",
+    "scheduledBroadcastsHelper": "{queued} em fila, {completed} concluídas, {failed} falhadas, {recipients} destinatários.",
+    "trackedLinks": "Cliques rastreados",
+    "trackedLinksHelper": "{links} links rastreados.",
+    "pendingOutreach": "Mensagens pendentes",
+    "pendingOutreachHelper": "{active} ainda ativas.",
+    "health": "Estado geral"
+  },
+  "sections": {
+    "breakdownTitle": "Resumo operacional",
+    "users": {
+      "title": "Contactos dos utilizadores",
+      "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
+    },
+    "messages": {
+      "title": "Origem das mensagens",
+      "text": "{userMessages} mensagens de utilizadores e {assistantMessages} respostas de assistentes."
+    },
+    "next": {
+      "title": "Próximo passo",
+      "text": "Depois desta visão geral, podemos criar métricas por período, gráficos e uma tabela de eventos para análises mais detalhadas."
+    }
   }
+}
+
+
+
 }

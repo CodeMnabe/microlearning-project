@@ -19,6 +19,7 @@ import {
   CalendarClock,
   Link2,
   Zap,
+  BarChart3,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { useMobileNav } from "@/app/components/MobileNav/MobileNavContext";
@@ -169,6 +170,19 @@ export default function Navbar() {
                 <Zap aria-hidden className={styles.icon} />
                 <span>{translation("Nav.automations")}</span>
               </Link>
+
+              
+              <Link
+                href="/analytics"
+                onClick={onNavClick("/analytics")}
+                className={`${styles.navItem} ${
+                  isActive("/analytics") ? styles.active : ""
+                }`}
+              >
+                <BarChart3 aria-hidden className={styles.icon} />
+                <span>{translation("Nav.analytics")}</span>
+              </Link>
+
 
               <div className={styles.group}>
                 <button

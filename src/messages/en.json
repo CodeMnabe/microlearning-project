@@ -902,7 +902,8 @@
     "admin": "Admin",
     "login": "Login",
     "options": "Options",
-    "logout": "Sign out"
+    "logout": "Sign out",
+     "analytics": "Metrics"
   },
   "Common": {
     "search": "Search",
@@ -2137,5 +2138,65 @@
       "confirm": "Delete",
       "cancel": "Cancel"
     }
+  },
+
+  "Analytics": {
+  "title": "Metrics",
+  "subtitle": "Overview of usage, messages, automations and interactions for the organization.",
+  "refresh": "Refresh",
+  "loading": "Loading metrics...",
+  "errors": {
+    "load": "Metrics could not be loaded. Please try again in a few seconds.",
+    "noOrg": "The current organization could not be identified."
+  },
+  "health": {
+    "ok": "All good",
+    "noErrors": "No issues were found in the loaded data.",
+    "needsAttention": "Needs attention",
+    "errorsFound": "{count} issue(s) found in the current data."
+  },
+  "cards": {
+    "users": "Users",
+    "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
+    "assistants": "Assistants",
+    "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
+    "messages": "Messages",
+    "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+    "delivery": "Delivery",
+    "deliveryHelper": "{read} read, {failed} failed.",
+    "templates": "Templates",
+    "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
+    "automations": "Automations",
+    "automationsHelper": "{active} active, {paused} paused.",
+    "automationRuns": "Automation runs",
+    "automationRunsHelper": "{processed} processed, {failed} failed.",
+    "scheduledBroadcasts": "Scheduled messages",
+    "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
+    "trackedLinks": "Tracked clicks",
+    "trackedLinksHelper": "{links} tracked links.",
+    "pendingOutreach": "Pending messages",
+    "pendingOutreachHelper": "{active} still active.",
+    "health": "Overall health"
+  },
+  "sections": {
+    "breakdownTitle": "Operational summary",
+    "users": {
+      "title": "User contact coverage",
+      "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
+    },
+    "messages": {
+      "title": "Message origin",
+      "text": "{userMessages} user messages and {assistantMessages} assistant replies."
+    },
+    "next": {
+      "title": "Next step",
+      "text": "After this overview, we can add period filters, charts and an events table for deeper analytics."
+    }
   }
+}
+
+
+
+
+
 }
