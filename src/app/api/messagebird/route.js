@@ -1,5 +1,5 @@
 /* --------------------
-WhatsApp inbound webhook
+WhatsApp inbound webhook + read receipt webhook
 ----------------------*/
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,10 @@ import {
   getOrganization,
   getOrganizationByChannelId,
 } from "@/lib/repos/organizations.repo";
-import { createMessage } from "@/lib/repos/messages.repo";
+import {
+  createMessage,
+  markMessageReadByProviderId,
+} from "@/lib/repos/messages.repo";
 import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
@@ -156,7 +159,7 @@ function extractWhatsappIdentity(payload) {
 
   const phoneNumber =
     normalizePhone(extra.phoneNumber) ||
-    normalizePhone(extra.phoneNumber) ||
+    normalizePhone(extra.phone_number) ||
     normalizePhone(getIdentifier(senderContact, "phonenumber")) ||
     (senderKey === "phonenumber" ? normalizePhone(senderValue) : null);
 
@@ -178,6 +181,69 @@ function extractWhatsappIdentity(payload) {
     whatsappUsername,
     birdContactId: contactId,
   };
+}
+
+function extractReadInteraction(evt) {
+  const payload = evt?.payload || {};
+
+  const isReadInteraction =
+    evt?.service === "channels" &&
+    evt?.event === "whatsapp.interaction" &&
+    payload?.type === "read";
+
+  if (!isReadInteraction) return null;
+
+  return {
+    messageId: normalizeId(payload.messageId),
+    channelId: normalizeId(payload.channelId),
+    readAt:
+      normalizeId(payload.createdAt) ||
+      normalizeId(payload.updatedAt) ||
+      new Date().toISOString(),
+  };
+}
+
+async function handleReadInteraction(readInteraction) {
+  if (!readInteraction.messageId) {
+    console.warn("Read interaction missing messageId", {
+      channelId: readInteraction.channelId,
+    });
+    return;
+  }
+
+  if (readInteraction.channelId) {
+    try {
+      const organization = await getOrganizationByChannelId(
+        readInteraction.channelId,
+      );
+
+      if (!organization) {
+        console.warn("Read interaction channel has no organization", {
+          channelId: readInteraction.channelId,
+          messageId: readInteraction.messageId,
+        });
+      }
+    } catch (err) {
+      console.warn("Could not resolve read interaction organization", {
+        channelId: readInteraction.channelId,
+        messageId: readInteraction.messageId,
+        message: err?.message || String(err),
+      });
+    }
+  }
+
+  const updated = await markMessageReadByProviderId(
+    readInteraction.messageId,
+    readInteraction.readAt,
+  );
+
+  if (!updated) {
+    console.warn("Read interaction message not found locally", {
+      messageId: readInteraction.messageId,
+      channelId: readInteraction.channelId,
+      readAt: readInteraction.readAt,
+    });
+  }
 }
 
 async function findUserFromPhone(rawPhone) {
@@ -386,6 +452,13 @@ async function handleEvent(rawJSON) {
     evt = JSON.parse(rawJSON);
   } catch {
     console.warn("Webhook - bad JSON");
+    return;
+  }
+
+  const readInteraction = extractReadInteraction(evt);
+
+  if (readInteraction) {
+    await handleReadInteraction(readInteraction);
     return;
   }
 
