@@ -6,6 +6,10 @@ const supabase = createServiceClient(
   { auth: { persistSession: false } },
 );
 
+function toIsoDate(value = new Date()) {
+  return new Date(value).toISOString();
+}
+
 export async function createMessage({
   threadId,
   userId,
@@ -81,7 +85,6 @@ export async function getMessageByProviderId(messageId) {
     .maybeSingle();
 
   if (error) throw error;
-
   return data ?? null;
 }
 
@@ -124,12 +127,24 @@ export async function getLastInboundForUserAssistant(
 }
 
 export async function markMessageDelivered(messageRowId, at = new Date()) {
+  const iso = toIsoDate(at);
+
+  const current = await getMessageById(messageRowId);
+
+  if (!current) return null;
+
+  const patch = {
+    delivered_at: current.delivered_at || iso,
+  };
+
+  // Do not downgrade a message from read back to delivered.
+  if (!current.read_at) {
+    patch.delivery_status = "delivered";
+  }
+
   const { data, error } = await supabase
     .from("message")
-    .update({
-      delivery_status: "delivered",
-      delivered_at: new Date(at).toISOString(),
-    })
+    .update(patch)
     .eq("id", messageRowId)
     .select()
     .single();
@@ -139,14 +154,51 @@ export async function markMessageDelivered(messageRowId, at = new Date()) {
 }
 
 export async function markMessageRead(messageRowId, at = new Date()) {
-  const iso = new Date(at).toISOString();
+  const iso = toIsoDate(at);
+
+  const current = await getMessageById(messageRowId);
+
+  if (!current) return null;
+
+  const patch = {
+    delivery_status: "read",
+    read_at: iso,
+  };
+
+  // If somehow we missed delivered_at, read implies the message reached the user.
+  // This avoids having read_at filled while delivered_at stays null.
+  if (!current.delivered_at) {
+    patch.delivered_at = iso;
+  }
+
+  const { data, error } = await supabase
+    .from("message")
+    .update(patch)
+    .eq("id", messageRowId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function markMessageFailed(messageRowId, at = new Date()) {
+  const iso = toIsoDate(at);
+
+  const current = await getMessageById(messageRowId);
+
+  if (!current) return null;
+
+  // Do not downgrade a read/delivered message to failed because of a late or weird provider event.
+  if (current.read_at || current.delivered_at) {
+    return current;
+  }
 
   const { data, error } = await supabase
     .from("message")
     .update({
-      delivery_status: "read",
-      deliveredAt: iso,
-      read_at: iso,
+      delivery_status: "failed",
+      failed_at: iso,
     })
     .eq("id", messageRowId)
     .select()
@@ -156,24 +208,102 @@ export async function markMessageRead(messageRowId, at = new Date()) {
   return data;
 }
 
-export async function markMessageFailed(messageRowId, at = newDate()) {
-  const { data, error } = await supabase
+export async function markMessageDeliveredByProviderId(
+  providerMessageId,
+  at = new Date(),
+) {
+  const message = await getMessageByProviderId(providerMessageId);
+  if (!message) return null;
+
+  return markMessageDelivered(message.id, at);
+}
+
+export async function markMessageReadByProviderId(
+  providerMessageId,
+  at = new Date(),
+) {
+  const message = await getMessageByProviderId(providerMessageId);
+  if (!message) return null;
+
+  return markMessageRead(message.id, at);
+}
+
+export async function markMessageFailedByProviderId(
+  providerMessageId,
+  at = new Date(),
+) {
+  const message = await getMessageByProviderId(providerMessageId);
+  if (!message) return null;
+
+  return markMessageFailed(message.id, at);
+}
+
+export async function getPendingWhatsappMessagesForReadReceiptSync({
+  organizationId = null,
+  threadId = null,
+  scheduledBroadcastId = null,
+  limit = 50,
+  maxAgeHours = 168,
+} = {}) {
+  const safeLimit = Math.min(Number(limit || 50), 100);
+  const since = new Date(
+    Date.now() - Number(maxAgeHours || 168) * 60 * 60 * 1000,
+  ).toISOString();
+
+  let query = supabase
     .from("message")
-    .update({
-      delivery_status: "failed",
-      failed_at: new Date(at).toISOString(),
-    })
-    .eq("id", messageRowId)
-    .select()
-    .single();
+    .select(
+      `
+      id,
+      thread_id,
+      user_id,
+      organization_id,
+      assistant_id,
+      channel,
+      message_id,
+      contact_id,
+      content,
+      role,
+      delivery_status,
+      delivered_at,
+      read_at,
+      failed_at,
+      scheduled_broadcast_id,
+      automation_run_id,
+      created_at
+      `,
+    )
+    .eq("channel", "whatsapp")
+    .eq("role", "assistant")
+    .not("message_id", "is", null)
+    .is("read_at", null)
+    .is("failed_at", null)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(safeLimit);
+
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  if (threadId) {
+    query = query.eq("thread_id", threadId);
+  }
+
+  if (scheduledBroadcastId) {
+    query = query.eq("scheduled_broadcast_id", scheduledBroadcastId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
-  return data;
+  return data || [];
 }
 
 export async function isWindowOpenForUser(userId) {
   const last = await getLastInboundForUser(userId);
   if (!last) return false;
+
   const diffMs = Date.now() - new Date(last.created_at).getTime();
   return diffMs < 24 * 60 * 60 * 1000;
 }
