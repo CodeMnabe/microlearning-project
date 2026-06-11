@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/sync-read-receipts",
-      "schedule": "*/10 * * * *"
+      "schedule": "* 13 * * *"
     }
   ]
 }
