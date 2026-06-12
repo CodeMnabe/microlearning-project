@@ -44,7 +44,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -258,6 +258,311 @@
   display: grid;
   place-items: center;
   font-size: 14px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.periodTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.periodButton {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 11px;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.periodButton:hover {
+  background: white;
+  color: #0f172a;
+}
+
+.periodButtonActive {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.periodButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.periodNote {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.spinIcon {
+  animation: spin 0.8s linear infinite;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.sectionDescription {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.metricGroups {
+  display: grid;
+  gap: 18px;
+}
+
+.metricGroup {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.metricGroupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.metricGroupTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.metricGroupDescription {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.metricGroupGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.customizationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.customizationBar strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.customizationBar p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.customizationResetButton {
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.customizationResetButton:hover {
+  background: #eef6ff;
+  border-color: #bfdbfe;
+}
+
+.metricGroupCollapsed {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.metricGroupToggle {
+  border: 1px solid #dbe3ee;
+  background: white;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.metricGroupToggle:hover {
+  background: #eef6ff;
+  border-color: #bfdbfe;
+}
+
+.customizationActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.sectionCollapsed {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.rankingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.rankingCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.rankingTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rankingTable th {
+  text-align: left;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rankingTable td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #eef2f7;
+  color: #0f172a;
+  vertical-align: top;
+}
+
+.rankingTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.rankingMainText {
+  display: block;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.rankingSubText {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 520px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .rankingGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .customizationActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .customizationBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 1400px) {
+  .metricGroupGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .metricGroupGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .metricGroupGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .headerActions {
+    justify-content: flex-start;
+  }
+
+  .periodTabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .periodButton {
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 900px) {

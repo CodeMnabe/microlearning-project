@@ -1,3 +1,4 @@
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -6,11 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * Cliente Supabase com Service Role.
- *
- * Esta rota corre no servidor e precisa de consultar métricas globais da organização,
- * por isso usamos a service role para evitar limitações de RLS.
- *
- * Nunca expor SUPABASE_SERVICE_ROLE_KEY no frontend.
+ * Esta rota corre no servidor e pode consultar métricas globais da organização.
+ * A SUPABASE_SERVICE_ROLE_KEY nunca deve ser exposta no frontend.
  */
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -19,12 +17,8 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * Conta registos de uma tabela sem ir buscar os dados completos.
- *
- * O uso de:
- * .select("*", { count: "exact", head: true })
- *
- * permite ao Supabase devolver apenas o número total de linhas.
+ * Conta linhas de uma tabela Supabase.
+ * Usado quando só precisamos do total, sem carregar os dados completos.
  */
 async function countRows(table, applyFilters) {
   let query = supabaseAdmin
@@ -45,10 +39,8 @@ async function countRows(table, applyFilters) {
 }
 
 /**
- * Vai buscar linhas completas/parciais de uma tabela.
- *
- * Usamos esta função quando não basta contar.
- *
+ * Vai buscar linhas específicas de uma tabela Supabase.
+ * Usado quando precisamos analisar campos ou construir gráficos/rankings.
  */
 async function fetchRows(table, columns, applyFilters) {
   let query = supabaseAdmin.from(table).select(columns);
@@ -67,22 +59,16 @@ async function fetchRows(table, columns, applyFilters) {
 }
 
 /**
- * Verifica se um valor existe de forma útil.
- *
- * Consideramos inválidos:
- * - null
- * - undefined
- * - string vazia
- * - string só com espaços
+ * Verifica se um valor está preenchido.
+ * Evita contar valores nulos, undefined ou strings vazias.
  */
 function hasValue(value) {
   return value !== null && value !== undefined && String(value).trim() !== "";
 }
 
 /**
- * Soma valores numéricos dentro de uma lista de objetos.
- *
- * Serve para somar o número total de destinatários das mensagens agendadas.
+ * Soma valores numéricos de uma lista.
+ * Usado para somar recipient_count nas mensagens agendadas.
  */
 function sumNumbers(items, key) {
   return items.reduce((sum, item) => {
@@ -92,15 +78,146 @@ function sumNumbers(items, key) {
 }
 
 /**
- * Calcula métricas de links rastreados.
- *
- * A tabela tracked_link_event não tem org_id diretamente.
- * Por isso fazemos em dois passos:
- *
- * 1. Buscar os tracked_link da organização.
- * 2. Contar eventos de click associados a esses links.
+ * Períodos aceites pelo filtro da dashboard.
  */
-async function getTrackedLinkMetrics(orgId) {
+const VALID_PERIODS = new Set(["all", "7d", "30d", "90d"]);
+
+/**
+ * Converte o período escolhido numa data inicial.
+ * Exemplo: "30d" devolve a data de há 30 dias.
+ */
+function getPeriodStart(period) {
+  if (!VALID_PERIODS.has(period)) {
+    return {
+      valid: false,
+      startDate: null,
+    };
+  }
+
+  if (period === "all") {
+    return {
+      valid: true,
+      startDate: null,
+    };
+  }
+
+  const days = Number(period.replace("d", ""));
+  const date = new Date();
+
+  date.setDate(date.getDate() - days);
+
+  return {
+    valid: true,
+    startDate: date.toISOString(),
+  };
+}
+
+/**
+ * Aplica o filtro de período a uma query Supabase.
+ * Por defeito usa a coluna created_at.
+ */
+function applyPeriod(query, periodStart, dateColumn = "created_at") {
+  if (!periodStart) return query;
+
+  return query.gte(dateColumn, periodStart);
+}
+
+/**
+ * Converte uma data para o formato YYYY-MM-DD.
+ * Usado para agrupar dados por dia nos gráficos.
+ */
+function getDayKey(value) {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Cria uma lista de dias entre duas datas.
+ * Garante que os gráficos têm todos os dias, mesmo com valor zero.
+ */
+function getDayRange(startDate, endDate = new Date()) {
+  const days = [];
+
+  const current = new Date(startDate);
+  current.setUTCHours(0, 0, 0, 0);
+
+  const end = new Date(endDate);
+  end.setUTCHours(0, 0, 0, 0);
+
+  while (current <= end) {
+    days.push(current.toISOString().slice(0, 10));
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return days;
+}
+
+/**
+ * Constrói uma série diária para os gráficos.
+ * Conta quantos registos existem em cada dia.
+ */
+function buildDailySeries(startDate, rows, dateColumn, valueKey) {
+  const countsByDay = Object.fromEntries(
+    getDayRange(startDate).map((day) => [day, 0])
+  );
+
+  rows.forEach((row) => {
+    const day = getDayKey(row?.[dateColumn]);
+
+    if (day && day in countsByDay) {
+      countsByDay[day] += 1;
+    }
+  });
+
+  return Object.entries(countsByDay).map(([date, value]) => ({
+    date,
+    [valueKey]: value,
+  }));
+}
+
+/**
+ * Converte valores para número de forma segura.
+ * Usado em cálculos e rankings.
+ */
+function safeNumberForApi(value) {
+  const number = Number(value ?? 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
+/**
+ * Ordena uma lista por uma métrica e devolve apenas os primeiros resultados.
+ * Usado para rankings.
+ */
+function sortAndLimit(items, key, limit = 5) {
+  return [...items]
+    .sort((a, b) => safeNumberForApi(b[key]) - safeNumberForApi(a[key]))
+    .slice(0, limit);
+}
+
+/**
+ * Executa uma métrica opcional com fallback.
+ * Se falhar, evita que a API inteira devolva erro 500.
+ */
+async function withMetricFallback(label, promise, fallback) {
+  try {
+    return await promise;
+  } catch (err) {
+    console.warn(`[analytics] ${label} failed:`, err);
+    return fallback;
+  }
+}
+
+/**
+ * Calcula métricas de links rastreados.
+ * A tabela tracked_link_event não tem org_id diretamente.
+ * Por isso primeiro buscamos os links da organização e depois os cliques desses links.
+ */
+async function getTrackedLinkMetrics(orgId, periodStart) {
   const trackedLinks = await fetchRows("tracked_link", "id", (q) =>
     q.eq("org_id", orgId)
   );
@@ -115,7 +232,10 @@ async function getTrackedLinkMetrics(orgId) {
   }
 
   const totalClicks = await countRows("tracked_link_event", (q) =>
-    q.eq("event_type", "click").in("tracked_link_id", trackedLinkIds)
+    applyPeriod(
+      q.eq("event_type", "click").in("tracked_link_id", trackedLinkIds),
+      periodStart
+    )
   );
 
   return {
@@ -125,22 +245,148 @@ async function getTrackedLinkMetrics(orgId) {
 }
 
 /**
- * GET /api/analytics/overview?orgId=...
- *
- * Esta rota devolve um resumo geral das métricas de uma organização.
- * A ideia é a página /analytics chamar apenas esta API,
- * Isto torna o frontend mais simples e centraliza a lógica das métricas no backend.
+ * Vai buscar eventos de clique para construir o gráfico diário de cliques.
+ */
+async function getTrackedLinkClickRows(orgId, trendStart) {
+  const trackedLinks = await fetchRows("tracked_link", "id", (q) =>
+    q.eq("org_id", orgId)
+  );
+
+  const trackedLinkIds = trackedLinks.map((link) => link.id);
+
+  if (trackedLinkIds.length === 0) {
+    return [];
+  }
+
+  return fetchRows("tracked_link_event", "created_at", (q) =>
+    applyPeriod(
+      q.eq("event_type", "click").in("tracked_link_id", trackedLinkIds),
+      trendStart
+    )
+  );
+}
+
+/**
+ * Cria o ranking dos links mais clicados no período selecionado.
+ */
+async function getTopTrackedLinks(orgId, periodStart) {
+  const trackedLinks = await fetchRows(
+    "tracked_link",
+    "id, link_label, destination_url",
+    (q) => q.eq("org_id", orgId)
+  );
+
+  const trackedLinkIds = trackedLinks.map((link) => link.id);
+
+  if (trackedLinkIds.length === 0) {
+    return [];
+  }
+
+  const clickEvents = await fetchRows(
+    "tracked_link_event",
+    "tracked_link_id, created_at",
+    (q) =>
+      applyPeriod(
+        q.eq("event_type", "click").in("tracked_link_id", trackedLinkIds),
+        periodStart
+      )
+  );
+
+  const clicksByLinkId = clickEvents.reduce((acc, event) => {
+    const linkId = event.tracked_link_id;
+
+    if (!linkId) return acc;
+
+    acc[linkId] = (acc[linkId] || 0) + 1;
+
+    return acc;
+  }, {});
+
+  const ranking = trackedLinks.map((link) => ({
+    id: link.id,
+    label: link.link_label || link.destination_url || "Link",
+    destinationUrl: link.destination_url,
+    clicks: clicksByLinkId[link.id] || 0,
+  }));
+
+  return sortAndLimit(
+    ranking.filter((item) => item.clicks > 0),
+    "clicks"
+  );
+}
+
+/**
+ * Cria o ranking das automações com mais falhas no período selecionado.
+ */
+async function getTopAutomationFailures(orgId, periodStart) {
+  const failedRuns = await fetchRows(
+    "automation_run",
+    "rule_id, last_error, created_at",
+    (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("last_error", "is", null),
+        periodStart
+      )
+  );
+
+  if (failedRuns.length === 0) {
+    return [];
+  }
+
+  const rules = await fetchRows("automation_rule", "id, name", (q) =>
+    q.eq("organization_id", orgId)
+  );
+
+  const ruleNameById = rules.reduce((acc, rule) => {
+    acc[rule.id] = rule.name;
+    return acc;
+  }, {});
+
+  const failuresByRuleId = failedRuns.reduce((acc, run) => {
+    const ruleId = run.rule_id || "unknown";
+
+    if (!acc[ruleId]) {
+      acc[ruleId] = {
+        id: ruleId,
+        name: ruleNameById[ruleId] || "Unknown automation",
+        failures: 0,
+        lastError: "",
+      };
+    }
+
+    acc[ruleId].failures += 1;
+
+    if (run.last_error) {
+      acc[ruleId].lastError = run.last_error;
+    }
+
+    return acc;
+  }, {});
+
+  return sortAndLimit(Object.values(failuresByRuleId), "failures");
+}
+
+/**
+ * Endpoint principal das métricas.
+ * Recebe orgId e period, calcula os dados e devolve tudo para a dashboard.
  */
 export async function GET(req) {
   try {
+    // Lê os parâmetros recebidos na URL.
     const { searchParams } = new URL(req.url);
     const orgId = Number(searchParams.get("orgId"));
+    const period = searchParams.get("period") || "all";
 
-    /**
-     * Validação obrigatória.
-     *
-     * Sem orgId não conseguimos saber de que organização devemos calcular métricas.
-     */
+    // Calcula o período usado nas métricas gerais.
+    const { valid: isValidPeriod, startDate: periodStart } =
+      getPeriodStart(period);
+
+    // Quando o período é "all", gráficos e rankings usam os últimos 30 dias.
+    const { startDate: defaultTrendStart } = getPeriodStart("30d");
+    const trendStart = periodStart || defaultTrendStart;
+    const rankingStart = periodStart || defaultTrendStart;
+
+    // Valida se a organização foi enviada corretamente.
     if (!orgId || Number.isNaN(orgId)) {
       return NextResponse.json(
         { error: "Missing or invalid orgId" },
@@ -148,25 +394,23 @@ export async function GET(req) {
       );
     }
 
+    // Valida se o período recebido é permitido.
+    if (!isValidPeriod) {
+      return NextResponse.json({ error: "Invalid period" }, { status: 400 });
+    }
+
     /**
-     * Executamos várias queries em paralelo.
-     *
-     * Promise.all melhora a performance porque não esperamos por uma query
-     * para só depois começar a próxima.
-     *
-     * Cada posição deste array corresponde à variável na destructuring abaixo.
+     * Executa as métricas principais em paralelo.
+     * Isto melhora a performance porque as queries não correm uma a uma.
      */
     const [
       users,
-
       assistantsTotal,
       assistantsWithoutOpenAiId,
-
       templatesTotal,
       templatesActive,
       templatesPending,
       templatesRejected,
-
       messagesTotal,
       whatsappMessages,
       teamsMessages,
@@ -175,26 +419,16 @@ export async function GET(req) {
       deliveredMessages,
       readMessages,
       failedMessages,
-
       automationRulesTotal,
       automationRulesActive,
       automationRunsTotal,
       automationRunsProcessed,
       automationRunsFailed,
-
       scheduledBroadcastRows,
-
       pendingOutreachTotal,
       pendingOutreachActive,
-
       trackedLinks,
     ] = await Promise.all([
-      /**
-       * Utilizadores da organização.
-       *
-       * Aqui precisamos das linhas completas/parciais porque algumas métricas
-       * dependem de verificar se certos campos estão preenchidos.
-       */
       fetchRows(
         "user",
         `
@@ -212,46 +446,22 @@ export async function GET(req) {
         (q) => q.eq("organization_id", orgId)
       ),
 
-      /**
-       * Assistentes.
-       *
-       * Total de assistentes da organização.
-       */
       countRows("assistant", (q) => q.eq("organization_id", orgId)),
 
-      /**
-       * Assistentes sem open_ai_id.
-       *
-       * Esta métrica é importante porque um assistente sem OpenAI ID
-       * pode estar mal configurado e não conseguir responder.
-       */
       countRows("assistant", (q) =>
         q.eq("organization_id", orgId).or("open_ai_id.is.null,open_ai_id.eq.")
       ),
 
-      /**
-       * Templates WhatsApp.
-       *
-       * Incluímos:
-       * - templates específicos da organização;
-       * - templates globais, quando org_id é null.
-       */
       countRows("whatsapp_templates", (q) =>
         q.or(`org_id.eq.${orgId},org_id.is.null`)
       ),
 
-      /**
-       * Templates ativos/aprovados.
-       */
       countRows("whatsapp_templates", (q) =>
         q
           .or(`org_id.eq.${orgId},org_id.is.null`)
           .in("status", ["ACTIVE", "active", "APPROVED", "approved"])
       ),
 
-      /**
-       * Templates pendentes, novos ou em draft.
-       */
       countRows("whatsapp_templates", (q) =>
         q
           .or(`org_id.eq.${orgId},org_id.is.null`)
@@ -267,134 +477,190 @@ export async function GET(req) {
           ])
       ),
 
-      /**
-       * Templates rejeitados ou inativos.
-       */
       countRows("whatsapp_templates", (q) =>
         q
           .or(`org_id.eq.${orgId},org_id.is.null`)
           .in("status", ["REJECTED", "rejected", "INACTIVE", "inactive"])
       ),
 
-      /**
-       * Mensagens.
-       *
-       * A tabela message é uma das fontes principais de métricas.
-       */
-      countRows("message", (q) => q.eq("organization_id", orgId)),
-
-      /**
-       * Mensagens por canal.
-       */
       countRows("message", (q) =>
-        q.eq("organization_id", orgId).eq("channel", "whatsapp")
+        applyPeriod(q.eq("organization_id", orgId), periodStart)
       ),
 
       countRows("message", (q) =>
-        q.eq("organization_id", orgId).eq("channel", "teams")
-      ),
-
-      /**
-       * Mensagens por role.
-       *
-       * role=user representa mensagens enviadas por utilizadores.
-       * role=assistant representa respostas do assistente.
-       */
-      countRows("message", (q) =>
-        q.eq("organization_id", orgId).eq("role", "user")
+        applyPeriod(
+          q.eq("organization_id", orgId).eq("channel", "whatsapp"),
+          periodStart
+        )
       ),
 
       countRows("message", (q) =>
-        q.eq("organization_id", orgId).eq("role", "assistant")
-      ),
-
-      /**
-       * Estados das mensagens.
-       *
-       * delivered_at preenchido = mensagem entregue.
-       * read_at preenchido = mensagem lida.
-       * failed_at preenchido = mensagem falhada.
-       */
-      countRows("message", (q) =>
-        q.eq("organization_id", orgId).not("delivered_at", "is", null)
+        applyPeriod(
+          q.eq("organization_id", orgId).eq("channel", "teams"),
+          periodStart
+        )
       ),
 
       countRows("message", (q) =>
-        q.eq("organization_id", orgId).not("read_at", "is", null)
+        applyPeriod(
+          q.eq("organization_id", orgId).eq("role", "user"),
+          periodStart
+        )
       ),
 
       countRows("message", (q) =>
-        q.eq("organization_id", orgId).not("failed_at", "is", null)
+        applyPeriod(
+          q.eq("organization_id", orgId).eq("role", "assistant"),
+          periodStart
+        )
       ),
 
-      /**
-       * Regras de automação.
-       */
+      countRows("message", (q) =>
+        applyPeriod(
+          q.eq("organization_id", orgId).not("delivered_at", "is", null),
+          periodStart
+        )
+      ),
+
+      countRows("message", (q) =>
+        applyPeriod(
+          q.eq("organization_id", orgId).not("read_at", "is", null),
+          periodStart
+        )
+      ),
+
+      countRows("message", (q) =>
+        applyPeriod(
+          q.eq("organization_id", orgId).not("failed_at", "is", null),
+          periodStart
+        )
+      ),
+
       countRows("automation_rule", (q) => q.eq("organization_id", orgId)),
 
       countRows("automation_rule", (q) =>
         q.eq("organization_id", orgId).eq("is_active", true)
       ),
 
-      /**
-       * Execuções de automações.
-       */
-      countRows("automation_run", (q) => q.eq("organization_id", orgId)),
-
-      /**
-       * Execuções processadas.
-       *
-       * processed_at preenchido indica que a execução já foi tratada.
-       */
       countRows("automation_run", (q) =>
-        q.eq("organization_id", orgId).not("processed_at", "is", null)
+        applyPeriod(q.eq("organization_id", orgId), periodStart)
       ),
 
-      /**
-       * Execuções com erro.
-       *
-       * last_error preenchido indica falha na execução.
-       */
       countRows("automation_run", (q) =>
-        q.eq("organization_id", orgId).not("last_error", "is", null)
+        applyPeriod(
+          q.eq("organization_id", orgId).not("processed_at", "is", null),
+          periodStart
+        )
       ),
 
-      /**
-       * Mensagens agendadas.
-       *
-       * Aqui buscamos linhas em vez de contar diretamente,
-       * porque precisamos de calcular totais por status
-       * e somar recipient_count.
-       */
+      countRows("automation_run", (q) =>
+        applyPeriod(
+          q.eq("organization_id", orgId).not("last_error", "is", null),
+          periodStart
+        )
+      ),
+
       fetchRows(
         "scheduled_broadcast",
         "id, status, channel, recipient_count",
-        (q) => q.eq("organization_id", orgId)
+        (q) =>
+          applyPeriod(
+            q.eq("organization_id", orgId),
+            periodStart,
+            "scheduled_for"
+          )
       ),
-
-      /**
-       * Pending outreach.
-       *
-       * Representa mensagens/contactos pendentes.
-       */
-      countRows("pending_outreach", (q) => q.eq("org_id", orgId)),
 
       countRows("pending_outreach", (q) =>
-        q.eq("org_id", orgId).in("status", ["pending", "queued", "active"])
+        applyPeriod(q.eq("org_id", orgId), periodStart)
       ),
 
-      /**
-       * Métricas de tracked links.
-       *
-       * Calculadas numa função própria porque precisam de passar
-       * de tracked_link para tracked_link_event.
-       */
-      getTrackedLinkMetrics(orgId),
+      countRows("pending_outreach", (q) =>
+        applyPeriod(
+          q.eq("org_id", orgId).in("status", ["pending", "queued", "active"]),
+          periodStart
+        )
+      ),
+
+      withMetricFallback(
+        "tracked link metrics",
+        getTrackedLinkMetrics(orgId, periodStart),
+        {
+          totalLinks: 0,
+          totalClicks: 0,
+        }
+      ),
     ]);
 
     /**
-     * Métricas derivadas de utilizadores.
-     *
+     * Vai buscar dados usados nos gráficos de evolução diária.
+     * Estas métricas têm fallback para não quebrar a dashboard toda.
+     */
+    const [
+      dailyMessageRows,
+      dailyFailedMessageRows,
+      dailyAutomationProcessedRows,
+      dailyClickRows,
+    ] = await Promise.all([
+      withMetricFallback(
+        "daily message rows",
+        fetchRows("message", "created_at", (q) =>
+          applyPeriod(q.eq("organization_id", orgId), trendStart)
+        ),
+        []
+      ),
+
+      withMetricFallback(
+        "daily failed message rows",
+        fetchRows("message", "failed_at", (q) =>
+          applyPeriod(
+            q.eq("organization_id", orgId).not("failed_at", "is", null),
+            trendStart,
+            "failed_at"
+          )
+        ),
+        []
+      ),
+
+      withMetricFallback(
+        "daily automation processed rows",
+        fetchRows("automation_run", "processed_at", (q) =>
+          applyPeriod(
+            q.eq("organization_id", orgId).not("processed_at", "is", null),
+            trendStart,
+            "processed_at"
+          )
+        ),
+        []
+      ),
+
+      withMetricFallback(
+        "daily click rows",
+        getTrackedLinkClickRows(orgId, trendStart),
+        []
+      ),
+    ]);
+
+    /**
+     * Vai buscar rankings principais da dashboard.
+     * Também usam fallback porque são métricas complementares.
+     */
+    const [topTrackedLinks, topAutomationFailures] = await Promise.all([
+      withMetricFallback(
+        "top tracked links",
+        getTopTrackedLinks(orgId, rankingStart),
+        []
+      ),
+
+      withMetricFallback(
+        "top automation failures",
+        getTopAutomationFailures(orgId, rankingStart),
+        []
+      ),
+    ]);
+
+    /**
+     * Calcula métricas derivadas dos utilizadores.
      */
     const totalUsers = users.length;
 
@@ -423,10 +689,8 @@ export async function GET(req) {
     ).length;
 
     /**
-     * Métricas derivadas de mensagens agendadas.
-     *
-     * Agrupamos manualmente os status para aceitar nomes diferentes
-     * que possam existir na base de dados.
+     * Calcula métricas derivadas das mensagens agendadas.
+     * Aceita vários nomes de status para ser mais flexível.
      */
     const scheduledBroadcastsTotal = scheduledBroadcastRows.length;
 
@@ -452,12 +716,46 @@ export async function GET(req) {
     );
 
     /**
-     * Resposta final da API.
-     *
-     * O frontend recebe este objeto e mostra os cards da página Analytics.
+     * Constrói séries diárias para os gráficos de linha.
+     */
+    const dailyMessages = buildDailySeries(
+      trendStart,
+      dailyMessageRows,
+      "created_at",
+      "messages"
+    );
+
+    const dailyFailedMessages = buildDailySeries(
+      trendStart,
+      dailyFailedMessageRows,
+      "failed_at",
+      "failures"
+    );
+
+    const dailyAutomationRuns = buildDailySeries(
+      trendStart,
+      dailyAutomationProcessedRows,
+      "processed_at",
+      "processed"
+    );
+
+    const dailyClicks = buildDailySeries(
+      trendStart,
+      dailyClickRows,
+      "created_at",
+      "clicks"
+    );
+
+    /**
+     * Devolve todos os dados organizados para o frontend.
      */
     return NextResponse.json({
       ok: true,
+
+      period: {
+        value: period,
+        startDate: periodStart,
+      },
 
       users: {
         total: totalUsers,
@@ -515,12 +813,24 @@ export async function GET(req) {
       },
 
       trackedLinks,
+
+      daily: {
+        startDate: trendStart,
+        messages: dailyMessages,
+        clicks: dailyClicks,
+        failedMessages: dailyFailedMessages,
+        automationRuns: dailyAutomationRuns,
+      },
+
+      rankings: {
+        topTrackedLinks,
+        topAutomationFailures,
+      },
     });
   } catch (err) {
     /**
      * Erro geral da rota.
-     *
-     * Qualquer erro numa query ou cálculo vem parar aqui.
+     * Qualquer erro não tratado numa query ou cálculo vem parar aqui.
      */
     console.error("[analytics/overview] error:", err);
 
@@ -533,3 +843,4 @@ export async function GET(req) {
     );
   }
 }
+

@@ -2208,7 +2208,9 @@
     "title": "Next improvement",
     "value": "Add charts",
     "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
-     },
+     }
+    },
+
       "charts": {
       "email": "Email",
       "phone": "Phone",
@@ -2229,15 +2231,96 @@
       "templatesTitle": "Template status",
       "templatesDescription": "Distribution of templates by status.",
       "problemsTitle": "Issues found",
-      "problemsDescription": "Summary of areas that need attention."
-    }
+      "problemsDescription": "Summary of areas that need attention.",
+      "sectionTitle": "Current distribution",
+      "sectionDescription": "A snapshot of the current state and selected period metrics."
+    },
 
-    }
+  "periods": {
+  "label": "Filter by period",
+  "all": "All",
+  "last7Days": "7 days",
+  "last30Days": "30 days",
+  "last90Days": "90 days",
+  "note": "User, assistant and template metrics show the current organization state. Activity metrics follow the selected period."
+  },
+  "trends": {
+  "title": "Daily trends",
+  "description": "These charts follow the selected period. When All is selected, they show the last 30 days.",
+  "messagesTitle": "Messages per day",
+  "messagesDescription": "Total messages registered each day.",
+  "clicksTitle": "Clicks per day",
+  "clicksDescription": "Tracked link clicks registered each day.",
+  "failuresTitle": "Failures per day",
+  "failuresDescription": "Messages that failed each day.",
+  "automationsTitle": "Processed automations per day",
+  "automationsDescription": "Automation runs processed each day.",
+  "empty": "No data to show for this period."
+  },
+    "groups": {
+  "overview": {
+    "title": "Overview",
+    "description": "Current organization setup and configuration status."
+  },
+  "activity": {
+    "title": "Activity",
+    "description": "Messages, delivery and activity metrics for the selected period."
+  },
+  "automations": {
+    "title": "Automations and sends",
+    "description": "Automation rules, automation runs and scheduled messages."
+  },
+  "engagement": {
+    "title": "Engagement",
+    "description": "Tracked link activity and click performance."
+  },
+  "health": {
+    "title": "Health",
+    "description": "Main issues that may require attention."
+  }
+
+  
+
+},
+
+  "customization": {
+  "title": "Dashboard customization",
+  "description": "Show or hide metric groups. Your choice is saved in this browser.",
+  "show": "Show",
+  "hide": "Hide",
+  "reset": "Reset groups",
+  "resetCharts": "Reset charts"
+},
+
+  "rankings": {
+  "title": "Rankings",
+  "description": "The most relevant items for the selected period.",
+  "topLinksTitle": "Top tracked links",
+  "topLinksDescription": "Links with the highest number of clicks.",
+  "automationFailuresTitle": "Automation failures",
+  "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
+  "empty": "No ranking data for this period.",
+  "columns": {
+    "link": "Link",
+    "clicks": "Clicks",
+    "automation": "Automation",
+    "failures": "Failures"
+  }
+}
+
+
+
+
+    
 
   }
 
-
-
-
-
 }
+
+
+
+
+
+
+
+

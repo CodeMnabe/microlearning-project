@@ -2233,10 +2233,81 @@
   "templatesTitle": "Estado dos templates",
   "templatesDescription": "Distribuição dos templates por estado.",
   "problemsTitle": "Problemas encontrados",
-  "problemsDescription": "Resumo dos pontos que precisam de atenção."
+  "problemsDescription": "Resumo dos pontos que precisam de atenção.",
+  "sectionTitle": "Distribuição atual",
+  "sectionDescription": "Um resumo visual do estado atual e das métricas do período selecionado."
+  },
+  "periods": {
+  "label": "Filtrar por período",
+  "all": "Tudo",
+  "last7Days": "7 dias",
+  "last30Days": "30 dias",
+  "last90Days": "90 dias",
+  "note": "As métricas de utilizadores, assistentes e templates mostram o estado atual da organização. As métricas de atividade respeitam o período selecionado."
+    },
+
+  "trends": {
+  "title": "Evolução diária",
+  "description": "Estes gráficos respeitam o período selecionado. Quando Tudo está selecionado, mostram os últimos 30 dias.",
+  "messagesTitle": "Mensagens por dia",
+  "messagesDescription": "Total de mensagens registadas em cada dia.",
+  "clicksTitle": "Cliques por dia",
+  "clicksDescription": "Cliques em links rastreados registados em cada dia.",
+  "failuresTitle": "Falhas por dia",
+  "failuresDescription": "Mensagens que falharam em cada dia.",
+  "automationsTitle": "Automações processadas por dia",
+  "automationsDescription": "Execuções de automação processadas em cada dia.",
+  "empty": "Não há dados para mostrar neste período."
+},
+  "groups": {
+  "overview": {
+    "title": "Resumo geral",
+    "description": "Estado atual da configuração e organização."
+  },
+  "activity": {
+    "title": "Atividade",
+    "description": "Mensagens, entrega e métricas de atividade no período selecionado."
+  },
+  "automations": {
+    "title": "Automações e envios",
+    "description": "Regras de automação, execuções e mensagens agendadas."
+  },
+  "engagement": {
+    "title": "Interação",
+    "description": "Atividade dos links rastreados e desempenho dos cliques."
+  },
+  "health": {
+    "title": "Estado",
+    "description": "Principais pontos que podem precisar de atenção."
+  }
+},
+
+  "customization": {
+  "title": "Personalização da dashboard",
+  "description": "Mostra ou oculta grupos de métricas. A tua escolha fica guardada neste browser.",
+  "show": "Mostrar",
+  "hide": "Ocultar",
+  "reset": "Repor grupos",
+  "resetCharts": "Repor gráficos"
+},
+    "rankings": {
+  "title": "Rankings",
+  "description": "Os elementos mais relevantes no período selecionado.",
+  "topLinksTitle": "Links mais clicados",
+  "topLinksDescription": "Links rastreados com maior número de cliques.",
+  "automationFailuresTitle": "Falhas em automações",
+  "automationFailuresDescription": "Regras de automação com maior número de execuções falhadas.",
+  "empty": "Não há dados de ranking neste período.",
+  "columns": {
+    "link": "Link",
+    "clicks": "Cliques",
+    "automation": "Automação",
+    "failures": "Falhas"
+  }
 }
 
-}
+
+  }
 
 
 
