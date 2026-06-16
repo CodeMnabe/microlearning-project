@@ -18,7 +18,7 @@ const supabaseAdmin = createClient(
 
 /**
  * Conta linhas de uma tabela Supabase.
- * Usado quando só precisamos do total, sem carregar os dados completos.
+ * Usando quando só precisamos do total, sem carregar os dados completos.
  */
 async function countRows(table, applyFilters) {
   let query = supabaseAdmin
@@ -199,6 +199,58 @@ function sortAndLimit(items, key, limit = 5) {
     .slice(0, limit);
 }
 
+function cleanErrorText(value){
+  const text = String(value ?? "").trim();
+
+  if(!text || text === "[object Object]") {
+    return "";
+  }
+
+  return text.length > 140 ? "${text.slice(0,140)}..." : text;
+}
+
+function getAutomationErrorKey(error) {
+  if (!error) {
+    return "noDetails";
+  }
+
+  const text = String(error).trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    const item = Array.isArray(parsed) ? parsed[0] : parsed;
+
+    const candidates = [
+      item?.data?.error?.message,
+      item?.data?.error,
+      item?.data?.message,
+      item?.error?.message,
+      item?.error,
+      item?.message,
+    ];
+
+    const readableMessage = candidates
+      .map((candidate) => String(candidate ?? "").trim())
+      .find((candidate) => candidate && candidate !== "[object Object]");
+
+    if (readableMessage) {
+      return "providerMessage";
+    }
+
+    if (item?.ok === false || item?.status === 0) {
+      return "providerFailed";
+    }
+  } catch {
+    // Se não for JSON válido, continuamos para as regras abaixo.
+  }
+
+  if (text.includes("[object Object]")) {
+    return "providerUnreadable";
+  }
+
+  return "generic";
+}
+
 /**
  * Executa uma métrica opcional com fallback.
  * Se falhar, evita que a API inteira devolva erro 500.
@@ -311,7 +363,8 @@ async function getTopTrackedLinks(orgId, periodStart) {
 
   return sortAndLimit(
     ranking.filter((item) => item.clicks > 0),
-    "clicks"
+    "clicks",
+    10
   );
 }
 
@@ -381,10 +434,10 @@ export async function GET(req) {
     const { valid: isValidPeriod, startDate: periodStart } =
       getPeriodStart(period);
 
-    // Quando o período é "all", gráficos e rankings usam os últimos 30 dias.
-    const { startDate: defaultTrendStart } = getPeriodStart("30d");
+    // Quando o período é "all", gráficos e rankings usam os últimos 110d dias.
+    const { startDate: defaultTrendStart } = getPeriodStart("90d");
     const trendStart = periodStart || defaultTrendStart;
-    const rankingStart = periodStart || defaultTrendStart;
+    const rankingStart = periodStart;
 
     // Valida se a organização foi enviada corretamente.
     if (!orgId || Number.isNaN(orgId)) {

@@ -2145,7 +2145,7 @@
 
 "Analytics": {
   "title": "Métricas",
-  "subtitle": "Visão geral da utilização, mensagens, automações e interações da organização.",
+
   "refresh": "Atualizar",
   "loading": "A carregar métricas...",
   "errors": {
@@ -2167,7 +2167,7 @@
     "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
     "delivery": "Entrega",
     "deliveryHelper": "{read} lidas, {failed} falhadas.",
-    "templates": "Templates",
+    "templates": "Templates WhatsApp",
     "templatesHelper": "{active} ativos, {pending} pendentes, {rejected} rejeitados.",
     "automations": "Automações",
     "automationsHelper": "{active} ativas, {paused} pausadas.",
@@ -2180,7 +2180,7 @@
     "pendingOutreach": "Mensagens pendentes",
     "pendingOutreachHelper": "{active} ainda ativas.",
     "health": "Estado geral",
-    "assistantCoverage": "Cobertura de assistente",
+    "assistantCoverage": "Assistentes atribuídos",
     "assistantCoverageHelper": "{withAssistant}/{total} utilizadores com assistente.",
     "readRate": "Taxa de leitura",
     "readRateHelper": "{read}/{total} mensagens lidas.",
@@ -2226,8 +2226,7 @@
   "messages": "Mensagens",
   "automations": "Automações",
   "scheduled": "Agendadas",
-  "contactTitle": "Contactos dos utilizadores",
-  "contactDescription": "Distribuição dos métodos de contacto configurados.",
+  
   "messagesTitle": "Mensagens por canal",
   "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
   "templatesTitle": "Estado dos templates",
@@ -2242,8 +2241,8 @@
   "all": "Tudo",
   "last7Days": "7 dias",
   "last30Days": "30 dias",
-  "last90Days": "90 dias",
-  "note": "As métricas de utilizadores, assistentes e templates mostram o estado atual da organização. As métricas de atividade respeitam o período selecionado."
+  "last90Days": "90 dias"
+ 
     },
 
   "trends": {
@@ -2269,16 +2268,12 @@
     "description": "Mensagens, entrega e métricas de atividade no período selecionado."
   },
   "automations": {
-    "title": "Automações e envios",
+    "title": "Automações",
     "description": "Regras de automação, execuções e mensagens agendadas."
   },
   "engagement": {
-    "title": "Interação",
+    "title": "Links Rastreados",
     "description": "Atividade dos links rastreados e desempenho dos cliques."
-  },
-  "health": {
-    "title": "Estado",
-    "description": "Principais pontos que podem precisar de atenção."
   }
 },
 
@@ -2288,7 +2283,10 @@
   "show": "Mostrar",
   "hide": "Ocultar",
   "reset": "Repor grupos",
-  "resetCharts": "Repor gráficos"
+  "resetCharts": "Repor gráficos",
+  "exports":"Exportar",
+  "resetDashboard": "Repor dashboard"
+
 },
     "rankings": {
   "title": "Rankings",
@@ -2302,7 +2300,11 @@
     "link": "Link",
     "clicks": "Cliques",
     "automation": "Automação",
-    "failures": "Falhas"
+    "failures": "Falhas",
+    "viewAllLinks": "Ver lista completa ({count})",
+    "allLinksTitle": "Lista completa de links",
+    "allLinksDescription": "Todos os links rastreados ordenados por número de cliques.",
+    "close": "Fechar"
   }
 }
 

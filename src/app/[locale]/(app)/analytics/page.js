@@ -14,6 +14,7 @@ import {
   Send,
   Users,
   Zap,
+  Info,
 } from "lucide-react";
 
 import {
@@ -34,6 +35,8 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./analytics.module.css";
 
+ 
+
 /**
  * Opções disponíveis para filtrar as métricas por período.
  */
@@ -50,7 +53,7 @@ const PERIOD_OPTIONS = [
 const METRIC_GROUP_STORAGE_KEY = "analytics.visibleMetricGroups";
 
 /**
- * Grupos de métricas visíveis por defeito.
+ * Grupos de métricas visíveis por default.
  */
 const DEFAULT_VISIBLE_METRIC_GROUPS = {
   overview: true,
@@ -110,6 +113,34 @@ function formatDateLabel(date, locale) {
   }).format(parsedDate);
 }
 
+function DescriptionInfo({ text }){
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!text) return null;
+
+  return(
+    <span className={styles.infoWrapper}>
+      <button
+      type="button"
+      className={styles.infoButton}
+      onClick={() => setIsOpen((currentValue) => !currentValue)}
+      arial-label= "Mostrar informação"
+      aria-expanded={isOpen}
+      >
+        <Info size={14} />
+      </button>
+
+      {isOpen && (
+        <span className= {styles.infoPopover}>
+          {text}
+          </span>
+      )}
+
+    </span>
+  )
+
+}
+
 /**
  * Card reutilizável para mostrar uma métrica individual.
  */
@@ -144,20 +175,20 @@ function MetricGroup({
   onToggle,
   showLabel,
   hideLabel,
+  className = "",
 }) {
   return (
     <section
-      className={`${styles.metricGroup} ${
+      className={`${styles.metricGroup} ${className} ${
         !isVisible ? styles.metricGroupCollapsed : ""
       }`}
     >
       <div className={styles.metricGroupHeader}>
         <div>
-          <h2 className={styles.metricGroupTitle}>{title}</h2>
-
-          {description && (
-            <p className={styles.metricGroupDescription}>{description}</p>
-          )}
+        <div className={styles.titleWithInfo}>
+        <h2 className={styles.metricGroupTitle}>{title}</h2>
+        <DescriptionInfo text={description} />
+      </div>
         </div>
 
         {onToggle && (
@@ -196,12 +227,12 @@ function ChartCard({ title, description, data }) {
       <div className={styles.chartBox}>
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <BarChart data={data} barCategoryGap={"3%"} barSize={100} >
+              <CartesianGrid strokeDasharray="1 1" vertical={false} />
               <XAxis dataKey="name" />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="value" fill="#1687b8" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="value" fill="var(--brand-1)"  radius={[8, 8]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -234,11 +265,14 @@ function TrendChartCard({
   return (
     <section className={styles.chartCard}>
       <div className={styles.chartHeader}>
-        <h2 className={styles.chartTitle}>{title}</h2>
 
-        {description && (
-          <p className={styles.chartDescription}>{description}</p>
-        )}
+      <div className={styles.titleWithInfo}>
+        <div className={styles.titleWithInfo}>
+        <h2 className={styles.chartTitle}>{title}</h2>
+        <DescriptionInfo text={description} />
+      </div>
+      </div>
+
       </div>
 
       <div className={styles.chartBox}>
@@ -252,8 +286,8 @@ function TrendChartCard({
               <Line
                 type="monotone"
                 dataKey={dataKey}
-                stroke="#0b5f8a"
-                strokeWidth={3}
+                stroke="var( --brand-1)"
+                strokeWidth={2}
                 dot={false}
               />
             </LineChart>
@@ -270,50 +304,76 @@ function TrendChartCard({
  * Tabela reutilizável para rankings.
  * Recebe colunas dinâmicas e linhas vindas da API.
  */
-function RankingTable({ title, description, columns, rows, emptyMessage }) {
+function RankingTable({
+  title,
+  description,
+  columns,
+  rows,
+  emptyMessage,
+  splitTopTen = false,
+  footer,
+}) {
+  const visibleRows = splitTopTen ? rows.slice(0, 10) : rows;
+
+  const shouldSplit = splitTopTen && visibleRows.length > 5;
+
+  const rowGroups = shouldSplit
+    ? [visibleRows.slice(0, 5), visibleRows.slice(5, 10)]
+    : [visibleRows];
+
   return (
     <section className={styles.rankingCard}>
       <div className={styles.chartHeader}>
-        <h2 className={styles.chartTitle}>{title}</h2>
-
-        {description && (
-          <p className={styles.chartDescription}>{description}</p>
-        )}
+        <div className={styles.titleWithInfo}>
+          <h2 className={styles.chartTitle}>{title}</h2>
+          <DescriptionInfo text={description} />
+        </div>
       </div>
 
-      {rows.length > 0 ? (
-        <div className={styles.tableWrapper}>
-          <table className={styles.rankingTable}>
-            <thead>
-              <tr>
-                {columns.map((column) => (
-                  <th key={column.key}>{column.label}</th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, index) => (
-                <tr key={row.id || index}>
+      {visibleRows.length > 0 ? (
+        <div
+          className={`${styles.tableWrapper} ${
+            shouldSplit ? styles.splitTableWrapper : ""
+          }`}
+        >
+          {rowGroups.map((groupRows, groupIndex) => (
+            <table key={groupIndex} className={styles.rankingTable}>
+              <thead>
+                <tr>
                   {columns.map((column) => (
-                    <td key={column.key}>
-                      {column.render
-                        ? column.render(row, index)
-                        : row[column.key]}
-                    </td>
+                    <th key={column.key}>{column.label}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {groupRows.map((row, index) => {
+                  const globalIndex = groupIndex === 0 ? index : index + 5;
+
+                  return (
+                    <tr key={row.id || `${groupIndex}-${index}`}>
+                      {columns.map((column) => (
+                        <td key={column.key}>
+                          {column.render
+                            ? column.render(row, globalIndex)
+                            : row[column.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ))}
         </div>
       ) : (
         <div className={styles.chartEmpty}>{emptyMessage}</div>
       )}
+
+      {footer}
     </section>
   );
 }
-
 /**
  * Página principal de Analytics.
  * Carrega dados da API e apresenta a dashboard.
@@ -336,6 +396,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState("");
   const [period, setPeriod] = useState("all");
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
 
   // Estado dos grupos de métricas visíveis.
   const [visibleMetricGroups, setVisibleMetricGroups] = useState(
@@ -346,6 +407,8 @@ export default function AnalyticsPage() {
   const [visibleChartSections, setVisibleChartSections] = useState(
     DEFAULT_VISIBLE_CHART_SECTIONS
   );
+
+  
 
   /**
    * Carrega do localStorage os grupos de métricas que o utilizador quer ver.
@@ -479,6 +542,256 @@ export default function AnalyticsPage() {
     setVisibleChartSections({ ...DEFAULT_VISIBLE_CHART_SECTIONS });
   }
 
+  function resetDashboardView() {
+  setVisibleMetricGroups({ ...DEFAULT_VISIBLE_METRIC_GROUPS });
+  setVisibleChartSections({ ...DEFAULT_VISIBLE_CHART_SECTIONS });
+}
+
+
+
+  async function handleExportPdf() {
+  if (!metrics) return;
+
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  function addFooter(pageNumber) {
+    pdf.setFontSize(9);
+    pdf.setTextColor(120, 130, 145);
+    pdf.text(
+      `Analytics report • ${translation(`periods.${period === "all" ? "all" : period === "7d" ? "last7Days" : period === "30d" ? "last30Days" : "last90Days"}`)} • Página ${pageNumber}`,
+      16,
+      pageHeight - 10
+    );
+  }
+
+  function addSectionTitle(title, y) {
+    pdf.setFontSize(15);
+    pdf.setTextColor(15, 23, 42);
+    pdf.setFont(undefined, "bold");
+    pdf.text(title, 16, y);
+  }
+
+  const generatedAt = new Intl.DateTimeFormat(locale || "pt-PT", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date());
+
+  // Página 1 — Capa
+  pdf.setFillColor(48, 169, 224);
+  pdf.rect(0, 0, pageWidth, 70, "F");
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(28);
+  pdf.setFont(undefined, "bold");
+  pdf.text("Analytics", 16, 32);
+
+  pdf.setFontSize(13);
+  pdf.setFont(undefined, "normal");
+  pdf.text("Dashboard report", 16, 43);
+
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFontSize(14);
+  pdf.setFont(undefined, "bold");
+  pdf.text(org?.name || "Organization", 16, 92);
+
+  pdf.setFontSize(11);
+  pdf.setFont(undefined, "normal");
+  pdf.setTextColor(82, 100, 122);
+  pdf.text(`Período: ${translation(`periods.${period === "all" ? "all" : period === "7d" ? "last7Days" : period === "30d" ? "last30Days" : "last90Days"}`)}`, 16, 104);
+  pdf.text(`Gerado em: ${generatedAt}`, 16, 112);
+
+  pdf.setFontSize(10);
+  pdf.text(
+    "Este relatório resume os principais indicadores de utilização, atividade, automações, links e evolução diária.",
+    16,
+    132,
+    { maxWidth: pageWidth - 32 }
+  );
+
+  addFooter(1);
+
+  // Página 2 — Métricas principais
+  pdf.addPage();
+  addSectionTitle("Resumo geral", 20);
+
+  autoTable(pdf, {
+    startY: 30,
+    head: [["Métrica", "Valor", "Detalhe"]],
+    body: [
+      [
+        translation("cards.users"),
+        format(users.total),
+        `${format(users.withAssistant)} com assistente, ${format(users.withoutAssistant)} sem assistente`,
+      ],
+      [
+        translation("cards.assistants"),
+        format(assistants.total),
+        `${format(assistants.withoutOpenAiId)} sem OpenAI ID configurado`,
+      ],
+      [
+        translation("cards.templates"),
+        format(templates.total),
+        `${format(templates.active)} ativos, ${format(templates.pending)} pendentes, ${format(templates.rejected)} rejeitados`,
+      ],
+      [
+        translation("cards.assistantCoverage"),
+        `${assistantCoverageRate}%`,
+        `${format(users.withAssistant)}/${format(users.total)} utilizadores com assistente`,
+      ],
+    ],
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [48, 169, 224],
+      textColor: [255, 255, 255],
+    },
+  });
+
+  addSectionTitle("Atividade", pdf.lastAutoTable.finalY + 16);
+
+  autoTable(pdf, {
+    startY: pdf.lastAutoTable.finalY + 24,
+    head: [["Métrica", "Valor", "Detalhe"]],
+    body: [
+      [
+        translation("cards.messages"),
+        format(messages.total),
+        `${format(messages.whatsapp)} WhatsApp, ${format(messages.teams)} Teams`,
+      ],
+      [
+        translation("cards.delivery"),
+        format(messages.delivered),
+        `${format(messages.read)} lidas, ${format(messages.failed)} falhadas`,
+      ],
+      [
+        translation("cards.readRate"),
+        `${readRate}%`,
+        `${format(messages.read)} de ${format(messages.total)} mensagens`,
+      ],
+      [
+        translation("cards.failureRate"),
+        `${failedMessageRate}%`,
+        `${format(messages.failed)} de ${format(messages.total)} mensagens`,
+      ],
+    ],
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [48, 169, 224],
+      textColor: [255, 255, 255],
+    },
+  });
+
+  addFooter(2);
+
+  // Página 3 — Automações e links
+  pdf.addPage();
+  addSectionTitle("Automações", 20);
+
+  autoTable(pdf, {
+    startY: 30,
+    head: [["Métrica", "Valor", "Detalhe"]],
+    body: [
+      [
+        translation("cards.automations"),
+        format(automations.rulesTotal),
+        `${format(automations.rulesActive)} ativas, ${format(automations.rulesPaused)} pausadas`,
+      ],
+      [
+        translation("cards.automationRuns"),
+        format(automations.runsTotal),
+        `${format(automations.runsProcessed)} processadas, ${format(automations.runsFailed)} falhadas`,
+      ],
+      [
+        translation("cards.scheduledBroadcasts"),
+        format(scheduledBroadcasts.total),
+        `${format(scheduledBroadcasts.completed)} concluídas, ${format(scheduledBroadcasts.failed)} falhadas, ${format(scheduledBroadcasts.recipientCount)} destinatários`,
+      ],
+    ],
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [48, 169, 224],
+      textColor: [255, 255, 255],
+    },
+  });
+
+  addSectionTitle("Links mais clicados", pdf.lastAutoTable.finalY + 16);
+
+  autoTable(pdf, {
+    startY: pdf.lastAutoTable.finalY + 24,
+    head: [["#", translation("rankings.columns.link"), translation("rankings.columns.clicks")]],
+    body: topTrackedLinks.slice(0, 10).map((link, index) => [
+      index + 1,
+      link.label,
+      format(link.clicks),
+    ]),
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [48, 169, 224],
+      textColor: [255, 255, 255],
+    },
+  });
+
+  addFooter(3);
+
+  // Página 4 — Evolução diária
+  pdf.addPage();
+  addSectionTitle("Evolução diária", 20);
+
+  autoTable(pdf, {
+    startY: 30,
+    head: [["Data", "Mensagens", "Cliques", "Automações processadas"]],
+    body: dailyMessagesData.map((item) => {
+      const clickItem = dailyClicksData.find((row) => row.date === item.date);
+      const automationItem = dailyAutomationRunsData.find(
+        (row) => row.date === item.date
+      );
+
+      return [
+        item.date,
+        format(item.messages),
+        format(clickItem?.clicks),
+        format(automationItem?.processed),
+      ];
+    }),
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.4,
+    },
+    headStyles: {
+      fillColor: [48, 169, 224],
+      textColor: [255, 255, 255],
+    },
+  });
+
+  addFooter(4);
+
+  pdf.save(`analytics-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+
   /**
    * Carrega métricas da API para a organização e período atual.
    */
@@ -551,6 +864,8 @@ export default function AnalyticsPage() {
     };
   }, [metrics, translation]);
 
+
+
   // Dados recebidos da API, separados por grupo.
   const users = metrics?.users ?? {};
   const assistants = metrics?.assistants ?? {};
@@ -565,6 +880,7 @@ export default function AnalyticsPage() {
 
   // Rankings recebidos da API.
   const topTrackedLinks = rankings.topTrackedLinks ?? [];
+  const allTrackedLinks = rankings.topTrackedLinks ?? [];
   const topAutomationFailures = rankings.topAutomationFailures ?? [];
 
   // Dados usados nos gráficos diários.
@@ -598,25 +914,7 @@ export default function AnalyticsPage() {
     trackedLinks.totalLinks
   );
 
-  // Dados do gráfico de contactos dos utilizadores.
-  const contactChartData = [
-    {
-      name: translation("charts.email"),
-      value: safeNumber(users.withEmail),
-    },
-    {
-      name: translation("charts.phone"),
-      value: safeNumber(users.withPhone),
-    },
-    {
-      name: translation("charts.teams"),
-      value: safeNumber(users.withTeams),
-    },
-    {
-      name: translation("charts.whatsapp"),
-      value: safeNumber(users.withWhatsapp),
-    },
-  ];
+ 
 
   // Dados do gráfico de mensagens por canal.
   const messagesChartData = [
@@ -676,9 +974,9 @@ export default function AnalyticsPage() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{translation("title")}</h1>
-          <p className={styles.subtitle}>{translation("subtitle")}</p>
+          
 
-          <p className={styles.periodNote}>{translation("periods.note")}</p>
+          
         </div>
 
         <div className={styles.headerActions}>
@@ -733,42 +1031,22 @@ export default function AnalyticsPage() {
 
       {metrics && (
         <>
-          {/* Barra de personalização da dashboard */}
-          <div className={styles.customizationBar}>
-            <div>
-              <strong>{translation("customization.title")}</strong>
-              <p>{translation("customization.description")}</p>
-            </div>
 
-            <div className={styles.customizationActions}>
-              <button
-                type="button"
-                className={styles.customizationResetButton}
-                onClick={resetMetricGroups}
-              >
-                {translation("customization.reset")}
-              </button>
-
-              <button
-                type="button"
-                className={styles.customizationResetButton}
-                onClick={resetChartSections}
-              >
-                {translation("customization.resetCharts")}
-              </button>
-            </div>
-          </div>
-
+      
+          
           {/* Grupos principais de cards de métricas */}
           <div className={styles.metricGroups}>
-            <MetricGroup
+
+            <MetricGroup className={styles.review}
               title={translation("groups.overview.title")}
               description={translation("groups.overview.description")}
-              isVisible={visibleMetricGroups.overview}
-              onToggle={() => toggleMetricGroup("overview")}
+              
               showLabel={translation("customization.show")}
               hideLabel={translation("customization.hide")}
             >
+                
+
+              
               <MetricCard
                 icon={Users}
                 title={translation("cards.users")}
@@ -816,6 +1094,26 @@ export default function AnalyticsPage() {
                 tone={assistantCoverageRate < 100 ? "warning" : "default"}
               />
             </MetricGroup>
+
+              {/* Barra de personalização da dashboard */}
+         
+          <div className={styles.dashboardQuickActions}>
+            <button
+              type="button"
+              className={styles.customizationResetButton}
+              onClick={resetDashboardView}
+            >
+              {translation("customization.resetDashboard")}
+            </button>
+
+            <button
+              type="button"
+              className={styles.customizationResetButton}
+              onClick={handleExportPdf}
+            >
+              {translation("customization.exports")}
+            </button>
+          </div>
 
             <MetricGroup
               title={translation("groups.activity.title")}
@@ -956,24 +1254,7 @@ export default function AnalyticsPage() {
               />
             </MetricGroup>
 
-            <MetricGroup
-              title={translation("groups.health.title")}
-              description={translation("groups.health.description")}
-              isVisible={visibleMetricGroups.health}
-              onToggle={() => toggleMetricGroup("health")}
-              showLabel={translation("customization.show")}
-              hideLabel={translation("customization.hide")}
-            >
-              {health && (
-                <MetricCard
-                  icon={AlertTriangle}
-                  title={translation("cards.health")}
-                  value={health.value}
-                  description={health.description}
-                  tone={health.tone}
-                />
-              )}
-            </MetricGroup>
+            
           </div>
 
           {/* Secção de gráficos de distribuição */}
@@ -986,13 +1267,13 @@ export default function AnalyticsPage() {
           >
             <div className={styles.sectionHeader}>
               <div>
+                <div className={styles.titleWithInfo}>
                 <h2 className={styles.sectionTitle}>
                   {translation("charts.sectionTitle")}
                 </h2>
 
-                <p className={styles.sectionDescription}>
-                  {translation("charts.sectionDescription")}
-                </p>
+                <DescriptionInfo text={translation("charts.sectionDescription")} />
+              </div>
               </div>
 
               <button
@@ -1007,12 +1288,8 @@ export default function AnalyticsPage() {
             </div>
 
             {visibleChartSections.distribution && (
-              <div className={styles.chartGrid}>
-                <ChartCard
-                  title={translation("charts.contactTitle")}
-                  description={translation("charts.contactDescription")}
-                  data={contactChartData}
-                />
+              <div className={styles.distributionChartGrid}>
+                
 
                 <ChartCard
                   title={translation("charts.messagesTitle")}
@@ -1026,11 +1303,6 @@ export default function AnalyticsPage() {
                   data={templatesChartData}
                 />
 
-                <ChartCard
-                  title={translation("charts.problemsTitle")}
-                  description={translation("charts.problemsDescription")}
-                  data={problemsChartData}
-                />
               </div>
             )}
           </section>
@@ -1039,13 +1311,13 @@ export default function AnalyticsPage() {
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <div>
-                <h2 className={styles.sectionTitle}>
-                  {translation("rankings.title")}
-                </h2>
+              <div className={styles.titleWithInfo}>
+              <h2 className={styles.sectionTitle}>
+                {translation("rankings.title")}
+              </h2>
 
-                <p className={styles.sectionDescription}>
-                  {translation("rankings.description")}
-                </p>
+              <DescriptionInfo text={translation("rankings.description")} />
+            </div>
               </div>
             </div>
 
@@ -1055,7 +1327,28 @@ export default function AnalyticsPage() {
                 description={translation("rankings.topLinksDescription")}
                 rows={topTrackedLinks}
                 emptyMessage={translation("rankings.empty")}
+                splitTopTen
+                footer={
+                  allTrackedLinks.length > 10 ? (
+                    <button
+                      type="button"
+                      className={styles.viewAllButton}
+                      onClick={() => setIsFullLinksListOpen(true)}
+                    >
+                      {translation("rankings.viewAllLinks", {
+                        count: format(allTrackedLinks.length),
+                      })}
+                    </button>
+                  ) : null
+                }
                 columns={[
+                  {
+                    key: "position",
+                    label: "#",
+                    render: (_row, index) => (
+                      <span className={styles.rankingPosition}>{index + 1}</span>
+                    ),
+                  },
                   {
                     key: "label",
                     label: translation("rankings.columns.link"),
@@ -1073,40 +1366,70 @@ export default function AnalyticsPage() {
                 ]}
               />
 
-              <RankingTable
-                title={translation("rankings.automationFailuresTitle")}
-                description={translation(
-                  "rankings.automationFailuresDescription"
-                )}
-                rows={topAutomationFailures}
-                emptyMessage={translation("rankings.empty")}
-                columns={[
-                  {
-                    key: "name",
-                    label: translation("rankings.columns.automation"),
-                    render: (row) => (
-                      <div>
-                        <span className={styles.rankingMainText}>
-                          {row.name}
-                        </span>
-
-                        {row.lastError && (
-                          <span className={styles.rankingSubText}>
-                            {row.lastError}
-                          </span>
-                        )}
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "failures",
-                    label: translation("rankings.columns.failures"),
-                    render: (row) => format(row.failures),
-                  },
-                ]}
-              />
             </div>
           </section>
+
+                          {isFullLinksListOpen && (
+            <div
+              className={styles.modalBackdrop}
+              onClick={() => setIsFullLinksListOpen(false)}
+            >
+              <section
+                className={styles.linksModal}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className={styles.linksModalHeader}>
+                  <div className={styles.titleWithInfo}>
+                    <h2 className={styles.sectionTitle}>
+                      {translation("rankings.allLinksTitle")}
+                    </h2>
+
+                    <DescriptionInfo text={translation("rankings.allLinksDescription")} />
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.modalCloseButton}
+                    onClick={() => setIsFullLinksListOpen(false)}
+                  >
+                    {translation("rankings.close")}
+                  </button>
+                </div>
+
+                <div className={styles.fullLinksTableWrapper}>
+                  <table className={styles.rankingTable}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>{translation("rankings.columns.link")}</th>
+                        <th>{translation("rankings.columns.clicks")}</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {allTrackedLinks.map((row, index) => (
+                        <tr key={row.id || index}>
+                          <td>
+                            <span className={styles.rankingPosition}>
+                              {index + 1}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span className={styles.rankingMainText}>
+                              {row.label}
+                            </span>
+                          </td>
+
+                          <td>{format(row.clicks)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          )}
 
           {/* Secção de gráficos de evolução diária */}
           <section
@@ -1116,13 +1439,13 @@ export default function AnalyticsPage() {
           >
             <div className={styles.sectionHeader}>
               <div>
+               <div className={styles.titleWithInfo}>
                 <h2 className={styles.sectionTitle}>
                   {translation("trends.title")}
                 </h2>
 
-                <p className={styles.sectionDescription}>
-                  {translation("trends.description")}
-                </p>
+                <DescriptionInfo text={translation("trends.description")} />
+              </div>
               </div>
 
               <button
@@ -1136,49 +1459,42 @@ export default function AnalyticsPage() {
               </button>
             </div>
 
-            {visibleChartSections.trends && (
-              <div className={styles.chartGrid}>
-                <TrendChartCard
-                  title={translation("trends.messagesTitle")}
-                  description={translation("trends.messagesDescription")}
-                  data={dailyMessagesData}
-                  dataKey="messages"
-                  locale={locale}
-                  emptyMessage={translation("trends.empty")}
-                />
+                {visibleChartSections.trends && (
+                <div className={styles.trendChartGrid}>
+                  <TrendChartCard
+                    title={translation("trends.messagesTitle")}
+                    description={translation("trends.messagesDescription")}
+                    data={dailyMessagesData}
+                    dataKey="messages"
+                    locale={locale}
+                    emptyMessage={translation("trends.empty")}
+                  />
 
-                <TrendChartCard
-                  title={translation("trends.clicksTitle")}
-                  description={translation("trends.clicksDescription")}
-                  data={dailyClicksData}
-                  dataKey="clicks"
-                  locale={locale}
-                  emptyMessage={translation("trends.empty")}
-                />
+                  <TrendChartCard
+                    title={translation("trends.clicksTitle")}
+                    description={translation("trends.clicksDescription")}
+                    data={dailyClicksData}
+                    dataKey="clicks"
+                    locale={locale}
+                    emptyMessage={translation("trends.empty")}
+                  />
 
-                <TrendChartCard
-                  title={translation("trends.failuresTitle")}
-                  description={translation("trends.failuresDescription")}
-                  data={dailyFailedMessagesData}
-                  dataKey="failures"
-                  locale={locale}
-                  emptyMessage={translation("trends.empty")}
-                />
+                 
 
-                <TrendChartCard
-                  title={translation("trends.automationsTitle")}
-                  description={translation("trends.automationsDescription")}
-                  data={dailyAutomationRunsData}
-                  dataKey="processed"
-                  locale={locale}
-                  emptyMessage={translation("trends.empty")}
-                />
-              </div>
-            )}
+                  <TrendChartCard
+                    title={translation("trends.automationsTitle")}
+                    description={translation("trends.automationsDescription")}
+                    data={dailyAutomationRunsData}
+                    dataKey="processed"
+                    locale={locale}
+                    emptyMessage={translation("trends.empty")}
+                  />
+                </div>
+              )}
           </section>
 
           {/* Resumo operacional final */}
-          <section className={styles.section}>
+          <section className={`${styles.section} ${styles.operationalSummary}`}>
             <h2 className={styles.sectionTitle}>
               {translation("sections.breakdownTitle")}
             </h2>

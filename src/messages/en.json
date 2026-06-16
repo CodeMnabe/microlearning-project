@@ -903,7 +903,7 @@
     "login": "Login",
     "options": "Options",
     "logout": "Sign out",
-     "analytics": "Metrics"
+     "analytics": "Analytics"
   },
   "Common": {
     "search": "Search",
@@ -2141,8 +2141,8 @@
   },
 
   "Analytics": {
-  "title": "Metrics",
-  "subtitle": "Overview of usage, messages, automations and interactions for the organization.",
+  "title": "Analytics",
+  
   "refresh": "Refresh",
   "loading": "Loading metrics...",
   "errors": {
@@ -2164,7 +2164,7 @@
     "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
     "delivery": "Delivery",
     "deliveryHelper": "{read} read, {failed} failed.",
-    "templates": "Templates",
+    "templates": "Templates WhatsApp",
     "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
     "automations": "Automations",
     "automationsHelper": "{active} active, {paused} paused.",
@@ -2177,7 +2177,7 @@
     "pendingOutreach": "Pending messages",
     "pendingOutreachHelper": "{active} still active.",
     "health": "Overall health",
-    "assistantCoverage": "Assistant coverage",
+    "assistantCoverage": "Assigned assistants",
     "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
     "readRate": "Read rate",
     "readRateHelper": "{read}/{total} messages read.",
@@ -2224,8 +2224,7 @@
       "messages": "Messages",
       "automations": "Automations",
       "scheduled": "Scheduled",
-      "contactTitle": "User contact coverage",
-      "contactDescription": "Distribution of configured contact methods.",
+      
       "messagesTitle": "Messages by channel",
       "messagesDescription": "Comparison between WhatsApp and Teams messages.",
       "templatesTitle": "Template status",
@@ -2241,8 +2240,8 @@
   "all": "All",
   "last7Days": "7 days",
   "last30Days": "30 days",
-  "last90Days": "90 days",
-  "note": "User, assistant and template metrics show the current organization state. Activity metrics follow the selected period."
+  "last90Days": "90 days"
+  
   },
   "trends": {
   "title": "Daily trends",
@@ -2267,16 +2266,12 @@
     "description": "Messages, delivery and activity metrics for the selected period."
   },
   "automations": {
-    "title": "Automations and sends",
+    "title": "Automations",
     "description": "Automation rules, automation runs and scheduled messages."
   },
   "engagement": {
     "title": "Engagement",
     "description": "Tracked link activity and click performance."
-  },
-  "health": {
-    "title": "Health",
-    "description": "Main issues that may require attention."
   }
 
   
@@ -2289,7 +2284,9 @@
   "show": "Show",
   "hide": "Hide",
   "reset": "Reset groups",
-  "resetCharts": "Reset charts"
+  "resetCharts": "Reset charts",
+  "exports": "Export",
+  "resetDashboard": "Reset dashboard"
 },
 
   "rankings": {
@@ -2304,7 +2301,11 @@
     "link": "Link",
     "clicks": "Clicks",
     "automation": "Automation",
-    "failures": "Failures"
+    "failures": "Failures",
+    "viewAllLinks": "View full list ({count})",
+    "allLinksTitle": "Full links list",
+    "allLinksDescription": "All tracked links ordered by number of clicks.",
+    "close": "Close"
   }
 }
 
