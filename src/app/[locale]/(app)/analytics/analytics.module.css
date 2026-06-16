@@ -18,11 +18,6 @@
   color: #0f172a;
 }
 
-.subtitle {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 14px;
-}
 
 .refreshButton {
   border: 0;
@@ -42,11 +37,23 @@
   cursor: not-allowed;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+.customizationResetButton.exportButton {
+  background: var(--brand-1);
+  border-color: var(--brand-1);
+  color: white;
 }
+
+.customizationResetButton.exportButton:hover,
+.customizationResetButton.exportButton:focus,
+.customizationResetButton.exportButton:active {
+  background: var(--brand-1);
+  border-color: var(--brand-1);
+  color: black;
+}
+
+
+
+
 
 .card {
   background: white;
@@ -149,28 +156,7 @@
   color: #0f172a;
 }
 
-.priorityList {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
 
-.priorityList div {
-  background: #f8fafc;
-  border-radius: 14px;
-  padding: 14px;
-}
-
-.priorityList strong {
-  color: #0f172a;
-}
-
-.priorityList p {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.45;
-}
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -215,13 +201,10 @@
 
 
 .metricGroup.review {
-  background: var(--brand-2);
+  background: rgba(var(--brand-1-rgb), 0.28);
+  border-color: rgba(var(--brand-1-rgb), 0.30);
 }
-.chartGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:14px;
-}
+
 
 .chartCard {
   background: white;
@@ -308,12 +291,7 @@
   cursor: not-allowed;
 }
 
-.periodNote {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.4;
-}
+
 .spinIcon {
   animation: spin 0.8s linear infinite;
 }
@@ -326,12 +304,7 @@
   margin-bottom: 14px;
 }
 
-.sectionDescription {
-  margin: 4px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.4;
-}
+
 
 .metricGroups {
   display: grid;
@@ -342,7 +315,7 @@
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid #e5e7eb;
   border-radius: 20px;
-  padding: 16px;
+  padding: 10px;
 }
 
 .metricGroupHeader {
@@ -350,7 +323,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .metricGroupTitle {
@@ -360,44 +333,14 @@
   font-weight: 900;
 }
 
-.metricGroupDescription {
-  margin: 4px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.4;
-}
+
 
 .metricGroupGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
-.customizationBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 14px 16px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-}
-
-.customizationBar strong {
-  display: block;
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.customizationBar p {
-  margin: 3px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.4;
-}
 
 .customizationResetButton {
   border: 1px solid #dbe3ee;
@@ -437,13 +380,7 @@
   border-color: #bfdbfe;
 }
 
-.customizationActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
+
 
 .sectionCollapsed {
   background: rgba(255, 255, 255, 0.55);
@@ -501,15 +438,7 @@
   color: #0f172a;
 }
 
-.rankingSubText {
-  display: block;
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.35;
-  max-width: 520px;
-  overflow-wrap: anywhere;
-}
+
 
 .distributionChartGrid {
   display: grid;
@@ -518,7 +447,8 @@
 }
 
 .section.operationalSummary {
-  background:var(--brand-2);
+  background: rgba(var(--brand-1-rgb), 0.28);
+  border-color: rgba(var(--brand-1-rgb), 0.30);
  
 }
 .titleWithInfo {
@@ -745,19 +675,7 @@
   }
 }
 
-@media (max-width: 700px) {
-  .customizationActions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
 
-@media (max-width: 700px) {
-  .customizationBar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
 
 @media (max-width: 1400px) {
   .metricGroupGrid {

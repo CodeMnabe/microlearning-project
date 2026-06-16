@@ -199,57 +199,7 @@ function sortAndLimit(items, key, limit = 5) {
     .slice(0, limit);
 }
 
-function cleanErrorText(value){
-  const text = String(value ?? "").trim();
 
-  if(!text || text === "[object Object]") {
-    return "";
-  }
-
-  return text.length > 140 ? "${text.slice(0,140)}..." : text;
-}
-
-function getAutomationErrorKey(error) {
-  if (!error) {
-    return "noDetails";
-  }
-
-  const text = String(error).trim();
-
-  try {
-    const parsed = JSON.parse(text);
-    const item = Array.isArray(parsed) ? parsed[0] : parsed;
-
-    const candidates = [
-      item?.data?.error?.message,
-      item?.data?.error,
-      item?.data?.message,
-      item?.error?.message,
-      item?.error,
-      item?.message,
-    ];
-
-    const readableMessage = candidates
-      .map((candidate) => String(candidate ?? "").trim())
-      .find((candidate) => candidate && candidate !== "[object Object]");
-
-    if (readableMessage) {
-      return "providerMessage";
-    }
-
-    if (item?.ok === false || item?.status === 0) {
-      return "providerFailed";
-    }
-  } catch {
-    // Se não for JSON válido, continuamos para as regras abaixo.
-  }
-
-  if (text.includes("[object Object]")) {
-    return "providerUnreadable";
-  }
-
-  return "generic";
-}
 
 /**
  * Executa uma métrica opcional com fallback.

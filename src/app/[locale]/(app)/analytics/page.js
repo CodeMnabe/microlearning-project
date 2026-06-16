@@ -226,15 +226,20 @@ function ChartCard({ title, description, data }) {
 
       <div className={styles.chartBox}>
         {hasData ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barCategoryGap={"3%"} barSize={100} >
-              <CartesianGrid strokeDasharray="1 1" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="value" fill="var(--brand-1)"  radius={[8, 8]} />
-            </BarChart>
-          </ResponsiveContainer>
+         <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} barCategoryGap="28%" barGap={8}>
+            <CartesianGrid strokeDasharray="1 1" vertical={false} />
+            <XAxis dataKey="name" />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar
+              dataKey="value"
+              fill="var(--brand-1)"
+              radius={[8, 8, 0, 0]}
+              barSize={54}
+            />
+          </BarChart>
+</ResponsiveContainer>
         ) : (
           <div className={styles.chartEmpty}>Sem dados para mostrar.</div>
         )}
@@ -518,12 +523,6 @@ export default function AnalyticsPage() {
     }));
   }
 
-  /**
-   * Repõe todos os grupos de métricas.
-   */
-  function resetMetricGroups() {
-    setVisibleMetricGroups(DEFAULT_VISIBLE_METRIC_GROUPS);
-  }
 
   /**
    * Mostra ou oculta uma secção de gráficos.
@@ -535,12 +534,7 @@ export default function AnalyticsPage() {
     }));
   }
 
-  /**
-   * Repõe todas as secções de gráficos.
-   */
-  function resetChartSections() {
-    setVisibleChartSections({ ...DEFAULT_VISIBLE_CHART_SECTIONS });
-  }
+  
 
   function resetDashboardView() {
   setVisibleMetricGroups({ ...DEFAULT_VISIBLE_METRIC_GROUPS });
@@ -835,36 +829,8 @@ export default function AnalyticsPage() {
     loadMetrics();
   }, [authLoading, orgLoading, orgId, loadMetrics]);
 
-  /**
-   * Calcula o estado geral da organização.
-   * Soma problemas em assistentes, templates, mensagens, automações e envios.
-   */
-  const health = useMemo(() => {
-    if (!metrics) return null;
-
-    const problems =
-      safeNumber(metrics.assistants?.withoutOpenAiId) +
-      safeNumber(metrics.templates?.rejected) +
-      safeNumber(metrics.messages?.failed) +
-      safeNumber(metrics.automations?.runsFailed) +
-      safeNumber(metrics.scheduledBroadcasts?.failed);
-
-    if (problems > 0) {
-      return {
-        tone: "danger",
-        value: translation("health.needsAttention"),
-        description: translation("health.errorsFound", { count: problems }),
-      };
-    }
-
-    return {
-      tone: "success",
-      value: translation("health.ok"),
-      description: translation("health.noErrors"),
-    };
-  }, [metrics, translation]);
-
-
+ 
+ 
 
   // Dados recebidos da API, separados por grupo.
   const users = metrics?.users ?? {};
@@ -881,33 +847,21 @@ export default function AnalyticsPage() {
   // Rankings recebidos da API.
   const topTrackedLinks = rankings.topTrackedLinks ?? [];
   const allTrackedLinks = rankings.topTrackedLinks ?? [];
-  const topAutomationFailures = rankings.topAutomationFailures ?? [];
+ 
 
   // Dados usados nos gráficos diários.
   const dailyMessagesData = daily.messages ?? [];
   const dailyClicksData = daily.clicks ?? [];
-  const dailyFailedMessagesData = daily.failedMessages ?? [];
+ 
   const dailyAutomationRunsData = daily.automationRuns ?? [];
 
   // Percentagens calculadas para os cards.
   const assistantCoverageRate = safePercent(users.withAssistant, users.total);
-  const emailCoverageRate = safePercent(users.withEmail, users.total);
-  const phoneCoverageRate = safePercent(users.withPhone, users.total);
-  const teamsCoverageRate = safePercent(users.withTeams, users.total);
-  const whatsappCoverageRate = safePercent(users.withWhatsapp, users.total);
-
+  
   const readRate = safePercent(messages.read, messages.total);
   const failedMessageRate = safePercent(messages.failed, messages.total);
 
-  const automationFailureRate = safePercent(
-    automations.runsFailed,
-    automations.runsTotal
-  );
 
-  const scheduledFailureRate = safePercent(
-    scheduledBroadcasts.failed,
-    scheduledBroadcasts.total
-  );
 
   const clickPerLinkRate = safePercent(
     trackedLinks.totalClicks,
@@ -944,29 +898,7 @@ export default function AnalyticsPage() {
     },
   ];
 
-  // Dados do gráfico de problemas encontrados.
-  const problemsChartData = [
-    {
-      name: translation("charts.assistants"),
-      value: safeNumber(assistants.withoutOpenAiId),
-    },
-    {
-      name: translation("charts.templates"),
-      value: safeNumber(templates.rejected),
-    },
-    {
-      name: translation("charts.messages"),
-      value: safeNumber(messages.failed),
-    },
-    {
-      name: translation("charts.automations"),
-      value: safeNumber(automations.runsFailed),
-    },
-    {
-      name: translation("charts.scheduled"),
-      value: safeNumber(scheduledBroadcasts.failed),
-    },
-  ];
+ 
 
   return (
     <main className={styles.page}>
@@ -1108,7 +1040,7 @@ export default function AnalyticsPage() {
 
             <button
               type="button"
-              className={styles.customizationResetButton}
+                className={`${styles.customizationResetButton} ${styles.exportButton}`}
               onClick={handleExportPdf}
             >
               {translation("customization.exports")}
