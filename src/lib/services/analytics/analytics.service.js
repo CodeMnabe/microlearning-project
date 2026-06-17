@@ -18,7 +18,7 @@ import {
   getTopTrackedLinks,
   getTopAutomationFailures,
   getDailyAnalyticsRows,
-} from "@/lib/repos/analytics.repo";
+} from "@/lib/repos/analytics";
 
 export async function getAnalyticsOverview({ orgId, period }) {
   const {
