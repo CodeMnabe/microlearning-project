@@ -201,8 +201,8 @@
 
 
 .metricGroup.review {
-  background: rgba(var(--brand-1-rgb), 0.28);
-  border-color: rgba(var(--brand-1-rgb), 0.30);
+  background: rgba(var(--brand-1-rgb), 0.16);
+  border-color: rgba(var(--brand-1-rgb), 0.24);
 }
 
 
@@ -447,8 +447,8 @@
 }
 
 .section.operationalSummary {
-  background: rgba(var(--brand-1-rgb), 0.28);
-  border-color: rgba(var(--brand-1-rgb), 0.30);
+  background: rgba(var(--brand-1-rgb), 0.16);
+  border-color: rgba(var(--brand-1-rgb), 0.24);
  
 }
 .titleWithInfo {

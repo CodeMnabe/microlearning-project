@@ -236,7 +236,7 @@ function ChartCard({ title, description, data }) {
               dataKey="value"
               fill="var(--brand-1)"
               radius={[8, 8, 0, 0]}
-              barSize={54}
+              barSize={40}
             />
           </BarChart>
 </ResponsiveContainer>
