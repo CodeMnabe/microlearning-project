@@ -2,9 +2,11 @@ import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 import {
   applyPeriod,
-  
+  hasValue,
+  sumNumbers,
   sortAndLimit,
 } from "@/lib/helpers/analytics.helpers";
+
 
 export async function countRows(table, applyFilters) {
   const supabaseAdmin = getSupabaseAdminClient();
@@ -188,6 +190,336 @@ export async function getTopAutomationFailures(orgId, periodStart) {
   return sortAndLimit(Object.values(failuresByRuleId), "failures");
 }
 
+export async function getMessageMetrics(orgId, periodStart) {
+  const [
+    total,
+    whatsapp,
+    teams,
+    userMessages,
+    assistantMessages,
+    delivered,
+    read,
+    failed,
+  ] = await Promise.all([
+    countRows("message", (q) =>
+      applyPeriod(q.eq("organization_id", orgId), periodStart)
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).eq("channel", "whatsapp"),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).eq("channel", "teams"),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).eq("role", "user"),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).eq("role", "assistant"),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("delivered_at", "is", null),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("read_at", "is", null),
+        periodStart
+      )
+    ),
+
+    countRows("message", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("failed_at", "is", null),
+        periodStart
+      )
+    ),
+  ]);
+
+  return {
+    total,
+    whatsapp,
+    teams,
+    userMessages,
+    assistantMessages,
+    delivered,
+    read,
+    failed,
+  };
+}
+
+
+export async function getAssistantMetrics(orgId) {
+  const [total, withoutOpenAiId] = await Promise.all([
+    countRows("assistant", (q) => q.eq("organization_id", orgId)),
+
+    countRows("assistant", (q) =>
+      q.eq("organization_id", orgId).or("open_ai_id.is.null,open_ai_id.eq.")
+    ),
+  ]);
+
+  return {
+    total,
+    withoutOpenAiId,
+  };
+}
 
 
 
+export async function getTemplateMetrics(orgId) {
+  const templateFilter = `org_id.eq.${orgId},org_id.is.null`;
+
+  const [total, active, pending, rejected] = await Promise.all([
+    countRows("whatsapp_templates", (q) => q.or(templateFilter)),
+
+    countRows("whatsapp_templates", (q) =>
+      q
+        .or(templateFilter)
+        .in("status", ["ACTIVE", "active", "APPROVED", "approved"])
+    ),
+
+    countRows("whatsapp_templates", (q) =>
+      q
+        .or(templateFilter)
+        .in("status", [
+          "PENDING",
+          "pending",
+          "NEW",
+          "new",
+          "DRAFT",
+          "draft",
+          "PENDINGREVIEW",
+          "pendingreview",
+        ])
+    ),
+
+    countRows("whatsapp_templates", (q) =>
+      q
+        .or(templateFilter)
+        .in("status", ["REJECTED", "rejected", "INACTIVE", "inactive"])
+    ),
+  ]);
+
+  return {
+    total,
+    active,
+    pending,
+    rejected,
+  };
+}
+
+export async function getAutomationMetrics(orgId, periodStart) {
+  const [
+    rulesTotal,
+    rulesActive,
+    runsTotal,
+    runsProcessed,
+    runsFailed,
+  ] = await Promise.all([
+    countRows("automation_rule", (q) => q.eq("organization_id", orgId)),
+
+    countRows("automation_rule", (q) =>
+      q.eq("organization_id", orgId).eq("is_active", true)
+    ),
+
+    countRows("automation_run", (q) =>
+      applyPeriod(q.eq("organization_id", orgId), periodStart)
+    ),
+
+    countRows("automation_run", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("processed_at", "is", null),
+        periodStart
+      )
+    ),
+
+    countRows("automation_run", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("last_error", "is", null),
+        periodStart
+      )
+    ),
+  ]);
+
+  return {
+    rulesTotal,
+    rulesActive,
+    rulesPaused: Math.max(0, rulesTotal - rulesActive),
+    runsTotal,
+    runsProcessed,
+    runsFailed,
+  };
+}
+
+export async function getPendingOutreachMetrics(orgId, periodStart) {
+  const [total, active] = await Promise.all([
+    countRows("pending_outreach", (q) =>
+      applyPeriod(q.eq("org_id", orgId), periodStart)
+    ),
+
+    countRows("pending_outreach", (q) =>
+      applyPeriod(
+        q.eq("org_id", orgId).in("status", ["pending", "queued", "active"]),
+        periodStart
+      )
+    ),
+  ]);
+
+  return {
+    total,
+    active,
+  };
+}
+
+export async function getUserMetrics(orgId) {
+  const users = await fetchRows(
+    "user",
+    `
+      id,
+      assistant_id,
+      email,
+      phone_number,
+      phone_country_code,
+      phone_national,
+      teams_aad_object_id,
+      teams_from_id,
+      whatsapp_bsuid,
+      bird_contact_id
+    `,
+    (q) => q.eq("organization_id", orgId)
+  );
+
+  const total = users.length;
+
+  const withAssistant = users.filter((user) =>
+    hasValue(user.assistant_id)
+  ).length;
+
+  const withEmail = users.filter((user) => hasValue(user.email)).length;
+
+  const withPhone = users.filter(
+    (user) =>
+      hasValue(user.phone_number) ||
+      (hasValue(user.phone_country_code) && hasValue(user.phone_national))
+  ).length;
+
+  const withTeams = users.filter(
+    (user) =>
+      hasValue(user.teams_aad_object_id) || hasValue(user.teams_from_id)
+  ).length;
+
+  const withWhatsapp = users.filter(
+    (user) =>
+      hasValue(user.whatsapp_bsuid) ||
+      hasValue(user.bird_contact_id) ||
+      hasValue(user.phone_number)
+  ).length;
+
+  return {
+    total,
+    withAssistant,
+    withoutAssistant: Math.max(0, total - withAssistant),
+    withEmail,
+    withPhone,
+    withTeams,
+    withWhatsapp,
+  };
+}
+
+export async function getScheduledBroadcastMetrics(orgId, periodStart) {
+  const rows = await fetchRows(
+    "scheduled_broadcast",
+    "id, status, channel, recipient_count",
+    (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId),
+        periodStart,
+        "scheduled_for"
+      )
+  );
+
+  const total = rows.length;
+
+  const queued = rows.filter((item) =>
+    ["queued", "pending", "scheduled"].includes(
+      String(item.status || "").toLowerCase()
+    )
+  ).length;
+
+  const completed = rows.filter((item) =>
+    ["completed", "sent", "done"].includes(
+      String(item.status || "").toLowerCase()
+    )
+  ).length;
+
+  const failed = rows.filter((item) =>
+    ["failed", "error"].includes(String(item.status || "").toLowerCase())
+  ).length;
+
+  const recipientCount = sumNumbers(rows, "recipient_count");
+
+  return {
+    total,
+    queued,
+    completed,
+    failed,
+    recipientCount,
+  };
+}
+
+export async function getDailyAnalyticsRows(orgId, trendStart) {
+  const [
+    messageRows,
+    failedMessageRows,
+    automationProcessedRows,
+    clickRows,
+  ] = await Promise.all([
+    fetchRows("message", "created_at", (q) =>
+      applyPeriod(q.eq("organization_id", orgId), trendStart)
+    ),
+
+    fetchRows("message", "failed_at", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("failed_at", "is", null),
+        trendStart,
+        "failed_at"
+      )
+    ),
+
+    fetchRows("automation_run", "processed_at", (q) =>
+      applyPeriod(
+        q.eq("organization_id", orgId).not("processed_at", "is", null),
+        trendStart,
+        "processed_at"
+      )
+    ),
+
+    getTrackedLinkClickRows(orgId, trendStart),
+  ]);
+
+  return {
+    messageRows,
+    failedMessageRows,
+    automationProcessedRows,
+    clickRows,
+  };
+}
