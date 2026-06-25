@@ -11,6 +11,7 @@ export async function GET(req) {
     }
 
     const messages = await getMessagesInThread(threadId);
+
     return NextResponse.json({ messages });
   } catch (err) {
     console.error("GET /api/messages error:", err);

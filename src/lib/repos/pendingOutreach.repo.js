@@ -5,7 +5,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false } },
 );
 
 export async function createPendingOutreach({
@@ -14,6 +14,10 @@ export async function createPendingOutreach({
   payload,
   expiresAt, // Date or ISO string
   templateMessageId = null,
+  messageChainId = null,
+  messageChainStepId = null,
+  messageChainRecipientId = null,
+  messageChainStepIndex = null,
 }) {
   const expiresISO =
     expiresAt instanceof Date
@@ -29,6 +33,10 @@ export async function createPendingOutreach({
         status: "pending",
         expires_at: expiresISO, // <- toISOString() (was toIsoString)
         template_message_id: templateMessageId,
+        message_chain_id: messageChainId,
+        message_chain_step_id: messageChainStepId,
+        message_chain_recipient_id: messageChainRecipientId,
+        message_chain_step_index: messageChainStepIndex,
       },
     ])
     .select()
@@ -41,10 +49,23 @@ export async function getAllPendingOutreachByUser(userId) {
   const { data, error } = await supabase
     .from("pending_outreach")
     .select(
-      "id, org_id, user_id, payload, status, expires_at, template_message_id, created_at"
+      `
+        id,
+        org_id,
+        user_id,
+        payload,
+        status,
+        expires_at,
+        template_message_id,
+        message_chain_id,
+        message_chain_step_id,
+        message_chain_recipient_id,
+        message_chain_step_index,
+        created_at
+      `,
     )
     .eq("user_id", userId)
-    .eq("status", "pending") // <- make sure your insert uses 'pending'
+    .eq("status", "pending")
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: true });
 

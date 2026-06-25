@@ -134,8 +134,9 @@
 /* columns: [checkbox, name, phone, tags, assistant, kebab] */
 .row {
   display: grid;
-  grid-template-columns:
-    var(--col-checkbox) var(--col-name) var(--col-phone) var(--col-tags) var(--col-assistant) var(--col-actions);
+  grid-template-columns: var(--col-checkbox) var(--col-name) var(
+      --col-phone
+    ) var(--col-tags) var(--col-assistant) var(--col-actions);
   /* was 52px */
   align-items: center;
   min-height: var(--row-h);
@@ -186,7 +187,7 @@
   box-shadow: inset 0 0 0 2px transparent;
 }
 
-.chkWrap input:checked+.chkFake {
+.chkWrap input:checked + .chkFake {
   background: #0ea5e9;
   border-color: #0ea5e9;
   box-shadow: inset 0 0 0 2px #fff;
@@ -341,7 +342,7 @@
   box-shadow: inset 0 0 0 2px transparent;
 }
 
-.chkWrapSm input:checked+.chkFakeSm {
+.chkWrapSm input:checked + .chkFakeSm {
   background: #0ea5e9;
   border-color: #0ea5e9;
   box-shadow: inset 0 0 0 2px #fff;
@@ -500,7 +501,9 @@
   color: #0f1c3f;
   border-radius: 14px;
   border: 1px solid var(--ui-border);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.1);
   padding: 1rem;
   opacity: 0;
   transform: translateY(40vh) scale(0.98);
@@ -572,7 +575,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .open.modalOverlay,
   .closing.modalOverlay,
   .open.modalContent,
@@ -814,7 +816,9 @@
   border: 1px solid var(--ui-border);
   background: var(--ui-bg);
   border-radius: 9999px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .chipChecked {
@@ -1077,21 +1081,61 @@
   border-color: #9fd3ff;
 }
 
+.msgTheirs .msgBubble {
+  background: #ffffff;
+  border-color: var(--ui-border);
+}
+
 .msgText {
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: anywhere;
+  color: #0f1c3f;
+  line-height: 1.45;
 }
 
 .msgMeta {
   margin-top: 6px;
   display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 6px;
+  width: 100%;
   font-size: 11px;
+  line-height: 1;
   color: var(--ui-muted);
 }
 
 .msgRole {
   font-weight: 700;
+}
+
+.msgWhen {
+  white-space: nowrap;
+}
+
+.msgReceiptSent,
+.msgReceiptDelivered,
+.msgReceiptRead,
+.msgReceiptFailed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.msgReceiptSent,
+.msgReceiptDelivered {
+  color: #8a8f98;
+}
+
+.msgReceiptRead {
+  color: #34b7f1;
+}
+
+.msgReceiptFailed {
+  color: #dc2626;
 }
 
 /* Empty/error notes */
@@ -1397,7 +1441,7 @@
   }
 
   /* Assistant select should fill the line */
-  .cellAssistant>* {
+  .cellAssistant > * {
     width: 100%;
   }
 

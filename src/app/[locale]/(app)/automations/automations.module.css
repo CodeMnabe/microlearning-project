@@ -99,7 +99,11 @@
 }
 
 .actionBtnPrimary {
-  background: linear-gradient(135deg, var(--brand-1, #6366f1), var(--brand-2, #60a5fa));
+  background: linear-gradient(
+    135deg,
+    var(--brand-1, #6366f1),
+    var(--brand-2, #60a5fa)
+  );
   color: #fff;
   border-color: transparent;
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.18);
@@ -207,7 +211,9 @@
 
 .row {
   display: grid;
-  grid-template-columns: minmax(240px, 2fr) 1.15fr 0.9fr 0.85fr 1fr minmax(220px, 1.7fr) 110px;
+  grid-template-columns:
+    minmax(240px, 2fr) 1.15fr 0.9fr 0.85fr 1fr minmax(220px, 1.7fr)
+    110px;
   align-items: center;
   gap: 16px;
   padding: 14px 16px;
@@ -506,7 +512,11 @@
 }
 
 .buttonGroup button[type="submit"] {
-  background: linear-gradient(135deg, var(--brand-1, #6366f1), var(--brand-2, #60a5fa));
+  background: linear-gradient(
+    135deg,
+    var(--brand-1, #6366f1),
+    var(--brand-2, #60a5fa)
+  );
   border-color: transparent;
   color: #fff;
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.18);
@@ -524,13 +534,114 @@
   box-shadow: none;
 }
 
+.usersScreen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: var(--gutter-y, 20px) var(--gutter-x, 20px);
+  min-height: calc(100dvh - 80px);
+  width: 100%;
+  position: relative;
+  padding-bottom: 130px;
+}
+
+.readChainFloatingCard {
+  position: absolute;
+  left: var(--gutter-x, 20px);
+  bottom: 24px;
+  z-index: 10;
+  width: min(360px, calc(100% - 40px));
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 222, 235, 0.95);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.14),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.readChainFloatingIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.readChainFloatingMain {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.readChainFloatingTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.readChainFloatingText {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.readChainFloatingMeta {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.readChainFloatingToggle {
+  height: 34px;
+  border: 1px solid #dbe4f0;
+  border-radius: 999px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.readChainFloatingToggle:hover {
+  background: #f1f5f9;
+}
+
+.readChainFloatingToggleOn {
+  border-color: #bfdbfe;
+  background: #2563eb;
+  color: #fff;
+}
+
+.readChainFloatingToggleOn:hover {
+  background: #1d4ed8;
+}
+
+.readChainFloatingToggle:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1200px) {
   .table {
     min-width: 1100px;
   }
 
   .row {
-    grid-template-columns: minmax(240px, 2fr) 1fr 0.9fr 0.85fr 1fr minmax(180px, 1.5fr) 110px;
+    grid-template-columns:
+      minmax(240px, 2fr) 1fr 0.9fr 0.85fr 1fr minmax(180px, 1.5fr)
+      110px;
   }
 }
 
@@ -563,5 +674,12 @@
 
   .buttonGroup button {
     width: 100%;
+  }
+
+  .readChainFloatingCard {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
   }
 }

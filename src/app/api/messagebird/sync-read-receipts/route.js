@@ -1,10 +1,12 @@
 export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import {
   getPendingWhatsappMessagesForReadReceiptSync,
   markMessageRead,
 } from "@/lib/repos/messages.repo";
 import { getOrganizationBirdConfig } from "@/lib/repos/organizations.repo";
+import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 
 const BIRD = "https://api.bird.com";
 
@@ -124,6 +126,12 @@ export async function POST(req) {
       updatedAsRead: 0,
       notReadYet: 0,
       failed: 0,
+      chainReadsDetected: 0,
+      chainNextStepsSent: 0,
+      chainCompleted: 0,
+      chainSkipped: 0,
+      chainFailed: 0,
+      chainErrors: [],
       errors: [],
     };
 
@@ -154,9 +162,40 @@ export async function POST(req) {
           readInteraction.updatedAt ||
           new Date().toISOString();
 
-        await markMessageRead(message.id, readAt);
+        const updatedMessage = await markMessageRead(message.id, readAt);
 
         summary.updatedAsRead += 1;
+
+        if (updatedMessage?.message_chain_id) {
+          summary.chainReadsDetected += 1;
+
+          try {
+            const chainResult = await processReadChainAfterRead(updatedMessage);
+
+            if (chainResult?.completed) {
+              summary.chainCompleted += 1;
+            } else if (chainResult?.nextStepSent) {
+              summary.chainNextStepsSent += 1;
+            } else if (chainResult?.skipped) {
+              summary.chainSkipped += 1;
+            } else if (chainResult?.ok === false) {
+              summary.chainFailed += 1;
+              summary.chainErrors.push({
+                messageDbId: updatedMessage.id,
+                chainId: updatedMessage.message_chain_id,
+                result: chainResult,
+              });
+            }
+          } catch (chainError) {
+            summary.chainFailed += 1;
+
+            summary.chainErrors.push({
+              messageDbId: updatedMessage.id,
+              chainId: updatedMessage.message_chain_id,
+              error: chainError.message,
+            });
+          }
+        }
       } catch (error) {
         summary.failed += 1;
 
