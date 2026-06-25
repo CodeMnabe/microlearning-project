@@ -2,45 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Users, X } from "lucide-react";
+
 import styles from "../scheduled.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import RecipientPicker from "./RecipientPicker";
 import { toDateInputValue, toTimeParts } from "../helpers/scheduled.helpers";
 import {
+  cleanText,
   getRecipientForChannel,
+  getRecipientKey,
+  getRecipientKind,
   getRecipientSecondary,
-  mapRecipientsToEntries,
+  normalizeRecipientForChannel,
+  uniqueRecipients,
 } from "../helpers/recipient.helpers";
-
-function normalizeRecipientValue(recipient, channel) {
-  if (typeof recipient === "string") return recipient;
-  if (typeof recipient === "number") return String(recipient);
-
-  if (!recipient || typeof recipient !== "object") return "";
-
-  if (channel === "whatsapp") {
-    return (
-      recipient.whatsappBsuid ||
-      recipient.whatsappPsuid ||
-      recipient.phoneNumber ||
-      recipient.birdContactId ||
-      ""
-    );
-  }
-
-  if (channel === "teams") {
-    return recipient.userId ? String(recipient.userId) : "";
-  }
-
-  return (
-    recipient.whatsappBsuid ||
-    recipient.whatsappPsuid ||
-    recipient.phoneNumber ||
-    recipient.userId ||
-    recipient.birdContactId ||
-    ""
-  );
-}
 
 function normalizeDisplayText(value, fallback = "") {
   if (typeof value === "string") return value;
@@ -50,19 +25,115 @@ function normalizeDisplayText(value, fallback = "") {
 
   return (
     value.name ||
-    value.whatsappUsername ||
     value.phoneNumber ||
+    value.whatsappUsername ||
     value.whatsappBsuid ||
-    value.whatsappPsuid ||
     value.birdContactId ||
     value.userId ||
+    value.email ||
     fallback
   );
 }
 
+function getInitials(value) {
+  const text = cleanText(value);
+  if (!text) return "?";
+
+  const parts = text.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] || "?";
+  const second = parts.length > 1 ? parts[1]?.[0] : "";
+
+  return `${first}${second}`.toUpperCase();
+}
+
+function kindLabel(kind) {
+  if (kind === "phone") return "Phone";
+  if (kind === "bsuid") return "BSUID fallback";
+  if (kind === "bird") return "Bird fallback";
+  if (kind === "teams") return "Teams";
+
+  return "Recipient";
+}
+
+function buildCandidate(orgUser, channel) {
+  const payloadRecipient = getRecipientForChannel(orgUser, channel);
+
+  if (!payloadRecipient) return null;
+
+  const key = getRecipientKey(payloadRecipient, channel);
+
+  if (!key) return null;
+
+  const secondary = normalizeDisplayText(
+    getRecipientSecondary(orgUser, channel),
+    key,
+  );
+
+  const name =
+    cleanText(orgUser?.name) ||
+    cleanText(orgUser?.user) ||
+    cleanText(orgUser?.nome) ||
+    cleanText(orgUser?.email) ||
+    key;
+
+  return {
+    ...orgUser,
+    key,
+    payloadRecipient,
+    recipient: payloadRecipient,
+    name,
+    secondary,
+    kind: getRecipientKind(payloadRecipient, channel),
+    initials: getInitials(name),
+  };
+}
+
+function buildEntry(recipient, candidates, channel) {
+  const normalized = normalizeRecipientForChannel(recipient, channel);
+  const key = getRecipientKey(normalized, channel);
+
+  if (!normalized || !key) return null;
+
+  const found = candidates.find((candidate) => candidate.key === key);
+
+  if (found) return found;
+
+  const name =
+    cleanText(normalized.name) ||
+    cleanText(normalized.phoneNumber) ||
+    cleanText(normalized.whatsappUsername) ||
+    cleanText(normalized.whatsappBsuid) ||
+    cleanText(normalized.birdContactId) ||
+    cleanText(normalized.email) ||
+    cleanText(normalized.userId) ||
+    "Unknown recipient";
+
+  const kind = getRecipientKind(normalized, channel);
+
+  const secondary =
+    normalized.phoneNumber ||
+    normalized.email ||
+    normalized.whatsappUsername ||
+    normalized.whatsappBsuid ||
+    normalized.birdContactId ||
+    normalized.userId ||
+    "Sem utilizador associado";
+
+  return {
+    key,
+    payloadRecipient: normalized,
+    recipient: normalized,
+    name,
+    secondary,
+    kind,
+    initials: getInitials(name),
+    unresolved: true,
+  };
+}
+
 export default function ScheduledEditModal({
   item,
-  orgUsers,
+  orgUsers = [],
   usersLoading,
   translation,
   isEditModalOpen,
@@ -91,12 +162,13 @@ export default function ScheduledEditModal({
     const payload = item.payload || {};
     const channel = item.channel ?? "teams";
 
-    const recipients = Array.isArray(payload.recipients)
+    const rawRecipients = Array.isArray(payload.recipients)
       ? payload.recipients
-          .map((recipient) => normalizeRecipientValue(recipient, channel))
-          .filter(Boolean)
-      : [];
+      : Array.isArray(payload.userIds)
+        ? payload.userIds
+        : [];
 
+    const recipients = uniqueRecipients(rawRecipients, channel);
     const files = Array.isArray(payload.files) ? payload.files : [];
 
     setEditForm({
@@ -106,7 +178,8 @@ export default function ScheduledEditModal({
       hour: timeParts.hour,
       minute: timeParts.minute,
       timezone: item.timezone ?? "Europe/Lisbon",
-      status: item.status ?? "scheduled",
+      status:
+        item.status === "queued" ? "scheduled" : (item.status ?? "scheduled"),
       recipients,
       files,
     });
@@ -115,34 +188,35 @@ export default function ScheduledEditModal({
   }, [item]);
 
   const recipientCandidates = useMemo(() => {
-    return orgUsers
-      .map((orgUser) => {
-        const recipient = normalizeRecipientValue(
-          getRecipientForChannel(orgUser, editForm.channel),
-          editForm.channel,
-        );
+    const safeUsers = Array.isArray(orgUsers) ? orgUsers : [];
 
-        if (!recipient) return null;
-
-        return {
-          ...orgUser,
-          recipient,
-          secondary: normalizeDisplayText(
-            getRecipientSecondary(orgUser, editForm.channel),
-          ),
-        };
-      })
+    return safeUsers
+      .map((orgUser) => buildCandidate(orgUser, editForm.channel))
       .filter(Boolean);
   }, [orgUsers, editForm.channel]);
 
-  const currentEditRecipientEntries = useMemo(() => {
-    return mapRecipientsToEntries(editForm.recipients, recipientCandidates);
-  }, [editForm.recipients, recipientCandidates]);
+  const currentRecipientEntries = useMemo(() => {
+    const safeRecipients = Array.isArray(editForm.recipients)
+      ? editForm.recipients
+      : [];
 
-  function removeRecipientFromEdit(recipient) {
+    const safeCandidates = Array.isArray(recipientCandidates)
+      ? recipientCandidates
+      : [];
+
+    return safeRecipients
+      .map((recipient) =>
+        buildEntry(recipient, safeCandidates, editForm.channel),
+      )
+      .filter(Boolean);
+  }, [editForm.recipients, recipientCandidates, editForm.channel]);
+
+  function removeRecipient(key) {
     setEditForm((prev) => ({
       ...prev,
-      recipients: prev.recipients.filter((value) => value !== recipient),
+      recipients: prev.recipients.filter(
+        (recipient) => getRecipientKey(recipient, prev.channel) !== key,
+      ),
     }));
   }
 
@@ -153,9 +227,13 @@ export default function ScheduledEditModal({
     }));
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    onSave(editForm);
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    onSave({
+      ...editForm,
+      recipients: uniqueRecipients(editForm.recipients, editForm.channel),
+    });
   }
 
   return (
@@ -169,12 +247,18 @@ export default function ScheduledEditModal({
         className={`${styles.modal} ${
           isEditModalOpen ? styles.modalOpen : styles.modalClosing
         }`}
-        onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         <div className={styles.modalHeader}>
-          <h2>{translation("EditModal.title")}</h2>
+          <div>
+            <h2>{translation("EditModal.title")}</h2>
+            <p className={styles.modalSubtitle}>
+              Edit message, recipients, files and schedule.
+            </p>
+          </div>
+
           <button
             type="button"
             className={styles.closeButton}
@@ -189,10 +273,10 @@ export default function ScheduledEditModal({
             <span>{translation("EditModal.message")}</span>
             <textarea
               value={editForm.message}
-              onChange={(e) =>
+              onChange={(event) =>
                 setEditForm((prev) => ({
                   ...prev,
-                  message: e.target.value,
+                  message: event.target.value,
                 }))
               }
               className={styles.textarea}
@@ -202,7 +286,14 @@ export default function ScheduledEditModal({
 
           <div className={styles.field}>
             <div className={styles.sectionRow}>
-              <span>{translation("EditModal.recipients")}</span>
+              <div>
+                <span>{translation("EditModal.recipients")}</span>
+                <p className={styles.sectionHint}>
+                  WhatsApp uses phone numbers first. BSUID/Bird IDs are only
+                  fallbacks.
+                </p>
+              </div>
+
               <button
                 type="button"
                 className={styles.secondaryInlineButton}
@@ -214,41 +305,48 @@ export default function ScheduledEditModal({
             </div>
 
             <div className={styles.recipientSummaryBox}>
-              {currentEditRecipientEntries.length ? (
+              {currentRecipientEntries.length ? (
                 <div className={styles.recipientPreviewList}>
-                  {currentEditRecipientEntries.map((entry) => {
-                    const recipient = normalizeRecipientValue(
-                      entry.recipient,
-                      editForm.channel,
-                    );
+                  {currentRecipientEntries.map((entry) => (
+                    <div
+                      key={entry.key}
+                      className={`${styles.recipientPreviewItem} ${
+                        entry.unresolved ? styles.recipientPreviewWarning : ""
+                      }`}
+                    >
+                      <div className={styles.recipientAvatar}>
+                        {entry.initials}
+                      </div>
 
-                    const name = normalizeDisplayText(
-                      entry.name,
-                      recipient || translation("EditModal.noRecipients"),
-                    );
-
-                    const secondary = normalizeDisplayText(entry.secondary);
-
-                    return (
-                      <div
-                        key={recipient || String(entry.id)}
-                        className={styles.recipientPreviewItem}
-                      >
-                        <div className={styles.recipientPreviewInfo}>
-                          <strong>{name}</strong>
-                          <span>{secondary}</span>
+                      <div className={styles.recipientPreviewInfo}>
+                        <div className={styles.recipientNameLine}>
+                          <strong>{entry.name}</strong>
+                          <span
+                            className={`${styles.recipientTypeBadge} ${
+                              entry.kind === "phone"
+                                ? styles.recipientTypePhone
+                                : entry.kind === "bsuid" ||
+                                    entry.kind === "bird"
+                                  ? styles.recipientTypeFallback
+                                  : ""
+                            }`}
+                          >
+                            {kindLabel(entry.kind)}
+                          </span>
                         </div>
 
-                        <button
-                          type="button"
-                          className={styles.recipientPreviewRemove}
-                          onClick={() => removeRecipientFromEdit(recipient)}
-                        >
-                          {translation("EditModal.remove")}
-                        </button>
+                        <span>{entry.secondary}</span>
                       </div>
-                    );
-                  })}
+
+                      <button
+                        type="button"
+                        className={styles.recipientPreviewRemove}
+                        onClick={() => removeRecipient(entry.key)}
+                      >
+                        {translation("EditModal.remove")}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <p className={styles.recipientEmptyText}>
@@ -264,7 +362,10 @@ export default function ScheduledEditModal({
             {editForm.files.length ? (
               <div className={styles.fileList}>
                 {editForm.files.map((file, index) => (
-                  <div key={`${file.url}-${index}`} className={styles.fileRow}>
+                  <div
+                    key={`${file.url || file.name}-${index}`}
+                    className={styles.fileRow}
+                  >
                     <div className={styles.fileInfo}>
                       <strong>{file.name || "Ficheiro"}</strong>
                       <span>{file.contentType || "-"}</span>
@@ -343,10 +444,10 @@ export default function ScheduledEditModal({
               <input
                 type="date"
                 value={editForm.date}
-                onChange={(e) =>
+                onChange={(event) =>
                   setEditForm((prev) => ({
                     ...prev,
-                    date: e.target.value,
+                    date: event.target.value,
                   }))
                 }
                 className={styles.input}
@@ -359,8 +460,7 @@ export default function ScheduledEditModal({
                 type="text"
                 value={editForm.timezone}
                 className={styles.input}
-                style={{ color: "gray" }}
-                disabled={true}
+                disabled
               />
             </label>
           </div>
@@ -373,10 +473,10 @@ export default function ScheduledEditModal({
                 min="0"
                 max="23"
                 value={editForm.hour}
-                onChange={(e) =>
+                onChange={(event) =>
                   setEditForm((prev) => ({
                     ...prev,
-                    hour: e.target.value,
+                    hour: event.target.value,
                   }))
                 }
                 className={styles.input}
@@ -390,10 +490,10 @@ export default function ScheduledEditModal({
                 min="0"
                 max="59"
                 value={editForm.minute}
-                onChange={(e) =>
+                onChange={(event) =>
                   setEditForm((prev) => ({
                     ...prev,
-                    minute: e.target.value,
+                    minute: event.target.value,
                   }))
                 }
                 className={styles.input}
@@ -429,15 +529,13 @@ export default function ScheduledEditModal({
           initialRecipients={editForm.recipients}
           recipientCandidates={recipientCandidates}
           usersLoading={usersLoading}
-          onApply={(nextRecipients) => {
+          channel={editForm.channel}
+          onApply={(nextRecipients = []) => {
             setEditForm((prev) => ({
               ...prev,
-              recipients: nextRecipients
-                .map((recipient) =>
-                  normalizeRecipientValue(recipient, editForm.channel),
-                )
-                .filter(Boolean),
+              recipients: uniqueRecipients(nextRecipients, prev.channel),
             }));
+
             setRecipientPickerOpen(false);
           }}
         />

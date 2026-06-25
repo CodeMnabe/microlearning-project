@@ -1,8 +1,17 @@
 // app/[locale]/(app)/users/ViewUserModal.jsx
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import styles from "./users.module.css";
-import { Pencil, X, RefreshCcw } from "lucide-react";
+import {
+  Pencil,
+  X,
+  RefreshCcw,
+  Check,
+  CheckCheck,
+  CircleAlert,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
 
 function initial(name = "") {
   return (name.trim()[0] || "?").toUpperCase();
@@ -23,6 +32,7 @@ export default function ViewUserModal({
   onEdit,
   assistantsById,
 }) {
+  const translation = useTranslations("ViewUserModal");
   const [render, setRender] = useState(open);
 
   const [threads, setThreads] = useState([]);
@@ -34,33 +44,30 @@ export default function ViewUserModal({
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState("");
 
-  // ---- NEW: request guards to avoid stale updates ----
   const threadsReqId = useRef(0);
   const messagesReqId = useRef(0);
 
-  // keep mounted during close animation
   useEffect(() => {
     if (open) setRender(true);
   }, [open]);
 
-  // Close on ESC
   useEffect(() => {
     if (!render) return;
+
     const onKey = (e) => {
       if (e.key === "Escape") onClose?.();
     };
+
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [render, onClose]);
 
-  // ---- NEW: hard reset on CLOSE so next open starts clean ----
   useEffect(() => {
     if (open) return;
-    // invalidate in-flight requests
+
     threadsReqId.current++;
     messagesReqId.current++;
 
-    // clear all state
     setThreads([]);
     setSelectedThreadId(null);
     setMessages([]);
@@ -68,11 +75,9 @@ export default function ViewUserModal({
     setMessagesError("");
   }, [open]);
 
-  // Reset + load threads on open/user change
   useEffect(() => {
     if (!open || !user?.id) return;
 
-    // clear before loading (prevents flash of old data)
     setThreads([]);
     setSelectedThreadId(null);
     setMessages([]);
@@ -85,6 +90,7 @@ export default function ViewUserModal({
 
   async function loadThreads(userId) {
     const reqId = ++threadsReqId.current;
+
     try {
       setThreadsLoading(true);
       setThreadsError("");
@@ -94,14 +100,14 @@ export default function ViewUserModal({
 
       const data = await res.json();
       const list = Array.isArray(data?.threads) ? data.threads : [];
+
       const normalized = list.map((t) => ({
-        id: t.id, // DB thread id (int)
+        id: t.id,
         aiThreadId: t.ai_thread_id || "",
         assistantId: t.assistant_id ?? null,
         createdAt: t.created_at ?? null,
       }));
 
-      // ignore if a newer request was started meanwhile
       if (reqId !== threadsReqId.current) return;
 
       setThreads(normalized);
@@ -114,49 +120,68 @@ export default function ViewUserModal({
     }
   }
 
-  // Load messages when thread changes
   useEffect(() => {
     if (!open || !selectedThreadId) {
-      // ensure empty UI when nothing selected
       setMessages([]);
       return;
     }
+
     loadMessages(selectedThreadId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, selectedThreadId]);
 
   async function loadMessages(threadId) {
     const reqId = ++messagesReqId.current;
+
     try {
       setMessagesLoading(true);
       setMessagesError("");
 
-      // Preferred: flat endpoint
       let res = await fetch(`/api/messages?threadId=${threadId}`);
-      if (!res.ok) res = await fetch(`/api/threads/${threadId}/messages`);
-      if (!res.ok) throw new Error(await safeText(res));
+
+      if (!res.ok) {
+        res = await fetch(`/api/threads/${threadId}/messages`);
+      }
+
+      if (!res.ok) {
+        throw new Error(await safeText(res));
+      }
 
       const data = await res.json();
+
       const arr = Array.isArray(data?.messages)
         ? data.messages
         : Array.isArray(data)
-        ? data
-        : [];
+          ? data
+          : [];
 
       const normalized = arr.map((m) => ({
         id: m.id,
         role: m.role || "assistant",
-        createdAt: m.created_at ?? null,
+        createdAt: m.created_at ?? m.createdAt ?? null,
         text: extractText(m),
+
+        // WhatsApp/Bird delivery receipt fields
+        channel: m.channel ?? null,
+        messageId: m.message_id ?? m.messageId ?? null,
+        deliveryStatus: m.delivery_status ?? m.deliveryStatus ?? null,
+        deliveredAt: m.delivered_at ?? m.deliveredAt ?? null,
+        readAt: m.read_at ?? m.readAt ?? null,
+        failedAt: m.failed_at ?? m.failedAt ?? null,
       }));
 
       if (reqId !== messagesReqId.current) return;
+
       setMessages(normalized);
     } catch (err) {
       if (reqId !== messagesReqId.current) return;
+
       setMessagesError(err?.message || "Erro ao carregar mensagens.");
       setMessages([]);
     } finally {
-      if (reqId === messagesReqId.current) setMessagesLoading(false);
+      if (reqId === messagesReqId.current) {
+        setMessagesLoading(false);
+      }
     }
   }
 
@@ -164,6 +189,7 @@ export default function ViewUserModal({
     (id == null ? null : assistantsById?.get(String(id))?.name) || "_";
 
   const stateClass = open ? styles.open : styles.closing;
+
   if (!render || !user) return null;
 
   return (
@@ -178,20 +204,21 @@ export default function ViewUserModal({
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      {/* key forces a fresh subtree when the user changes */}
       <div
         key={user?.id ?? "none"}
         className={`${styles.modalContent} ${styles.modalContentWide} ${stateClass}`}
       >
-        {/* Header */}
         <div className={styles.viewHead}>
           <div className={styles.viewHeadLeft}>
             <div className={styles.avatarLg}>{initial(user.name || "")}</div>
+
             <div className={styles.viewTitleBlock}>
               <div className={styles.viewTitle}>{user.name || "—"}</div>
+
               <div className={styles.viewSubtitle}>
                 {user.email || "—"} &middot; {formatPhoneDisplay(user)}
               </div>
+
               {!!(user.tags && user.tags.length) && (
                 <div className={styles.viewTagsRow}>
                   {user.tags.map((t) => (
@@ -203,6 +230,7 @@ export default function ViewUserModal({
               )}
             </div>
           </div>
+
           <div className={styles.viewHeadRight}>
             {!!onEdit && (
               <button
@@ -213,18 +241,16 @@ export default function ViewUserModal({
                 <Pencil size={18} />
               </button>
             )}
+
             <button className={styles.iconBtn} title="Fechar" onClick={onClose}>
               <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Body grid */}
         <div className={styles.viewLayout}>
-          {/* Only Threads + Messages now */}
           <section className={styles.panelWide}>
             <div className={styles.threadsLayout}>
-              {/* Threads list */}
               <div className={styles.panel}>
                 <div className={styles.panelHead}>
                   Threads
@@ -238,22 +264,27 @@ export default function ViewUserModal({
                     <RefreshCcw size={16} />
                   </button>
                 </div>
+
                 <div className={`${styles.panelBody} ${styles.threadList}`}>
                   {threadsLoading && (
                     <div className={styles.emptyNote}>A carregar…</div>
                   )}
+
                   {!threadsLoading && threadsError && (
                     <div className={styles.errorNote}>{threadsError}</div>
                   )}
+
                   {!threadsLoading && !threadsError && !threads.length && (
                     <div className={styles.emptyNote}>
                       Este utilizador não tem threads.
                     </div>
                   )}
+
                   {!threadsLoading &&
                     !threadsError &&
                     threads.map((t) => {
                       const active = selectedThreadId === t.id;
+
                       return (
                         <button
                           key={t.id}
@@ -266,9 +297,11 @@ export default function ViewUserModal({
                           <div className={styles.threadTitle}>
                             {getAssistantName(t.assistantId)}
                           </div>
+
                           <div className={styles.threadMeta}>
                             {formatWhen(t.createdAt)}
                           </div>
+
                           <div className={styles.threadIdMono}>
                             {shortId(t.aiThreadId)}
                           </div>
@@ -278,27 +311,29 @@ export default function ViewUserModal({
                 </div>
               </div>
 
-              {/* Messages viewer */}
               <div className={styles.panel}>
                 <div className={styles.panelHead}>Mensagens</div>
+
                 <div className={`${styles.panelBody} ${styles.messagesPane}`}>
                   {messagesLoading && (
                     <div className={styles.emptyNote}>A carregar…</div>
                   )}
+
                   {!messagesLoading && messagesError && (
                     <div className={styles.errorNote}>{messagesError}</div>
                   )}
+
                   {!messagesLoading && !messagesError && !messages.length && (
                     <div className={styles.emptyNote}>Sem mensagens.</div>
                   )}
+
                   {!messagesLoading && !messagesError && !!messages.length && (
                     <div className={styles.messagesScroll}>
-                      {messages.map((m) => (
+                      {messages.map((message) => (
                         <MessageBubble
-                          key={m.id}
-                          role={m.role}
-                          when={m.createdAt}
-                          text={m.text}
+                          key={message.id}
+                          message={message}
+                          translation={translation}
                         />
                       ))}
                     </div>
@@ -314,20 +349,21 @@ export default function ViewUserModal({
 }
 
 function extractText(m) {
-  // DB rows use `content`
   if (m?.content) return String(m.content);
   if (typeof m?.text === "string") return m.text;
 
-  // OpenAI-style fallbacks
   if (typeof m?.content === "string") return m.content;
+
   if (Array.isArray(m?.content)) {
     const firstText =
       m.content.find((c) => typeof c === "string") ||
       m.content.find((c) => c?.type === "text" && (c.text?.value || c.text));
+
     if (typeof firstText === "string") return firstText;
     if (firstText?.text?.value) return firstText.text.value;
     if (firstText?.text) return firstText.text;
   }
+
   return "(sem texto)";
 }
 
@@ -341,35 +377,171 @@ async function safeText(res) {
 
 function shortId(id) {
   if (!id) return "";
+
   const s = String(id);
+
   if (s.length <= 14) return s;
+
   return `${s.slice(0, 8)}…${s.slice(-4)}`;
 }
 
 function formatWhen(iso) {
   if (!iso) return "—";
+
   try {
     const d = new Date(iso);
-    return d.toLocaleString();
+
+    if (Number.isNaN(d.getTime())) return iso;
+
+    return d.toLocaleString("pt-PT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return iso;
   }
 }
 
-function MessageBubble({ role = "assistant", when, text }) {
-  const mine = role === "user";
+function getDisplayRole(role) {
+  if (role === "assistant") return "Assistente";
+  if (role === "system") return "Sistema";
+  if (role === "user") return "Utilizador";
+  return role || "";
+}
+
+function isOutgoingMessage(message) {
+  return message?.role === "assistant" || message?.role === "system";
+}
+
+function getReceiptState(message) {
+  if (!message) return null;
+
+  if (message.channel !== "whatsapp") {
+    return null;
+  }
+
+  if (!isOutgoingMessage(message)) {
+    return null;
+  }
+
+  const status = String(message.deliveryStatus || "").toLowerCase();
+
+  if (
+    message.failedAt ||
+    status === "failed" ||
+    status === "delivery_failed" ||
+    status === "sending_failed"
+  ) {
+    return "failed";
+  }
+
+  if (message.readAt || status === "read") {
+    return "read";
+  }
+
+  if (message.deliveredAt || status === "delivered") {
+    return "delivered";
+  }
+
+  if (
+    status === "accepted" ||
+    status === "sent" ||
+    status === "processing" ||
+    status === "sending" ||
+    status === "pending"
+  ) {
+    return "sent";
+  }
+
+  if (message.messageId) {
+    return "sent";
+  }
+
+  return null;
+}
+
+function getReceiptTitle(state, translation) {
+  if (state === "read") return translation("read");
+  if (state === "delivered") return translation("delivered");
+  if (state === "sent") return translation("sent");
+  if (state === "failed") return translation("failed");
+  return "";
+}
+
+function MessageReceipt({ message, translation }) {
+  const state = getReceiptState(message);
+
+  if (!state) return null;
+
+  const title = getReceiptTitle(state, translation);
+
+  if (state === "failed") {
+    return (
+      <span
+        className={styles.msgReceiptFailed}
+        title={title}
+        aria-label={title}
+      >
+        <CircleAlert size={14} strokeWidth={2.4} />
+      </span>
+    );
+  }
+
+  if (state === "read") {
+    return (
+      <span className={styles.msgReceiptRead} title={title} aria-label={title}>
+        <CheckCheck size={16} strokeWidth={2.4} />
+      </span>
+    );
+  }
+
+  if (state === "delivered") {
+    return (
+      <span
+        className={styles.msgReceiptDelivered}
+        title={title}
+        aria-label={title}
+      >
+        <CheckCheck size={16} strokeWidth={2.4} />
+      </span>
+    );
+  }
+
+  if (state === "sent") {
+    return (
+      <span className={styles.msgReceiptSent} title={title} aria-label={title}>
+        <Check size={16} strokeWidth={2.4} />
+      </span>
+    );
+  }
+
+  return null;
+}
+
+function MessageBubble({ message, translation }) {
+  const outgoing = isOutgoingMessage(message);
+
   return (
     <div
-      className={`${styles.msgRow} ${mine ? styles.msgMine : styles.msgTheirs}`}
+      className={`${styles.msgRow} ${
+        outgoing ? styles.msgMine : styles.msgTheirs
+      }`}
     >
       <div className={styles.msgBubble}>
-        <div className={styles.msgText}>{text}</div>
+        <div className={styles.msgText}>{message?.text || ""}</div>
+
         <div className={styles.msgMeta}>
           <span className={styles.msgRole}>
-            {mine ? "Utilizador" : "Assistente"}
+            {getDisplayRole(message?.role)}
           </span>
           <span>·</span>
-          <span className={styles.msgWhen}>{formatWhen(when)}</span>
+          <span className={styles.msgWhen}>
+            {formatWhen(message?.createdAt)}
+          </span>
+          <MessageReceipt message={message} translation={translation} />
         </div>
       </div>
     </div>

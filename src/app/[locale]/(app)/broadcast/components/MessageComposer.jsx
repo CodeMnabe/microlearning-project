@@ -23,6 +23,8 @@ export default function MessageComposer({
   channel,
   templateButtonLabel,
   translation,
+  chainControls = null,
+  leftToolsContent = null,
   children,
 }) {
   return (
@@ -30,6 +32,8 @@ export default function MessageComposer({
       <div className={styles.panelTitle}>
         {translation("Broadcast.message")}
       </div>
+
+      {chainControls}
 
       <textarea
         ref={messageInputRef}
@@ -77,39 +81,42 @@ export default function MessageComposer({
       )}
 
       <div className={styles.messageToolsRow}>
-        <ToolToggleButton
-          active={activeToolPanel === "schedule"}
-          icon={<CalendarDays size={16} />}
-          label={translation("Broadcast.schedule")}
-          badge={scheduleButtonLabel}
-          onClick={() => toggleToolPanel("schedule")}
-        />
+        <div className={styles.messageToolsLeft}>{leftToolsContent}</div>
 
-        <ToolToggleButton
-          active={activeToolPanel === "attachments"}
-          icon={<Paperclip size={16} />}
-          label={translation("Broadcast.attachments")}
-          badge={attachmentsCount > 0 ? attachmentsCount : null}
-          onClick={() => toggleToolPanel("attachments")}
-        />
-
-        <ToolToggleButton
-          active={activeToolPanel === "links"}
-          icon={<Link2 size={16} />}
-          label="Links"
-          badge={trackedLinksCount > 0 ? trackedLinksCount : null}
-          onClick={() => toggleToolPanel("links")}
-        />
-
-        {channel === "whatsapp" && (
+        <div className={styles.messageToolsActions}>
           <ToolToggleButton
-            active={activeToolPanel === "template"}
-            icon={<MessageSquareText size={16} />}
-            label="Template"
-            badge={templateButtonLabel}
-            onClick={() => toggleToolPanel("template")}
+            active={activeToolPanel === "attachments"}
+            icon={<Paperclip size={16} />}
+            label={translation("Broadcast.attachments")}
+            badge={attachmentsCount > 0 ? attachmentsCount : null}
+            onClick={() => toggleToolPanel("attachments")}
           />
-        )}
+
+          <ToolToggleButton
+            active={activeToolPanel === "links"}
+            icon={<Link2 size={16} />}
+            label="Links"
+            badge={trackedLinksCount > 0 ? trackedLinksCount : null}
+            onClick={() => toggleToolPanel("links")}
+          />
+
+          {channel === "whatsapp" && (
+            <ToolToggleButton
+              active={activeToolPanel === "template"}
+              icon={<MessageSquareText size={16} />}
+              label="Template"
+              badge={templateButtonLabel}
+              onClick={() => toggleToolPanel("template")}
+            />
+          )}
+          <ToolToggleButton
+            active={activeToolPanel === "schedule"}
+            icon={<CalendarDays size={16} />}
+            label={translation("Broadcast.schedule")}
+            badge={scheduleButtonLabel}
+            onClick={() => toggleToolPanel("schedule")}
+          />
+        </div>
       </div>
 
       {activeToolPanel && (

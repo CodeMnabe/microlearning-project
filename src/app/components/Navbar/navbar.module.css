@@ -67,16 +67,20 @@
 }
 
 .navItem.active {
-  background: linear-gradient(to right,
-      var(--color-primary),
-      var(--color-secondary));
+  background: linear-gradient(
+    to right,
+    var(--color-primary),
+    var(--color-secondary)
+  );
   outline: none;
 }
 
 .navItem:hover {
-  background: linear-gradient(to right,
-      var(--color-primary),
-      var(--color-secondary));
+  background: linear-gradient(
+    to right,
+    var(--color-primary),
+    var(--color-secondary)
+  );
   outline: none;
 }
 
@@ -228,8 +232,14 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+.smallText {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand-1);
+  padding-top: 4px;
+}
 
+@media (prefers-reduced-motion: reduce) {
   .sidebar,
   .chevron {
     transition: none;
