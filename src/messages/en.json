@@ -888,7 +888,8 @@
     "admin": "Admin",
     "login": "Login",
     "options": "Options",
-    "logout": "Sign out"
+    "logout": "Sign out",
+     "analytics": "Analytics"
   },
   "Common": {
     "search": "Search",
@@ -2143,5 +2144,190 @@
       "confirm": "Delete",
       "cancel": "Cancel"
     }
+  },
+
+  "Analytics": {
+  "title": "Analytics",
+  
+  "refresh": "Refresh",
+  "loading": "Loading metrics...",
+  "errors": {
+    "load": "Metrics could not be loaded. Please try again in a few seconds.",
+    "noOrg": "The current organization could not be identified."
+  },
+  "health": {
+    "ok": "All good",
+    "noErrors": "No issues were found in the loaded data.",
+    "needsAttention": "Needs attention",
+    "errorsFound": "{count} issue(s) found in the current data."
+  },
+  "cards": {
+    "users": "Users",
+    "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
+    "assistants": "Assistants",
+    "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
+    "messages": "Messages",
+    "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+    "delivery": "Delivery",
+    "deliveryHelper": "{read} read, {failed} failed.",
+    "templates": "Templates WhatsApp",
+    "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
+    "automations": "Automations",
+    "automationsHelper": "{active} active, {paused} paused.",
+    "automationRuns": "Automation runs",
+    "automationRunsHelper": "{processed} processed, {failed} failed.",
+    "scheduledBroadcasts": "Scheduled messages",
+    "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
+    "trackedLinks": "Tracked clicks",
+    "trackedLinksHelper": "{links} tracked links.",
+    "pendingOutreach": "Pending messages",
+    "pendingOutreachHelper": "{active} still active.",
+    "health": "Overall health",
+    "assistantCoverage": "Assigned assistants",
+    "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
+    "readRate": "Read rate",
+    "readRateHelper": "{read}/{total} messages read.",
+    "failureRate": "Failure rate",
+    "failureRateHelper": "{failed}/{total} failed messages.",
+    "clickDensity": "Clicks per link",
+    "clickDensityHelper": "{clicks} clicks across {links} links."
+    
+  },
+  "sections": {
+  "breakdownTitle": "Operational summary",
+  "users": {
+    "title": "Coverage",
+    "value": "{withAssistant}/{total} with assistant",
+    "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
+  },
+  "messages": {
+    "title": "Activity",
+    "value": "{total} registered messages",
+    "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
+  },
+  "attention": {
+    "title": "Attention points",
+    "value": "{total} active issues",
+    "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
+  },
+  "next": {
+    "title": "Next improvement",
+    "value": "Add charts",
+    "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
+     }
+    },
+
+      "charts": {
+      "email": "Email",
+      "phone": "Phone",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp",
+      "active": "Active",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "assistants": "Assistants",
+      "templates": "Templates",
+      "messages": "Messages",
+      "automations": "Automations",
+      "scheduled": "Scheduled",
+      
+      "messagesTitle": "Messages by channel",
+      "messagesDescription": "Comparison between WhatsApp and Teams messages.",
+      "templatesTitle": "Template status",
+      "templatesDescription": "Distribution of templates by status.",
+      "problemsTitle": "Issues found",
+      "problemsDescription": "Summary of areas that need attention.",
+      "sectionTitle": "Current distribution",
+      "sectionDescription": "A snapshot of the current state and selected period metrics."
+    },
+
+  "periods": {
+  "label": "Filter by period",
+  "all": "All",
+  "last7Days": "7 days",
+  "last30Days": "30 days",
+  "last90Days": "90 days"
+  
+  },
+  "trends": {
+  "title": "Daily trends",
+  "description": "These charts follow the selected period. When All is selected, they show the last 30 days.",
+  "messagesTitle": "Messages per day",
+  "messagesDescription": "Total messages registered each day.",
+  "clicksTitle": "Clicks per day",
+  "clicksDescription": "Tracked link clicks registered each day.",
+  "failuresTitle": "Failures per day",
+  "failuresDescription": "Messages that failed each day.",
+  "automationsTitle": "Processed automations per day",
+  "automationsDescription": "Automation runs processed each day.",
+  "empty": "No data to show for this period."
+  },
+    "groups": {
+  "overview": {
+    "title": "Overview",
+    "description": "Current organization setup and configuration status."
+  },
+  "activity": {
+    "title": "Activity",
+    "description": "Messages, delivery and activity metrics for the selected period."
+  },
+  "automations": {
+    "title": "Automations",
+    "description": "Automation rules, automation runs and scheduled messages."
+  },
+  "engagement": {
+    "title": "Engagement",
+    "description": "Tracked link activity and click performance."
+  }
+
+  
+
+},
+
+  "customization": {
+  "title": "Dashboard customization",
+  "description": "Show or hide metric groups. Your choice is saved in this browser.",
+  "show": "Show",
+  "hide": "Hide",
+  "reset": "Reset groups",
+  "resetCharts": "Reset charts",
+  "exports": "Export",
+  "resetDashboard": "Reset dashboard"
+},
+
+  "rankings": {
+  "title": "Rankings",
+  "description": "The most relevant items for the selected period.",
+  "topLinksTitle": "Top tracked links",
+  "topLinksDescription": "Links with the highest number of clicks.",
+  "automationFailuresTitle": "Automation failures",
+  "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
+  "empty": "No ranking data for this period.",
+  "columns": {
+    "link": "Link",
+    "clicks": "Clicks",
+    "automation": "Automation",
+    "failures": "Failures",
+    "viewAllLinks": "View full list ({count})",
+    "allLinksTitle": "Full links list",
+    "allLinksDescription": "All tracked links ordered by number of clicks.",
+    "close": "Close"
   }
 }
+
+
+
+
+    
+
+  }
+
+}
+
+
+
+
+
+
+
+
