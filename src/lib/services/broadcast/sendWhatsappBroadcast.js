@@ -53,6 +53,18 @@ function cleanText(value) {
   return str.length ? str : null;
 }
 
+function extractBirdMessageId(data) {
+  return (
+    data?.id ||
+    data?.message?.id ||
+    data?.payload?.id ||
+    data?.result?.id ||
+    data?.results?.[0]?.id ||
+    data?.messages?.[0]?.id ||
+    null
+  );
+}
+
 function normalizeRecipient(raw) {
   if (raw && typeof raw === "object") {
     return {
@@ -248,6 +260,7 @@ async function sendFreeform({
     ok: res.ok,
     status: res.status,
     data,
+    providerMessageId: extractBirdMessageId(data),
   };
 }
 
@@ -268,6 +281,7 @@ async function sendTemplate({
       locale: template.languageCode || "pt-PT",
       parameters: kvPairs.map((kv) => {
         const [k, ...rest] = kv.split("=");
+
         return {
           type: "string",
           key: k.trim(),
@@ -292,6 +306,7 @@ async function sendTemplate({
     ok: res.ok,
     status: res.status,
     data,
+    providerMessageId: extractBirdMessageId(data),
   };
 }
 
@@ -308,6 +323,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     scheduledBroadcastId = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
+    chainMetadata = null,
   } = input;
 
   if (!orgId) {
@@ -450,6 +466,8 @@ export async function sendWhatsappBroadcast(input = {}) {
         kind: "none",
         userId: user?.id || recipient.userId || null,
         userName: user?.name || recipient.name || null,
+        resolvedMessage: "",
+        providerMessageId: null,
         ok: false,
         status: 400,
         data: {
@@ -507,6 +525,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         contact,
         ok: r.ok,
         status: r.status,
+        providerMessageId: r.providerMessageId,
         data: r.data,
       });
 
@@ -518,6 +537,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         kind: "freeform",
         userId: user?.id || recipient.userId || null,
         userName: user?.name || recipient.name || null,
+        resolvedMessage,
         ...r,
       };
     }
@@ -580,13 +600,13 @@ export async function sendWhatsappBroadcast(input = {}) {
         contact,
         ok: r.ok,
         status: r.status,
+        providerMessageId: r.providerMessageId,
         data: r.data,
       });
 
       if (r.ok && user && hasResolvedFreeformContent) {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const templateMessageId =
-          r.data?.id || r.data?.message?.id || r.data?.payload?.id || null;
+        const templateMessageId = r.providerMessageId;
 
         await createPendingOutreach({
           orgId,
@@ -597,6 +617,11 @@ export async function sendWhatsappBroadcast(input = {}) {
           },
           expiresAt,
           templateMessageId,
+          messageChainId: chainMetadata?.messageChainId || null,
+          messageChainStepId: chainMetadata?.messageChainStepId || null,
+          messageChainRecipientId:
+            chainMetadata?.messageChainRecipientId || null,
+          messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
         });
       }
 
@@ -608,6 +633,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         kind: "template",
         userId: user?.id || recipient.userId || null,
         userName: user?.name || recipient.name || null,
+        resolvedMessage,
         ...r,
       };
     }
@@ -620,6 +646,8 @@ export async function sendWhatsappBroadcast(input = {}) {
       kind: "freeform",
       userId: user?.id || recipient.userId || null,
       userName: user?.name || recipient.name || null,
+      resolvedMessage,
+      providerMessageId: null,
       ok: false,
       status: 412,
       data: { error: "24h window closed and no template provided." },
@@ -648,8 +676,15 @@ export async function sendWhatsappBroadcast(input = {}) {
             typeof recipients[i] === "object"
               ? recipients[i]?.phoneNumber
               : recipients[i],
+          userId:
+            typeof recipients[i] === "object"
+              ? recipients[i]?.userId || recipients[i]?.id || null
+              : null,
           ok: false,
           status: 0,
+          kind: "error",
+          providerMessageId: null,
+          resolvedMessage: "",
           data: { error: String(r.reason) },
         },
   );

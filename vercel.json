@@ -16,6 +16,14 @@
     {
       "path": "/api/cron/sync-read-receipts",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/read-chains",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/read-chain-delays",
+      "schedule": "0 13 * * *"
     }
   ]
 }

@@ -48,7 +48,7 @@
         "login": "Log in",
         "book": "Book a demo",
         "dashboard": "Go to dashboard",
-        "how-it-works":"How it works"
+        "how-it-works": "How it works"
       }
     },
 
@@ -202,7 +202,6 @@
     }
   },
 
-
   "SolutionsPage": {
     "hero": {
       "eyebrow": "Solutions",
@@ -211,7 +210,6 @@
       "primaryCta": "Book a demo",
       "secondaryCta": "Talk to sales"
     },
-
 
     "overview": {
       "eyebrow": "Explore our solutions",
@@ -258,75 +256,69 @@
     }
   },
 
-
- "ProductPage": {
-  "hero": {
-    "eyebrow": "Product",
-    "title": "A single platform for communication, learning, and automation",
-    "subhead": "Centralize messages, AI assistants, and knowledge into one integrated solution, directly within the channels where teams already work.",
-    "primaryCta": "Schedule a demo",
-    "secondaryCta": "Talk to the team"
-  },
-
-  "explorer": {
-    "eyebrow": "DISCOVER HOW IT WORKS",
-    "title": "PRODUCT",
-    "subhead": "How MyDigitalBot works in practice"
-
-   
-  },
-   "cards": {
-    "messages": {
-      "title": "Messages that drive interaction",
-      "description": "Send communications that do not go unanswered. Each message can become a conversation with context and continuity.",
-      "checks": {
-        "0": "Campaigns and notifications",
-        "1": "Direct communication via Teams or WhatsApp",
-        "2": "Two-way interaction with users",
-        "3": "Context linked to each message"
-      },
-      "alt": "MyDigitalBot messages mockup"
+  "ProductPage": {
+    "hero": {
+      "eyebrow": "Product",
+      "title": "A single platform for communication, learning, and automation",
+      "subhead": "Centralize messages, AI assistants, and knowledge into one integrated solution, directly within the channels where teams already work.",
+      "primaryCta": "Schedule a demo",
+      "secondaryCta": "Talk to the team"
     },
 
-    "assistants": {
-      "title": "Intelligent assistants tailored to your organization",
-      "description": "Create configurable assistants by topic, such as HR, training or support.",
-      "checks": {
-        "0": "Assistants configurable by topic",
-        "1": "Automatic and contextualized answers",
-        "2": "Integration with documents and internal knowledge",
-        "3": "Continuous learning based on interactions"
-      },
-      "alt": "MyDigitalBot intelligent assistants mockup"
+    "explorer": {
+      "eyebrow": "DISCOVER HOW IT WORKS",
+      "title": "PRODUCT",
+      "subhead": "How MyDigitalBot works in practice"
     },
-
-    "knowledge": {
-      "title": "Knowledge accessible at the right moment",
-      "description": "FAQs, documents and internal content always available to users.",
-      "checks": {
-        "0": "Immediate access via chat",
-        "1": "Contextual user support",
-        "2": "Reduced dependency on human support"
+    "cards": {
+      "messages": {
+        "title": "Messages that drive interaction",
+        "description": "Send communications that do not go unanswered. Each message can become a conversation with context and continuity.",
+        "checks": {
+          "0": "Campaigns and notifications",
+          "1": "Direct communication via Teams or WhatsApp",
+          "2": "Two-way interaction with users",
+          "3": "Context linked to each message"
+        },
+        "alt": "MyDigitalBot messages mockup"
       },
-      "alt": "MyDigitalBot internal knowledge mockup"
-    },
 
-    "channels": {
-      "title": "Where users already are",
-      "description": "Bring communication and assistants to the channels your teams already use.",
-      "checks": {
-        "0": "Microsoft Teams",
-        "1": "WhatsApp",
-        "2": "Other integrable channels",
-        "3": "No need for new apps"
+      "assistants": {
+        "title": "Intelligent assistants tailored to your organization",
+        "description": "Create configurable assistants by topic, such as HR, training or support.",
+        "checks": {
+          "0": "Assistants configurable by topic",
+          "1": "Automatic and contextualized answers",
+          "2": "Integration with documents and internal knowledge",
+          "3": "Continuous learning based on interactions"
+        },
+        "alt": "MyDigitalBot intelligent assistants mockup"
       },
-      "alt": "Channels integration mockup with Teams and WhatsApp"
+
+      "knowledge": {
+        "title": "Knowledge accessible at the right moment",
+        "description": "FAQs, documents and internal content always available to users.",
+        "checks": {
+          "0": "Immediate access via chat",
+          "1": "Contextual user support",
+          "2": "Reduced dependency on human support"
+        },
+        "alt": "MyDigitalBot internal knowledge mockup"
+      },
+
+      "channels": {
+        "title": "Where users already are",
+        "description": "Bring communication and assistants to the channels your teams already use.",
+        "checks": {
+          "0": "Microsoft Teams",
+          "1": "WhatsApp",
+          "2": "Other integrable channels",
+          "3": "No need for new apps"
+        },
+        "alt": "Channels integration mockup with Teams and WhatsApp"
+      }
     }
-}
-
- },
-
-
+  },
 
   "PricingPage": {
     "hero": {
@@ -480,85 +472,79 @@
     }
   },
 
-
-"HowItWorksPage": {
-  "hero": {
-    "eyebrow": "How it works",
-    "title": "How we implement MyDigitalBot in your organization",
-    "subhead": "A simple, structured process adapted to each organization’s reality, from the initial setup to everyday use.",
-    "primaryCta": "Book a demo",
-    "secondaryCta": "Talk to the team"
-  },
-  "explorer": {
-    "eyebrow": "Discover how it works",
-    "title": "How It Works",
-    "subhead": "A clear and structured process to implement and start using MyDigitalBot quickly"
-  },
-  "steps": {
-    "initialSetup": {
-      "title": "Initial Setup",
-      "description": "We start by configuring MyDigitalBot according to your organization, defining channels, users and main objectives.",
-      "bullets": {
-        "0": "Connection to channels such as Teams and WhatsApp",
-        "1": "Creation of users and groups",
-        "2": "Definition of communication goals",
-        "3": "Initial organization setup"
+  "HowItWorksPage": {
+    "hero": {
+      "eyebrow": "How it works",
+      "title": "How we implement MyDigitalBot in your organization",
+      "subhead": "A simple, structured process adapted to each organization’s reality, from the initial setup to everyday use.",
+      "primaryCta": "Book a demo",
+      "secondaryCta": "Talk to the team"
+    },
+    "explorer": {
+      "eyebrow": "Discover how it works",
+      "title": "How It Works",
+      "subhead": "A clear and structured process to implement and start using MyDigitalBot quickly"
+    },
+    "steps": {
+      "initialSetup": {
+        "title": "Initial Setup",
+        "description": "We start by configuring MyDigitalBot according to your organization, defining channels, users and main objectives.",
+        "bullets": {
+          "0": "Connection to channels such as Teams and WhatsApp",
+          "1": "Creation of users and groups",
+          "2": "Definition of communication goals",
+          "3": "Initial organization setup"
+        }
+      },
+      "communicationStructure": {
+        "title": "Communication Structure",
+        "description": "We organize how communication happens, ensuring clarity, consistency and context.",
+        "bullets": {
+          "0": "Definition of message types",
+          "1": "Communication planning",
+          "2": "User segmentation",
+          "3": "Integration with content and knowledge"
+        }
+      },
+      "aiAssistants": {
+        "title": "AI Assistant Configuration",
+        "description": "We create intelligent assistants adapted to your organization’s needs and most relevant topics.",
+        "bullets": {
+          "0": "Assistants by area, such as HR, training or support",
+          "1": "Definition of behavior and tone of voice",
+          "2": "Automatic notifications",
+          "3": "Reminders and follow-ups",
+          "4": "Answers to frequently asked questions"
+        }
+      },
+      "testingLaunch": {
+        "title": "Testing and Launch",
+        "description": "We validate the main flows with your team, adjust the details and prepare real everyday use.",
+        "bullets": {
+          "0": "Testing with pilot users",
+          "1": "Validation of channels and messages",
+          "2": "Adjustments before launch",
+          "3": "Support during rollout"
+        }
+      },
+      "optimization": {
+        "title": "Monitoring and Optimization",
+        "description": "After launch, we monitor usage to improve messages, assistants and results.",
+        "bullets": {
+          "0": "Usage and adoption analysis",
+          "1": "Continuous content improvement",
+          "2": "Assistant tuning based on interactions",
+          "3": "Identification of new automation opportunities"
+        }
       }
     },
-    "communicationStructure": {
-      "title": "Communication Structure",
-      "description": "We organize how communication happens, ensuring clarity, consistency and context.",
-      "bullets": {
-        "0": "Definition of message types",
-        "1": "Communication planning",
-        "2": "User segmentation",
-        "3": "Integration with content and knowledge"
-      }
-    },
-    "aiAssistants": {
-      "title": "AI Assistant Configuration",
-      "description": "We create intelligent assistants adapted to your organization’s needs and most relevant topics.",
-      "bullets": {
-        "0": "Assistants by area, such as HR, training or support",
-        "1": "Definition of behavior and tone of voice",
-        "2": "Automatic notifications",
-        "3": "Reminders and follow-ups",
-        "4": "Answers to frequently asked questions"
-      }
-    },
-    "testingLaunch": {
-      "title": "Testing and Launch",
-      "description": "We validate the main flows with your team, adjust the details and prepare real everyday use.",
-      "bullets": {
-        "0": "Testing with pilot users",
-        "1": "Validation of channels and messages",
-        "2": "Adjustments before launch",
-        "3": "Support during rollout"
-      }
-    },
-    "optimization": {
-      "title": "Monitoring and Optimization",
-      "description": "After launch, we monitor usage to improve messages, assistants and results.",
-      "bullets": {
-        "0": "Usage and adoption analysis",
-        "1": "Continuous content improvement",
-        "2": "Assistant tuning based on interactions",
-        "3": "Identification of new automation opportunities"
-      }
+    "cta": {
+      "title": "No technical complexity",
+      "text": "MyDigitalBot is designed to work with the systems and channels you already use, without complex implementations or changes to existing processes.",
+      "button": "Book a demo",
+      "alt": "Simple integrations with existing channels and systems"
     }
   },
-  "cta": {
-    "title": "No technical complexity",
-    "text": "MyDigitalBot is designed to work with the systems and channels you already use, without complex implementations or changes to existing processes.",
-    "button": "Book a demo",
-    "alt": "Simple integrations with existing channels and systems"
-  }
-},
-
-
-
-
-
 
   "Public": {
     "Dpa": {
@@ -965,11 +951,11 @@
     },
 
     "pagination": {
-  "summary": "Page {page} of {totalPages} · {totalUsers} users",
-  "perPage": "{count} / page",
-  "previous": "Previous",
-  "next": "Next"
-},
+      "summary": "Page {page} of {totalPages} · {totalUsers} users",
+      "perPage": "{count} / page",
+      "previous": "Previous",
+      "next": "Next"
+    },
     "row": {
       "more": "More options",
       "view": "View",
@@ -987,66 +973,61 @@
     "confirmDeleteMessage": "This action cannot be undone.",
 
     "alerts": {
-  "noOrg": {
-    "title": "Missing organization",
-    "message": "The organization could not be identified yet. Please try again in a few seconds."
-  },
-  "assistantsLoadFailed": {
-    "title": "Failed to load assistants",
-    "message": "The assistant list could not be loaded."
-  },
-  "tagsLoadFailed": {
-    "title": "Failed to load tags",
-    "message": "User tags could not be loaded."
-  },
-  "usersLoadFailed": {
-    "title": "Failed to load users",
-    "message": "The user list could not be loaded. Please try again in a few seconds."
-  },
-  "usersRefreshSuccess": {
-    "title": "Users updated",
-    "message": "The user list was refreshed successfully."
-  },
-  "userCreated": {
-    "title": "User created",
-    "message": "The user \"{name}\" was created successfully."
-  },
-  "createUserFailed": {
-    "title": "Failed to create user",
-    "message": "The user could not be created. Check the data and try again."
-  },
-  "userDeleted": {
-    "title": "User deleted",
-    "message": "The user \"{name}\" was deleted successfully."
-  },
-  "deleteUserFailed": {
-    "title": "Failed to delete user",
-    "message": "The user could not be deleted."
-  },
-  "assistantUpdated": {
-    "title": "Assistant updated",
-    "message": "The assistant for \"{name}\" was updated successfully."
-  },
-  "assistantUpdateFailed": {
-    "title": "Failed to update assistant",
-    "message": "The user's assistant could not be updated."
-  },
-  "importSuccess": {
-    "title": "Import completed",
-    "message": "Users were imported successfully."
-  },
-  "userUpdated": {
-    "title": "User updated",
-    "message": "The user changes were saved successfully."
-  }
-}
-
-
-
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
+      "assistantsLoadFailed": {
+        "title": "Failed to load assistants",
+        "message": "The assistant list could not be loaded."
+      },
+      "tagsLoadFailed": {
+        "title": "Failed to load tags",
+        "message": "User tags could not be loaded."
+      },
+      "usersLoadFailed": {
+        "title": "Failed to load users",
+        "message": "The user list could not be loaded. Please try again in a few seconds."
+      },
+      "usersRefreshSuccess": {
+        "title": "Users updated",
+        "message": "The user list was refreshed successfully."
+      },
+      "userCreated": {
+        "title": "User created",
+        "message": "The user \"{name}\" was created successfully."
+      },
+      "createUserFailed": {
+        "title": "Failed to create user",
+        "message": "The user could not be created. Check the data and try again."
+      },
+      "userDeleted": {
+        "title": "User deleted",
+        "message": "The user \"{name}\" was deleted successfully."
+      },
+      "deleteUserFailed": {
+        "title": "Failed to delete user",
+        "message": "The user could not be deleted."
+      },
+      "assistantUpdated": {
+        "title": "Assistant updated",
+        "message": "The assistant for \"{name}\" was updated successfully."
+      },
+      "assistantUpdateFailed": {
+        "title": "Failed to update assistant",
+        "message": "The user's assistant could not be updated."
+      },
+      "importSuccess": {
+        "title": "Import completed",
+        "message": "Users were imported successfully."
+      },
+      "userUpdated": {
+        "title": "User updated",
+        "message": "The user changes were saved successfully."
+      }
+    }
   },
 
-
-  
   "UserPage": {
     "selectUser": "Select a user.",
     "id": "ID",
@@ -1071,9 +1052,10 @@
   },
 
   "ViewUserModal": {
-    "error": "Error",
-    "threadErrorMessage": "Error loading threads.",
-    "messageErrorMessage": "Error loading messages."
+    "read": "Read",
+    "delivered": "Delivered",
+    "sent": "Sent",
+    "failed": "Failed"
   },
   "FilterMenu": {
     "title": "Filters",
@@ -1128,86 +1110,83 @@
     "removeLabel": "Remove {name}"
   },
 
- "Templates": {
-  "title": "WhatsApp Templates",
-  "tabList": "List",
-  "tabCreate": "Create",
-  "sync": "Sync",
-  "syncing": "Syncing…",
+  "Templates": {
+    "title": "WhatsApp Templates",
+    "tabList": "List",
+    "tabCreate": "Create",
+    "sync": "Sync",
+    "syncing": "Syncing…",
 
-  "name": "Name",
-  "language": "Language",
-  "category": "Category",
-  "status": "Status",
-
-  "noTemplates": "No templates. Go to \"Create\" to add one.",
-  "sendTest": "Send test",
-
-  "MARKETING": "Marketing",
-  "UTILITY": "Utility",
-  "AUTHENTICATION": "Authentication",
-
-  "model": "Model",
-  "Model": "Model",
-
-  "text_quickreplies": "Text + quick replies",
-  "image_header_quickreplies": "Image header + quick replies",
-  "quiz_url_button": "Quiz with variable URL button",
-
-  "notices": {
-    "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
-    "submitted": "Template \"{name}\" submitted. Status: {status}",
-    "sent": "Template sent."
-  },
-
-  "statuses": {
-    "new": "New",
-    "approved": "Approved",
-    "pending": "Pending",
-    "rejected": "Rejected",
-    "paused": "Paused",
-    "disabled": "Disabled",
-    "in_appeal": "In appeal",
-    "pending_deletion": "Pending deletion",
-    "unknown": "Unknown"
-  },
-
-  "createForm": {
     "name": "Name",
     "language": "Language",
     "category": "Category",
-    "preset": "Model",
-    "components": "Components (JSON)",
-    "submit": "Submit for approval",
-    "reset": "Reset example",
-    "creating": "Creating…"
-  },
+    "status": "Status",
 
-  "modal": {
-    "title": "Send test",
-    "to": "To (E.164 or national)",
-    "bodyParams": "Body parameters (comma-separated)",
-    "urlVar": "URL button variable (optional)",
-    "cancel": "Cancel",
-    "send": "Send",
-    "sending": "Sending…",
-    "close": "Close"
-  },
+    "noTemplates": "No templates. Go to \"Create\" to add one.",
+    "sendTest": "Send test",
 
-  "errors": {
-    "noOrg": "No organization found.",
-    "fetch": "Failed to fetch templates: {message}",
-    "componentsArray": "Components must be an array.",
-    "invalidComponents": "Invalid components JSON: {message}",
-    "nameRequired": "Name is required.",
-    "createFailed": "Create failed: {message}",
-    "sendFailed": "Send failed: {message}"
-  },
+    "MARKETING": "Marketing",
+    "UTILITY": "Utility",
+    "AUTHENTICATION": "Authentication",
 
-    
+    "model": "Model",
+    "Model": "Model",
 
+    "text_quickreplies": "Text + quick replies",
+    "image_header_quickreplies": "Image header + quick replies",
+    "quiz_url_button": "Quiz with variable URL button",
 
-      "alerts": {
+    "notices": {
+      "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
+      "submitted": "Template \"{name}\" submitted. Status: {status}",
+      "sent": "Template sent."
+    },
+
+    "statuses": {
+      "new": "New",
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "paused": "Paused",
+      "disabled": "Disabled",
+      "in_appeal": "In appeal",
+      "pending_deletion": "Pending deletion",
+      "unknown": "Unknown"
+    },
+
+    "createForm": {
+      "name": "Name",
+      "language": "Language",
+      "category": "Category",
+      "preset": "Model",
+      "components": "Components (JSON)",
+      "submit": "Submit for approval",
+      "reset": "Reset example",
+      "creating": "Creating…"
+    },
+
+    "modal": {
+      "title": "Send test",
+      "to": "To (E.164 or national)",
+      "bodyParams": "Body parameters (comma-separated)",
+      "urlVar": "URL button variable (optional)",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sending": "Sending…",
+      "close": "Close"
+    },
+
+    "errors": {
+      "noOrg": "No organization found.",
+      "fetch": "Failed to fetch templates: {message}",
+      "componentsArray": "Components must be an array.",
+      "invalidComponents": "Invalid components JSON: {message}",
+      "nameRequired": "Name is required.",
+      "createFailed": "Create failed: {message}",
+      "sendFailed": "Send failed: {message}"
+    },
+
+    "alerts": {
       "syncFailed": {
         "title": "Failed to sync templates",
         "message": "Templates could not be loaded. Please try again in a few seconds."
@@ -1253,223 +1232,213 @@
         "message": "The test template could not be sent. Check the number and try again."
       },
       "noOrg": {
-      "title": "Missing organization",
-      "message": "The organization could not be identified yet. Please try again in a few seconds."
-}
-
-
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      }
     }
-
-},
-
-
-
- "Automations": {
-  "searchAutomations": "Search automations...",
-  "refresh": "Refresh",
-  "runInactivity": "Run inactivity",
-  "materialize": "Materialize",
-  "newAutomation": "New automation",
-  "createAutomation": "Create automation",
-  "rules": "Rules",
-  "queue": "Queue",
-  "deliveries": "Deliveries",
-
-  "userCreated": "User created",
-  "userInactive": "User inactive",
-  "messageRead": "Message read",
-  "messageUnread": "Message unread",
-  "unknown": "Other / unknown",
-
-  "triggerDescriptions": {
-    "userCreated": "Send X minutes after a user is created.",
-    "userInactive": "Send X minutes without a user inbound message.",
-    "messageRead": "Reserved for future read-receipt automations.",
-    "messageUnread": "Reserved for future unread-message automations."
   },
 
-  "rulesTable": {
-    "rule": "Rule",
-    "user": "User",
-    "channel": "Channel",
-    "scheduledFor": "Scheduled for",
-    "broadcastStatus": "Broadcast status",
-    "message": "Message",
-    "rules": "Rules",
-    "name": "Name",
-    "trigger": "Trigger",
-    "dueAt": "Due at",
-    "runStatus": "Run status",
-    "queueDetails": "Queue details",
-    "delay": "Delay",
-    "assistant": "Assistant",
-    "active": "Active",
-    "activate": "Activate",
-    "paused": "Paused",
-    "pause": "Pause",
-    "any": "Any",
-    "edit": "Edit",
-    "delete": "Delete"
-  },
-
-  "queueTable": {
-  "rule": "Rule",
-  "trigger": "Event",
-  "channel": "Channel",
-  "dueAt": "Due at",
-  "runStatus": "Run status",
-  "queueDetails": "Queue details"
-  },
-
-  "modal": {
-    "newTitle": "New automation",
-    "editTitle": "Edit automation",
-    "name": "Name",
-    "trigger": "Trigger",
-    "channel": "Channel",
-    "assistantScope": "Assistant scope",
-    "anyAssistant": "Any assistant",
-    "anyAssistantFallback": "Any assistant (fallback)",
-    "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
-    "delay": "Delay (minutes)",
-    "message": "Message",
-    "whatsappTemplate": "WhatsApp template",
-    "noTemplate": "No template",
-    "templateBindings": "Template bindings",
-    "comingSoon": "coming soon",
-    "staticText": "Static text",
-    "systemUserName": "System: user.name",
-    "systemOrganizationName": "System: organization.name",
-    "systemUserEmail": "System: user.email",
-    "systemUserPhone": "System: user.phone",
-    "valueFor": "Value for {key}",
+  "Automations": {
+    "searchAutomations": "Search automations...",
+    "refresh": "Refresh",
+    "runInactivity": "Run inactivity",
+    "materialize": "Materialize",
+    "newAutomation": "New automation",
     "createAutomation": "Create automation",
-    "save": "Save",
-    "saving": "Saving...",
-    "messagePlaceholder": "Welcome {userName} to {organizationName}!",
-    "cancel": "Cancel",
+    "rules": "Rules",
+    "queue": "Queue",
+    "deliveries": "Deliveries",
+
+    "userCreated": "User created",
+    "userInactive": "User inactive",
+    "messageRead": "Message read",
+    "messageUnread": "Message unread",
+    "unknown": "Other / unknown",
+
+    "triggerDescriptions": {
+      "userCreated": "Send X minutes after a user is created.",
+      "userInactive": "Send X minutes without a user inbound message.",
+      "messageRead": "Reserved for future read-receipt automations.",
+      "messageUnread": "Reserved for future unread-message automations."
+    },
+
+    "rulesTable": {
+      "rule": "Rule",
+      "user": "User",
+      "channel": "Channel",
+      "scheduledFor": "Scheduled for",
+      "broadcastStatus": "Broadcast status",
+      "message": "Message",
+      "rules": "Rules",
+      "name": "Name",
+      "trigger": "Trigger",
+      "dueAt": "Due at",
+      "runStatus": "Run status",
+      "queueDetails": "Queue details",
+      "delay": "Delay",
+      "assistant": "Assistant",
+      "active": "Active",
+      "activate": "Activate",
+      "paused": "Paused",
+      "pause": "Pause",
+      "any": "Any",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+
+    "queueTable": {
+      "rule": "Rule",
+      "trigger": "Event",
+      "channel": "Channel",
+      "dueAt": "Due at",
+      "runStatus": "Run status",
+      "queueDetails": "Queue details"
+    },
+
+    "modal": {
+      "newTitle": "New automation",
+      "editTitle": "Edit automation",
+      "name": "Name",
+      "trigger": "Trigger",
+      "channel": "Channel",
+      "assistantScope": "Assistant scope",
+      "anyAssistant": "Any assistant",
+      "anyAssistantFallback": "Any assistant (fallback)",
+      "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
+      "delay": "Delay (minutes)",
+      "message": "Message",
+      "whatsappTemplate": "WhatsApp template",
+      "noTemplate": "No template",
+      "templateBindings": "Template bindings",
+      "comingSoon": "coming soon",
+      "staticText": "Static text",
+      "systemUserName": "System: user.name",
+      "systemOrganizationName": "System: organization.name",
+      "systemUserEmail": "System: user.email",
+      "systemUserPhone": "System: user.phone",
+      "valueFor": "Value for {key}",
+      "createAutomation": "Create automation",
+      "save": "Save",
+      "saving": "Saving...",
+      "messagePlaceholder": "Welcome {userName} to {organizationName}!",
+      "cancel": "Cancel",
+      "alerts": {
+        "disabledTrigger": {
+          "title": "Unavailable event",
+          "message": "This event is not available for automations yet."
+        },
+        "nameRequired": {
+          "title": "Missing name",
+          "message": "Fill in the automation name before saving."
+        },
+        "invalidDelay": {
+          "title": "Invalid delay",
+          "message": "Delay must be a number equal to or greater than 0 minutes."
+        },
+        "contentRequired": {
+          "title": "Missing content",
+          "message": "Write a message or choose a WhatsApp template before saving."
+        },
+        "templateRequired": {
+          "title": "Missing template",
+          "message": "Choose a WhatsApp template or write a manual message."
+        },
+        "templateBindingsRequired": {
+          "title": "Missing template fields",
+          "message": "Fill in the required template fields: {fields}."
+        }
+      }
+    },
+    "deliveriesTable": {
+      "rule": "Rule",
+      "user": "User",
+      "channel": "Channel",
+      "scheduledFor": "Scheduled for",
+      "broadcastStatus": "Broadcast status",
+      "message": "Message"
+    },
+
+    "statuses": {
+      "queued": "Queued",
+      "materialized": "Materialized",
+      "processing": "Processing",
+      "sent": "Sent",
+      "partial": "Partial",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "skipped": "Skipped"
+    },
+
+    "deletedRule": "Deleted rule",
+    "userFallback": "User #{id}",
+
+    "confirmDelete": {
+      "title": "Delete \"{name}\"?",
+      "message": "This will remove the automation rule. Existing runs will remain in the history.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+
+    "errors": {
+      "saveRule": "Could not save the automation rule.",
+      "deleteRule": "Could not delete the automation rule.",
+      "updateRule": "Could not update the automation rule.",
+      "cron": "Cron execution failed."
+    },
     "alerts": {
-  "disabledTrigger": {
-    "title": "Unavailable event",
-    "message": "This event is not available for automations yet."
-  },
-  "nameRequired": {
-    "title": "Missing name",
-    "message": "Fill in the automation name before saving."
-  },
-  "invalidDelay": {
-    "title": "Invalid delay",
-    "message": "Delay must be a number equal to or greater than 0 minutes."
-  },
-  "contentRequired": {
-    "title": "Missing content",
-    "message": "Write a message or choose a WhatsApp template before saving."
-  },
-  "templateRequired": {
-    "title": "Missing template",
-    "message": "Choose a WhatsApp template or write a manual message."
-  },
-  "templateBindingsRequired": {
-    "title": "Missing template fields",
-    "message": "Fill in the required template fields: {fields}."
-  }
-}
-  },
-  "deliveriesTable": {
-  "rule": "Rule",
-  "user": "User",
-  "channel": "Channel",
-  "scheduledFor": "Scheduled for",
-  "broadcastStatus": "Broadcast status",
-  "message": "Message"
-},
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
+      "refreshSuccess": {
+        "title": "Automations updated",
+        "message": "Rules, queue and deliveries were updated successfully."
+      },
+      "loadFailed": {
+        "title": "Failed to load automations",
+        "message": "Automation data could not be loaded. Please try again in a few seconds."
+      },
+      "ruleCreated": {
+        "title": "Automation created",
+        "message": "The automation rule was created successfully."
+      },
+      "ruleUpdated": {
+        "title": "Automation updated",
+        "message": "The automation rule changes were saved successfully."
+      },
+      "saveRuleError": {
+        "title": "Failed to save automation",
+        "message": "The automation rule could not be saved."
+      },
+      "ruleDeleted": {
+        "title": "Automation deleted",
+        "message": "The automation rule was deleted successfully."
+      },
+      "deleteRuleError": {
+        "title": "Failed to delete automation",
+        "message": "The automation rule could not be deleted."
+      },
+      "ruleActivated": {
+        "title": "Automation activated",
+        "message": "The automation rule was activated successfully."
+      },
 
-"statuses": {
-  "queued": "Queued",
-  "materialized": "Materialized",
-  "processing": "Processing",
-  "sent": "Sent",
-  "partial": "Partial",
-  "failed": "Failed",
-  "cancelled": "Cancelled",
-  "skipped": "Skipped"
-},
+      "updateRuleError": {
+        "title": "Failed to update automation",
+        "message": "The automation rule could not be updated."
+      },
 
-"deletedRule": "Deleted rule",
-"userFallback": "User #{id}",
-
-"confirmDelete": {
-  "title": "Delete \"{name}\"?",
-  "message": "This will remove the automation rule. Existing runs will remain in the history.",
-  "confirm": "Delete",
-  "cancel": "Cancel"
-},
-
-"errors": {
-  "saveRule": "Could not save the automation rule.",
-  "deleteRule": "Could not delete the automation rule.",
-  "updateRule": "Could not update the automation rule.",
-  "cron": "Cron execution failed."
-},
-"alerts": {
-  "noOrg": {
-    "title": "Missing organization",
-    "message": "The organization could not be identified yet. Please try again in a few seconds."
+      "materializeSuccess": {
+        "title": "Deliveries materialized",
+        "message": "The materialization routine ran successfully."
+      }
+    }
   },
-  "refreshSuccess": {
-    "title": "Automations updated",
-    "message": "Rules, queue and deliveries were updated successfully."
-  },
-  "loadFailed": {
-    "title": "Failed to load automations",
-    "message": "Automation data could not be loaded. Please try again in a few seconds."
-  },
-  "ruleCreated": {
-    "title": "Automation created",
-    "message": "The automation rule was created successfully."
-  },
-  "ruleUpdated": {
-    "title": "Automation updated",
-    "message": "The automation rule changes were saved successfully."
-  },
-  "saveRuleError": {
-    "title": "Failed to save automation",
-    "message": "The automation rule could not be saved."
-  },
-  "ruleDeleted": {
-    "title": "Automation deleted",
-    "message": "The automation rule was deleted successfully."
-  },
-  "deleteRuleError": {
-    "title": "Failed to delete automation",
-    "message": "The automation rule could not be deleted."
-  },
-  "ruleActivated": {
-    "title": "Automation activated",
-    "message": "The automation rule was activated successfully."
-  },
-  
-  
-  "updateRuleError": {
-    "title": "Failed to update automation",
-    "message": "The automation rule could not be updated."
-  },
-  
-  "materializeSuccess": {
-    "title": "Deliveries materialized",
-    "message": "The materialization routine ran successfully."
-  }
-  
-}
-
-
-},
-
 
   "Broadcast": {
     "title": "WhatsApp Messages",
     "selected": "Selected:",
-    "send": "Send via WhatsApp",
+    "send": "Send",
     "sending": "Sending…",
     "message": "Message",
     "messagePlaceholder": "Type your message...",
@@ -1515,37 +1484,86 @@
     },
 
     "alerts": {
-  "usersLoadFailed": {
-    "title": "Failed to load recipients",
-    "message": "The user list could not be loaded. Please try again in a few seconds."
+      "usersLoadFailed": {
+        "title": "Failed to load recipients",
+        "message": "The user list could not be loaded. Please try again in a few seconds."
+      },
+      "filtersLoadFailed": {
+        "title": "Failed to load filters",
+        "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
+      },
+      "templatesLoadFailed": {
+        "title": "Failed to load templates",
+        "message": "WhatsApp templates could not be loaded. Please try again in a few seconds."
+      },
+      "templateDetailsFailed": {
+        "title": "Template error",
+        "message": "Could not load this template's details. Choose another template or try again."
+      },
+      "contentMissing": {
+        "title": "Missing content",
+        "sendMessage": "Write a message, add a file or choose a valid template before sending.",
+        "scheduleMessage": "Write a message, add a file or choose a valid template before scheduling."
+      },
+      "templateParamsMissing": {
+        "title": "Missing parameters",
+        "message": "Fill in all required template parameters before continuing."
+      },
+      "trackedLinkRemoved": {
+        "title": "Link removed",
+        "message": "The link used in the template URL button was removed. Choose another link before sending."
+      }
+    },
+    "recipient": "recipient",
+    "smallRecipients": "recipients",
+    "confirmSend": {
+      "isChain": {
+        "title": "Start message chain?",
+        "message": "You are about to start a WhatsApp read chain for {recipientLabel}. Message 1 will be sent now. The next messages will send after read receipts and configured delays.",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "title": "Send message?",
+      "message": "You are about to send this {channelLabel} broadcast to {recipientLabel}.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "confirmSchedule": {
+      "isChain": {
+        "title": "Schedule message chain?",
+        "message": "You are about to schedule a WhatsApp read chain for {recipientLabel}. Message 1 will send on {formattedDate}. The next messages will send after read receipts and configured delays.",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "title": "Schedule message?",
+      "message": "You are about to schedule this {channelLabel} broadcast for {recipientLabel} on {formattedDate}.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "broadcastChain": {
+      "title": "Read chain messages",
+      "chainHelp": "Create a chain of messages, when the recipient sees the message another one will be sent immediately or with a delay.",
+      "createChain": "Create Chain",
+      "exitChain": "Leave Chain",
+      "chainOff": "Read chains are disabled in Automations. Enable the feature before sending.",
+      "chainTemplate": "Choose a WhatsApp fallback template. It will only be used if the recipient&apos;s 24h window is closed.",
+      "chainMessage": "Message",
+      "chainLengthMax": "Maximum of 10 messages",
+      "chainLengthAdd": "Add message",
+      "chainDuplicate": "Duplicate",
+      "chainRemove": "Remove",
+      "chainMessages": "messages",
+      "chainDelayBefore": "Delay before Message ",
+      "chainHour": "Hours",
+      "chainMinute": "Minutes",
+      "chainFirstMessage": "Message 1 has no step delay. It sends when the chain starts.",
+      "chainNoDelay": "No delay. Sends immediately after the previous message is read.",
+      "chainDelayMinutes": "Wait {minutes, plural, one {# minute} other {# minutes}} after read.",
+      "chainDelayHours": "Wait {hours, plural, one {# hour} other {# hours}} after read.",
+      "chainDelayMinutesHours": "Wait {hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}} after read"
+    }
   },
-  "filtersLoadFailed": {
-    "title": "Failed to load filters",
-    "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
-  },
-  "templatesLoadFailed": {
-    "title": "Failed to load templates",
-    "message": "WhatsApp templates could not be loaded. Please try again in a few seconds."
-  },
-  "templateDetailsFailed": {
-    "title": "Template error",
-    "message": "Could not load this template's details. Choose another template or try again."
-  },
-  "contentMissing": {
-    "title": "Missing content",
-    "sendMessage": "Write a message, add a file or choose a valid template before sending.",
-    "scheduleMessage": "Write a message, add a file or choose a valid template before scheduling."
-  },
-  "templateParamsMissing": {
-    "title": "Missing parameters",
-    "message": "Fill in all required template parameters before continuing."
-  },
-  "trackedLinkRemoved": {
-    "title": "Link removed",
-    "message": "The link used in the template URL button was removed. Choose another link before sending."
-  }
-}
-  },
+
   "BroadcastScheduled": {
     "Title": "Scheduled messages",
     "Subtitle": "Scheduled messages for organization {organization}",
@@ -1563,7 +1581,7 @@
     "Filters": {
       "searchPlaceholder": "Search by message, status, channel or creator...",
       "datePlaceholder": "Date",
-       "clearDate": "Clear date"
+      "clearDate": "Clear date"
     },
     "Channels": {
       "all": "All channels",
@@ -1647,44 +1665,42 @@
       "delete": "Could not delete the scheduled message.",
       "invalidForm": "Please fill in the message and a valid date/time."
     },
-      "Alerts": {
-  "noOrg": {
-    "title": "Missing organization",
-    "message": "The organization could not be identified yet. Please try again in a few seconds."
-  },
- 
-  "loadError": {
-    "title": "Failed to load messages",
-    "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
-  },
-  "usersLoadError": {
-    "title": "Failed to load recipients",
-    "message": "The user list for editing recipients could not be loaded."
-  },
-  "invalidForm": {
-    "title": "Missing information",
-    "message": "Fill in the message and choose a valid date and time before saving."
-  },
-  "saveSuccess": {
-    "title": "Message updated",
-    "message": "The scheduled message changes were saved successfully."
-  },
-  "saveError": {
-    "title": "Failed to save changes",
-    "message": "The scheduled message changes could not be saved."
-  },
-  "deleteSuccess": {
-    "title": "Message deleted",
-    "message": "The scheduled message was deleted successfully."
-  },
-  "deleteError": {
-    "title": "Failed to delete message",
-    "message": "The scheduled message could not be deleted."
-  }
-}
+    "Alerts": {
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
 
+      "loadError": {
+        "title": "Failed to load messages",
+        "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
+      },
+      "usersLoadError": {
+        "title": "Failed to load recipients",
+        "message": "The user list for editing recipients could not be loaded."
+      },
+      "invalidForm": {
+        "title": "Missing information",
+        "message": "Fill in the message and choose a valid date and time before saving."
+      },
+      "saveSuccess": {
+        "title": "Message updated",
+        "message": "The scheduled message changes were saved successfully."
+      },
+      "saveError": {
+        "title": "Failed to save changes",
+        "message": "The scheduled message changes could not be saved."
+      },
+      "deleteSuccess": {
+        "title": "Message deleted",
+        "message": "The scheduled message was deleted successfully."
+      },
+      "deleteError": {
+        "title": "Failed to delete message",
+        "message": "The scheduled message could not be deleted."
+      }
+    }
   },
-
 
   "TrackedLinks": {
     "title": "Tracked Links",
@@ -1707,7 +1723,7 @@
     "view": "View",
 
     "detail": {
-            "alerts": {
+      "alerts": {
         "noOrg": {
           "title": "Missing organization",
           "message": "The organization could not be identified yet. Please try again in a few seconds."
@@ -1721,7 +1737,7 @@
           "message": "This tracked link's details could not be loaded. Please try again in a few seconds."
         }
       },
-            "back": "Back",
+      "back": "Back",
       "loading": "Loading tracked link details...",
       "trackedLink": "Tracked Link",
       "key": "key",
@@ -1742,17 +1758,16 @@
       "lastClick": "Last Click",
       "sentAt": "Sent at"
     },
-      "alerts": {
-  "noOrg": {
-    "title": "Missing organization",
-    "message": "The organization could not be identified yet. Please try again in a few seconds."
-  },
-  "loadFailed": {
-    "title": "Failed to load tracked links",
-    "message": "Tracked links could not be loaded. Please try again in a few seconds."
-  }
-}
-
+    "alerts": {
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
+      "loadFailed": {
+        "title": "Failed to load tracked links",
+        "message": "Tracked links could not be loaded. Please try again in a few seconds."
+      }
+    }
   },
   "Assistants": {
     "myAssistants": "My Assistants",
@@ -1812,33 +1827,33 @@
     "send": "Send",
     "errorReply": "Error in reply",
     "errorApi": "Error communicating with the API.",
-    
+
     "alerts": {
-  "emptyMessage": {
-    "title": "Empty message",
-    "message": "Write a message before sending."
-  },
-  "missingAssistant": {
-    "title": "Missing assistant",
-    "message": "The selected assistant could not be identified."
-  },
-  "missingOpenAiId": {
-    "title": "Incomplete configuration",
-    "message": "This assistant is not available right now. Please try again later or recreate the assistant to fix the configuration."
-  },
-  "apiError": {
-    "title": "Failed to get reply",
-    "message": "The assistant could not reply. Please try again."
-  },
-  "emptyReply": {
-    "title": "Empty reply",
-    "message": "The assistant returned no content."
-  },
-  "networkError": {
-    "title": "Connection error",
-    "message": " Check the connection and try again."
-  }
-}
+      "emptyMessage": {
+        "title": "Empty message",
+        "message": "Write a message before sending."
+      },
+      "missingAssistant": {
+        "title": "Missing assistant",
+        "message": "The selected assistant could not be identified."
+      },
+      "missingOpenAiId": {
+        "title": "Incomplete configuration",
+        "message": "This assistant is not available right now. Please try again later or recreate the assistant to fix the configuration."
+      },
+      "apiError": {
+        "title": "Failed to get reply",
+        "message": "The assistant could not reply. Please try again."
+      },
+      "emptyReply": {
+        "title": "Empty reply",
+        "message": "The assistant returned no content."
+      },
+      "networkError": {
+        "title": "Connection error",
+        "message": " Check the connection and try again."
+      }
+    }
   },
   "Reports": {
     "eyebrow": "Metrics and reports",
@@ -1982,30 +1997,30 @@
     }
   },
   "AdminPage": {
-  "title": "Admin",
-  "newOrganization": {
-  "title": "New organization",
-  "placeholder": "Organization name…",
-  "create": "Create",
-  "creating": "Creating…",
-  "required": "Please enter the organization name."
+    "title": "Admin",
+    "newOrganization": {
+      "title": "New organization",
+      "placeholder": "Organization name…",
+      "create": "Create",
+      "creating": "Creating…",
+      "required": "Please enter the organization name."
     },
-  "themes": {
-    "title": "Themes",
-    "loading": "Loading…",
-    "empty": "No organizations.",
-    "primary": "Primary",
-    "secondary": "Secondary",
-    "save": "Save",
-    "saving": "Saving…"
-  },
-  "messages": {
-    "loadOrganizationsError": "❌ Failed to load organizations",
-    "themeSaved": "✓ Theme saved for “{name}”.",
-    "themeSaveError": "❌ Could not save the theme.",
-    "organizationCreated": "✓ Organization #{id} created: “{name}”",
-    "organizationCreateError": "❌ Error creating organization."
-  },
+    "themes": {
+      "title": "Themes",
+      "loading": "Loading…",
+      "empty": "No organizations.",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "messages": {
+      "loadOrganizationsError": "❌ Failed to load organizations",
+      "themeSaved": "✓ Theme saved for “{name}”.",
+      "themeSaveError": "❌ Could not save the theme.",
+      "organizationCreated": "✓ Organization #{id} created: “{name}”",
+      "organizationCreateError": "❌ Error creating organization."
+    },
     "alerts": {
       "loadOrganizationsError": {
         "title": "Failed to load organizations",
@@ -2040,8 +2055,7 @@
         "message": "The authenticated user could not be identified. Please sign in again."
       }
     }
-
-},
+  },
 
   "Auth": {
     "brand": "MyDigitalBot",
@@ -2075,10 +2089,6 @@
     }
   },
 
-
-  
-
-
   "Alert": {
     "noContact": {
       "title": "Missing Contact",
@@ -2091,11 +2101,7 @@
       "ok": "OK"
     }
   },
-  
-  
-  
-  
-  
+
   "PillSelect": {
     "placeholder": "Select…",
     "empty": "No options."

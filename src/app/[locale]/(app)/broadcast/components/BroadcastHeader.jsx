@@ -47,7 +47,7 @@ export default function BroadcastHeader({
           {sending
             ? translation("Broadcast.sending")
             : deliveryMode === "schedule"
-              ? "Schedule"
+              ? translation("Broadcast.schedule")
               : translation("Broadcast.send")}
         </button>
       </div>

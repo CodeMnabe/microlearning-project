@@ -34,7 +34,12 @@ import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
 } from "@/lib/repos/pendingOutreach.repo";
+import {
+  createMessageChainDelivery,
+  updateMessageChainRecipientProgress,
+} from "@/lib/repos/messageChain.repo";
 import { splitE164 } from "@/lib/whatsapp/E164";
+import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
@@ -58,6 +63,29 @@ function normalizePhone(value) {
   if (digits.length < 7) return null;
 
   return raw;
+}
+
+function extractBirdMessageId(data) {
+  return (
+    data?.id ||
+    data?.message?.id ||
+    data?.payload?.id ||
+    data?.result?.id ||
+    data?.results?.[0]?.id ||
+    data?.messages?.[0]?.id ||
+    null
+  );
+}
+
+function safePayload(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
 }
 
 function getThreadAiThreadId(thread) {
@@ -243,6 +271,32 @@ async function handleReadInteraction(readInteraction) {
       channelId: readInteraction.channelId,
       readAt: readInteraction.readAt,
     });
+
+    return;
+  }
+
+  if (!updated.message_chain_id) {
+    return;
+  }
+
+  try {
+    const chainResult = await processReadChainAfterRead(updated);
+
+    console.log("Read chain processed after read interaction", {
+      messageId: readInteraction.messageId,
+      messageDbId: updated.id,
+      chainId: updated.message_chain_id,
+      stepIndex: updated.message_chain_step_index,
+      result: chainResult,
+    });
+  } catch (err) {
+    console.error("Failed to process read chain after read interaction", {
+      messageId: readInteraction.messageId,
+      messageDbId: updated.id,
+      chainId: updated.message_chain_id,
+      stepIndex: updated.message_chain_step_index,
+      error: err?.message || String(err),
+    });
   }
 }
 
@@ -330,6 +384,7 @@ async function sendBirdMessage({
       ok: false,
       status: 400,
       data: { error: "Missing MessageBird/Bird channelId" },
+      providerMessageId: null,
     };
   }
 
@@ -338,6 +393,7 @@ async function sendBirdMessage({
       ok: false,
       status: 400,
       data: { error: "Missing MessageBird/Bird contactId" },
+      providerMessageId: null,
     };
   }
 
@@ -346,6 +402,7 @@ async function sendBirdMessage({
       ok: false,
       status: 500,
       data: { error: "Missing WORKSPACE_ID env variable" },
+      providerMessageId: null,
     };
   }
 
@@ -354,6 +411,7 @@ async function sendBirdMessage({
       ok: false,
       status: 500,
       data: { error: "Missing BIRD_API_KEY env variable" },
+      providerMessageId: null,
     };
   }
 
@@ -384,6 +442,7 @@ async function sendBirdMessage({
         error: "Failed to call Bird API",
         message: err?.message || String(err),
       },
+      providerMessageId: null,
     };
   }
 
@@ -400,6 +459,7 @@ async function sendBirdMessage({
     ok: res.ok,
     status: res.status,
     data,
+    providerMessageId: extractBirdMessageId(data),
   };
 }
 
@@ -645,7 +705,7 @@ async function handleEvent(rawJSON) {
   if (!sendRes.ok) {
     console.error("Failed to send assistant message:", sendRes.data);
   } else {
-    outboundId = sendRes.data?.id ?? sendRes.data?.message?.id ?? null;
+    outboundId = sendRes.providerMessageId;
   }
 
   await createMessage({
@@ -695,10 +755,19 @@ async function handlePendingMessages({
     normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
   for (const row of pendingMessages) {
-    const p = row.payload || {};
+    const p = safePayload(row.payload);
 
     const hasImages = Array.isArray(p.imageUrls) && p.imageUrls.length > 0;
     const hasText = Boolean(String(p.message || "").trim());
+
+    if (!hasImages && !hasText) {
+      console.warn("Skipping empty pending outreach", {
+        pendingOutreachId: row.id,
+        userId: user.id,
+      });
+
+      continue;
+    }
 
     const body = hasImages
       ? {
@@ -726,11 +795,22 @@ async function handlePendingMessages({
     });
 
     if (!sendRes.ok) {
-      console.error("Failed to send pending outreach:", sendRes.data);
+      console.error("Failed to send pending outreach:", {
+        pendingOutreachId: row.id,
+        status: sendRes.status,
+        data: sendRes.data,
+      });
+
       continue;
     }
 
-    const outboundId = sendRes.data?.id ?? sendRes.data?.message?.id ?? null;
+    const outboundId = sendRes.providerMessageId;
+
+    const hasChainMetadata =
+      row.message_chain_id &&
+      row.message_chain_step_id &&
+      row.message_chain_recipient_id &&
+      row.message_chain_step_index;
 
     await createMessage({
       threadId: null,
@@ -741,9 +821,49 @@ async function handlePendingMessages({
       messageId: outboundId,
       externalContactId: contactId,
       content: p.message || "",
-      role: "system",
+      role: "assistant",
       deliveryStatus: "accepted",
+      messageChainId: row.message_chain_id || null,
+      messageChainStepId: row.message_chain_step_id || null,
+      messageChainRecipientId: row.message_chain_recipient_id || null,
+      messageChainStepIndex: row.message_chain_step_index || null,
     });
+
+    if (hasChainMetadata) {
+      try {
+        await createMessageChainDelivery({
+          chainId: row.message_chain_id,
+          chainStepId: row.message_chain_step_id,
+          chainRecipientId: row.message_chain_recipient_id,
+          stepIndex: Number(row.message_chain_step_index),
+          providerMessageId: outboundId,
+          status: "sent",
+          sentAt: new Date().toISOString(),
+        });
+
+        await updateMessageChainRecipientProgress({
+          chainRecipientId: row.message_chain_recipient_id,
+          currentStepIndex: Number(row.message_chain_step_index),
+          status: "active",
+        });
+
+        console.log("Pending outreach chain step sent", {
+          pendingOutreachId: row.id,
+          chainId: row.message_chain_id,
+          chainStepId: row.message_chain_step_id,
+          chainRecipientId: row.message_chain_recipient_id,
+          stepIndex: row.message_chain_step_index,
+          providerMessageId: outboundId,
+        });
+      } catch (err) {
+        console.error("Failed to update chain state for pending outreach", {
+          pendingOutreachId: row.id,
+          chainId: row.message_chain_id,
+          stepIndex: row.message_chain_step_index,
+          error: err?.message || String(err),
+        });
+      }
+    }
 
     await markPendingOutreachReplied(row.id, inboundMsgId);
   }

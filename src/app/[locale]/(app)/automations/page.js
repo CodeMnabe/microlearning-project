@@ -17,14 +17,14 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-    import styles from "./automations.module.css";
-    import { useAuth } from "@/app/AuthContext";
-    import useOrganization from "@/app/hooks/useOrganization";
-    import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-    import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-    import { useAlert } from "@/app/components/Alert/AlertProvider";
-    import { RuleModal } from "./RuleModal/RuleModal";
-    import { useTranslations } from "next-intl";
+import styles from "./automations.module.css";
+import { useAuth } from "@/app/AuthContext";
+import useOrganization from "@/app/hooks/useOrganization";
+import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import { useAlert } from "@/app/components/Alert/AlertProvider";
+import { RuleModal } from "./RuleModal/RuleModal";
+import { useTranslations } from "next-intl";
 
 const TRIGGER_OPTIONS = [
   {
@@ -51,9 +51,9 @@ const TRIGGER_OPTIONS = [
     labelKey: "messageUnread",
     descriptionKey: "triggerDescriptions.messageUnread",
     icon: MessageSquare,
-    disabled: true,
   },
 ];
+
 const STATUS_META = {
   queued: { label: "Queued", className: styles.chipDark },
   materialized: { label: "Materialized", className: styles.chip },
@@ -149,23 +149,23 @@ export default function AutomationsPage() {
   const confirm = useConfirm();
   const showAlert = useAlert();
 
-const showAlertRef = useRef(showAlert);
+  const showAlertRef = useRef(showAlert);
 
-useEffect(() => {
-  showAlertRef.current = showAlert;
-}, [showAlert]);
+  useEffect(() => {
+    showAlertRef.current = showAlert;
+  }, [showAlert]);
 
   const translation = useTranslations("Automations");
-  
+
   const translatedTriggerOptions = useMemo(
-  () =>
-    TRIGGER_OPTIONS.map((option) => ({
-      ...option,
-      label: translation(option.labelKey),
-      description: translation(option.descriptionKey),
-    })),
-  [translation]
-);
+    () =>
+      TRIGGER_OPTIONS.map((option) => ({
+        ...option,
+        label: translation(option.labelKey),
+        description: translation(option.descriptionKey),
+      })),
+    [translation],
+  );
 
   const [rules, setRules] = useState([]);
   const [runs, setRuns] = useState([]);
@@ -181,116 +181,143 @@ useEffect(() => {
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const createMenuRef = useRef(null);
 
+  const [readChainsEnabled, setReadChainsEnabled] = useState(false);
+  const [readChainsSaving, setReadChainsSaving] = useState(false);
+
   const orgId = org?.id;
 
   const assistantsById = useMemo(() => {
     const map = new Map();
+
     assistants.forEach((a) => map.set(Number(a.id), a));
+
     return map;
   }, [assistants]);
 
   const ruleMap = useMemo(() => {
     const map = new Map();
+
     rules.forEach((r) => map.set(r.id, r));
+
     return map;
   }, [rules]);
 
- const refreshAll = useCallback(
-  async (showSuccessAlert = false) => {
-    if (!orgId) {
-      if (showSuccessAlert && typeof showAlertRef.current === "function") {
-        await showAlertRef.current({
-          title: translation("alerts.noOrg.title"),
-          message: translation("alerts.noOrg.message"),
-          tone: "warning",
-        });
+  const refreshAll = useCallback(
+    async (showSuccessAlert = false) => {
+      if (!orgId) {
+        if (showSuccessAlert && typeof showAlertRef.current === "function") {
+          await showAlertRef.current({
+            title: translation("alerts.noOrg.title"),
+            message: translation("alerts.noOrg.message"),
+            tone: "warning",
+          });
+        }
+
+        return;
       }
 
-      return;
-    }
+      startLoading();
 
-    startLoading();
+      try {
+        const responses = await Promise.all([
+          fetch(`/api/automations/rules?orgId=${orgId}`),
+          fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
+          fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
+          fetch(`/api/assistants?orgId=${orgId}`),
+          fetch(`/api/template/list?orgId=${orgId}`),
+          fetch(
+            `/api/organizations/messaging-feature?orgId=${orgId}&channel=whatsapp`,
+          ),
+        ]);
 
-    try {
-      const responses = await Promise.all([
-        fetch(`/api/automations/rules?orgId=${orgId}`),
-        fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
-        fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
-        fetch(`/api/assistants?orgId=${orgId}`),
-        fetch(`/api/template/list?orgId=${orgId}`),
-      ]);
+        const [
+          rulesRes,
+          runsRes,
+          materializedRes,
+          assistantsRes,
+          templatesRes,
+          featureRes,
+        ] = responses;
 
-      const [
-        rulesRes,
-        runsRes,
-        materializedRes,
-        assistantsRes,
-        templatesRes,
-      ] = responses;
-
-      const [
-        rulesData,
-        runsData,
-        materializedData,
-        assistantsData,
-        templatesData,
-      ] = await Promise.all(responses.map((res) => res.json().catch(() => ({}))));
-
-      if (!rulesRes.ok) {
-        throw new Error(rulesData?.error || "Failed to load automation rules.");
-      }
-
-      if (!runsRes.ok) {
-        throw new Error(runsData?.error || "Failed to load automation queue.");
-      }
-
-      if (!materializedRes.ok) {
-        throw new Error(
-          materializedData?.error || "Failed to load automation deliveries."
+        const [
+          rulesData,
+          runsData,
+          materializedData,
+          assistantsData,
+          templatesData,
+          featureData,
+        ] = await Promise.all(
+          responses.map((res) => res.json().catch(() => ({}))),
         );
-      }
 
-      if (!assistantsRes.ok) {
-        throw new Error(assistantsData?.error || "Failed to load assistants.");
-      }
+        if (!rulesRes.ok) {
+          throw new Error(
+            rulesData?.error || "Failed to load automation rules.",
+          );
+        }
 
-      if (!templatesRes.ok) {
-        throw new Error(templatesData?.error || "Failed to load templates.");
-      }
+        if (!runsRes.ok) {
+          throw new Error(
+            runsData?.error || "Failed to load automation queue.",
+          );
+        }
 
-      setRules(Array.isArray(rulesData?.items) ? rulesData.items : []);
-      setRuns(Array.isArray(runsData?.items) ? runsData.items : []);
-      setMaterialized(
-        Array.isArray(materializedData?.items) ? materializedData.items : []
-      );
-      setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
-      setTemplates(
-        Array.isArray(templatesData?.items) ? templatesData.items : []
-      );
+        if (!materializedRes.ok) {
+          throw new Error(
+            materializedData?.error || "Failed to load automation deliveries.",
+          );
+        }
 
-      if (showSuccessAlert && typeof showAlertRef.current === "function") {
-        await showAlertRef.current({
-          title: translation("alerts.refreshSuccess.title"),
-          message: translation("alerts.refreshSuccess.message"),
-          tone: "success",
-        });
-      }
-    } catch (err) {
-      console.warn("[Automations] refresh error:", err);
+        if (!assistantsRes.ok) {
+          throw new Error(
+            assistantsData?.error || "Failed to load assistants.",
+          );
+        }
 
-      if (typeof showAlertRef.current === "function") {
-        await showAlertRef.current({
-          title: translation("alerts.loadFailed.title"),
-          message: translation("alerts.loadFailed.message"),
-          tone: "danger",
-        });
+        if (!templatesRes.ok) {
+          throw new Error(templatesData?.error || "Failed to load templates.");
+        }
+
+        if (!featureRes.ok) {
+          throw new Error(
+            featureData?.error || "Failed to load messaging feature settings.",
+          );
+        }
+
+        setRules(Array.isArray(rulesData?.items) ? rulesData.items : []);
+        setRuns(Array.isArray(runsData?.items) ? runsData.items : []);
+        setMaterialized(
+          Array.isArray(materializedData?.items) ? materializedData.items : [],
+        );
+        setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
+        setTemplates(
+          Array.isArray(templatesData?.items) ? templatesData.items : [],
+        );
+        setReadChainsEnabled(Boolean(featureData?.item?.read_chains_enabled));
+
+        if (showSuccessAlert && typeof showAlertRef.current === "function") {
+          await showAlertRef.current({
+            title: translation("alerts.refreshSuccess.title"),
+            message: translation("alerts.refreshSuccess.message"),
+            tone: "success",
+          });
+        }
+      } catch (err) {
+        console.warn("[Automations] refresh error:", err);
+
+        if (typeof showAlertRef.current === "function") {
+          await showAlertRef.current({
+            title: translation("alerts.loadFailed.title"),
+            message: translation("alerts.loadFailed.message"),
+            tone: "danger",
+          });
+        }
+      } finally {
+        stopLoading();
       }
-    } finally {
-      stopLoading();
-    }
-  },
-  [orgId, startLoading, stopLoading, translation]
-);
+    },
+    [orgId, startLoading, stopLoading, translation],
+  );
 
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
@@ -404,169 +431,210 @@ useEffect(() => {
   }
 
   async function handleSaveRule(ruleInput) {
-  if (!orgId) {
-    await showAlert({
-      title: translation("alerts.noOrg.title"),
-      message: translation("alerts.noOrg.message"),
-      tone: "warning",
-    });
+    if (!orgId) {
+      await showAlert({
+        title: translation("alerts.noOrg.title"),
+        message: translation("alerts.noOrg.message"),
+        tone: "warning",
+      });
 
-    return;
-  }
-
-  const isEdit = Boolean(ruleInput.id);
-
-  setSaving(true);
-
-  try {
-    const endpoint = isEdit
-      ? `/api/automations/rules/${ruleInput.id}`
-      : "/api/automations/rules";
-
-    const method = isEdit ? "PATCH" : "POST";
-
-    const res = await fetch(endpoint, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        organization_id: orgId,
-        ...ruleInput,
-      }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to save automation rule");
+      return;
     }
 
-    setModalOpen(false);
-    setEditingRule(null);
+    const isEdit = Boolean(ruleInput.id);
 
-    await refreshAll();
+    setSaving(true);
 
-    await showAlert({
-      title: isEdit
-        ? translation("alerts.ruleUpdated.title")
-        : translation("alerts.ruleCreated.title"),
-      message: isEdit
-        ? translation("alerts.ruleUpdated.message")
-        : translation("alerts.ruleCreated.message"),
-      tone: "success",
-    });
-  } catch (err) {
-    console.warn("[Automations] save rule error:", err);
+    try {
+      const endpoint = isEdit
+        ? `/api/automations/rules/${ruleInput.id}`
+        : "/api/automations/rules";
 
-    await showAlert({
-      title: translation("alerts.saveRuleError.title"),
-      message: translation("alerts.saveRuleError.message"),
-      tone: "danger",
-    });
-  } finally {
-    setSaving(false);
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organization_id: orgId,
+          ...ruleInput,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to save automation rule");
+      }
+
+      setModalOpen(false);
+      setEditingRule(null);
+
+      await refreshAll();
+
+      await showAlert({
+        title: isEdit
+          ? translation("alerts.ruleUpdated.title")
+          : translation("alerts.ruleCreated.title"),
+        message: isEdit
+          ? translation("alerts.ruleUpdated.message")
+          : translation("alerts.ruleCreated.message"),
+        tone: "success",
+      });
+    } catch (err) {
+      console.warn("[Automations] save rule error:", err);
+
+      await showAlert({
+        title: translation("alerts.saveRuleError.title"),
+        message: translation("alerts.saveRuleError.message"),
+        tone: "danger",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
-}
 
   async function handleDeleteRule(rule) {
-  const ok = await confirm({
-    title: translation("confirmDelete.title", { name: rule.name }),
-    message: translation("confirmDelete.message"),
-    confirmText: translation("confirmDelete.confirm"),
-    cancelText: translation("confirmDelete.cancel"),
-    tone: "danger",
-  });
-
-  if (!ok) return;
-
-  try {
-    const res = await fetch(`/api/automations/rules/${rule.id}`, {
-      method: "DELETE",
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to delete automation rule");
-    }
-
-    await refreshAll();
-
-    await showAlert({
-      title: translation("alerts.ruleDeleted.title"),
-      message: translation("alerts.ruleDeleted.message"),
-      tone: "success",
-    });
-  } catch (err) {
-    console.warn("[Automations] delete rule error:", err);
-
-    await showAlert({
-      title: translation("alerts.deleteRuleError.title"),
-      message: translation("alerts.deleteRuleError.message"),
+    const ok = await confirm({
+      title: translation("confirmDelete.title", { name: rule.name }),
+      message: translation("confirmDelete.message"),
+      confirmText: translation("confirmDelete.confirm"),
+      cancelText: translation("confirmDelete.cancel"),
       tone: "danger",
     });
+
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/automations/rules/${rule.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to delete automation rule");
+      }
+
+      await refreshAll();
+
+      await showAlert({
+        title: translation("alerts.ruleDeleted.title"),
+        message: translation("alerts.ruleDeleted.message"),
+        tone: "success",
+      });
+    } catch (err) {
+      console.warn("[Automations] delete rule error:", err);
+
+      await showAlert({
+        title: translation("alerts.deleteRuleError.title"),
+        message: translation("alerts.deleteRuleError.message"),
+        tone: "danger",
+      });
+    }
   }
-}
 
   async function toggleRule(rule) {
-  const nextActive = !rule.is_active;
+    const nextActive = !rule.is_active;
 
-  try {
-    const res = await fetch(`/api/automations/rules/${rule.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_active: nextActive }),
-    });
+    try {
+      const res = await fetch(`/api/automations/rules/${rule.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: nextActive }),
+      });
 
-    const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to update automation rule");
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to update automation rule");
+      }
+
+      await refreshAll();
+    } catch (err) {
+      console.warn("[Automations] toggle rule error:", err);
+
+      await showAlert({
+        title: translation("alerts.updateRuleError.title"),
+        message: translation("alerts.updateRuleError.message"),
+        tone: "danger",
+      });
     }
-
-    await refreshAll();
-
-   
-  } catch (err) {
-    console.warn("[Automations] toggle rule error:", err);
-
-    await showAlert({
-      title: translation("alerts.updateRuleError.title"),
-      message: translation("alerts.updateRuleError.message"),
-      tone: "danger",
-    });
   }
-}
 
- async function runCron(path, type) {
-  try {
-    const res = await fetch(path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.NEXT_PUBLIC_CRON_SECRET
-          ? {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
-            }
-          : {}),
-      },
-      body: JSON.stringify({ limit: 100 }),
-    });
+  async function toggleReadChainsFeature() {
+    if (!orgId || readChainsSaving) return;
 
-    const data = await res.json().catch(() => ({}));
+    const nextEnabled = !readChainsEnabled;
 
-    if (!res.ok) {
-      throw new Error(data?.error || "Cron failed");
+    setReadChainsSaving(true);
+
+    try {
+      const res = await fetch("/api/organizations/messaging-feature", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId: orgId,
+          channel: "whatsapp",
+          readChainsEnabled: nextEnabled,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to update read chain feature.");
+      }
+
+      setReadChainsEnabled(Boolean(data?.item?.read_chains_enabled));
+
+      await showAlert({
+        title: nextEnabled ? "Read chains enabled" : "Read chains disabled",
+        message: nextEnabled
+          ? "Broadcasts can now create WhatsApp message chains that continue after each read receipt."
+          : "Broadcasts can no longer create new WhatsApp read chains.",
+        tone: "success",
+      });
+    } catch (err) {
+      console.warn("[Automations] read chain feature toggle error:", err);
+
+      await showAlert({
+        title: "Could not update read chains",
+        message: err.message || "Failed to update read chain feature.",
+        tone: "danger",
+      });
+    } finally {
+      setReadChainsSaving(false);
     }
-
-    await refreshAll();
-
-    
-  } catch (err) {
-    console.warn("[Automations] cron error:", err);
-
-  
   }
-}
+
+  async function runCron(path) {
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(process.env.NEXT_PUBLIC_CRON_SECRET
+            ? {
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
+              }
+            : {}),
+        },
+        body: JSON.stringify({ limit: 100 }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Cron failed");
+      }
+
+      await refreshAll();
+    } catch (err) {
+      console.warn("[Automations] cron error:", err);
+    }
+  }
+
   return (
     <div className={styles.usersScreen}>
       <div className={styles.toolbarRow}>
@@ -605,7 +673,7 @@ useEffect(() => {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/inactivity", "inactivity")}
+            onClick={() => runCron("/api/cron/automations/inactivity")}
           >
             <Clock3 size={16} />
             <span>{translation("runInactivity")}</span>
@@ -614,7 +682,7 @@ useEffect(() => {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/materialize", "materialize" )}
+            onClick={() => runCron("/api/cron/automations/materialize")}
           >
             <PlayCircle size={16} />
             <span>{translation("materialize")}</span>
@@ -656,21 +724,27 @@ useEffect(() => {
 
       <div className={styles.activeFilters}>
         <button
-          className={`${styles.filterChip} ${tab === "rules" ? styles.filterChipActive : ""}`}
+          className={`${styles.filterChip} ${
+            tab === "rules" ? styles.filterChipActive : ""
+          }`}
           onClick={() => setTab("rules")}
         >
           {translation("rules")} ({rules.length})
         </button>
 
         <button
-          className={`${styles.filterChip} ${tab === "queue" ? styles.filterChipActive : ""}`}
+          className={`${styles.filterChip} ${
+            tab === "queue" ? styles.filterChipActive : ""
+          }`}
           onClick={() => setTab("queue")}
         >
           {translation("queue")} ({queueRuns.length})
         </button>
 
         <button
-          className={`${styles.filterChip} ${tab === "deliveries" ? styles.filterChipActive : ""}`}
+          className={`${styles.filterChip} ${
+            tab === "deliveries" ? styles.filterChipActive : ""
+          }`}
           onClick={() => setTab("deliveries")}
         >
           {translation("deliveries")} ({materialized.length})
@@ -708,8 +782,10 @@ useEffect(() => {
                 : null;
               const payload = safeJsonParse(rule.payload, {});
               const TriggerIcon =
-                translatedTriggerOptions.find((t) => t.value === rule.trigger_type)?.icon ||
-                Bot;
+                translatedTriggerOptions.find(
+                  (t) => t.value === rule.trigger_type,
+                )?.icon || Bot;
+
               return (
                 <div
                   key={rule.id}
@@ -732,13 +808,17 @@ useEffect(() => {
                   <div className={styles.cellPhone}>
                     {triggerLabel(rule.trigger_type)}
                   </div>
+
                   <div className={styles.cellPhone}>{rule.channel}</div>
+
                   <div className={styles.cellPhone}>
                     {rule.delay_minutes} min
                   </div>
+
                   <div className={styles.cellPhone}>
                     {assistant?.name || translation("rulesTable.any")}
                   </div>
+
                   <div className={styles.cellTags}>
                     <div
                       className={styles.messagePreview}
@@ -764,6 +844,7 @@ useEffect(() => {
                         <ToggleLeft size={16} />
                       )}
                     </button>
+
                     <button
                       className={styles.rowActBtn}
                       onClick={() => {
@@ -774,6 +855,7 @@ useEffect(() => {
                     >
                       <Pencil size={16} />
                     </button>
+
                     <button
                       className={`${styles.rowActBtn} ${styles.rowActBtnDanger}`}
                       onClick={() => handleDeleteRule(rule)}
@@ -791,12 +873,24 @@ useEffect(() => {
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
-              <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.trigger")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.dueAt")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.runStatus")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.queueDetails")}</div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.rule")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.trigger")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.channel")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.dueAt")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.runStatus")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.queueDetails")}
+              </div>
             </div>
 
             {filteredQueueRuns.map((run, i) => {
@@ -852,12 +946,24 @@ useEffect(() => {
         <div className={styles.tableCard}>
           <div className={styles.table}>
             <div className={`${styles.row} ${styles.header}`}>
-              <div className={styles.cellHead}>{translation("rulesTable.rule")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.user")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.channel")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.scheduledFor")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.broadcastStatus")}</div>
-              <div className={styles.cellHead}>{translation("rulesTable.message")}</div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.rule")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.user")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.channel")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.scheduledFor")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.broadcastStatus")}
+              </div>
+              <div className={styles.cellHead}>
+                {translation("rulesTable.message")}
+              </div>
             </div>
 
             {filteredDeliveries.map((item, i) => {
@@ -917,6 +1023,48 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      <div className={styles.readChainFloatingCard}>
+        <div className={styles.readChainFloatingIcon}>
+          <Eye size={18} />
+        </div>
+
+        <div className={styles.readChainFloatingMain}>
+          <div className={styles.readChainFloatingTitle}>
+            Read chain messages
+          </div>
+
+          <div className={styles.readChainFloatingText}>
+            Send the next WhatsApp message after the previous one is read.
+          </div>
+
+          <div className={styles.readChainFloatingMeta}>
+            {readChainsEnabled ? "Feature active" : "Feature inactive"}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={`${styles.readChainFloatingToggle} ${
+            readChainsEnabled ? styles.readChainFloatingToggleOn : ""
+          }`}
+          onClick={toggleReadChainsFeature}
+          disabled={readChainsSaving}
+          title={
+            readChainsEnabled ? "Disable read chains" : "Enable read chains"
+          }
+        >
+          {readChainsEnabled ? (
+            <ToggleRight size={20} />
+          ) : (
+            <ToggleLeft size={20} />
+          )}
+
+          <span>
+            {readChainsSaving ? "Saving..." : readChainsEnabled ? "On" : "Off"}
+          </span>
+        </button>
+      </div>
 
       <RuleModal
         open={modalOpen}

@@ -9,6 +9,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -17,6 +18,7 @@ import SchedulePanel from "./components/panels/SchedulePanel";
 import TemplatePanel from "./components/panels/TemplatePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
+import ChainMessagesBar from "./components/ChainMessagesBar";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import {
@@ -34,7 +36,48 @@ import {
   makeTrackedLinkDraft,
   replaceTrackedPlaceholders,
   sanitizeTrackedKey,
+  makeChainStep,
+  formatDelayLabel,
 } from "./lib/helpers";
+
+const EMPTY_ARRAY = [];
+
+const MAX_CHAIN_DELAY_MINUTES = 10080; // 7 days
+const MAX_CHAIN_DELAY_HOURS = 168;
+
+function splitDelayMinutes(totalMinutes) {
+  const total = Number(totalMinutes || 0);
+
+  if (!Number.isFinite(total) || total <= 0) {
+    return {
+      hours: 0,
+      minutes: 0,
+    };
+  }
+
+  return {
+    hours: Math.floor(total / 60),
+    minutes: total % 60,
+  };
+}
+
+function clampNumber(value, min, max) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return min;
+
+  return Math.min(Math.max(Math.floor(number), min), max);
+}
+
+function getRecipientLabel(count, translation) {
+  return count === 1
+    ? `1 ${translation("Broadcast.recipient")}`
+    : `${count} ${translation("Broadcast.smallRecipients")}`;
+}
+
+function getChannelLabel(channel) {
+  return channel === "whatsapp" ? "WhatsApp" : "Teams";
+}
 
 export default function BroadcastPage() {
   const { user } = useAuth();
@@ -42,6 +85,7 @@ export default function BroadcastPage() {
 
   const translation = useTranslations();
   const showAlert = useAlert();
+  const confirm = useConfirm();
 
   const showAlertRef = useRef(showAlert);
 
@@ -49,7 +93,7 @@ export default function BroadcastPage() {
     showAlertRef.current = showAlert;
   }, [showAlert]);
 
-const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => createClient(), []);
   const { stopLoading } = useGlobalLoader();
 
   const [users, setUsers] = useState([]);
@@ -102,6 +146,15 @@ const supabase = useMemo(() => createClient(), []);
   );
   const [timeError, setTimeError] = useState("");
 
+  const [readChainsFeatureEnabled, setReadChainsFeatureEnabled] =
+    useState(false);
+  const [chainMode, setChainMode] = useState(false);
+  const [activeChainStepIndex, setActiveChainStepIndex] = useState(0);
+  const [chainSteps, setChainSteps] = useState(() => [
+    makeChainStep(),
+    makeChainStep(),
+  ]);
+
   const messageInputRef = useRef(null);
 
   const browserTimeZone = useMemo(
@@ -109,31 +162,251 @@ const supabase = useMemo(() => createClient(), []);
     [],
   );
 
+  const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
+
+  const activeChainStepFiles = activeChainStep?.files || EMPTY_ARRAY;
+  const activeChainStepTrackedLinks =
+    activeChainStep?.trackedLinks || EMPTY_ARRAY;
+
+  const composerMessage = chainMode ? activeChainStep?.message || "" : message;
+  const composerFiles = chainMode ? activeChainStepFiles : files;
+  const composerTrackedLinks = chainMode
+    ? activeChainStepTrackedLinks
+    : trackedLinks;
+  const composerSelectedTrackedUrlKey = chainMode
+    ? activeChainStep?.selectedTrackedUrlKey || ""
+    : selectedTrackedUrlKey;
+
+  const updateActiveChainStep = useCallback(
+    (patchOrUpdater) => {
+      setChainSteps((prev) =>
+        prev.map((step, index) => {
+          if (index !== activeChainStepIndex) return step;
+
+          const patch =
+            typeof patchOrUpdater === "function"
+              ? patchOrUpdater(step)
+              : patchOrUpdater;
+
+          return {
+            ...step,
+            ...patch,
+          };
+        }),
+      );
+    },
+    [activeChainStepIndex],
+  );
+
+  const setComposerMessage = useCallback(
+    (nextValue) => {
+      if (!chainMode) {
+        setMessage(nextValue);
+        return;
+      }
+
+      updateActiveChainStep((step) => ({
+        message:
+          typeof nextValue === "function"
+            ? nextValue(step.message || "")
+            : nextValue,
+      }));
+    },
+    [chainMode, updateActiveChainStep],
+  );
+
+  const setComposerFiles = useCallback(
+    (nextValue) => {
+      if (!chainMode) {
+        setFiles(nextValue);
+        return;
+      }
+
+      updateActiveChainStep((step) => ({
+        files:
+          typeof nextValue === "function"
+            ? nextValue(step.files || [])
+            : nextValue,
+      }));
+    },
+    [chainMode, updateActiveChainStep],
+  );
+
+  const setComposerTrackedLinks = useCallback(
+    (nextValue) => {
+      if (!chainMode) {
+        setTrackedLinks(nextValue);
+        return;
+      }
+
+      updateActiveChainStep((step) => ({
+        trackedLinks:
+          typeof nextValue === "function"
+            ? nextValue(step.trackedLinks || [])
+            : nextValue,
+      }));
+    },
+    [chainMode, updateActiveChainStep],
+  );
+
+  const setComposerSelectedTrackedUrlKey = useCallback(
+    (nextValue) => {
+      if (!chainMode) {
+        setSelectedTrackedUrlKey(nextValue);
+        return;
+      }
+
+      updateActiveChainStep((step) => ({
+        selectedTrackedUrlKey:
+          typeof nextValue === "function"
+            ? nextValue(step.selectedTrackedUrlKey || "")
+            : nextValue,
+      }));
+    },
+    [chainMode, updateActiveChainStep],
+  );
+
+  function addChainStep() {
+    setChainSteps((prev) => {
+      if (prev.length >= 10) return prev;
+
+      const next = [...prev, makeChainStep()];
+      setActiveChainStepIndex(next.length - 1);
+
+      return next;
+    });
+  }
+
+  function duplicateChainStep() {
+    setChainSteps((prev) => {
+      if (prev.length >= 10) return prev;
+
+      const current = prev[activeChainStepIndex] || makeChainStep();
+
+      const copy = makeChainStep({
+        message: current.message || "",
+        files: Array.isArray(current.files) ? [...current.files] : [],
+        trackedLinks: Array.isArray(current.trackedLinks)
+          ? current.trackedLinks.map((link) => ({
+              ...link,
+              id: makeTrackedLinkDraft().id,
+            }))
+          : [],
+        selectedTrackedUrlKey: current.selectedTrackedUrlKey || "",
+        delayAfterPreviousReadMinutes: Number(
+          current.delayAfterPreviousReadMinutes || 0,
+        ),
+      });
+
+      const next = [
+        ...prev.slice(0, activeChainStepIndex + 1),
+        copy,
+        ...prev.slice(activeChainStepIndex + 1),
+      ];
+
+      setActiveChainStepIndex(activeChainStepIndex + 1);
+
+      return next;
+    });
+  }
+
+  function removeChainStep(indexToRemove) {
+    setChainSteps((prev) => {
+      if (prev.length <= 2) return prev;
+
+      const next = prev.filter((_, index) => index !== indexToRemove);
+
+      setActiveChainStepIndex((current) =>
+        Math.min(
+          current >= indexToRemove ? current - 1 : current,
+          next.length - 1,
+        ),
+      );
+
+      return next;
+    });
+  }
+
+  function updateChainStepDelay(indexToUpdate, value) {
+    const raw = Number(value);
+    const delay = Number.isFinite(raw)
+      ? Math.min(Math.max(Math.floor(raw), 0), MAX_CHAIN_DELAY_MINUTES)
+      : 0;
+
+    setChainSteps((prev) =>
+      prev.map((step, index) => {
+        if (index !== indexToUpdate) return step;
+
+        return {
+          ...step,
+          delayAfterPreviousReadMinutes: index === 0 ? 0 : delay,
+        };
+      }),
+    );
+  }
+
+  function updateChainStepDelay(indexToUpdate, value) {
+    const raw = Number(value);
+    const delay = Number.isFinite(raw)
+      ? Math.min(Math.max(Math.floor(raw), 0), MAX_CHAIN_DELAY_MINUTES)
+      : 0;
+
+    setChainSteps((prev) =>
+      prev.map((step, index) => {
+        if (index !== indexToUpdate) return step;
+
+        return {
+          ...step,
+          delayAfterPreviousReadMinutes: index === 0 ? 0 : delay,
+        };
+      }),
+    );
+  }
+
+  function updateChainStepDelayPart(indexToUpdate, part, value) {
+    if (indexToUpdate === 0) return;
+
+    const currentStep = chainSteps[indexToUpdate] || {};
+    const currentDelay = Number(currentStep.delayAfterPreviousReadMinutes || 0);
+
+    const current = splitDelayMinutes(currentDelay);
+
+    const nextHours =
+      part === "hours"
+        ? clampNumber(value, 0, MAX_CHAIN_DELAY_HOURS)
+        : current.hours;
+
+    const nextMinutes =
+      part === "minutes" ? clampNumber(value, 0, 59) : current.minutes;
+
+    updateChainStepDelay(indexToUpdate, nextHours * 60 + nextMinutes);
+  }
+
   const imageFiles = useMemo(
-    () => files.filter((f) => isImageContentType(f.contentType)),
-    [files],
+    () => composerFiles.filter((f) => isImageContentType(f.contentType)),
+    [composerFiles],
   );
 
   const videoFiles = useMemo(
-    () => files.filter((f) => isVideoContentType(f.contentType)),
-    [files],
+    () => composerFiles.filter((f) => isVideoContentType(f.contentType)),
+    [composerFiles],
   );
 
   const otherFiles = useMemo(
     () =>
-      files.filter(
+      composerFiles.filter(
         (f) =>
           !isImageContentType(f.contentType) &&
           !isVideoContentType(f.contentType),
       ),
-    [files],
+    [composerFiles],
   );
 
   const imageUrls = useMemo(() => imageFiles.map((f) => f.url), [imageFiles]);
 
   const trackedLinkOptions = useMemo(
     () =>
-      trackedLinks
+      composerTrackedLinks
         .map((l) => ({
           value: sanitizeTrackedKey(l.key),
           label: l.key
@@ -141,48 +414,48 @@ const supabase = useMemo(() => createClient(), []);
             : "",
         }))
         .filter((l) => l.value),
-    [trackedLinks],
+    [composerTrackedLinks],
   );
 
   const normalizedTrackedLinks = useMemo(
     () =>
-      trackedLinks
+      composerTrackedLinks
         .map((l) => ({
           key: sanitizeTrackedKey(l.key),
           label: String(l.label || "").trim(),
           destinationUrl: String(l.destinationUrl || "").trim(),
         }))
         .filter((l) => l.key && l.label && l.destinationUrl),
-    [trackedLinks],
+    [composerTrackedLinks],
   );
 
-  const attachmentsCount = files.length;
+  const attachmentsCount = composerFiles.length;
   const trackedLinksCount = normalizedTrackedLinks.length;
 
   const getUsers = useCallback(async () => {
-  if (!org?.id) return;
+    if (!org?.id) return;
 
-  try {
-    const res = await fetch(`/api/users?orgId=${org.id}`);
-    const data = await res.json().catch(() => ({}));
+    try {
+      const res = await fetch(`/api/users?orgId=${org.id}`);
+      const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to fetch users");
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to fetch users");
+      }
+
+      setUsers(asList(data, "items"));
+    } catch (err) {
+      console.warn("[Broadcast] users load error:", err);
+
+      setUsers([]);
+
+      await showAlertRef.current({
+        title: translation("Broadcast.alerts.usersLoadFailed.title"),
+        message: translation("Broadcast.alerts.usersLoadFailed.message"),
+        tone: "danger",
+      });
     }
-
-    setUsers(asList(data, "items"));
-  } catch (err) {
-    console.warn("[Broadcast] users load error:", err);
-
-    setUsers([]);
-
-    await showAlertRef.current({
-      title: translation("Broadcast.alerts.usersLoadFailed.title"),
-      message: translation("Broadcast.alerts.usersLoadFailed.message"),
-      tone: "danger",
-    });
-  }
-}, [org?.id, translation]);
+  }, [org?.id, translation]);
 
   useEffect(() => {
     if (!org?.id) return;
@@ -208,18 +481,52 @@ const supabase = useMemo(() => createClient(), []);
         setAssistantsList([]);
         setAllTags([]);
 
-  await showAlertRef.current({
-    title: translation("Broadcast.alerts.filtersLoadFailed.title"),
-    message: translation("Broadcast.alerts.filtersLoadFailed.message"),
-    tone: "danger",
-  });
-}
+        await showAlertRef.current({
+          title: translation("Broadcast.alerts.filtersLoadFailed.title"),
+          message: translation("Broadcast.alerts.filtersLoadFailed.message"),
+          tone: "danger",
+        });
+      }
     })();
 
     return () => {
       alive = false;
     };
-  }, [org?.id,translation]);
+  }, [org?.id, translation]);
+
+  useEffect(() => {
+    if (!org?.id) return;
+
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/organizations/messaging-feature?orgId=${org.id}&channel=whatsapp`,
+        );
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to load read chain feature.");
+        }
+
+        if (!alive) return;
+
+        setReadChainsFeatureEnabled(Boolean(data?.item?.read_chains_enabled));
+      } catch (err) {
+        console.warn("[Broadcast] read chain feature load error:", err);
+
+        if (!alive) return;
+
+        setReadChainsFeatureEnabled(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [org?.id]);
 
   const loadTemplates = useCallback(async () => {
     if (!org?.id) return;
@@ -244,26 +551,26 @@ const supabase = useMemo(() => createClient(), []);
       setTemplates(items);
 
       const best = [...items].sort(byBestStatus)[0];
+
       if (best) {
         setTplName(best.name);
         setTplLang("pt-PT");
       }
     } catch (err) {
-        console.warn("[Broadcast] templates load error:", err);
+      console.warn("[Broadcast] templates load error:", err);
 
-        setTplErr(err.message);
+      setTplErr(err.message);
 
-        await showAlertRef.current({
-          title: translation("Broadcast.alerts.templatesLoadFailed.title"),
-          message: translation("Broadcast.alerts.templatesLoadFailed.message"),
-          tone: "danger",
-        });
-      } finally {
-    
+      await showAlertRef.current({
+        title: translation("Broadcast.alerts.templatesLoadFailed.title"),
+        message: translation("Broadcast.alerts.templatesLoadFailed.message"),
+        tone: "danger",
+      });
+    } finally {
       setTplLoading(false);
       stopLoading();
     }
-  }, [org?.id, stopLoading,translation]);
+  }, [org?.id, stopLoading, translation]);
 
   useEffect(() => {
     if (!org?.id) return;
@@ -289,7 +596,11 @@ const supabase = useMemo(() => createClient(), []);
     if (channel === "teams" && activeToolPanel === "template") {
       setActiveToolPanel(null);
     }
-  }, [channel, activeToolPanel]);
+
+    if (channel !== "whatsapp" && chainMode) {
+      setChainMode(false);
+    }
+  }, [channel, activeToolPanel, chainMode]);
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -310,6 +621,66 @@ const supabase = useMemo(() => createClient(), []);
     () => normalizedUsers.filter((u) => selected.has(u.id)),
     [normalizedUsers, selected],
   );
+
+  async function confirmSendAction({ isChain = false } = {}) {
+    const recipientLabel = getRecipientLabel(selectedUsers.length, translation);
+    const channelLabel = getChannelLabel(channel);
+
+    if (isChain) {
+      return confirm({
+        title: translation("Broadcast.confirmSend.isChain.title"),
+        message: translation("Broadcast.confirmSend.isChain.message", {
+          recipientLabel,
+        }),
+        confirmText: translation("Broadcast.confirmSend.isChain.confirm"),
+        cancelText: translation("Broadcast.confirmSend.isChain.cancel"),
+      });
+    }
+
+    return confirm({
+      title: translation("Broadcast.confirmSend.title"),
+      message: translation("Broadcast.confirmSend.message", {
+        channelLabel,
+        recipientLabel,
+      }),
+      confirmText: translation("Broadcast.confirmSend.confirm"),
+      cancelText: translation("Broadcast.confirmSend.cancel"),
+    });
+  }
+
+  async function confirmScheduleAction({
+    scheduledDate,
+    isChain = false,
+  } = {}) {
+    const recipientLabel = getRecipientLabel(selectedUsers.length, translation);
+    const channelLabel = getChannelLabel(channel);
+    const formattedDate = scheduledDate.toLocaleString();
+
+    if (isChain) {
+      return confirm({
+        title: translation("Broadcast.confirmSchedule.isChain.title"),
+        // message: `You are about to schedule a WhatsApp read chain for ${recipientLabel}. Message 1 will send on ${formattedDate}. The next messages will send after read receipts and configured delays.`,
+        message: translation("Broadcast.confirmSchedule.isChain.message", {
+          recipientLabel,
+          formattedDate,
+        }),
+        confirmText: translation("Broadcast.confirmSchedule.isChain.confirm"),
+        cancelText: translation("Broadcast.confirmSchedule.isChain.cancel"),
+      });
+    }
+
+    return confirm({
+      title: translation("Broadcast.confirmSchedule.title"),
+      // message: `You are about to schedule this ${channelLabel} broadcast for ${recipientLabel} on ${formattedDate}.`,
+      message: translation("Broadcast.confirmSchedule.message", {
+        channelLabel,
+        recipientLabel,
+        formattedDate,
+      }),
+      confirmText: translation("Broadcast.confirmSchedule.confirm"),
+      cancelText: translation("Broadcast.confirmSchedule.cancel"),
+    });
+  }
 
   const templatesByName = useMemo(() => {
     const map = new Map();
@@ -374,6 +745,7 @@ const supabase = useMemo(() => createClient(), []);
         const res = await fetch(
           `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
         );
+
         const data = await res.json();
 
         if (!res.ok) {
@@ -408,24 +780,31 @@ const supabase = useMemo(() => createClient(), []);
 
         await showAlertRef.current({
           title: translation("Broadcast.alerts.templateDetailsFailed.title"),
-          message: translation("Broadcast.alerts.templateDetailsFailed.message"),
+          message: translation(
+            "Broadcast.alerts.templateDetailsFailed.message",
+          ),
           tone: "danger",
         });
-        }
-            })();
+      }
+    })();
 
-            return () => {
-              alive = false;
-            };
-          }, [org?.id, chosenTemplate, tplLang, channel,translation]);
+    return () => {
+      alive = false;
+    };
+  }, [org?.id, chosenTemplate, tplLang, channel, translation]);
 
   useEffect(() => {
     if (!needsUrlVar) return;
     if (!trackedLinkOptions.length) return;
-    if (selectedTrackedUrlKey) return;
+    if (composerSelectedTrackedUrlKey) return;
 
-    setSelectedTrackedUrlKey(trackedLinkOptions[0].value);
-  }, [needsUrlVar, trackedLinkOptions, selectedTrackedUrlKey]);
+    setComposerSelectedTrackedUrlKey(trackedLinkOptions[0].value);
+  }, [
+    needsUrlVar,
+    trackedLinkOptions,
+    composerSelectedTrackedUrlKey,
+    setComposerSelectedTrackedUrlKey,
+  ]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -483,15 +862,15 @@ const supabase = useMemo(() => createClient(), []);
   }
 
   function removeFile(url) {
-    setFiles((prev) => prev.filter((f) => f.url !== url));
+    setComposerFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
   function addTrackedLink() {
-    setTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
+    setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
   }
 
   function updateTrackedLink(id, field, value) {
-    setTrackedLinks((prev) =>
+    setComposerTrackedLinks((prev) =>
       prev.map((link) => {
         if (link.id !== id) return link;
 
@@ -505,23 +884,24 @@ const supabase = useMemo(() => createClient(), []);
   }
 
   function removeTrackedLink(id) {
-  const removed = trackedLinks.find((x) => x.id === id);
+    const removed = composerTrackedLinks.find((x) => x.id === id);
 
-  const removedSelectedUrlLink =
-    removed && selectedTrackedUrlKey === sanitizeTrackedKey(removed.key);
+    const removedSelectedUrlLink =
+      removed &&
+      composerSelectedTrackedUrlKey === sanitizeTrackedKey(removed.key);
 
-  setTrackedLinks((prev) => prev.filter((x) => x.id !== id));
+    setComposerTrackedLinks((prev) => prev.filter((x) => x.id !== id));
 
-  if (removedSelectedUrlLink) {
-    setSelectedTrackedUrlKey("");
+    if (removedSelectedUrlLink) {
+      setComposerSelectedTrackedUrlKey("");
 
-    void showAlert({
-      title: translation("Broadcast.alerts.trackedLinkRemoved.title"),
-      message: translation("Broadcast.alerts.trackedLinkRemoved.message"),
-      tone: "warning",
-    });
+      void showAlert({
+        title: translation("Broadcast.alerts.trackedLinkRemoved.title"),
+        message: translation("Broadcast.alerts.trackedLinkRemoved.message"),
+        tone: "warning",
+      });
+    }
   }
-}
 
   function toggleToolPanel(panel) {
     setActiveToolPanel((prev) => (prev === panel ? null : panel));
@@ -574,7 +954,7 @@ const supabase = useMemo(() => createClient(), []);
 
     try {
       const uploaded = await supabaseUpload(picked);
-      setFiles((prev) => [...prev, ...uploaded]);
+      setComposerFiles((prev) => [...prev, ...uploaded]);
     } catch (err) {
       await showAlert({
         title: translation("Common.error"),
@@ -608,7 +988,7 @@ const supabase = useMemo(() => createClient(), []);
       const thumb = uploaded[0];
 
       if (thumb?.url) {
-        setFiles((prev) =>
+        setComposerFiles((prev) =>
           prev.map((f) =>
             f.url === thumbForVideoUrl ? { ...f, thumbnailUrl: thumb.url } : f,
           ),
@@ -627,7 +1007,7 @@ const supabase = useMemo(() => createClient(), []);
   }
 
   function removeThumbnail(videoUrl) {
-    setFiles((prev) =>
+    setComposerFiles((prev) =>
       prev.map((f) => (f.url === videoUrl ? { ...f, thumbnailUrl: null } : f)),
     );
   }
@@ -664,8 +1044,8 @@ const supabase = useMemo(() => createClient(), []);
     map.orgName =
       org?.name || map.empresa || map.company || map.organization || "";
     map.urlVar =
-      needsUrlVar && selectedTrackedUrlKey
-        ? `{{link.${selectedTrackedUrlKey}}}`
+      needsUrlVar && composerSelectedTrackedUrlKey
+        ? `{{link.${composerSelectedTrackedUrlKey}}}`
         : "";
 
     return map;
@@ -675,7 +1055,7 @@ const supabase = useMemo(() => createClient(), []);
     sampleRecipient,
     org?.name,
     needsUrlVar,
-    selectedTrackedUrlKey,
+    composerSelectedTrackedUrlKey,
   ]);
 
   const preview = useMemo(() => {
@@ -724,22 +1104,86 @@ const supabase = useMemo(() => createClient(), []);
   }, [tplDetails, tplLang, previewVars]);
 
   const previewMessageWithTrackedLinks = useMemo(() => {
-    return replaceTrackedPlaceholders(message, normalizedTrackedLinks, channel);
-  }, [message, normalizedTrackedLinks, channel]);
+    return replaceTrackedPlaceholders(
+      composerMessage,
+      normalizedTrackedLinks,
+      channel,
+    );
+  }, [composerMessage, normalizedTrackedLinks, channel]);
 
   const paramsComplete =
     (varDefs.length === 0 && tplParamsManual.trim().length > 0) ||
     (varDefs.length > 0 && orderedParamValues.every((v) => v !== ""));
 
   const trackedLinksValid =
-    normalizedTrackedLinks.length === trackedLinks.length &&
+    normalizedTrackedLinks.length === composerTrackedLinks.length &&
     new Set(normalizedTrackedLinks.map((l) => l.key)).size ===
       normalizedTrackedLinks.length;
 
   const whatsappUrlBindingValid =
     !needsUrlVar ||
     trackedLinkOptions.length === 0 ||
-    Boolean(selectedTrackedUrlKey);
+    Boolean(composerSelectedTrackedUrlKey);
+
+  const hasFallbackTemplate =
+    channel === "whatsapp" && tplName && tplLang && paramsComplete;
+
+  function normalizeTrackedLinksForStep(step) {
+    return (step.trackedLinks || [])
+      .map((link) => ({
+        key: sanitizeTrackedKey(link.key),
+        label: String(link.label || "").trim(),
+        destinationUrl: String(link.destinationUrl || "").trim(),
+      }))
+      .filter((link) => link.key && link.label && link.destinationUrl);
+  }
+
+  function trackedLinksValidForStep(step) {
+    const normalized = normalizeTrackedLinksForStep(step);
+
+    return (
+      normalized.length === (step.trackedLinks || []).length &&
+      new Set(normalized.map((link) => link.key)).size === normalized.length
+    );
+  }
+
+  function chainStepHasContent(step) {
+    return (
+      String(step.message || "").trim().length > 0 ||
+      (Array.isArray(step.files) && step.files.length > 0)
+    );
+  }
+
+  function normalizeDelayMinutes(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number) || number <= 0) {
+      return 0;
+    }
+
+    return Math.min(Math.floor(number), MAX_CHAIN_DELAY_MINUTES);
+  }
+
+  function chainStepDelayValid(step, index) {
+    if (index === 0) return true;
+
+    const value = Number(step.delayAfterPreviousReadMinutes || 0);
+
+    return (
+      Number.isFinite(value) && value >= 0 && value <= MAX_CHAIN_DELAY_MINUTES
+    );
+  }
+
+  const chainValid =
+    !chainMode ||
+    (readChainsFeatureEnabled &&
+      channel === "whatsapp" &&
+      hasFallbackTemplate &&
+      chainSteps.length >= 2 &&
+      chainSteps.length <= 10 &&
+      chainSteps.every(chainStepHasContent) &&
+      chainSteps.every(trackedLinksValidForStep) &&
+      chainSteps.every(chainStepDelayValid));
 
   useEffect(() => {
     if (varDefs.length === 0) return;
@@ -853,13 +1297,15 @@ const supabase = useMemo(() => createClient(), []);
 
   const baseCanSend =
     selected.size > 0 &&
-    trackedLinksValid &&
-    whatsappUrlBindingValid &&
-    (channel === "whatsapp"
-      ? (tplName && tplLang && paramsComplete) ||
-        message.trim().length > 0 ||
-        files.length > 0
-      : message.trim().length > 0 || files.length > 0);
+    (chainMode
+      ? chainValid
+      : trackedLinksValid &&
+        whatsappUrlBindingValid &&
+        (channel === "whatsapp"
+          ? (tplName && tplLang && paramsComplete) ||
+            composerMessage.trim().length > 0 ||
+            composerFiles.length > 0
+          : composerMessage.trim().length > 0 || composerFiles.length > 0));
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -867,13 +1313,30 @@ const supabase = useMemo(() => createClient(), []);
 
   const canSend = baseCanSend && !scheduleInvalid;
 
+  function buildFallbackTemplatePayload() {
+    if (!tplName || !tplLang || !paramsComplete) return null;
+
+    return {
+      projectId: chosenTemplate?.projectId,
+      name: tplName.trim(),
+      languageCode: (tplLang || "pt-PT").trim(),
+      params: orderedParamValues,
+      varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
+      manualParams: varDefs.length ? undefined : tplParamsManual,
+      trackedUrlKey:
+        needsUrlVar && composerSelectedTrackedUrlKey
+          ? composerSelectedTrackedUrlKey
+          : null,
+    };
+  }
+
   function buildBroadcastPayload(chosen) {
     if (channel === "whatsapp") {
       return {
         orgId: org?.id,
-        message,
+        message: composerMessage,
         imageUrls,
-        files,
+        files: composerFiles,
         trackedLinks: normalizedTrackedLinks,
         recipients: chosen
           .filter(
@@ -889,18 +1352,7 @@ const supabase = useMemo(() => createClient(), []);
           })),
         template:
           tplName && tplLang && paramsComplete
-            ? {
-                projectId: chosenTemplate?.projectId,
-                name: tplName.trim(),
-                languageCode: (tplLang || "pt-PT").trim(),
-                params: orderedParamValues,
-                varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
-                manualParams: varDefs.length ? undefined : tplParamsManual,
-                trackedUrlKey:
-                  needsUrlVar && selectedTrackedUrlKey
-                    ? selectedTrackedUrlKey
-                    : null,
-              }
+            ? buildFallbackTemplatePayload()
             : null,
       };
     }
@@ -908,9 +1360,37 @@ const supabase = useMemo(() => createClient(), []);
     return {
       orgId: org?.id,
       userIds: chosen.map((u) => u.id),
-      message,
-      files,
+      message: composerMessage,
+      files: composerFiles,
       trackedLinks: normalizedTrackedLinks,
+    };
+  }
+
+  function buildChainPayload(chosen) {
+    return {
+      orgId: org?.id,
+      createdByUserId: user?.id || null,
+      channel: "whatsapp",
+      fallbackTemplate: buildFallbackTemplatePayload(),
+      recipients: chosen
+        .filter((u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id)
+        .map((u) => ({
+          userId: u.id,
+          name: u.name || null,
+          phoneNumber: u.phone_number || null,
+          whatsappBsuid: u.whatsapp_bsuid || null,
+          whatsappUsername: u.whatsapp_username || null,
+          birdContactId: u.bird_contact_id || null,
+        })),
+      steps: chainSteps.map((step, index) => ({
+        message: step.message || "",
+        files: Array.isArray(step.files) ? step.files : [],
+        trackedLinks: normalizeTrackedLinksForStep(step),
+        delayAfterPreviousReadMinutes:
+          index === 0
+            ? 0
+            : normalizeDelayMinutes(step.delayAfterPreviousReadMinutes),
+      })),
     };
   }
 
@@ -1096,50 +1576,148 @@ const supabase = useMemo(() => createClient(), []);
     return [mainMessage, note, failureDetails].filter(Boolean).join("\n\n");
   }
 
-        async function validateContentBeforeAction(action) {
-        const hasManualContent = message.trim().length > 0 || files.length > 0;
+  async function validateContentBeforeAction(action) {
+    const hasManualContent =
+      composerMessage.trim().length > 0 || composerFiles.length > 0;
 
-        const hasValidTemplate =
-          channel === "whatsapp" && tplName && tplLang && paramsComplete;
+    const hasValidTemplate =
+      channel === "whatsapp" && tplName && tplLang && paramsComplete;
 
-        const hasSelectedIncompleteTemplate =
-          channel === "whatsapp" && tplName && tplLang && !paramsComplete;
+    const hasSelectedIncompleteTemplate =
+      channel === "whatsapp" && tplName && tplLang && !paramsComplete;
 
-        if (hasSelectedIncompleteTemplate && !hasManualContent) {
-          await showAlert({
-            title: translation("Broadcast.alerts.templateParamsMissing.title"),
-            message: translation("Broadcast.alerts.templateParamsMissing.message"),
-            tone: "warning",
-          });
+    if (hasSelectedIncompleteTemplate && !hasManualContent && !chainMode) {
+      await showAlert({
+        title: translation("Broadcast.alerts.templateParamsMissing.title"),
+        message: translation("Broadcast.alerts.templateParamsMissing.message"),
+        tone: "warning",
+      });
 
-          return false;
-        }
+      return false;
+    }
 
-        if (!hasManualContent && !hasValidTemplate) {
-          await showAlert({
-            title: translation("Broadcast.alerts.contentMissing.title"),
-            message:
-              action === "schedule"
-                ? translation("Broadcast.alerts.contentMissing.scheduleMessage")
-                : translation("Broadcast.alerts.contentMissing.sendMessage"),
-            tone: "warning",
-          });
+    if (!hasManualContent && !hasValidTemplate && !chainMode) {
+      await showAlert({
+        title: translation("Broadcast.alerts.contentMissing.title"),
+        message:
+          action === "schedule"
+            ? translation("Broadcast.alerts.contentMissing.scheduleMessage")
+            : translation("Broadcast.alerts.contentMissing.sendMessage"),
+        tone: "warning",
+      });
 
-          return false;
-        }
+      return false;
+    }
 
-        return true;
+    return true;
+  }
+
+  async function handleSend() {
+    if (!selectedUsers.length) {
+      await showAlert({
+        title: "Choose recipients",
+        message: translation("Broadcast.chooseRecipients"),
+        tone: "warning",
+      });
+      return;
+    }
+
+    if (chainMode) {
+      if (channel !== "whatsapp") {
+        await showAlert({
+          title: "WhatsApp only",
+          message: "Read chains currently only work for WhatsApp.",
+          tone: "warning",
+        });
+        return;
       }
 
-      async function handleSend() {
-          if (!selectedUsers.length) {
-          await showAlert({
-            title: "Choose recipients",
-            message: translation("Broadcast.chooseRecipients"),
-            tone: "warning",
-          });
-          return;
+      if (!readChainsFeatureEnabled) {
+        await showAlert({
+          title: "Read chains are disabled",
+          message: "Enable read chain messages in Automations first.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      if (!hasFallbackTemplate) {
+        await showAlert({
+          title: "Choose fallback template",
+          message:
+            "Select a WhatsApp template. It is used only when the user's 24h window is closed.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      if (!chainValid) {
+        await showAlert({
+          title: "Complete the chain",
+          message:
+            "A read chain needs 2 to 10 freeform messages, and every message must have text or attachments. Tracked links must also be complete.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      const confirmed = await confirmSendAction({ isChain: true });
+
+      if (!confirmed) return;
+
+      setSending(true);
+
+      try {
+        const res = await fetch("/api/broadcast/read-chain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildChainPayload(selectedUsers)),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to send read chain.");
         }
+
+        const counts = getBroadcastCounts(data, selectedUsers.length);
+        const failedRecipients = getFailedRecipients(
+          data,
+          selectedUsers,
+          channel,
+        );
+
+        await showAlert({
+          title:
+            counts.failed > 0
+              ? "Read chain started with issues"
+              : "Read chain started",
+          message: formatBroadcastResultMessage({
+            channel,
+            action: "started",
+            ok: counts.ok,
+            failed: counts.failed,
+            note:
+              data?.note ||
+              "Message 1 was sent if the 24h window was open. If not, the fallback template was sent and the chain waits for a reply.",
+            failedRecipients,
+          }),
+          tone: counts.failed > 0 ? "warning" : "success",
+        });
+      } catch (err) {
+        console.error("[Broadcast] handleSend chain error:", err);
+
+        await showAlert({
+          title: translation("Common.error"),
+          message: err.message,
+          tone: "danger",
+        });
+      } finally {
+        setSending(false);
+      }
+
+      return;
+    }
 
     if (!(await validateContentBeforeAction("send"))) return;
 
@@ -1161,6 +1739,10 @@ const supabase = useMemo(() => createClient(), []);
       });
       return;
     }
+
+    const confirmed = await confirmSendAction();
+
+    if (!confirmed) return;
 
     setSending(true);
 
@@ -1244,7 +1826,147 @@ const supabase = useMemo(() => createClient(), []);
         tone: "warning",
       });
       return;
-    }if (!(await validateContentBeforeAction("schedule"))) return;
+    }
+
+    const committed = commitTimeParts(hourDraft, minuteDraft);
+
+    if (!committed) {
+      await showAlert({
+        title: "Invalid time",
+        message: "Please enter a valid time between 08:00 and 20:00.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    if (!scheduledFor || Number.isNaN(scheduledFor.getTime())) {
+      await showAlert({
+        title: "Choose date and time",
+        message: "Choose a date and time.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    const scheduledDate = new Date(scheduledFor);
+    scheduledDate.setHours(Number(hourDraft), Number(minuteDraft), 0, 0);
+
+    if (scheduledDate.getTime() <= Date.now()) {
+      await showAlert({
+        title: "Invalid schedule date",
+        message: "The scheduled date must be in the future.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    if (chainMode) {
+      if (channel !== "whatsapp") {
+        await showAlert({
+          title: "WhatsApp only",
+          message: "Read chains currently only work for WhatsApp.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      if (!readChainsFeatureEnabled) {
+        await showAlert({
+          title: "Read chains are disabled",
+          message: "Enable read chain messages in Automations first.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      if (!hasFallbackTemplate) {
+        await showAlert({
+          title: "Choose fallback template",
+          message:
+            "Select a WhatsApp template. It is used only when the user's 24h window is closed.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      if (!chainValid) {
+        await showAlert({
+          title: "Complete the chain",
+          message:
+            "A scheduled read chain needs 2 to 10 freeform messages, and every message must have text or attachments. Tracked links must also be complete.",
+          tone: "warning",
+        });
+        return;
+      }
+
+      const confirmed = await confirmScheduleAction({
+        scheduledDate,
+        isChain: true,
+      });
+
+      if (!confirmed) return;
+
+      setSending(true);
+
+      try {
+        const res = await fetch("/api/broadcast/read-chain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...buildChainPayload(selectedUsers),
+            scheduledFor: scheduledDate.toISOString(),
+            timezone: browserTimeZone,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to schedule read chain.");
+        }
+
+        const counts = getBroadcastCounts(data, selectedUsers.length);
+        const failedRecipients = getFailedRecipients(
+          data,
+          selectedUsers,
+          channel,
+        );
+
+        await showAlert({
+          title:
+            counts.failed > 0
+              ? "Read chain scheduled with issues"
+              : "Read chain scheduled",
+          message: formatBroadcastResultMessage({
+            channel,
+            action: "scheduled",
+            ok: counts.ok,
+            failed: counts.failed,
+            note:
+              data?.note ||
+              "Message 1 will be sent at the scheduled time. The next messages will continue after read receipts.",
+            failedRecipients,
+          }),
+          tone: counts.failed > 0 ? "warning" : "success",
+        });
+
+        setDeliveryMode("now");
+      } catch (err) {
+        console.error("[Broadcast] handleSchedule chain error:", err);
+
+        await showAlert({
+          title: translation("Common.error"),
+          message: err.message,
+          tone: "danger",
+        });
+      } finally {
+        setSending(false);
+      }
+
+      return;
+    }
+
+    if (!(await validateContentBeforeAction("schedule"))) return;
 
     if (!trackedLinksValid) {
       await showAlert({
@@ -1265,33 +1987,11 @@ const supabase = useMemo(() => createClient(), []);
       return;
     }
 
-    const committed = commitTimeParts(hourDraft, minuteDraft);
-    if (!committed) {
-      await showAlert({
-        title: "Invalid time",
-        message: "Please enter a valid time between 08:00 and 20:00.",
-        tone: "warning",
-      });
-      return;
-    }
+    const confirmed = await confirmScheduleAction({
+      scheduledDate,
+    });
 
-    if (!scheduledFor || Number.isNaN(scheduledFor.getTime())) {
-      await showAlert({
-        title: "Choose date and time",
-        message: "Choose a date and time.",
-        tone: "warning",
-      });
-      return;
-    }
-
-    if (scheduledFor.getTime() <= Date.now()) {
-      await showAlert({
-        title: "Invalid schedule date",
-        message: "The scheduled date must be in the future.",
-        tone: "warning",
-      });
-      return;
-    }
+    if (!confirmed) return;
 
     setSending(true);
 
@@ -1305,7 +2005,7 @@ const supabase = useMemo(() => createClient(), []);
           orgId: org?.id,
           createdByUserId: user?.id || null,
           channel,
-          scheduledFor: scheduledFor.toISOString(),
+          scheduledFor: scheduledDate.toISOString(),
           timezone: browserTimeZone,
           payload,
           recipientCount: selectedUsers.length,
@@ -1368,17 +2068,17 @@ const supabase = useMemo(() => createClient(), []);
     const textArea = messageInputRef.current;
 
     if (!textArea) {
-      setMessage(
+      setComposerMessage(
         (prev) => `${prev}${prev && !prev.endsWith(" ") ? " " : ""}${token}`,
       );
       return;
     }
 
-    const start = textArea.selectionStart ?? message.length;
-    const end = textArea.selectionEnd ?? message.length;
+    const start = textArea.selectionStart ?? composerMessage.length;
+    const end = textArea.selectionEnd ?? composerMessage.length;
 
-    const before = message.slice(0, start);
-    const after = message.slice(end);
+    const before = composerMessage.slice(0, start);
+    const after = composerMessage.slice(end);
 
     const prefix =
       before && !before.endsWith(" ") && !before.endsWith("\n") ? " " : "";
@@ -1389,7 +2089,7 @@ const supabase = useMemo(() => createClient(), []);
     const inserted = `${prefix}${token}${suffix}`;
     const nextValue = before + inserted + after;
 
-    setMessage(nextValue);
+    setComposerMessage(nextValue);
 
     requestAnimationFrame(() => {
       textArea.focus();
@@ -1420,6 +2120,70 @@ const supabase = useMemo(() => createClient(), []);
   const templateButtonLabel =
     channel === "whatsapp" && tplName ? tplName : "No template";
 
+  const activeDelay = Number(
+    activeChainStep?.delayAfterPreviousReadMinutes || 0,
+  );
+
+  const activeDelayParts = splitDelayMinutes(activeDelay);
+
+  const chainDelayTools =
+    chainMode && activeChainStepIndex > 0 ? (
+      <div className={styles.composerDelayTools}>
+        <div className={styles.composerDelayTitle}>
+          {translation("Broadcast.broadcastChain.chainDelayBefore")}{" "}
+          {activeChainStepIndex + 1}
+        </div>
+
+        <div className={styles.composerDelayInputs}>
+          <label className={styles.composerDelayField}>
+            <span>{translation("Broadcast.broadcastChain.chainHour")}</span>
+            <input
+              type="number"
+              min="0"
+              max={MAX_CHAIN_DELAY_HOURS}
+              step="1"
+              value={activeDelayParts.hours}
+              onChange={(event) =>
+                updateChainStepDelayPart(
+                  activeChainStepIndex,
+                  "hours",
+                  event.target.value,
+                )
+              }
+            />
+          </label>
+
+          <label className={styles.composerDelayField}>
+            <span>{translation("Broadcast.broadcastChain.chainMinute")}</span>
+            <input
+              type="number"
+              min="0"
+              max="59"
+              step="1"
+              value={activeDelayParts.minutes}
+              onChange={(event) =>
+                updateChainStepDelayPart(
+                  activeChainStepIndex,
+                  "minutes",
+                  event.target.value,
+                )
+              }
+            />
+          </label>
+        </div>
+
+        <div className={styles.composerDelayHelp}>
+          {formatDelayLabel(activeDelay, translation)}
+        </div>
+      </div>
+    ) : chainMode && activeChainStepIndex === 0 ? (
+      <div className={styles.composerDelayTools}>
+        <div className={styles.composerDelayHelp}>
+          {translation("Broadcast.broadcastChain.chainFirstMessage")}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div className={styles.screen}>
       <BroadcastHeader
@@ -1427,7 +2191,7 @@ const supabase = useMemo(() => createClient(), []);
         setChannel={setChannel}
         selectedCount={selected.size}
         sending={sending}
-        canSend={true}
+        canSend={canSend}
         deliveryMode={deliveryMode}
         onPrimaryClick={
           deliveryMode === "schedule" ? handleSchedule : handleSend
@@ -1439,8 +2203,8 @@ const supabase = useMemo(() => createClient(), []);
         <div className={styles.leftCol}>
           <MessageComposer
             messageInputRef={messageInputRef}
-            message={message}
-            setMessage={setMessage}
+            message={composerMessage}
+            setMessage={setComposerMessage}
             normalizedTrackedLinks={normalizedTrackedLinks}
             previewMessageWithTrackedLinks={previewMessageWithTrackedLinks}
             insertTrackedPlaceholder={insertTrackedPlaceholder}
@@ -1452,6 +2216,24 @@ const supabase = useMemo(() => createClient(), []);
             channel={channel}
             templateButtonLabel={templateButtonLabel}
             translation={translation}
+            leftToolsContent={chainDelayTools}
+            chainControls={
+              channel === "whatsapp" ? (
+                <ChainMessagesBar
+                  enabled={readChainsFeatureEnabled}
+                  chainMode={chainMode}
+                  setChainMode={setChainMode}
+                  chainSteps={chainSteps}
+                  activeChainStepIndex={activeChainStepIndex}
+                  setActiveChainStepIndex={setActiveChainStepIndex}
+                  addChainStep={addChainStep}
+                  duplicateChainStep={duplicateChainStep}
+                  removeChainStep={removeChainStep}
+                  hasFallbackTemplate={Boolean(hasFallbackTemplate)}
+                  translation={translation}
+                />
+              ) : null
+            }
           >
             {activeToolPanel === "schedule" && (
               <SchedulePanel
@@ -1481,7 +2263,7 @@ const supabase = useMemo(() => createClient(), []);
                 imageFiles={imageFiles}
                 videoFiles={videoFiles}
                 otherFiles={otherFiles}
-                files={files}
+                files={composerFiles}
                 removeFile={removeFile}
                 openThumbnailPicker={openThumbnailPicker}
                 removeThumbnail={removeThumbnail}
@@ -1493,11 +2275,11 @@ const supabase = useMemo(() => createClient(), []);
               <TrackedLinksPanel
                 channel={channel}
                 needsUrlVar={needsUrlVar}
-                trackedLinks={trackedLinks}
+                trackedLinks={composerTrackedLinks}
                 trackedLinksValid={trackedLinksValid}
                 trackedLinkOptions={trackedLinkOptions}
-                selectedTrackedUrlKey={selectedTrackedUrlKey}
-                setSelectedTrackedUrlKey={setSelectedTrackedUrlKey}
+                selectedTrackedUrlKey={composerSelectedTrackedUrlKey}
+                setSelectedTrackedUrlKey={setComposerSelectedTrackedUrlKey}
                 whatsappUrlBindingValid={whatsappUrlBindingValid}
                 addTrackedLink={addTrackedLink}
                 updateTrackedLink={updateTrackedLink}

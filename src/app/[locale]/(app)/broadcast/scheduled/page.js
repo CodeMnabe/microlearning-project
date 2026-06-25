@@ -29,6 +29,137 @@ import { useAlert } from "@/app/components/Alert/AlertProvider";
 
 const MODAL_CLOSE_MS = 280;
 
+function cleanText(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function looksLikeWhatsappBsuid(value) {
+  return /^[A-Z]{2}\.\d+$/i.test(cleanText(value));
+}
+
+function normalizeSavedRecipient(recipient, channel) {
+  if (typeof recipient === "string" || typeof recipient === "number") {
+    const value = cleanText(recipient);
+
+    if (!value) return null;
+
+    if (channel === "teams") {
+      return {
+        userId: value,
+      };
+    }
+
+    if (looksLikeWhatsappBsuid(value)) {
+      return {
+        userId: null,
+        name: null,
+        phoneNumber: null,
+        whatsappBsuid: value,
+        whatsappUsername: null,
+        birdContactId: null,
+      };
+    }
+
+    return {
+      userId: null,
+      name: null,
+      phoneNumber: value,
+      whatsappBsuid: null,
+      whatsappUsername: null,
+      birdContactId: null,
+    };
+  }
+
+  if (!recipient || typeof recipient !== "object") return null;
+
+  if (channel === "teams") {
+    const userId =
+      cleanText(recipient.userId) ||
+      cleanText(recipient.user_id) ||
+      cleanText(recipient.id);
+
+    if (!userId) return null;
+
+    return {
+      userId,
+      name: cleanText(recipient.name) || null,
+      email: cleanText(recipient.email) || null,
+    };
+  }
+
+  const phoneNumber =
+    cleanText(recipient.phoneNumber) ||
+    cleanText(recipient.phone_number) ||
+    cleanText(recipient.phone);
+
+  const whatsappBsuid =
+    cleanText(recipient.whatsappBsuid) ||
+    cleanText(recipient.whatsapp_bsuid) ||
+    cleanText(recipient.whatsappPsuid);
+
+  const birdContactId =
+    cleanText(recipient.birdContactId) || cleanText(recipient.bird_contact_id);
+
+  const userId =
+    cleanText(recipient.userId) ||
+    cleanText(recipient.user_id) ||
+    cleanText(recipient.id);
+
+  if (!phoneNumber && !whatsappBsuid && !birdContactId && !userId) {
+    return null;
+  }
+
+  return {
+    userId: userId || null,
+    name: cleanText(recipient.name) || null,
+    phoneNumber: phoneNumber || null,
+
+    // Phone first. Fallback IDs only when no phone exists.
+    whatsappBsuid: phoneNumber ? null : whatsappBsuid || null,
+    whatsappUsername: phoneNumber
+      ? null
+      : cleanText(recipient.whatsappUsername) ||
+        cleanText(recipient.whatsapp_username) ||
+        null,
+    birdContactId: phoneNumber || whatsappBsuid ? null : birdContactId || null,
+  };
+}
+
+function getSavedRecipientKey(recipient, channel) {
+  const normalized = normalizeSavedRecipient(recipient, channel);
+
+  if (!normalized) return "";
+
+  if (channel === "teams") {
+    return cleanText(normalized.userId);
+  }
+
+  return (
+    cleanText(normalized.phoneNumber) ||
+    cleanText(normalized.whatsappBsuid) ||
+    cleanText(normalized.birdContactId) ||
+    cleanText(normalized.userId)
+  );
+}
+
+function uniqueSavedRecipients(recipients, channel) {
+  const seen = new Set();
+  const out = [];
+
+  for (const recipient of recipients || []) {
+    const normalized = normalizeSavedRecipient(recipient, channel);
+    const key = getSavedRecipientKey(normalized, channel);
+
+    if (!normalized || !key || seen.has(key)) continue;
+
+    seen.add(key);
+    out.push(normalized);
+  }
+
+  return out;
+}
+
 export default function ScheduledPage() {
   const t = useTranslations("BroadcastScheduled");
   const { user } = useAuth();
@@ -286,7 +417,10 @@ export default function ScheduledPage() {
       formData.minute,
     );
 
-    const recipients = [...new Set(formData.recipients)];
+    const recipients = uniqueSavedRecipients(
+      formData.recipients,
+      formData.channel,
+    );
 
     if (!formData.message.trim() || !scheduledIso) {
       setError(t("Errors.invalidForm"));
@@ -294,6 +428,18 @@ export default function ScheduledPage() {
       await showAlert({
         title: t("Alerts.invalidForm.title"),
         message: t("Alerts.invalidForm.message"),
+        tone: "warning",
+      });
+
+      return;
+    }
+
+    if (!recipients.length) {
+      setError(t("Errors.invalidForm"));
+
+      await showAlert({
+        title: t("Alerts.invalidForm.title"),
+        message: "Choose at least one recipient.",
         tone: "warning",
       });
 
@@ -310,12 +456,26 @@ export default function ScheduledPage() {
       const nextPayload = {
         ...previousPayload,
         message: formData.message.trim(),
-        recipients,
         files: nextFiles,
         imageUrls: nextFiles
           .filter((file) => file?.contentType?.startsWith("image/"))
           .map((file) => file.url),
       };
+
+      if (formData.channel === "whatsapp") {
+        nextPayload.recipients = recipients;
+        delete nextPayload.userIds;
+      } else {
+        const userIds = recipients
+          .map((recipient) => recipient.userId)
+          .filter(Boolean);
+
+        nextPayload.userIds = userIds;
+
+        // Keeping this is useful for the view modal, but the Teams sender should
+        // still use userIds.
+        nextPayload.recipients = recipients;
+      }
 
       const response = await fetch(
         `/api/scheduled-broadcasts/${editingItem.id}`,
@@ -472,6 +632,7 @@ export default function ScheduledPage() {
       {selectedItem ? (
         <ScheduledViewModal
           selectedItem={selectedItem}
+          orgUsers={orgUsers}
           translation={t}
           isViewModalOpen={isViewModalOpen}
           closeViewModal={closeViewModal}

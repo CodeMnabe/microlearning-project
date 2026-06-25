@@ -26,25 +26,45 @@ export function formatMinute(date) {
   return String(date.getMinutes()).padStart(2, "0");
 }
 
+export function makeId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function makeTrackedLinkDraft() {
   return {
-    id:
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: makeId(),
     key: "",
     label: "",
     destinationUrl: "",
   };
 }
 
+export function makeChainStep(overrides = {}) {
+  return {
+    id:
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    message: "",
+    files: [],
+    trackedLinks: [],
+    selectedTrackedUrlKey: "",
+    delayAfterPreviousReadMinutes: 0,
+    ...overrides,
+  };
+}
+
 export const byBestStatus = (a, b) => {
   const ra = STATUS_RANK[a.status] || 0;
   const rb = STATUS_RANK[b.status] || 0;
+
   if (ra !== rb) return rb - ra;
 
   const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
   const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
+
   return tb - ta;
 };
 
@@ -170,4 +190,32 @@ export function getWhatsappSubline(user) {
     user.bird_contact_id ||
     ""
   );
+}
+
+export function formatDelayLabel(minutes, translation) {
+  const value = Number(minutes || 0);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return translation("Broadcast.broadcastChain.chainNoDelay");
+  }
+
+  const hours = Math.floor(value / 60);
+  const remainingMinutes = value % 60;
+
+  if (hours === 0) {
+    return translation("Broadcast.broadcastChain.chainDelayMinutes", {
+      minutes: remainingMinutes,
+    });
+  }
+
+  if (remainingMinutes === 0) {
+    return translation("Broadcast.broadcastChain.chainDelayHours", {
+      hours: hours,
+    });
+  }
+
+  return translation("Broadcast.broadcastChain.chainDelayMinutesHours", {
+    minutes: remainingMinutes,
+    hours: hours,
+  });
 }

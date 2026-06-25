@@ -235,22 +235,22 @@ export default function Navbar() {
                       <Link2 aria-hidden className={styles.subnavIcon} />
                       <span>{translation("Nav.trackedLinks")}</span>
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        href="/templates"
+                        onClick={onNavClick("/templates")}
+                        className={`${styles.navItem} ${
+                          isActive("/templates") ? styles.active : ""
+                        }`}
+                      >
+                        <FileText aria-hidden className={styles.icon} />
+                        <span>{translation("Nav.templates")} </span>
+                        <span className={styles.smallText}>WhatsApp</span>
+                      </Link>
+                    )}
                   </div>
                 )}
               </div>
-
-              {isAdmin && (
-                <Link
-                  href="/templates"
-                  onClick={onNavClick("/templates")}
-                  className={`${styles.navItem} ${
-                    isActive("/templates") ? styles.active : ""
-                  }`}
-                >
-                  <FileText aria-hidden className={styles.icon} />
-                  <span>{translation("Nav.templates")}</span>
-                </Link>
-              )}
 
               {isAdmin && (
                 <Link

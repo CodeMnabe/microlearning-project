@@ -29,7 +29,7 @@
   padding: 10px 16px;
   border-radius: 10px;
   border: 0;
-  background: #1f6fff;
+  background: var(--brand-1);
   color: #fff;
   cursor: pointer;
 }
@@ -54,8 +54,8 @@
   grid-auto-rows: max-content;
 }
 
-.leftCol>.panel,
-.rightCol>.panel {
+.leftCol > .panel,
+.rightCol > .panel {
   align-self: start;
 }
 
@@ -90,6 +90,7 @@
 .textarea {
   width: 100%;
   min-height: 224px;
+  max-height: 50vh;
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--ui-border);
@@ -127,10 +128,27 @@
 
 .messageToolsRow {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.messageToolsLeft {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.messageToolsActions {
+  display: flex;
   justify-content: flex-end;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
+  margin-left: auto;
 }
 
 .secondaryActionBtn {
@@ -156,7 +174,7 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #1f6fff;
+  background: var(--chip-text);
   color: #fff;
   display: inline-grid;
   place-items: center;
@@ -222,9 +240,9 @@
 }
 
 .modeBtnActive {
-  background: #1f6fff;
+  background: var(--brand-1);
   color: #fff;
-  border-color: #1f6fff;
+  border-color: var(--brand-1);
 }
 
 .scheduleHint {
@@ -617,8 +635,18 @@
   padding: 12px;
   min-height: 120px;
   background:
-    radial-gradient(circle at 10px 10px, rgba(255, 255, 255, 0.25) 2px, transparent 2px) 0 0/28px 28px,
-    radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.18) 2px, transparent 2px) 0 0/28px 28px,
+    radial-gradient(
+        circle at 10px 10px,
+        rgba(255, 255, 255, 0.25) 2px,
+        transparent 2px
+      )
+      0 0/28px 28px,
+    radial-gradient(
+        circle at 20px 20px,
+        rgba(255, 255, 255, 0.18) 2px,
+        transparent 2px
+      )
+      0 0/28px 28px,
     #ece5dd;
 }
 
@@ -695,7 +723,7 @@
 }
 
 .channelBtnActive {
-  background: #1f6fff;
+  background: var(--brand-1);
   color: #fff;
 }
 
@@ -997,6 +1025,226 @@
   font-size: 13px;
 }
 
+.chainBox {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--ui-border, #dfe7f1);
+  border-radius: 14px;
+  background: #f8fafc;
+  margin-bottom: 12px;
+}
+
+.chainHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chainTitleWrap {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chainTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.chainHelp {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.chainWarning {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chainExitBtn {
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.chainStepTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chainStepTab,
+.chainStepAdd {
+  border: 1px solid var(--ui-border, #dfe7f1);
+  background: #fff;
+  color: #554933;
+  border-radius: 999px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.chainStepTab:hover,
+.chainStepAdd:hover {
+  border-color: #cdd8e6;
+  background: #f8fafc;
+}
+
+.chainStepTabActive {
+  background: var(--brand-1, #6366f1);
+  color: #fff;
+  border-color: var(--brand-1, #6366f1);
+}
+
+.chainStepTabActive:hover {
+  background: var(--brand-1, #6366f1);
+  color: #fff;
+  border-color: var(--brand-1, #6366f1);
+}
+
+.chainStepAdd {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  padding: 0;
+}
+
+.chainStepRemove {
+  color: rgb(248, 15, 15);
+}
+
+.chainStepAdd:disabled,
+.chainActionsRow button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chainActionsRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chainActionsRow .kbdBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chainCounter {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chainDelayBox {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.chainDelayLabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.chainDelayGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 120px));
+  gap: 10px;
+  align-items: end;
+}
+
+.chainDelayField {
+  display: grid;
+  gap: 5px;
+}
+
+.chainDelayField span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chainDelayInput {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.chainDelayHelp {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.composerDelayTools {
+  display: grid;
+  gap: 5px;
+  max-width: 360px;
+}
+
+.composerDelayTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.composerDelayInputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.composerDelayField {
+  display: grid;
+  gap: 4px;
+}
+
+.composerDelayField span {
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.composerDelayField input {
+  width: 74px;
+  padding: 7px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.composerDelayHelp {
+  font-size: 11px;
+  color: #64748b;
+}
+
 @media (max-width: 1400px) {
   .templateCardBody {
     grid-template-columns: 1fr;
@@ -1062,7 +1310,17 @@
   }
 
   .messageToolsRow {
+    align-items: stretch;
+  }
+
+  .messageToolsLeft,
+  .messageToolsActions {
+    width: 100%;
     justify-content: flex-start;
+  }
+
+  .composerDelayTools {
+    max-width: none;
   }
 
   .secondaryActionBtn {
