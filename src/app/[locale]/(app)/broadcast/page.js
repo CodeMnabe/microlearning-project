@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import styles from "./broadcast.module.css";
+
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { createClient } from "@/utils/supabase/client";
@@ -20,64 +21,43 @@ import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 
-import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
+
 import {
   asList,
-  blocksHaveUrlVariable,
-  buildInitialScheduledDate,
-  byBestStatus,
-  extractText,
   formatHour,
   formatMinute,
-  guessContentTypeFromName,
-  interpolate,
-  isImageContentType,
-  isVideoContentType,
-  makeTrackedLinkDraft,
-  replaceTrackedPlaceholders,
-  sanitizeTrackedKey,
-  makeChainStep,
   formatDelayLabel,
-} from "./lib/helpers";
 
-const EMPTY_ARRAY = [];
+  MAX_CHAIN_DELAY_HOURS,
+  isReadChainValid,
 
-const MAX_CHAIN_DELAY_MINUTES = 10080; // 7 days
-const MAX_CHAIN_DELAY_HOURS = 168;
+  getBroadcastCounts,
+  getFailedRecipients,
+  formatBroadcastResultMessage,
 
-function splitDelayMinutes(totalMinutes) {
-  const total = Number(totalMinutes || 0);
+  getRecipientLabel,
+  getChannelLabel,
+  
+  isFutureDate,
 
-  if (!Number.isFinite(total) || total <= 0) {
-    return {
-      hours: 0,
-      minutes: 0,
-    };
-  }
+  buildFallbackTemplatePayload,
+  buildBroadcastPayload as createBroadcastPayload,
+  buildReadChainPayload as createReadChainPayload,
+  buildScheduledBroadcastPayload as createScheduledBroadcastPayload,
+  buildScheduledReadChainPayload as createScheduledReadChainPayload,
+} from "./lib/broadcast.helpers";
 
-  return {
-    hours: Math.floor(total / 60),
-    minutes: total % 60,
-  };
-}
+import {
+  useBroadcastRecipients,
+  useBroadcastSchedule,
+  useBroadcastComposer,
+  useBroadcastAttachments,
+  useBroadcastTrackedLinks,
+  useBroadcastChains,
+  useBroadcastTemplates,
+} from "./hooks/broadcast.hooks";
 
-function clampNumber(value, min, max) {
-  const number = Number(value);
 
-  if (!Number.isFinite(number)) return min;
-
-  return Math.min(Math.max(Math.floor(number), min), max);
-}
-
-function getRecipientLabel(count, translation) {
-  return count === 1
-    ? `1 ${translation("Broadcast.recipient")}`
-    : `${count} ${translation("Broadcast.smallRecipients")}`;
-}
-
-function getChannelLabel(channel) {
-  return channel === "whatsapp" ? "WhatsApp" : "Teams";
-}
 
 export default function BroadcastPage() {
   const { user } = useAuth();
@@ -95,342 +75,194 @@ export default function BroadcastPage() {
 
   const supabase = useMemo(() => createClient(), []);
   const { stopLoading } = useGlobalLoader();
-
-  const [users, setUsers] = useState([]);
-  const [q, setQ] = useState("");
-  const [selected, setSelected] = useState(new Set());
-
-  const [allTags, setAllTags] = useState([]);
-  const [assistantsList, setAssistantsList] = useState([]);
-  const [filterOpen, setFilterOpen] = useState(false);
   const filterBtnRef = useRef(null);
-  const [selectedTagIds, setSelectedTagIds] = useState([]);
-  const [selectedAssistantIds, setSelectedAssistantIds] = useState([]);
-  const activeFilterCount = selectedTagIds.length + selectedAssistantIds.length;
-
-  const fileInputRef = useRef(null);
-  const thumbInputRef = useRef(null);
-  const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
-
-  const [message, setMessage] = useState("");
-  const [files, setFiles] = useState([]);
-  const [trackedLinks, setTrackedLinks] = useState([]);
-  const [selectedTrackedUrlKey, setSelectedTrackedUrlKey] = useState("");
-
+ 
   const [sending, setSending] = useState(false);
-
-  const [templates, setTemplates] = useState([]);
-  const [tplLoading, setTplLoading] = useState(false);
-  const [tplErr, setTplErr] = useState(null);
-
-  const [tplName, setTplName] = useState("");
-  const [tplLang, setTplLang] = useState("pt-PT");
-
-  const [tplDetails, setTplDetails] = useState(null);
-  const [varDefs, setVarDefs] = useState([]);
-  const [varValues, setVarValues] = useState({});
-  const [needsUrlVar, setNeedsUrlVar] = useState(false);
-  const [tplParamsManual, setTplParamsManual] = useState("");
-
   const [channel, setChannel] = useState("teams");
   const [deliveryMode, setDeliveryMode] = useState("now");
   const [activeToolPanel, setActiveToolPanel] = useState(null);
 
-  const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
-  const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
-  const [hourDraft, setHourDraft] = useState(() =>
-    formatHour(initialScheduledDate),
-  );
-  const [minuteDraft, setMinuteDraft] = useState(() =>
-    formatMinute(initialScheduledDate),
-  );
-  const [timeError, setTimeError] = useState("");
+  const {
+  scheduledFor,
+  setScheduledFor,
 
-  const [readChainsFeatureEnabled, setReadChainsFeatureEnabled] =
-    useState(false);
-  const [chainMode, setChainMode] = useState(false);
-  const [activeChainStepIndex, setActiveChainStepIndex] = useState(0);
-  const [chainSteps, setChainSteps] = useState(() => [
-    makeChainStep(),
-    makeChainStep(),
-  ]);
+  hourDraft,
+  minuteDraft,
+
+  timeError,
+  browserTimeZone,
+  scheduledDateFromDraft,
+  scheduleInvalid,
+
+  commitTimeParts,
+  handleHourChange,
+  handleMinuteChange,
+} = useBroadcastSchedule({ deliveryMode });
+
+  const {
+  users,
+  setUsers,
+
+  q,
+  setQ,
+
+  selected,
+  setSelected,
+
+  allTags,
+  setAllTags,
+
+  assistantsList,
+  setAssistantsList,
+
+  filterOpen,
+  setFilterOpen,
+
+  selectedTagIds,
+  setSelectedTagIds,
+
+  selectedAssistantIds,
+  setSelectedAssistantIds,
+
+  activeFilterCount,
+  normalizedUsers,
+  selectedUsers,
+  filtered,
+  allOnPageSelected,
+
+  toggleOne,
+  toggleAllCurrent,
+} = useBroadcastRecipients({ channel });
+
+ const {
+  readChainsFeatureEnabled,
+  setReadChainsFeatureEnabled,
+
+  chainMode,
+  setChainMode,
+
+  activeChainStepIndex,
+  setActiveChainStepIndex,
+
+  chainSteps,
+  setChainSteps,
+
+  addChainStep,
+  duplicateChainStep,
+  removeChainStep,
+
+  updateChainStepDelayPart,
+
+  activeDelay,
+  activeDelayParts,
+} = useBroadcastChains();
+
+const {
+  composerMessage,
+  composerFiles,
+  composerTrackedLinks,
+  composerSelectedTrackedUrlKey,
+
+  setComposerMessage,
+  setComposerFiles,
+  setComposerTrackedLinks,
+  setComposerSelectedTrackedUrlKey,
+
+  setSelectedTrackedUrlKey,
+  activeChainStep,
+} = useBroadcastComposer({
+  chainMode,
+  chainSteps,
+  setChainSteps,
+  activeChainStepIndex,
+});
+
+const {
+  tplLoading,
+  tplErr,
+
+  tplName,
+  setTplName,
+
+  tplLang,
+
+  varDefs,
+  varValues,
+  setVarValues,
+
+  needsUrlVar,
+
+  tplParamsManual,
+  setTplParamsManual,
+
+  nameOptions,
+  chosenTemplate,
+
+  orderedParamValues,
+  sampleRecipient,
+  preview,
+  paramsComplete,
+
+  loadTemplates,
+} = useBroadcastTemplates({
+  org,
+  channel,
+  selectedUsers,
+  composerSelectedTrackedUrlKey,
+  setSelectedTrackedUrlKey,
+  showAlert,
+  translation,
+  stopLoading,
+});
+
+const {
+  trackedLinkOptions,
+  normalizedTrackedLinks,
+  trackedLinksCount,
+  trackedLinksValid,
+  whatsappUrlBindingValid,
+  previewMessageWithTrackedLinks,
+
+  addTrackedLink,
+  updateTrackedLink,
+  removeTrackedLink,
+} = useBroadcastTrackedLinks({
+  channel,
+  composerMessage,
+  composerTrackedLinks,
+  setComposerTrackedLinks,
+  needsUrlVar,
+  composerSelectedTrackedUrlKey,
+  setComposerSelectedTrackedUrlKey,
+  showAlert,
+  translation,
+});
+
+const {
+  fileInputRef,
+  thumbInputRef,
+
+  imageFiles,
+  videoFiles,
+  otherFiles,
+  imageUrls,
+  attachmentsCount,
+
+  removeFile,
+  handlePickFiles,
+  openThumbnailPicker,
+  handlePickThumbnail,
+  removeThumbnail,
+} = useBroadcastAttachments({
+  supabase,
+  composerFiles,
+  setComposerFiles,
+  showAlert,
+  translation,
+});
 
   const messageInputRef = useRef(null);
 
-  const browserTimeZone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-    [],
-  );
-
-  const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
-
-  const activeChainStepFiles = activeChainStep?.files || EMPTY_ARRAY;
-  const activeChainStepTrackedLinks =
-    activeChainStep?.trackedLinks || EMPTY_ARRAY;
-
-  const composerMessage = chainMode ? activeChainStep?.message || "" : message;
-  const composerFiles = chainMode ? activeChainStepFiles : files;
-  const composerTrackedLinks = chainMode
-    ? activeChainStepTrackedLinks
-    : trackedLinks;
-  const composerSelectedTrackedUrlKey = chainMode
-    ? activeChainStep?.selectedTrackedUrlKey || ""
-    : selectedTrackedUrlKey;
-
-  const updateActiveChainStep = useCallback(
-    (patchOrUpdater) => {
-      setChainSteps((prev) =>
-        prev.map((step, index) => {
-          if (index !== activeChainStepIndex) return step;
-
-          const patch =
-            typeof patchOrUpdater === "function"
-              ? patchOrUpdater(step)
-              : patchOrUpdater;
-
-          return {
-            ...step,
-            ...patch,
-          };
-        }),
-      );
-    },
-    [activeChainStepIndex],
-  );
-
-  const setComposerMessage = useCallback(
-    (nextValue) => {
-      if (!chainMode) {
-        setMessage(nextValue);
-        return;
-      }
-
-      updateActiveChainStep((step) => ({
-        message:
-          typeof nextValue === "function"
-            ? nextValue(step.message || "")
-            : nextValue,
-      }));
-    },
-    [chainMode, updateActiveChainStep],
-  );
-
-  const setComposerFiles = useCallback(
-    (nextValue) => {
-      if (!chainMode) {
-        setFiles(nextValue);
-        return;
-      }
-
-      updateActiveChainStep((step) => ({
-        files:
-          typeof nextValue === "function"
-            ? nextValue(step.files || [])
-            : nextValue,
-      }));
-    },
-    [chainMode, updateActiveChainStep],
-  );
-
-  const setComposerTrackedLinks = useCallback(
-    (nextValue) => {
-      if (!chainMode) {
-        setTrackedLinks(nextValue);
-        return;
-      }
-
-      updateActiveChainStep((step) => ({
-        trackedLinks:
-          typeof nextValue === "function"
-            ? nextValue(step.trackedLinks || [])
-            : nextValue,
-      }));
-    },
-    [chainMode, updateActiveChainStep],
-  );
-
-  const setComposerSelectedTrackedUrlKey = useCallback(
-    (nextValue) => {
-      if (!chainMode) {
-        setSelectedTrackedUrlKey(nextValue);
-        return;
-      }
-
-      updateActiveChainStep((step) => ({
-        selectedTrackedUrlKey:
-          typeof nextValue === "function"
-            ? nextValue(step.selectedTrackedUrlKey || "")
-            : nextValue,
-      }));
-    },
-    [chainMode, updateActiveChainStep],
-  );
-
-  function addChainStep() {
-    setChainSteps((prev) => {
-      if (prev.length >= 10) return prev;
-
-      const next = [...prev, makeChainStep()];
-      setActiveChainStepIndex(next.length - 1);
-
-      return next;
-    });
-  }
-
-  function duplicateChainStep() {
-    setChainSteps((prev) => {
-      if (prev.length >= 10) return prev;
-
-      const current = prev[activeChainStepIndex] || makeChainStep();
-
-      const copy = makeChainStep({
-        message: current.message || "",
-        files: Array.isArray(current.files) ? [...current.files] : [],
-        trackedLinks: Array.isArray(current.trackedLinks)
-          ? current.trackedLinks.map((link) => ({
-              ...link,
-              id: makeTrackedLinkDraft().id,
-            }))
-          : [],
-        selectedTrackedUrlKey: current.selectedTrackedUrlKey || "",
-        delayAfterPreviousReadMinutes: Number(
-          current.delayAfterPreviousReadMinutes || 0,
-        ),
-      });
-
-      const next = [
-        ...prev.slice(0, activeChainStepIndex + 1),
-        copy,
-        ...prev.slice(activeChainStepIndex + 1),
-      ];
-
-      setActiveChainStepIndex(activeChainStepIndex + 1);
-
-      return next;
-    });
-  }
-
-  function removeChainStep(indexToRemove) {
-    setChainSteps((prev) => {
-      if (prev.length <= 2) return prev;
-
-      const next = prev.filter((_, index) => index !== indexToRemove);
-
-      setActiveChainStepIndex((current) =>
-        Math.min(
-          current >= indexToRemove ? current - 1 : current,
-          next.length - 1,
-        ),
-      );
-
-      return next;
-    });
-  }
-
-  function updateChainStepDelay(indexToUpdate, value) {
-    const raw = Number(value);
-    const delay = Number.isFinite(raw)
-      ? Math.min(Math.max(Math.floor(raw), 0), MAX_CHAIN_DELAY_MINUTES)
-      : 0;
-
-    setChainSteps((prev) =>
-      prev.map((step, index) => {
-        if (index !== indexToUpdate) return step;
-
-        return {
-          ...step,
-          delayAfterPreviousReadMinutes: index === 0 ? 0 : delay,
-        };
-      }),
-    );
-  }
-
-  function updateChainStepDelay(indexToUpdate, value) {
-    const raw = Number(value);
-    const delay = Number.isFinite(raw)
-      ? Math.min(Math.max(Math.floor(raw), 0), MAX_CHAIN_DELAY_MINUTES)
-      : 0;
-
-    setChainSteps((prev) =>
-      prev.map((step, index) => {
-        if (index !== indexToUpdate) return step;
-
-        return {
-          ...step,
-          delayAfterPreviousReadMinutes: index === 0 ? 0 : delay,
-        };
-      }),
-    );
-  }
-
-  function updateChainStepDelayPart(indexToUpdate, part, value) {
-    if (indexToUpdate === 0) return;
-
-    const currentStep = chainSteps[indexToUpdate] || {};
-    const currentDelay = Number(currentStep.delayAfterPreviousReadMinutes || 0);
-
-    const current = splitDelayMinutes(currentDelay);
-
-    const nextHours =
-      part === "hours"
-        ? clampNumber(value, 0, MAX_CHAIN_DELAY_HOURS)
-        : current.hours;
-
-    const nextMinutes =
-      part === "minutes" ? clampNumber(value, 0, 59) : current.minutes;
-
-    updateChainStepDelay(indexToUpdate, nextHours * 60 + nextMinutes);
-  }
-
-  const imageFiles = useMemo(
-    () => composerFiles.filter((f) => isImageContentType(f.contentType)),
-    [composerFiles],
-  );
-
-  const videoFiles = useMemo(
-    () => composerFiles.filter((f) => isVideoContentType(f.contentType)),
-    [composerFiles],
-  );
-
-  const otherFiles = useMemo(
-    () =>
-      composerFiles.filter(
-        (f) =>
-          !isImageContentType(f.contentType) &&
-          !isVideoContentType(f.contentType),
-      ),
-    [composerFiles],
-  );
-
-  const imageUrls = useMemo(() => imageFiles.map((f) => f.url), [imageFiles]);
-
-  const trackedLinkOptions = useMemo(
-    () =>
-      composerTrackedLinks
-        .map((l) => ({
-          value: sanitizeTrackedKey(l.key),
-          label: l.key
-            ? `${sanitizeTrackedKey(l.key)}${l.label ? ` — ${l.label}` : ""}`
-            : "",
-        }))
-        .filter((l) => l.value),
-    [composerTrackedLinks],
-  );
-
-  const normalizedTrackedLinks = useMemo(
-    () =>
-      composerTrackedLinks
-        .map((l) => ({
-          key: sanitizeTrackedKey(l.key),
-          label: String(l.label || "").trim(),
-          destinationUrl: String(l.destinationUrl || "").trim(),
-        }))
-        .filter((l) => l.key && l.label && l.destinationUrl),
-    [composerTrackedLinks],
-  );
-
-  const attachmentsCount = composerFiles.length;
-  const trackedLinksCount = normalizedTrackedLinks.length;
 
   const getUsers = useCallback(async () => {
     if (!org?.id) return;
@@ -528,49 +360,7 @@ export default function BroadcastPage() {
     };
   }, [org?.id]);
 
-  const loadTemplates = useCallback(async () => {
-    if (!org?.id) return;
-
-    setTplLoading(true);
-    setTplErr(null);
-
-    try {
-      const res = await fetch(`/api/template/list?orgId=${org.id}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to fetch templates");
-      }
-
-      const items = asList(data, "items").map((t) => ({
-        ...t,
-        createdAt: t.createdAt || null,
-        updatedAt: t.updatedAt || null,
-      }));
-
-      setTemplates(items);
-
-      const best = [...items].sort(byBestStatus)[0];
-
-      if (best) {
-        setTplName(best.name);
-        setTplLang("pt-PT");
-      }
-    } catch (err) {
-      console.warn("[Broadcast] templates load error:", err);
-
-      setTplErr(err.message);
-
-      await showAlertRef.current({
-        title: translation("Broadcast.alerts.templatesLoadFailed.title"),
-        message: translation("Broadcast.alerts.templatesLoadFailed.message"),
-        tone: "danger",
-      });
-    } finally {
-      setTplLoading(false);
-      stopLoading();
-    }
-  }, [org?.id, stopLoading, translation]);
+  
 
   useEffect(() => {
     if (!org?.id) return;
@@ -602,25 +392,7 @@ export default function BroadcastPage() {
     }
   }, [channel, activeToolPanel, chainMode]);
 
-  const normalizedUsers = useMemo(() => {
-    return (users || []).map((u) => ({
-      ...u,
-      id: u.id,
-      name: u.name,
-      phone_number: u.phone_number ?? u.phoneNumber ?? "",
-      whatsapp_bsuid: u.whatsapp_bsuid ?? u.whatsappBsuid ?? "",
-      whatsapp_username: u.whatsapp_username ?? u.whatsappUsername ?? "",
-      bird_contact_id: u.bird_contact_id ?? u.birdContactId ?? "",
-      email: u.email ?? "",
-      tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id),
-      assistantId: u.assistant_id ?? null,
-    }));
-  }, [users]);
 
-  const selectedUsers = useMemo(
-    () => normalizedUsers.filter((u) => selected.has(u.id)),
-    [normalizedUsers, selected],
-  );
 
   async function confirmSendAction({ isChain = false } = {}) {
     const recipientLabel = getRecipientLabel(selectedUsers.length, translation);
@@ -682,618 +454,35 @@ export default function BroadcastPage() {
     });
   }
 
-  const templatesByName = useMemo(() => {
-    const map = new Map();
 
-    for (const t of templates) {
-      if (!map.has(t.name)) map.set(t.name, []);
-      map.get(t.name).push(t);
-    }
-
-    for (const [k, arr] of map) {
-      map.set(k, arr.sort(byBestStatus));
-    }
-
-    return map;
-  }, [templates]);
-
-  const nameOptions = useMemo(
-    () => Array.from(templatesByName.keys()).sort((a, b) => a.localeCompare(b)),
-    [templatesByName],
-  );
-
-  const languagesForChosenName = useMemo(
-    () => (tplName ? templatesByName.get(tplName) || [] : []),
-    [tplName, templatesByName],
-  );
-
-  useEffect(() => {
-    if (!tplName) return;
-
-    const list = templatesByName.get(tplName) || [];
-    const pt = list.find((t) =>
-      (t.language || "").toLowerCase().startsWith("pt"),
-    );
-
-    setTplLang(pt?.language || list[0]?.language || "pt-PT");
-  }, [tplName, templatesByName]);
-
-  const chosenTemplate = useMemo(() => {
-    const list = languagesForChosenName;
-
-    return (
-      list.find((t) => t.language === tplLang) ||
-      list.find((t) => (t.language || "").toLowerCase().startsWith("pt")) ||
-      list[0] ||
-      null
-    );
-  }, [languagesForChosenName, tplLang]);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      setTplDetails(null);
-      setVarDefs([]);
-      setVarValues({});
-      setNeedsUrlVar(false);
-      setSelectedTrackedUrlKey("");
-
-      if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
-
-      try {
-        const res = await fetch(
-          `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Failed to fetch template");
-        }
-
-        if (!alive) return;
-
-        setTplDetails(data);
-
-        const defs = Array.isArray(data.variables) ? data.variables : [];
-        const defaults = {};
-
-        for (const v of defs) {
-          const examples = v.examplesLocale?.[tplLang]?.exampleValueStrings;
-          defaults[v.key] = examples?.[0] ?? "";
-        }
-
-        setVarDefs(defs);
-        setVarValues(defaults);
-
-        const blocksForLocale =
-          (data.platformContent || []).find(
-            (pc) => (pc.locale || data.defaultLocale) === tplLang,
-          ) || (data.platformContent || [])[0];
-
-        setNeedsUrlVar(blocksHaveUrlVariable(blocksForLocale?.blocks || []));
-      } catch (err) {
-        console.warn("[Broadcast] template details load error:", err);
-
-        if (!alive) return;
-
-        await showAlertRef.current({
-          title: translation("Broadcast.alerts.templateDetailsFailed.title"),
-          message: translation(
-            "Broadcast.alerts.templateDetailsFailed.message",
-          ),
-          tone: "danger",
-        });
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [org?.id, chosenTemplate, tplLang, channel, translation]);
-
-  useEffect(() => {
-    if (!needsUrlVar) return;
-    if (!trackedLinkOptions.length) return;
-    if (composerSelectedTrackedUrlKey) return;
-
-    setComposerSelectedTrackedUrlKey(trackedLinkOptions[0].value);
-  }, [
-    needsUrlVar,
-    trackedLinkOptions,
-    composerSelectedTrackedUrlKey,
-    setComposerSelectedTrackedUrlKey,
-  ]);
-
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-
-    return normalizedUsers.filter((u) => {
-      const textHay = `${u.name || ""} ${u.phone_number || ""} 
-        ${u.whatsapp_username || ""} ${u.whatsapp_bsuid}
-         ${u.email || ""}`.toLowerCase();
-
-      const textOk = !term || textHay.includes(term);
-
-      const tagsOk =
-        selectedTagIds.length === 0 ||
-        selectedTagIds.every((id) => (u.tagIds || []).includes(id));
-
-      const assistantOk =
-        selectedAssistantIds.length === 0 ||
-        selectedAssistantIds.includes(u.assistantId);
-
-      const channelOk =
-        channel !== "whatsapp" ||
-        !!u.phone_number ||
-        !!u.whatsapp_bsuid ||
-        u.bird_contact_id;
-
-      return channelOk && textOk && tagsOk && assistantOk;
-    });
-  }, [normalizedUsers, q, selectedTagIds, selectedAssistantIds, channel]);
-
-  function toggleOne(id) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-
-      return next;
-    });
-  }
-
-  function toggleAllCurrent() {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      const ids = filtered.map((u) => u.id);
-      const allSel = ids.length > 0 && ids.every((id) => next.has(id));
-
-      if (allSel) {
-        ids.forEach((id) => next.delete(id));
-      } else {
-        ids.forEach((id) => next.add(id));
-      }
-
-      return next;
-    });
-  }
-
-  function removeFile(url) {
-    setComposerFiles((prev) => prev.filter((f) => f.url !== url));
-  }
-
-  function addTrackedLink() {
-    setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
-  }
-
-  function updateTrackedLink(id, field, value) {
-    setComposerTrackedLinks((prev) =>
-      prev.map((link) => {
-        if (link.id !== id) return link;
-
-        if (field === "key") {
-          return { ...link, key: sanitizeTrackedKey(value) };
-        }
-
-        return { ...link, [field]: value };
-      }),
-    );
-  }
-
-  function removeTrackedLink(id) {
-    const removed = composerTrackedLinks.find((x) => x.id === id);
-
-    const removedSelectedUrlLink =
-      removed &&
-      composerSelectedTrackedUrlKey === sanitizeTrackedKey(removed.key);
-
-    setComposerTrackedLinks((prev) => prev.filter((x) => x.id !== id));
-
-    if (removedSelectedUrlLink) {
-      setComposerSelectedTrackedUrlKey("");
-
-      void showAlert({
-        title: translation("Broadcast.alerts.trackedLinkRemoved.title"),
-        message: translation("Broadcast.alerts.trackedLinkRemoved.message"),
-        tone: "warning",
-      });
-    }
-  }
 
   function toggleToolPanel(panel) {
     setActiveToolPanel((prev) => (prev === panel ? null : panel));
   }
 
-  const supabaseUpload = async (pickedFiles) => {
-    const bucket = "images";
-    const uploaded = [];
-
-    const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-      if (!safe) safe = "file";
-      return safe;
-    };
-
-    for (const file of pickedFiles) {
-      const safeName = makeSafeName(file.name);
-      const key = `broadcasts/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}-${safeName}`;
-      const ct = file.type || guessContentTypeFromName(file.name);
-
-      const { error: upErr } = await supabase.storage
-        .from(bucket)
-        .upload(key, file, { upsert: true, contentType: ct });
-
-      if (upErr) {
-        console.error("Supabase upload error:", upErr);
-        throw upErr;
-      }
-
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
-
-      if (pub?.publicUrl) {
-        uploaded.push({
-          url: pub.publicUrl,
-          name: file.name || safeName,
-          contentType: ct || "application/octet-stream",
-        });
-      }
-    }
-
-    return uploaded;
-  };
-
-  async function handlePickFiles(e) {
-    const picked = Array.from(e.target.files || []);
-    if (!picked.length) return;
-
-    try {
-      const uploaded = await supabaseUpload(picked);
-      setComposerFiles((prev) => [...prev, ...uploaded]);
-    } catch (err) {
-      await showAlert({
-        title: translation("Common.error"),
-        message: err.message,
-        tone: "danger",
-      });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  function openThumbnailPicker(videoUrl) {
-    setThumbForVideoUrl(videoUrl);
-
-    setTimeout(() => {
-      thumbInputRef.current?.click?.();
-    }, 0);
-  }
-
-  async function handlePickThumbnail(e) {
-    const picked = Array.from(e.target.files || []);
-
-    if (!picked.length || !thumbForVideoUrl) {
-      if (thumbInputRef.current) thumbInputRef.current.value = "";
-      return;
-    }
-
-    try {
-      const img = picked[0];
-      const uploaded = await supabaseUpload([img]);
-      const thumb = uploaded[0];
-
-      if (thumb?.url) {
-        setComposerFiles((prev) =>
-          prev.map((f) =>
-            f.url === thumbForVideoUrl ? { ...f, thumbnailUrl: thumb.url } : f,
-          ),
-        );
-      }
-    } catch (err) {
-      await showAlert({
-        title: translation("Common.error"),
-        message: err.message,
-        tone: "danger",
-      });
-    } finally {
-      setThumbForVideoUrl(null);
-      if (thumbInputRef.current) thumbInputRef.current.value = "";
-    }
-  }
-
-  function removeThumbnail(videoUrl) {
-    setComposerFiles((prev) =>
-      prev.map((f) => (f.url === videoUrl ? { ...f, thumbnailUrl: null } : f)),
-    );
-  }
-
-  const orderedParamValues = useMemo(() => {
-    if (varDefs.length === 0) {
-      const map = new Map(
-        tplParamsManual
-          .split(",")
-          .map((kv) => kv.trim())
-          .filter(Boolean)
-          .map((kv) => {
-            const [k, ...rest] = kv.split("=");
-            return [k.trim(), rest.join("=").trim()];
-          }),
-      );
-
-      return Array.from(map.values());
-    }
-
-    return varDefs.map((v) => (varValues[v.key] ?? "").trim());
-  }, [varDefs, varValues, tplParamsManual]);
-
-  const sampleRecipient = selectedUsers[0] || null;
-
-  const previewVars = useMemo(() => {
-    const map = {};
-
-    for (const v of varDefs) {
-      map[v.key] = varValues[v.key] ?? "";
-    }
-
-    map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
-    map.orgName =
-      org?.name || map.empresa || map.company || map.organization || "";
-    map.urlVar =
-      needsUrlVar && composerSelectedTrackedUrlKey
-        ? `{{link.${composerSelectedTrackedUrlKey}}}`
-        : "";
-
-    return map;
-  }, [
-    varDefs,
-    varValues,
-    sampleRecipient,
-    org?.name,
-    needsUrlVar,
-    composerSelectedTrackedUrlKey,
-  ]);
-
-  const preview = useMemo(() => {
-    if (!tplDetails) {
-      return { body: "", buttonText: "", buttonUrl: "" };
-    }
-
-    const pc =
-      (tplDetails.platformContent || []).find(
-        (x) => (x.locale || tplDetails.defaultLocale) === tplLang,
-      ) || (tplDetails.platformContent || [])[0];
-
-    const blocks = pc?.blocks?.length
-      ? pc.blocks
-      : tplDetails.genericContent?.[0]?.blocks || [];
-
-    const bodyRaw = extractText(blocks).join("\n\n");
-    const body = interpolate(bodyRaw, previewVars);
-
-    let buttonText = "";
-    let buttonUrl = "";
-
-    (function scan(n) {
-      if (!n) return;
-      if (Array.isArray(n)) return n.forEach(scan);
-
-      if (typeof n === "object") {
-        if (n.action?.type === "link" && n.action.link) {
-          buttonText = n.action.link.text || buttonText;
-          buttonUrl = n.action.link.url || buttonUrl;
-        }
-
-        for (const v of Object.values(n)) {
-          scan(v);
-        }
-      }
-    })(blocks);
-
-    buttonText = interpolate(buttonText, previewVars);
-    buttonUrl = interpolate(buttonUrl, {
-      ...previewVars,
-      urlVar: previewVars.urlVar,
-    });
-
-    return { body, buttonText, buttonUrl };
-  }, [tplDetails, tplLang, previewVars]);
-
-  const previewMessageWithTrackedLinks = useMemo(() => {
-    return replaceTrackedPlaceholders(
-      composerMessage,
-      normalizedTrackedLinks,
-      channel,
-    );
-  }, [composerMessage, normalizedTrackedLinks, channel]);
-
-  const paramsComplete =
-    (varDefs.length === 0 && tplParamsManual.trim().length > 0) ||
-    (varDefs.length > 0 && orderedParamValues.every((v) => v !== ""));
-
-  const trackedLinksValid =
-    normalizedTrackedLinks.length === composerTrackedLinks.length &&
-    new Set(normalizedTrackedLinks.map((l) => l.key)).size ===
-      normalizedTrackedLinks.length;
-
-  const whatsappUrlBindingValid =
-    !needsUrlVar ||
-    trackedLinkOptions.length === 0 ||
-    Boolean(composerSelectedTrackedUrlKey);
-
   const hasFallbackTemplate =
     channel === "whatsapp" && tplName && tplLang && paramsComplete;
 
-  function normalizeTrackedLinksForStep(step) {
-    return (step.trackedLinks || [])
-      .map((link) => ({
-        key: sanitizeTrackedKey(link.key),
-        label: String(link.label || "").trim(),
-        destinationUrl: String(link.destinationUrl || "").trim(),
-      }))
-      .filter((link) => link.key && link.label && link.destinationUrl);
-  }
+  
+  const chainValid = useMemo(
+  () =>
+    isReadChainValid({
+      chainMode,
+      readChainsFeatureEnabled,
+      channel,
+      hasFallbackTemplate,
+      chainSteps,
+    }),
+  [
+    chainMode,
+    readChainsFeatureEnabled,
+    channel,
+    hasFallbackTemplate,
+    chainSteps,
+  ],
+);
 
-  function trackedLinksValidForStep(step) {
-    const normalized = normalizeTrackedLinksForStep(step);
 
-    return (
-      normalized.length === (step.trackedLinks || []).length &&
-      new Set(normalized.map((link) => link.key)).size === normalized.length
-    );
-  }
-
-  function chainStepHasContent(step) {
-    return (
-      String(step.message || "").trim().length > 0 ||
-      (Array.isArray(step.files) && step.files.length > 0)
-    );
-  }
-
-  function normalizeDelayMinutes(value) {
-    const number = Number(value);
-
-    if (!Number.isFinite(number) || number <= 0) {
-      return 0;
-    }
-
-    return Math.min(Math.floor(number), MAX_CHAIN_DELAY_MINUTES);
-  }
-
-  function chainStepDelayValid(step, index) {
-    if (index === 0) return true;
-
-    const value = Number(step.delayAfterPreviousReadMinutes || 0);
-
-    return (
-      Number.isFinite(value) && value >= 0 && value <= MAX_CHAIN_DELAY_MINUTES
-    );
-  }
-
-  const chainValid =
-    !chainMode ||
-    (readChainsFeatureEnabled &&
-      channel === "whatsapp" &&
-      hasFallbackTemplate &&
-      chainSteps.length >= 2 &&
-      chainSteps.length <= 10 &&
-      chainSteps.every(chainStepHasContent) &&
-      chainSteps.every(trackedLinksValidForStep) &&
-      chainSteps.every(chainStepDelayValid));
-
-  useEffect(() => {
-    if (varDefs.length === 0) return;
-
-    setVarValues((prev) => {
-      const next = { ...prev };
-      const recName = sampleRecipient?.name || "";
-
-      for (const v of varDefs) {
-        const key = v.key || "";
-        const k = key.toLowerCase();
-
-        if (!next[key]) {
-          if (NAME_KEYS.includes(k)) next[key] = recName;
-          if (COMPANY_KEYS.includes(k)) next[key] = org?.name || "";
-        }
-      }
-
-      return next;
-    });
-  }, [varDefs, sampleRecipient?.name, org?.name]);
-
-  useEffect(() => {
-    setHourDraft(formatHour(scheduledFor));
-    setMinuteDraft(formatMinute(scheduledFor));
-  }, [scheduledFor]);
-
-  const commitTimeParts = useCallback(
-    (hourValue, minuteValue) => {
-      const rawHour = String(hourValue || "").trim();
-      const rawMinute = String(minuteValue || "").trim();
-
-      if (!rawHour || !rawMinute) {
-        setTimeError("Fill in both hour and minute.");
-        return false;
-      }
-
-      if (!/^\d{1,2}$/.test(rawHour) || !/^\d{1,2}$/.test(rawMinute)) {
-        setTimeError("Use only numbers.");
-        return false;
-      }
-
-      const hours = Number(rawHour);
-      const minutes = Number(rawMinute);
-
-      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-        setTimeError("Enter a valid time.");
-        return false;
-      }
-
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        setTimeError("Enter a valid time.");
-        return false;
-      }
-
-      const totalMinutes = hours * 60 + minutes;
-      const minMinutes = 8 * 60;
-      const maxMinutes = 20 * 60;
-
-      if (totalMinutes < minMinutes || totalMinutes > maxMinutes) {
-        setTimeError("Choose a time between 08:00 and 20:00.");
-        return false;
-      }
-
-      const next = new Date(scheduledFor);
-      next.setHours(hours, minutes, 0, 0);
-
-      setScheduledFor(next);
-      setHourDraft(String(hours).padStart(2, "0"));
-      setMinuteDraft(String(minutes).padStart(2, "0"));
-      setTimeError("");
-
-      return true;
-    },
-    [scheduledFor],
-  );
-
-  function handleHourChange(value) {
-    setHourDraft(
-      String(value || "")
-        .replace(/\D/g, "")
-        .slice(0, 2),
-    );
-    setTimeError("");
-  }
-
-  function handleMinuteChange(value) {
-    setMinuteDraft(
-      String(value || "")
-        .replace(/\D/g, "")
-        .slice(0, 2),
-    );
-    setTimeError("");
-  }
-
-  useEffect(() => {
-    if (!hourDraft.trim() || !minuteDraft.trim()) return;
-    if (hourDraft.length < 2 || minuteDraft.length < 2) return;
-
-    const currentHour = formatHour(scheduledFor);
-    const currentMinute = formatMinute(scheduledFor);
-
-    if (hourDraft === currentHour && minuteDraft === currentMinute) return;
-
-    const timeout = setTimeout(() => {
-      commitTimeParts(hourDraft, minuteDraft);
-    }, 1000);
-
-    return () => clearTimeout(timeout);
-  }, [commitTimeParts, hourDraft, minuteDraft, scheduledFor]);
 
   const baseCanSend =
     selected.size > 0 &&
@@ -1307,274 +496,47 @@ export default function BroadcastPage() {
             composerFiles.length > 0
           : composerMessage.trim().length > 0 || composerFiles.length > 0));
 
-  const scheduleInvalid =
-    deliveryMode === "schedule" &&
-    (!scheduledFor || scheduledFor.getTime() <= Date.now() || !!timeError);
 
   const canSend = baseCanSend && !scheduleInvalid;
 
-  function buildFallbackTemplatePayload() {
-    if (!tplName || !tplLang || !paramsComplete) return null;
-
-    return {
-      projectId: chosenTemplate?.projectId,
-      name: tplName.trim(),
-      languageCode: (tplLang || "pt-PT").trim(),
-      params: orderedParamValues,
-      varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
-      manualParams: varDefs.length ? undefined : tplParamsManual,
-      trackedUrlKey:
-        needsUrlVar && composerSelectedTrackedUrlKey
-          ? composerSelectedTrackedUrlKey
-          : null,
-    };
-  }
+    function getFallbackTemplatePayload() {
+      return buildFallbackTemplatePayload({
+        chosenTemplate,
+        tplName,
+        tplLang,
+        paramsComplete,
+        orderedParamValues,
+        varDefs,
+        tplParamsManual,
+        needsUrlVar,
+        selectedTrackedUrlKey: composerSelectedTrackedUrlKey,
+      });
+    }
 
   function buildBroadcastPayload(chosen) {
-    if (channel === "whatsapp") {
-      return {
-        orgId: org?.id,
-        message: composerMessage,
-        imageUrls,
-        files: composerFiles,
-        trackedLinks: normalizedTrackedLinks,
-        recipients: chosen
-          .filter(
-            (u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id,
-          )
-          .map((u) => ({
-            userId: u.id,
-            name: u.name || null,
-            phoneNumber: u.phone_number || null,
-            whatsappBsuid: u.whatsapp_bsuid || null,
-            whatsappUsername: u.whatsapp_username || null,
-            birdContactId: u.bird_contact_id || null,
-          })),
-        template:
-          tplName && tplLang && paramsComplete
-            ? buildFallbackTemplatePayload()
-            : null,
-      };
-    }
-
-    return {
-      orgId: org?.id,
-      userIds: chosen.map((u) => u.id),
-      message: composerMessage,
-      files: composerFiles,
-      trackedLinks: normalizedTrackedLinks,
-    };
-  }
+  return createBroadcastPayload({
+    channel,
+    orgId: org?.id,
+    users: chosen,
+    message: composerMessage,
+    imageUrls,
+    files: composerFiles,
+    trackedLinks: normalizedTrackedLinks,
+    template: getFallbackTemplatePayload(),
+  });
+}
 
   function buildChainPayload(chosen) {
-    return {
-      orgId: org?.id,
-      createdByUserId: user?.id || null,
-      channel: "whatsapp",
-      fallbackTemplate: buildFallbackTemplatePayload(),
-      recipients: chosen
-        .filter((u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id)
-        .map((u) => ({
-          userId: u.id,
-          name: u.name || null,
-          phoneNumber: u.phone_number || null,
-          whatsappBsuid: u.whatsapp_bsuid || null,
-          whatsappUsername: u.whatsapp_username || null,
-          birdContactId: u.bird_contact_id || null,
-        })),
-      steps: chainSteps.map((step, index) => ({
-        message: step.message || "",
-        files: Array.isArray(step.files) ? step.files : [],
-        trackedLinks: normalizeTrackedLinksForStep(step),
-        delayAfterPreviousReadMinutes:
-          index === 0
-            ? 0
-            : normalizeDelayMinutes(step.delayAfterPreviousReadMinutes),
-      })),
-    };
-  }
+  return createReadChainPayload({
+    orgId: org?.id,
+    createdByUserId: user?.id || null,
+    users: chosen,
+    fallbackTemplate: getFallbackTemplatePayload(),
+    steps: chainSteps,
+  });
+}
 
-  function getBroadcastCounts(data, fallbackTotal = 0) {
-    if (!data || typeof data !== "object") {
-      return {
-        ok: fallbackTotal,
-        failed: 0,
-        total: fallbackTotal,
-      };
-    }
-
-    const results = Array.isArray(data.results) ? data.results : [];
-
-    const ok = Number.isFinite(Number(data.ok))
-      ? Number(data.ok)
-      : Number.isFinite(Number(data.successes))
-        ? Number(data.successes)
-        : results.length
-          ? results.filter((r) => r.ok).length
-          : fallbackTotal;
-
-    const failed = Number.isFinite(Number(data.failed))
-      ? Number(data.failed)
-      : Number.isFinite(Number(data.failures))
-        ? Number(data.failures)
-        : results.length
-          ? results.length - ok
-          : 0;
-
-    return {
-      ok,
-      failed,
-      total: ok + failed,
-    };
-  }
-
-  function normalizePhoneDigits(value) {
-    return String(value || "").replace(/\D/g, "");
-  }
-
-  function phonesMatch(a, b) {
-    const da = normalizePhoneDigits(a);
-    const db = normalizePhoneDigits(b);
-
-    if (!da || !db) return false;
-
-    return da === db || da.endsWith(db) || db.endsWith(da);
-  }
-
-  function getResultReason(result) {
-    if (!result) return "Unknown error.";
-
-    if (result.error) return String(result.error);
-    if (result.reason) return String(result.reason);
-
-    if (typeof result.data === "string" && result.data.trim()) {
-      return result.data.trim();
-    }
-
-    if (result.data?.error) return String(result.data.error);
-    if (result.data?.message) return String(result.data.message);
-    if (result.data?.detail) return String(result.data.detail);
-
-    if (result.status) {
-      return `Request failed with status ${result.status}.`;
-    }
-
-    return "Unknown error.";
-  }
-
-  function getFailedRecipients(data, selectedUsers, channel) {
-    if (!data || typeof data !== "object") return [];
-
-    const results = Array.isArray(data.results) ? data.results : [];
-
-    return results
-      .filter((r) => !r.ok)
-      .map((r) => {
-        let matchedUser = null;
-
-        if (channel === "teams") {
-          matchedUser = selectedUsers.find(
-            (u) => String(u.id) === String(r.userId),
-          );
-        } else {
-          matchedUser =
-            selectedUsers.find((u) => String(u.id) === String(r.userId)) ||
-            selectedUsers.find((u) =>
-              phonesMatch(u.phone_number || u.phoneNumber, r.recipient || r.to),
-            ) ||
-            selectedUsers.find(
-              (u) =>
-                r.whatsappBsuid &&
-                String(u.whatsapp_bsuid || u.whatsappBsuid) ===
-                  String(r.whatsappBsuid),
-            ) ||
-            selectedUsers.find(
-              (u) =>
-                r.birdContactId &&
-                String(u.bird_contact_id || u.birdContactId) ===
-                  String(r.birdContactId),
-            );
-        }
-
-        const fallbackIdentifier =
-          r.recipient ||
-          r.to ||
-          r.whatsappUsername ||
-          r.whatsappBsuid ||
-          r.birdContactId ||
-          r.userId ||
-          r.email ||
-          "Unknown recipient";
-
-        const label =
-          matchedUser?.name ||
-          matchedUser?.email ||
-          matchedUser?.phone_number ||
-          matchedUser?.whatsapp_username ||
-          matchedUser?.whatsapp_bsuid ||
-          fallbackIdentifier;
-
-        const contact =
-          channel === "teams"
-            ? matchedUser?.email || r.userId || ""
-            : matchedUser?.phone_number ||
-              matchedUser?.whatsapp_username ||
-              matchedUser?.whatsapp_bsuid ||
-              r.to ||
-              r.recipient ||
-              r.whatsappBsuid ||
-              r.birdContactId ||
-              "";
-
-        return {
-          label,
-          contact,
-          reason: getResultReason(r),
-        };
-      });
-  }
-
-  function formatFailedRecipients(failedRecipients, maxToShow = 8) {
-    if (!failedRecipients.length) return "";
-
-    const visible = failedRecipients.slice(0, maxToShow);
-
-    const lines = visible.map((r) => {
-      const contact =
-        r.contact && String(r.contact) !== String(r.label)
-          ? ` (${r.contact})`
-          : "";
-
-      return `- ${r.label}${contact}: ${r.reason}`;
-    });
-
-    const hiddenCount = failedRecipients.length - visible.length;
-
-    if (hiddenCount > 0) {
-      lines.push(`- And ${hiddenCount} more...`);
-    }
-
-    return `Failed recipients:\n${lines.join("\n")}`;
-  }
-
-  function formatBroadcastResultMessage({
-    channel,
-    action,
-    ok,
-    failed,
-    note,
-    failedRecipients = [],
-  }) {
-    const channelLabel = channel === "whatsapp" ? "WhatsApp" : "Teams";
-
-    const successLabel = ok === 1 ? "1 success" : `${ok} successes`;
-    const failedLabel = failed === 1 ? "1 fail" : `${failed} fails`;
-
-    const mainMessage = `${channelLabel} broadcast ${action} with ${successLabel} and ${failedLabel}.`;
-    const failureDetails = formatFailedRecipients(failedRecipients);
-
-    return [mainMessage, note, failureDetails].filter(Boolean).join("\n\n");
-  }
+  
 
   async function validateContentBeforeAction(action) {
     const hasManualContent =
@@ -1839,19 +801,18 @@ export default function BroadcastPage() {
       return;
     }
 
-    if (!scheduledFor || Number.isNaN(scheduledFor.getTime())) {
+      const scheduledDate = scheduledDateFromDraft;
+
+    if (!scheduledDate) {
       await showAlert({
         title: "Choose date and time",
-        message: "Choose a date and time.",
+        message: "Choose a valid date and time.",
         tone: "warning",
       });
       return;
     }
 
-    const scheduledDate = new Date(scheduledFor);
-    scheduledDate.setHours(Number(hourDraft), Number(minuteDraft), 0, 0);
-
-    if (scheduledDate.getTime() <= Date.now()) {
+    if (!isFutureDate(scheduledDate)) {
       await showAlert({
         title: "Invalid schedule date",
         message: "The scheduled date must be in the future.",
@@ -1859,7 +820,7 @@ export default function BroadcastPage() {
       });
       return;
     }
-
+    
     if (chainMode) {
       if (channel !== "whatsapp") {
         await showAlert({
@@ -1909,15 +870,17 @@ export default function BroadcastPage() {
       setSending(true);
 
       try {
-        const res = await fetch("/api/broadcast/read-chain", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...buildChainPayload(selectedUsers),
-            scheduledFor: scheduledDate.toISOString(),
-            timezone: browserTimeZone,
-          }),
-        });
+       const scheduledChainPayload = createScheduledReadChainPayload({
+        chainPayload: buildChainPayload(selectedUsers),
+        scheduledDate,
+        timezone: browserTimeZone,
+      });
+
+      const res = await fetch("/api/broadcast/read-chain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scheduledChainPayload),
+      });
 
         const data = await res.json().catch(() => ({}));
 
@@ -1998,18 +961,20 @@ export default function BroadcastPage() {
     try {
       const payload = buildBroadcastPayload(selectedUsers);
 
+      const scheduledBroadcastPayload = createScheduledBroadcastPayload({
+        orgId: org?.id,
+        createdByUserId: user?.id || null,
+        channel,
+        scheduledDate,
+        timezone: browserTimeZone,
+        payload,
+        recipientCount: selectedUsers.length,
+      });
+
       const res = await fetch("/api/broadcast/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orgId: org?.id,
-          createdByUserId: user?.id || null,
-          channel,
-          scheduledFor: scheduledDate.toISOString(),
-          timezone: browserTimeZone,
-          payload,
-          recipientCount: selectedUsers.length,
-        }),
+        body: JSON.stringify(scheduledBroadcastPayload),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -2098,9 +1063,6 @@ export default function BroadcastPage() {
     });
   }
 
-  const allOnPageSelected =
-    filtered.length > 0 && filtered.every((u) => selected.has(u.id));
-
   const previewTime = useMemo(
     () =>
       new Date().toLocaleTimeString([], {
@@ -2119,12 +1081,6 @@ export default function BroadcastPage() {
 
   const templateButtonLabel =
     channel === "whatsapp" && tplName ? tplName : "No template";
-
-  const activeDelay = Number(
-    activeChainStep?.delayAfterPreviousReadMinutes || 0,
-  );
-
-  const activeDelayParts = splitDelayMinutes(activeDelay);
 
   const chainDelayTools =
     chainMode && activeChainStepIndex > 0 ? (
