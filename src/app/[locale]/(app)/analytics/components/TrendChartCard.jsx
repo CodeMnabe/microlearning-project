@@ -22,14 +22,16 @@ import {
 export default function TrendChartCard({
   title,
   description,
-  data,
+  data = [],
   dataKey,
   locale,
   emptyMessage,
 }) {
-  const hasData = data.some((item) => safeNumber(item[dataKey]) > 0);
+  const rawData = Array.isArray(data) ? data : [];
 
-  const chartData = data.map((item) => ({
+  const hasData = rawData.some((item) => safeNumber(item?.[dataKey]) > 0);
+
+  const chartData = rawData.map((item) => ({
     ...item,
     label: formatDateLabel(item.date, locale),
   }));
@@ -43,10 +45,22 @@ export default function TrendChartCard({
         </div>
       </div>
 
-      <div className={styles.chartBox}>
+      <div
+        className={`${styles.chartBox} ${
+          !hasData ? styles.chartBoxEmpty : ""
+        }`}
+      >
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart
+              data={chartData}
+              margin={{
+                top: 8,
+                right: 18,
+                left: 0,
+                bottom: 4,
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="label" minTickGap={20} />
               <YAxis allowDecimals={false} />
@@ -61,7 +75,9 @@ export default function TrendChartCard({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className={styles.chartEmpty}>{emptyMessage}</div>
+          <div className={styles.chartEmpty}>
+            <span>{emptyMessage || "Sem dados para mostrar."}</span>
+          </div>
         )}
       </div>
     </section>

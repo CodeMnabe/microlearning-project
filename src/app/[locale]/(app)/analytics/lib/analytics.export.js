@@ -1,32 +1,24 @@
-import { getPeriodLabelKey } from "./analytics.helpers";
-
 export async function exportAnalyticsPdf({
-  org,
+  exportElement,
   period,
-  locale,
-  translation,
-  format,
-
-  users,
-  assistants,
-  templates,
-  messages,
-  automations,
-  scheduledBroadcasts,
-
-  assistantCoverageRate,
-  readRate,
-  failedMessageRate,
-
-  topTrackedLinks,
-  dailyMessagesData,
-  dailyClicksData,
-  dailyAutomationRunsData,
+  exportClassName,
 }) {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+  if (!exportElement) return;
+
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
     import("jspdf"),
-    import("jspdf-autotable"),
   ]);
+
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
 
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -37,249 +29,164 @@ export async function exportAnalyticsPdf({
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  const periodLabel = translation(getPeriodLabelKey(period));
+  const marginX = 8;
+  const marginTop = 8;
+  const marginBottom = 14;
+  const sectionGap = 6;
 
-  function addFooter(pageNumber) {
-    pdf.setFontSize(9);
+  const usableWidth = pageWidth - marginX * 2;
+  const usableHeight = pageHeight - marginTop - marginBottom;
+
+  let currentY = marginTop;
+
+  function addFooter() {
+    const pageNumber = pdf.internal.getCurrentPageInfo().pageNumber;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
     pdf.setTextColor(120, 130, 145);
+
     pdf.text(
-      `Analytics report • ${periodLabel} • Página ${pageNumber}`,
-      16,
-      pageHeight - 10
+      `Analytics export - ${period} - Pagina ${pageNumber}`,
+      marginX,
+      pageHeight - 7
     );
   }
 
-  function addSectionTitle(title, y) {
-    pdf.setFontSize(15);
-    pdf.setTextColor(15, 23, 42);
-    pdf.setFont(undefined, "bold");
-    pdf.text(title, 16, y);
+  function addNewPage() {
+    addFooter();
+    pdf.addPage();
+    currentY = marginTop;
   }
 
-  const generatedAt = new Intl.DateTimeFormat(locale || "pt-PT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date());
+  function getVisibleSections() {
+    const sections = Array.from(
+      exportElement.querySelectorAll("[data-pdf-section]")
+    );
 
-  // Página 1 — Capa
-  pdf.setFillColor(48, 169, 224);
-  pdf.rect(0, 0, pageWidth, 70, "F");
+    const visibleSections = sections.filter((section) => {
+      const rect = section.getBoundingClientRect();
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(28);
-  pdf.setFont(undefined, "bold");
-  pdf.text("Analytics", 16, 32);
+      return rect.width > 0 && rect.height > 0;
+    });
 
-  pdf.setFontSize(13);
-  pdf.setFont(undefined, "normal");
-  pdf.text("Dashboard report", 16, 43);
+    return visibleSections.length > 0 ? visibleSections : [exportElement];
+  }
 
-  pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(14);
-  pdf.setFont(undefined, "bold");
-  pdf.text(org?.name || "Organization", 16, 92);
+  async function captureElement(element) {
+    return html2canvas(element, {
+      scale: Math.min(2, window.devicePixelRatio || 1),
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#eef2f7",
+      logging: false,
+      windowWidth: Math.max(
+        document.documentElement.clientWidth,
+        exportElement.scrollWidth,
+        1100
+      ),
+      windowHeight: Math.max(
+        document.documentElement.clientHeight,
+        exportElement.scrollHeight
+      ),
+      onclone: (clonedDocument) => {
+        const clonedRoot = clonedDocument.querySelector(
+          '[data-analytics-pdf-root="true"]'
+        );
 
-  pdf.setFontSize(11);
-  pdf.setFont(undefined, "normal");
-  pdf.setTextColor(82, 100, 122);
-  pdf.text(`Período: ${periodLabel}`, 16, 104);
-  pdf.text(`Gerado em: ${generatedAt}`, 16, 112);
+        if (clonedRoot && exportClassName) {
+          clonedRoot.classList.add(exportClassName);
+        }
+      },
+    });
+  }
 
-  pdf.setFontSize(10);
-  pdf.text(
-    "Este relatório resume os principais indicadores de utilização, atividade, automações, links e evolução diária.",
-    16,
-    132,
-    { maxWidth: pageWidth - 32 }
-  );
+  function addCanvasToPdf(canvas) {
+    const imageWidth = usableWidth;
+    const imageHeight = (canvas.height * imageWidth) / canvas.width;
 
-  addFooter(1);
+    if (imageHeight <= usableHeight) {
+      if (currentY + imageHeight > pageHeight - marginBottom) {
+        addNewPage();
+      }
 
-  // Página 2 — Métricas principais
-  pdf.addPage();
-  addSectionTitle("Resumo geral", 20);
+      const imageData = canvas.toDataURL("image/png", 1.0);
 
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.users"),
-        format(users.total),
-        `${format(users.withAssistant)} com assistente, ${format(
-          users.withoutAssistant
-        )} sem assistente`,
-      ],
-      [
-        translation("cards.assistants"),
-        format(assistants.total),
-        `${format(assistants.withoutOpenAiId)} sem OpenAI ID configurado`,
-      ],
-      [
-        translation("cards.templates"),
-        format(templates.total),
-        `${format(templates.active)} ativos, ${format(
-          templates.pending
-        )} pendentes, ${format(templates.rejected)} rejeitados`,
-      ],
-      [
-        translation("cards.assistantCoverage"),
-        `${assistantCoverageRate}%`,
-        `${format(users.withAssistant)}/${format(
-          users.total
-        )} utilizadores com assistente`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addSectionTitle("Atividade", pdf.lastAutoTable.finalY + 16);
-
-  autoTable(pdf, {
-    startY: pdf.lastAutoTable.finalY + 24,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.messages"),
-        format(messages.total),
-        `${format(messages.whatsapp)} WhatsApp, ${format(messages.teams)} Teams`,
-      ],
-      [
-        translation("cards.delivery"),
-        format(messages.delivered),
-        `${format(messages.read)} lidas, ${format(messages.failed)} falhadas`,
-      ],
-      [
-        translation("cards.readRate"),
-        `${readRate}%`,
-        `${format(messages.read)} de ${format(messages.total)} mensagens`,
-      ],
-      [
-        translation("cards.failureRate"),
-        `${failedMessageRate}%`,
-        `${format(messages.failed)} de ${format(messages.total)} mensagens`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addFooter(2);
-
-  // Página 3 — Automações e links
-  pdf.addPage();
-  addSectionTitle("Automações", 20);
-
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.automations"),
-        format(automations.rulesTotal),
-        `${format(automations.rulesActive)} ativas, ${format(
-          automations.rulesPaused
-        )} pausadas`,
-      ],
-      [
-        translation("cards.automationRuns"),
-        format(automations.runsTotal),
-        `${format(automations.runsProcessed)} processadas, ${format(
-          automations.runsFailed
-        )} falhadas`,
-      ],
-      [
-        translation("cards.scheduledBroadcasts"),
-        format(scheduledBroadcasts.total),
-        `${format(scheduledBroadcasts.completed)} concluídas, ${format(
-          scheduledBroadcasts.failed
-        )} falhadas, ${format(
-          scheduledBroadcasts.recipientCount
-        )} destinatários`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addSectionTitle("Links mais clicados", pdf.lastAutoTable.finalY + 16);
-
-  autoTable(pdf, {
-    startY: pdf.lastAutoTable.finalY + 24,
-    head: [
-      [
-        "#",
-        translation("rankings.columns.link"),
-        translation("rankings.columns.clicks"),
-      ],
-    ],
-    body: topTrackedLinks.slice(0, 10).map((link, index) => [
-      index + 1,
-      link.label,
-      format(link.clicks),
-    ]),
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addFooter(3);
-
-  // Página 4 — Evolução diária
-  pdf.addPage();
-  addSectionTitle("Evolução diária", 20);
-
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Data", "Mensagens", "Cliques", "Automações processadas"]],
-    body: dailyMessagesData.map((item) => {
-      const clickItem = dailyClicksData.find((row) => row.date === item.date);
-      const automationItem = dailyAutomationRunsData.find(
-        (row) => row.date === item.date
+      pdf.addImage(
+        imageData,
+        "PNG",
+        marginX,
+        currentY,
+        imageWidth,
+        imageHeight
       );
 
-      return [
-        item.date,
-        format(item.messages),
-        format(clickItem?.clicks),
-        format(automationItem?.processed),
-      ];
-    }),
-    styles: {
-      fontSize: 8,
-      cellPadding: 2.4,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
+      currentY += imageHeight + sectionGap;
+      return;
+    }
 
-  addFooter(4);
+    const pixelsPerMm = canvas.width / imageWidth;
+    const sliceHeightPx = Math.floor(usableHeight * pixelsPerMm);
+
+    let offsetY = 0;
+
+    while (offsetY < canvas.height) {
+      const remainingHeight = canvas.height - offsetY;
+      const currentSliceHeight = Math.min(sliceHeightPx, remainingHeight);
+
+      const sliceCanvas = document.createElement("canvas");
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = currentSliceHeight;
+
+      const context = sliceCanvas.getContext("2d");
+
+      context.drawImage(
+        canvas,
+        0,
+        offsetY,
+        canvas.width,
+        currentSliceHeight,
+        0,
+        0,
+        canvas.width,
+        currentSliceHeight
+      );
+
+      if (currentY !== marginTop) {
+        addNewPage();
+      }
+
+      const sliceImageHeight =
+        (sliceCanvas.height * imageWidth) / sliceCanvas.width;
+
+      const sliceImageData = sliceCanvas.toDataURL("image/png", 1.0);
+
+      pdf.addImage(
+        sliceImageData,
+        "PNG",
+        marginX,
+        currentY,
+        imageWidth,
+        sliceImageHeight
+      );
+
+      currentY += sliceImageHeight + sectionGap;
+      offsetY += currentSliceHeight;
+
+      if (offsetY < canvas.height) {
+        addNewPage();
+      }
+    }
+  }
+
+  const sections = getVisibleSections();
+
+  for (const section of sections) {
+    const canvas = await captureElement(section);
+    addCanvasToPdf(canvas);
+  }
+
+  addFooter();
 
   pdf.save(`analytics-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

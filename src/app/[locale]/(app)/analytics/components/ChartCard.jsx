@@ -15,8 +15,10 @@ import { safeNumber } from "../lib/analytics.helpers";
  * Card com gráfico de barras.
  * Usado para mostrar distribuições e comparações por categoria.
  */
-export default function ChartCard({ title, description, data }) {
-  const hasData = data.some((item) => safeNumber(item.value) > 0);
+export default function ChartCard({ title, description, data = [] }) {
+  const chartData = Array.isArray(data) ? data : [];
+
+  const hasData = chartData.some((item) => safeNumber(item.value) > 0);
 
   return (
     <section className={styles.chartCard}>
@@ -28,10 +30,24 @@ export default function ChartCard({ title, description, data }) {
         )}
       </div>
 
-      <div className={styles.chartBox}>
+      <div
+        className={`${styles.chartBox} ${
+          !hasData ? styles.chartBoxEmpty : ""
+        }`}
+      >
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barCategoryGap="28%" barGap={8}>
+            <BarChart
+              data={chartData}
+              barCategoryGap="28%"
+              barGap={8}
+              margin={{
+                top: 8,
+                right: 18,
+                left: 0,
+                bottom: 4,
+              }}
+            >
               <CartesianGrid strokeDasharray="1 1" vertical={false} />
               <XAxis dataKey="name" />
               <YAxis allowDecimals={false} />
@@ -45,7 +61,9 @@ export default function ChartCard({ title, description, data }) {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className={styles.chartEmpty}>Sem dados para mostrar.</div>
+          <div className={styles.chartEmpty}>
+            <span>Sem dados para mostrar.</span>
+          </div>
         )}
       </div>
     </section>

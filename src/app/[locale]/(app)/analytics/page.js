@@ -1,7 +1,7 @@
 
 "use client";
 
-import {  useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -112,6 +112,8 @@ const {
 });
 
 const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
+const exportRef = useRef(null);
+const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const {
   visibleMetricGroups,
@@ -122,37 +124,31 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
 } = useDashboardVisibility();
   
   
-  async function handleExportPdf() {
-  if (!metrics) return;
+ async function handleExportPdf() {
+  if (!metrics || !exportRef.current || isExportingPdf) return;
 
-  await exportAnalyticsPdf({
-    org,
-    period,
-    locale,
-    translation,
-    format,
+  setIsExportingPdf(true);
 
-    users,
-    assistants,
-    templates,
-    messages,
-    automations,
-    scheduledBroadcasts,
-
-    assistantCoverageRate,
-    readRate,
-    failedMessageRate,
-
-    topTrackedLinks,
-    dailyMessagesData,
-    dailyClicksData,
-    dailyAutomationRunsData,
-  });
+  try {
+    await exportAnalyticsPdf({
+      exportElement: exportRef.current,
+      period,
+      exportClassName: styles.exportingPdf,
+    });
+  } catch (err) {
+    console.error("[analytics] Failed to export PDF:", err);
+  } finally {
+    setIsExportingPdf(false);
+  }
 }
 
 
   return (
-    <main className={styles.page}>
+   <main
+  ref={exportRef}
+  data-analytics-pdf-root="true"
+  className={styles.page}
+                                >
       {/* Cabeçalho da página com título, nota, filtros e botão de refresh */}
        
       <AnalyticsHeader
@@ -183,7 +179,7 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
       
           
           {/* Grupos principais de cards de métricas */}
-          <div className={styles.metricGroups}>
+          <div data-pdf-section className={styles.metricGroups}>
 
             <MetricGroup className={styles.review}
               title={translation("groups.overview.title")}
@@ -250,13 +246,14 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
               {translation("customization.resetDashboard")}
             </button>
 
-            <button
-              type="button"
-                className={`${styles.customizationResetButton} ${styles.exportButton}`}
-              onClick={handleExportPdf}
-            >
-              {translation("customization.exports")}
-            </button>
+           <button
+            type="button"
+            className={`${styles.customizationResetButton} ${styles.exportButton}`}
+            onClick={handleExportPdf}
+            disabled={isExportingPdf || !metrics}
+          >
+            {isExportingPdf ? "A exportar..." : translation("customization.exports")}
+          </button>
           </div>
 
             <MetricGroup
@@ -394,7 +391,8 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
           </div>
 
           {/* Secção de gráficos de distribuição */}
-          <section
+         <section
+            data-pdf-section
             className={`${styles.section} ${
               !visibleChartSections.distribution
                 ? styles.sectionCollapsed
@@ -444,6 +442,7 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
           </section>
 
           {/* Secção de rankings */}
+          <div data-pdf-section>
           <TopLinksRanking
             translation={translation}
             topTrackedLinks={topTrackedLinks}
@@ -451,6 +450,7 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
             format={format}
             onViewAll={() => setIsFullLinksListOpen(true)}
           />
+        </div>
 
                     <FullLinksModal
                     isOpen={isFullLinksListOpen}
@@ -465,11 +465,12 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
                   />
 
           {/* Secção de gráficos de evolução diária */}
-          <section
-            className={`${styles.section} ${
-              !visibleChartSections.trends ? styles.sectionCollapsed : ""
-            }`}
-          >
+         <section
+                data-pdf-section
+                className={`${styles.section} ${
+                  !visibleChartSections.trends ? styles.sectionCollapsed : ""
+                }`}
+              >
             <div className={styles.sectionHeader}>
               <div>
                <div className={styles.titleWithInfo}>
@@ -527,17 +528,19 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
           </section>
 
           {/* Resumo operacional final */}
+         <div data-pdf-section>
           <OperationalSummary
-          translation={translation}
-          users={users}
-          messages={messages}
-          automations={automations}
-          scheduledBroadcasts={scheduledBroadcasts}
-          templates={templates}
-          format={format}
-          hasOperationalAttentionWarning={hasOperationalAttentionWarning}
-          operationalAttentionTotal={operationalAttentionTotal}
-        />
+            translation={translation}
+            users={users}
+            messages={messages}
+            automations={automations}
+            scheduledBroadcasts={scheduledBroadcasts}
+            templates={templates}
+            format={format}
+            hasOperationalAttentionWarning={hasOperationalAttentionWarning}
+            operationalAttentionTotal={operationalAttentionTotal}
+          />
+        </div>
         </>
       )}
     </main>
