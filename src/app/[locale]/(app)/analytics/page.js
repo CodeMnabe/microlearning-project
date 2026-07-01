@@ -10,7 +10,6 @@ import {
   FileText,
   MessageSquare,
   MousePointerClick,
-  RefreshCw,
   Send,
   Users,
   Zap,
@@ -22,9 +21,7 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./analytics.module.css";
-import {
-  PERIOD_OPTIONS,
-} from "./lib/analytics.constants";
+
 
 import { exportAnalyticsPdf } from "./lib/analytics.export";
 
@@ -33,8 +30,10 @@ import MetricCard from "./components/MetricCard";
 import MetricGroup from "./components/MetricGroup";
 import ChartCard from "./components/ChartCard";
 import TrendChartCard from "./components/TrendChartCard";
-import RankingTable from "./components/RankingTable";
 import FullLinksModal from "./components/FullLinksModal";
+import AnalyticsHeader from "./components/AnalyticsHeader";
+import TopLinksRanking from "./components/TopLinksRanking";
+import OperationalSummary from "./components/OperationalSummary";
 
 import {
   useDashboardVisibility,
@@ -155,50 +154,15 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
   return (
     <main className={styles.page}>
       {/* Cabeçalho da página com título, nota, filtros e botão de refresh */}
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{translation("title")}</h1>
-          
-
-          
-        </div>
-
-        <div className={styles.headerActions}>
-          {/* Botões de filtro por período */}
-          <div
-            className={styles.periodTabs}
-            aria-label={translation("periods.label")}
-          >
-            {PERIOD_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`${styles.periodButton} ${
-                  period === option.value ? styles.periodButtonActive : ""
-                }`}
-                onClick={() => setPeriod(option.value)}
-                disabled={!orgId || isLoadingMetrics}
-              >
-                {translation(option.labelKey)}
-              </button>
-            ))}
-          </div>
-
-          {/* Botão para recarregar métricas manualmente */}
-          <button
-            type="button"
-            className={styles.refreshButton}
-            onClick={loadMetrics}
-            disabled={!orgId || isLoadingMetrics}
-          >
-            <RefreshCw
-              size={16}
-              className={isLoadingMetrics ? styles.spinIcon : ""}
-            />
-            {isLoadingMetrics ? translation("loading") : translation("refresh")}
-          </button>
-        </div>
-      </header>
+       
+      <AnalyticsHeader
+        translation={translation}
+        orgId={orgId}
+        period={period}
+        onPeriodChange={setPeriod}
+        isLoadingMetrics={isLoadingMetrics}
+        onRefresh={loadMetrics}
+      />
 
       {/* Mensagem quando não existe organização associada */}
       {!orgId && !authLoading && !orgLoading && (
@@ -480,66 +444,13 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
           </section>
 
           {/* Secção de rankings */}
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <div>
-              <div className={styles.titleWithInfo}>
-              <h2 className={styles.sectionTitle}>
-                {translation("rankings.title")}
-              </h2>
-
-              <DescriptionInfo text={translation("rankings.description")} />
-            </div>
-              </div>
-            </div>
-
-            <div className={styles.rankingGrid}>
-              <RankingTable
-                title={translation("rankings.topLinksTitle")}
-                description={translation("rankings.topLinksDescription")}
-                rows={topTrackedLinks}
-                emptyMessage={translation("rankings.empty")}
-                splitTopTen
-                footer={
-                  allTrackedLinks.length > 10 ? (
-                    <button
-                      type="button"
-                      className={styles.viewAllButton}
-                      onClick={() => setIsFullLinksListOpen(true)}
-                    >
-                      {translation("rankings.viewAllLinks", {
-                        count: format(allTrackedLinks.length),
-                      })}
-                    </button>
-                  ) : null
-                }
-                columns={[
-                  {
-                    key: "position",
-                    label: "#",
-                    render: (_row, index) => (
-                      <span className={styles.rankingPosition}>{index + 1}</span>
-                    ),
-                  },
-                  {
-                    key: "label",
-                    label: translation("rankings.columns.link"),
-                    render: (row) => (
-                      <span className={styles.rankingMainText}>
-                        {row.label}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "clicks",
-                    label: translation("rankings.columns.clicks"),
-                    render: (row) => format(row.clicks),
-                  },
-                ]}
-              />
-
-            </div>
-          </section>
+          <TopLinksRanking
+            translation={translation}
+            topTrackedLinks={topTrackedLinks}
+            allTrackedLinks={allTrackedLinks}
+            format={format}
+            onViewAll={() => setIsFullLinksListOpen(true)}
+          />
 
                     <FullLinksModal
                     isOpen={isFullLinksListOpen}
@@ -616,80 +527,17 @@ const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
           </section>
 
           {/* Resumo operacional final */}
-          <section className={`${styles.section} ${styles.operationalSummary}`}>
-            <h2 className={styles.sectionTitle}>
-              {translation("sections.breakdownTitle")}
-            </h2>
-
-            <div className={styles.summaryGrid}>
-              <div className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>
-                  {translation("sections.users.title")}
-                </span>
-
-                <strong className={styles.summaryValue}>
-                  {translation("sections.users.value", {
-                    total: format(users.total),
-                    withAssistant: format(users.withAssistant),
-                  })}
-                </strong>
-
-                <p>
-                  {translation("sections.users.text", {
-                    email: format(users.withEmail),
-                    phone: format(users.withPhone),
-                    teams: format(users.withTeams),
-                    whatsapp: format(users.withWhatsapp),
-                  })}
-                </p>
-              </div>
-
-              <div className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>
-                  {translation("sections.messages.title")}
-                </span>
-
-                <strong className={styles.summaryValue}>
-                  {translation("sections.messages.value", {
-                    total: format(messages.total),
-                  })}
-                </strong>
-
-                <p>
-                  {translation("sections.messages.text", {
-                    userMessages: format(messages.userMessages),
-                    assistantMessages: format(messages.assistantMessages),
-                    read: format(messages.read),
-                    failed: format(messages.failed),
-                  })}
-                </p>
-              </div>
-
-              <div
-                className={`${styles.summaryItem} ${
-                  hasOperationalAttentionWarning ? styles.summaryWarning : ""
-                }`}
-              >
-                <span className={styles.summaryLabel}>
-                  {translation("sections.attention.title")}
-                </span>
-
-                <strong className={styles.summaryValue}>
-                  {translation("sections.attention.value", {
-                     total: format(operationalAttentionTotal),
-                  })}
-                </strong>
-
-                <p>
-                  {translation("sections.attention.text", {
-                    automationFailures: format(automations.runsFailed),
-                    scheduledFailures: format(scheduledBroadcasts.failed),
-                    rejectedTemplates: format(templates.rejected),
-                  })}
-                </p>
-              </div>
-            </div>
-          </section>
+          <OperationalSummary
+          translation={translation}
+          users={users}
+          messages={messages}
+          automations={automations}
+          scheduledBroadcasts={scheduledBroadcasts}
+          templates={templates}
+          format={format}
+          hasOperationalAttentionWarning={hasOperationalAttentionWarning}
+          operationalAttentionTotal={operationalAttentionTotal}
+        />
         </>
       )}
     </main>
