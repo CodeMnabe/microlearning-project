@@ -1,4 +1,22 @@
-// scheduled.helpers.js
+
+
+
+/**
+ * Helpers da página de broadcasts agendados.
+ *
+ * Este ficheiro contém funções puras para:
+ * - mapear campos vindos da API;
+ * - formatar datas e horas;
+ * - preparar valores para inputs de data/hora;
+ * - normalizar broadcasts agendados para a UI;
+ * - validar se um item pode ser editado ou eliminado.
+ *
+ * Não colocar aqui fetches, estado React, JSX ou chamadas a providers.
+ */
+
+/**
+ * Mapa entre nomes usados no frontend e colunas vindas da base de dados.
+ */
 export const FIELD_MAP = {
   id: "id",
   organizationId: "organization_id",
@@ -13,6 +31,9 @@ export const FIELD_MAP = {
   recipientCount: "recipient_count",
 };
 
+/**
+ * Estados disponíveis para filtragem na página Scheduled.
+ */
 export const STATUS_OPTIONS = [
   "all",
   "scheduled",
@@ -22,13 +43,23 @@ export const STATUS_OPTIONS = [
   "cancelled",
 ];
 
+/**
+ * Canais disponíveis para filtragem.
+ */
 export const CHANNEL_OPTIONS = ["all", "teams", "whatsapp"];
+
+/**
+ * Encurta texto longo para apresentar em tabelas.
+ */
 
 export function previewText(text = "", max = 110) {
   if (!text) return "-";
   return text.length > max ? `${text.slice(0, max).trim()}...` : text;
 }
 
+/**
+ * Formata uma data/hora respeitando timezone quando disponível.
+ */
 export function formatDateTime(value, timezone) {
   if (!value) return "-";
 
@@ -46,6 +77,9 @@ export function formatDateTime(value, timezone) {
   }
 }
 
+/**
+ * Converte uma data para o formato aceite por input type="date".
+ */
 export function toDateInputValue(value) {
   if (!value) return "";
   const d = new Date(value);
@@ -55,6 +89,9 @@ export function toDateInputValue(value) {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Extrai hora e minuto de uma data para inputs de edição.
+ */
 export function toTimeParts(value) {
   if (!value) return { hour: "12", minute: "00" };
   const d = new Date(value);
@@ -64,6 +101,9 @@ export function toTimeParts(value) {
   };
 }
 
+/**
+ * Constrói uma data ISO a partir de data, hora e minuto locais.
+ */
 export function buildScheduledIso(date, hour, minute) {
   if (!date) return null;
 
@@ -97,6 +137,9 @@ function getPayloadMessage(payload) {
   );
 }
 
+/**
+ * Normaliza um broadcast agendado vindo da API para o formato da UI.
+ */
 export function normalizeBroadcast(row) {
   const payload = row?.[FIELD_MAP.payload] ?? null;
 
@@ -116,10 +159,20 @@ export function normalizeBroadcast(row) {
   };
 }
 
+/**
+ * Indica se um broadcast ainda pode ser editado.
+ *
+ * Broadcasts em envio ou já enviados não devem ser alterados.
+ */
 export function canEditItem(item) {
   return !["sending", "sent"].includes(item.status);
 }
 
+/**
+ * Indica se um broadcast ainda pode ser eliminado.
+ *
+ * Broadcasts em envio ou já enviados não devem ser removidos.
+ */
 export function canDeleteItem(item) {
   return !["sending", "sent"].includes(item.status);
 }

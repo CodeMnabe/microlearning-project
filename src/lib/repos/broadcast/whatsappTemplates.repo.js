@@ -1,5 +1,16 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+/**
+ * Repositório de templates WhatsApp.
+ *
+ * Responsável por consultar templates disponíveis para uma organização
+ * e obter detalhes necessários para envio via WhatsApp/Bird.
+ *
+ * Este repo não deve validar parâmetros de UI.
+ * A validação de variáveis e preview pertence aos helpers/hooks/services.
+ */
+
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,

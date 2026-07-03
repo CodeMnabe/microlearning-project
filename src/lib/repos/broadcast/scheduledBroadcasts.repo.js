@@ -1,10 +1,28 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+/**
+ * Repositório de broadcasts agendados.
+ *
+ * Responsável por criar, consultar e atualizar agendamentos
+ * de broadcasts normais e read chains.
+ *
+ * Este repo não executa envios.
+ * Apenas persiste dados de agendamento e estado de processamento.
+ */
+
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
+
+/**
+ * Cria um broadcast agendado.
+ *
+ * Guarda canal, organização, data de envio, timezone, payload
+ * e metadados necessários para processamento futuro.
+ */
 
 export async function createScheduledBroadcast(row) {
   const { data, error } = await sb

@@ -1,3 +1,29 @@
+
+/**
+ * Exportação tabular da dashboard Analytics para PDF.
+ *
+ * Gera um relatório em PDF com jsPDF e jspdf-autotable,
+ * usando os dados já carregados no frontend.
+ *
+ * Esta versão não captura visualmente a dashboard.
+ * Se o objetivo for exportação visual igual à interface,
+ * este ficheiro deve ser migrado para html2canvas + jsPDF.
+ */
+
+
+
+
+/**
+ * Gera o relatório PDF da dashboard Analytics.
+ *
+ * A função não volta a pedir dados à API.
+ * Recebe os dados já preparados pela page/hooks e organiza-os
+ * em páginas e tabelas dentro do PDF.
+ */
+
+
+// Carregamos as bibliotecas de PDF apenas quando o utilizador exporta.
+// Isto evita aumentar o bundle inicial da página Analytics.
 export async function exportAnalyticsPdf({
   exportElement,
   period,

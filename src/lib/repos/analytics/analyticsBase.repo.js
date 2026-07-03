@@ -9,6 +9,7 @@ import { getSupabaseAdminClient } from "@/lib/db/admin";
  * Exemplo:
  * contar quantas mensagens existem numa organização.
  */
+
 export async function countRows(table, applyFilters) {
   /**
    * Vai buscar o cliente admin da Supabase.

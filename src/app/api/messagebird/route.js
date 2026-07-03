@@ -33,11 +33,11 @@ import {
 import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
-} from "@/lib/repos/pendingOutreach.repo";
+} from "@/lib/repos/broadcast/pendingOutreach.repo";
 import {
   createMessageChainDelivery,
   updateMessageChainRecipientProgress,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 import { splitE164 } from "@/lib/whatsapp/E164";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 

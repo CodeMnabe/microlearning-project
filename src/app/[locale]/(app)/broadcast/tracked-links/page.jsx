@@ -10,6 +10,25 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useTranslations } from "next-intl";
 import styles from "./tracked-links.module.css";
 
+
+/**
+ * Página de relatórios de links rastreados.
+ *
+ * Responsabilidades:
+ * - carregar grupos de links rastreados da organização atual;
+ * - permitir pesquisa por label, key, destino, canal ou origem;
+ * - apresentar métricas principais por link;
+ * - encaminhar para a página de detalhe de cada grupo.
+ *
+ * Esta página mostra uma visão agregada.
+ * O detalhe por recipient fica em /broadcast/tracked-links/detail.
+ */
+
+
+/**
+ * Formata uma data curta para apresentação na tabela.
+ */
+
 function formatDate(value) {
   if (!value) return "-";
 
@@ -19,6 +38,12 @@ function formatDate(value) {
   return d.toLocaleDateString();
 }
 
+
+/**
+ * Define a classe visual da taxa de clique.
+ *
+ * Valores altos, baixos e intermédios recebem estilos diferentes.
+ */
 function getRateClass(rate) {
   const n = Number(rate || 0);
   if (n >= 70) return styles.rateGood;

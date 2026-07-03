@@ -1,4 +1,4 @@
-import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
+import { createTrackedLink } from "@/lib/repos/broadcast/trackedLinks.repo";
 import crypto from "crypto";
 
 function makeToken() {

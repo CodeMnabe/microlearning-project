@@ -46,21 +46,34 @@ import {
 
 
 /**
- * Página principal de Analytics.
- * Carrega dados da API e apresenta a dashboard.
+ * Página principal da dashboard Analytics.
+ *
+ * Responsabilidades:
+ * - obter o utilizador e a organização atual;
+ * - carregar métricas através da API de Analytics;
+ * - preparar dados derivados através dos hooks locais;
+ * - renderizar cards, gráficos, rankings e resumo operacional;
+ * - acionar a exportação do relatório.
+ *
+ * A page deve manter-se focada na composição da interface.
+ * Lógica reutilizável deve ficar em hooks, lib ou componentes locais.
  */
+
+
+
+
 export default function AnalyticsPage() {
-  // Traduções e idioma atual.
+ 
   const translation = useTranslations("Analytics");
   const locale = useLocale();
   const { format } = useAnalyticsFormatter(locale);
 
-  // Dados do utilizador, organização e loader global.
+  
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const { startLoading, stopLoading } = useGlobalLoader();
 
-  // ID da organização atual.
+ 
   const orgId = org?.id;
 
   const {
@@ -124,6 +137,13 @@ const [isExportingPdf, setIsExportingPdf] = useState(false);
 } = useDashboardVisibility();
   
   
+/**
+ * Exporta o relatório Analytics com base nos dados já carregados.
+ *
+ * Esta função apenas prepara os argumentos necessários.
+ * A lógica de geração do PDF fica isolada em analytics.export.js.
+ */
+
  async function handleExportPdf() {
   if (!metrics || !exportRef.current || isExportingPdf) return;
 

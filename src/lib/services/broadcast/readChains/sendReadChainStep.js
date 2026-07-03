@@ -4,7 +4,7 @@ import {
   createMessageChainDelivery,
   markMessageChainDeliveryFailed,
   updateMessageChainRecipientProgress,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 
 function getResultError(result) {
   if (!result) return "Unknown send error.";

@@ -2,6 +2,14 @@ import styles from "../analytics.module.css";
 
 import DescriptionInfo from "./DescriptionInfo";
 
+
+/**
+ * Modal com a lista completa de links rastreados.
+ *
+ * Complementa o ranking principal, que normalmente mostra
+ * apenas os primeiros resultados.
+ */
+
 export default function FullLinksModal({
   isOpen,
   onClose,

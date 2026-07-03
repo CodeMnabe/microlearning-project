@@ -1,12 +1,12 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { isReadChainsEnabled } from "@/lib/repos/organizationMessagingFeature.repo";
+import { isReadChainsEnabled } from "@/lib/repos/broadcast/organizationMessagingFeature.repo";
 import {
   createMessageChain,
   createMessageChainRecipients,
   createMessageChainSteps,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
 
 function normalizeRecipient(raw) {

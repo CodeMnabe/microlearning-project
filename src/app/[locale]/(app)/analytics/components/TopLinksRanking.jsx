@@ -3,6 +3,13 @@ import styles from "../analytics.module.css";
 import DescriptionInfo from "./DescriptionInfo";
 import RankingTable from "./RankingTable";
 
+/**
+ * Secção de ranking dos links rastreados.
+ *
+ * Mostra os links com melhor desempenho e permite abrir
+ * a lista completa quando existem mais resultados.
+ */
+
 export default function TopLinksRanking({
   translation,
   topTrackedLinks,

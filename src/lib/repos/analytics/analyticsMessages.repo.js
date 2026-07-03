@@ -12,6 +12,7 @@ import { countRows } from "./analyticsBase.repo";
  * - mensagens lidas;
  * - mensagens falhadas.
  */
+
 export async function getMessageMetrics(orgId, periodStart) {
   /**
    * Executa todas as contagens em paralelo.

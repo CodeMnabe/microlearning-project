@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTrackedLinkReportsByOrg } from "@/lib/repos/trackedLinks.repo";
+import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
 
 export async function GET(req) {
   try {

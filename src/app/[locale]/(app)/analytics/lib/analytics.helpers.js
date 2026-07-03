@@ -1,3 +1,16 @@
+/**
+ * Helpers locais da página Analytics.
+ *
+ * Contém apenas funções de apoio ao frontend:
+ * - normalização de números;
+ * - cálculo de percentagens;
+ * - formatação de datas;
+ * - preparação de dados para gráficos.
+ *
+ * Não confundir com os helpers globais/backend de Analytics.
+ */
+
+
 // ==============================
 // Number helpers
 // ==============================

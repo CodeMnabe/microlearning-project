@@ -3,8 +3,13 @@ import { RefreshCw } from "lucide-react";
 import styles from "../analytics.module.css";
 import { PERIOD_OPTIONS } from "../lib/analytics.constants";
 
+/**
+ * Header da dashboard Analytics.
+ *
+ * Mostra o título da página, o seletor de período
+ * e a ação de atualização das métricas.
+ */
 
-/* Cabeçalho da página com título, nota, filtros e botão de refresh */
 export default function AnalyticsHeader({
   translation,
   orgId,

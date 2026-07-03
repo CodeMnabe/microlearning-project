@@ -3,7 +3,7 @@ import {
   getDueScheduledBroadcasts,
   markScheduledBroadcastProcessing,
   finishScheduledBroadcast,
-} from "@/lib/repos/scheduledBroadcasts.repo";
+} from "@/lib/repos/broadcast/scheduledBroadcasts.repo";
 import {
   markAutomationRunFailed,
   markAutomationRunProcessing,

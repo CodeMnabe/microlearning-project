@@ -9,7 +9,7 @@ import {
   getMessageChainById,
   getMessageChainRecipientById,
   getMessageChainStep,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
 
 function isAuthorized(req) {

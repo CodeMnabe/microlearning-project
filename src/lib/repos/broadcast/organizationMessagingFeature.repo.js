@@ -1,3 +1,13 @@
+/**
+ * Repositório de funcionalidades de messaging por organização.
+ *
+ * Responsável por consultar configurações que controlam funcionalidades
+ * como read chains, canais ativos e permissões associadas a mensagens.
+ *
+ * Este repo apenas lê/atualiza configurações na base de dados.
+ * A decisão de bloquear ou permitir uma ação deve ficar no service/API.
+ */
+
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 const sb = createServiceClient(
@@ -86,6 +96,11 @@ export async function setReadChainsEnabled({
   return data;
 }
 
+/**
+ * Verifica se as read chains estão ativas para uma organização.
+ *
+ * Usado antes de iniciar ou continuar sequências WhatsApp.
+ */
 export async function isReadChainsEnabled({
   organizationId,
   channel = "whatsapp",

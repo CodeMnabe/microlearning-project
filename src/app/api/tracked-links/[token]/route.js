@@ -3,7 +3,7 @@ import crypto from "crypto";
 import {
   getTrackedLinkByToken,
   createTrackedLinkEvent,
-} from "@/lib/repos/trackedLinks.repo";
+} from "@/lib/repos/broadcast/trackedLinks.repo";
 
 function getClientIp(req) {
   const forwarded = req.headers.get("x-forwarded-for");

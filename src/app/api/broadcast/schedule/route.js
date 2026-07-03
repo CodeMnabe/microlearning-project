@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrganization } from "@/lib/repos/organizations.repo";
-import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
+import { createScheduledBroadcast } from "@/lib/repos/broadcast/scheduledBroadcasts.repo";
 
 export async function POST(req) {
   try {

@@ -15,6 +15,7 @@ import { fetchRows } from "./analyticsBase.repo";
  * - envios falhados;
  * - total de destinatários.
  */
+
 export async function getScheduledBroadcastMetrics(orgId, periodStart) {
   /**
    * Vai buscar os envios agendados da organização.

@@ -1,11 +1,40 @@
+/**
+ * Helpers de recipients para broadcasts agendados.
+ *
+ * Este ficheiro normaliza utilizadores e recipients guardados
+ * em payloads antigos ou novos.
+ *
+ * Responsabilidades:
+ * - limpar valores de texto;
+ * - reconhecer telefones, WhatsApp BSUIDs e Bird contact IDs;
+ * - normalizar utilizadores vindos da API;
+ * - construir recipients compatíveis com Teams e WhatsApp;
+ * - gerar chaves únicas para evitar recipients duplicados;
+ * - mapear recipients guardados para entradas usadas nos modais.
+ *
+ * Estes helpers não devem conter React, JSX, fetches ou lógica visual.
+ */
+
+
+/**
+ * Limpa valores desconhecidos para string.
+ *
+ * Garante que null e undefined não entram na lógica de recipients.
+ */
 export function cleanText(value) {
   if (value === undefined || value === null) return "";
   return String(value).trim();
 }
 
+/**
+ * Verifica se um valor parece ser um WhatsApp BSUID.
+ *
+ * Usado para distinguir IDs fallback de números de telefone.
+ */
 export function looksLikeWhatsappBsuid(value) {
   return /^[A-Z]{2}\.\d+$/i.test(cleanText(value));
 }
+
 
 function normalizeDigits(value) {
   return cleanText(value).replace(/\D/g, "");
@@ -20,6 +49,11 @@ export function phonesMatch(a, b) {
   return da === db || da.endsWith(db) || db.endsWith(da);
 }
 
+/**
+ * Normaliza um utilizador da organização para o formato usado no Scheduled.
+ *
+ * Junta campos vindos da base de dados e aliases usados no frontend.
+ */
 export function normalizeUser(user = {}) {
   return {
     ...user,
@@ -57,6 +91,12 @@ export function normalizeUser(user = {}) {
   };
 }
 
+/**
+ * Obtém o melhor telefone WhatsApp disponível para um utilizador.
+ *
+ * Usa phoneNumber diretamente ou junta country code + número nacional.
+ */
+
 export function getWhatsAppPhone(user) {
   const normalized = normalizeUser(user);
 
@@ -69,6 +109,13 @@ export function getWhatsAppPhone(user) {
 
   return "";
 }
+
+/**
+ * Constrói o recipient correto para o canal escolhido.
+ *
+ * Teams precisa de userId.
+ * WhatsApp pode usar telefone, BSUID ou Bird contact ID.
+ */
 
 export function getRecipientForChannel(user, channel) {
   const normalized = normalizeUser(user);
@@ -252,6 +299,12 @@ export function normalizeRecipientForChannel(recipient, channel) {
   };
 }
 
+/**
+ * Gera uma chave estável para comparar recipients.
+ *
+ * Usado para evitar duplicados em edição de broadcasts agendados.
+ */
+
 export function getRecipientKey(recipient, channel) {
   const normalized = normalizeRecipientForChannel(recipient, channel);
 
@@ -281,6 +334,9 @@ export function getRecipientKind(recipient, channel) {
   return "unknown";
 }
 
+/**
+ * Remove recipients duplicados mantendo apenas entradas válidas.
+ */
 export function uniqueRecipients(recipients = [], channel = "whatsapp") {
   const seen = new Set();
   const out = [];
@@ -297,6 +353,13 @@ export function uniqueRecipients(recipients = [], channel = "whatsapp") {
 
   return out;
 }
+
+/**
+ * Converte recipients guardados em entradas apresentáveis nos modais.
+ *
+ * Quando possível, associa o recipient a um utilizador conhecido.
+ * Caso contrário, cria uma entrada unresolved.
+ */
 
 export function mapRecipientsToEntries(
   recipients = [],

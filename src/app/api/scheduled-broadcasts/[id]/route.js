@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   updateScheduledBroadcast,
   deleteScheduledBroadcast,
-} from "@/lib/repos/scheduledBroadcasts.repo";
+} from "@/lib/repos/broadcast/scheduledBroadcasts.repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -2,11 +2,29 @@
 require("dotenv").config();
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+/**
+ * Repositório de pending outreach.
+ *
+ * Guarda contactos/mensagens que não puderam avançar imediatamente,
+ * normalmente porque a janela de 24h do WhatsApp não está aberta.
+ *
+ * Este repo é responsável apenas por persistir e consultar estados pendentes.
+ * A decisão de criar pending outreach pertence ao service de Broadcast.
+ */
+
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
+
+/**
+ * Cria um registo de outreach pendente.
+ *
+ * Usado quando não é possível continuar uma conversa WhatsApp
+ * sem recorrer a template ou ação futura.
+ */
 
 export async function createPendingOutreach({
   orgId,
@@ -45,6 +63,11 @@ export async function createPendingOutreach({
   return data;
 }
 
+/**
+ * Consulta registos de outreach pendente de uma organização.
+ *
+ * Pode ser usado para dashboards, automações ou acompanhamento operacional.
+ */
 export async function getAllPendingOutreachByUser(userId) {
   const { data, error } = await supabase
     .from("pending_outreach")
@@ -72,6 +95,11 @@ export async function getAllPendingOutreachByUser(userId) {
   if (error) throw error;
   return data ?? [];
 }
+/**
+ * Atualiza o estado de um outreach pendente.
+ *
+ * Exemplo: resolvido, falhado, expirado ou processado.
+ */
 
 export async function markPendingOutreachReplied(id, replyMessageId) {
   const { data, error } = await supabase

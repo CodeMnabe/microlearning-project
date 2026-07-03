@@ -1,10 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 
+
+
+/**
+ * Repositório de links rastreados.
+ *
+ * Responsável por criar links rastreados, consultar links existentes
+ * e registar cliques associados a broadcasts/mensagens.
+ *
+ * Este repo não deve gerar texto de mensagens nem substituir placeholders.
+ * Essa lógica pertence aos helpers/services de Broadcast.
+ */
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
+
+/**
+ * Cria um link rastreado na base de dados.
+ *
+ * O link guarda a relação entre organização, mensagem/broadcast,
+ * key pública e URL de destino.
+ */
 
 export async function createTrackedLink(row) {
   const { data, error } = await supabaseAdmin

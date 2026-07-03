@@ -8,9 +8,9 @@ import {
   getUserByBirdContactId,
 } from "@/lib/repos/user.repo";
 import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
-import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
+import { createPendingOutreach } from "@/lib/repos/broadcast/pendingOutreach.repo";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
-import { getWhatsappTemplateById } from "@/lib/repos/whatsappTemplates.repo";
+import { getWhatsappTemplateById } from "@/lib/repos/broadcast/whatsappTemplates.repo";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,

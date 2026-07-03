@@ -16,9 +16,36 @@ import {
   buildTemplatesChartData,
 } from "../lib/analytics.helpers";
 
+
+
+/**
+ * Hooks locais da página Analytics.
+ *
+ * Este ficheiro concentra lógica de frontend específica da dashboard:
+ * - preferências de visibilidade guardadas no localStorage;
+ * - carregamento das métricas via API;
+ * - preparação de dados derivados para cards e gráficos;
+ * - formatação numérica de acordo com o locale atual.
+ *
+ * Não colocar aqui queries Supabase nem lógica de backend.
+ * A página Analytics deve comunicar com dados através da API.
+ */
+
+
+
+
 // ==============================
 // Dashboard visibility hook
 // ==============================
+
+
+/**
+ * Gere as preferências visuais da dashboard.
+ *
+ * Controla que grupos de métricas e secções de gráficos estão visíveis.
+ * As preferências são guardadas no localStorage para persistirem entre visitas.
+ */
+
 
 export function useDashboardVisibility() {
 
@@ -115,8 +142,11 @@ export function useDashboardVisibility() {
   }, [visibleChartSections]);
 
   /**
-   * Mostra ou oculta um grupo de métricas.
-   */
+ * Repõe a dashboard para a visibilidade padrão.
+ *
+ * Útil quando o utilizador personalizou os grupos/cards visíveis
+ * e quer voltar à configuração inicial.
+ */
   function toggleMetricGroup(groupKey) {
     setVisibleMetricGroups((currentGroups) => ({
       ...currentGroups,
@@ -124,6 +154,9 @@ export function useDashboardVisibility() {
     }));
   }
 
+  /**
+ * Mostra ou oculta uma secção de gráficos.
+ */
   function toggleChartSection(sectionKey) {
     setVisibleChartSections((currentSections) => ({
       ...currentSections,
@@ -153,6 +186,13 @@ export function useDashboardVisibility() {
 // ==============================
 // Metrics loading hook
 // ==============================
+
+/**
+ * Gere o carregamento das métricas da dashboard.
+ *
+ * Faz fetch à API de Analytics quando existe uma organização válida
+ * e sempre que o período selecionado muda.
+ */
 
 export function useAnalyticsMetrics({
   authLoading,
@@ -225,6 +265,18 @@ export function useAnalyticsMetrics({
 // ==============================
 // Derived analytics data hook
 // ==============================
+
+
+/**
+ * Prepara dados derivados a partir da resposta da API.
+ *
+ * Aqui ficam transformações específicas da UI:
+ * - extração segura dos grupos de métricas;
+ * - cálculo de percentagens;
+ * - preparação dos dados para gráficos;
+ * - rankings;
+ * - estados de aviso visual dos cards.
+ */
 
 export function useAnalyticsDerivedData({ metrics, translation }) {
   return useMemo(() => {
@@ -340,6 +392,14 @@ const cardTones = {
 // ==============================
 // Analytics formatter hook
 // ==============================
+
+
+/**
+ * Centraliza a formatação numérica da dashboard.
+ *
+ * Usa o locale atual para apresentar números no formato correto
+ * para o utilizador.
+ */
 
 export function useAnalyticsFormatter(locale) {
     /**

@@ -1,4 +1,20 @@
+/**
+ * Repositório de read chains do Broadcast.
+ *
+ * Responsável por consultar e atualizar dados relacionados com:
+ * - chains;
+ * - recipients da chain;
+ * - steps da chain;
+ * - deliveries de cada step;
+ * - progresso da sequência.
+ *
+ * Este repo deve conter apenas operações de base de dados.
+ * A lógica de envio, delays e decisão do próximo step deve ficar nos services.
+ */
+
+
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +26,11 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/**
+ * Cria uma nova read chain na base de dados.
+ *
+ * Recebe dados já validados pelo service/API e devolve o registo criado.
+ */
 export async function createMessageChain({
   organizationId,
   createdByUserId = null,
@@ -122,6 +143,11 @@ export async function getMessageChainStep({ chainId, stepIndex }) {
   return data ?? null;
 }
 
+/**
+ * Regista destinatários associados a uma read chain.
+ *
+ * Cada recipient mantém o progresso individual dentro da sequência.
+ */
 export async function getMessageChainRecipientById(id) {
   const { data, error } = await sb
     .from("message_chain_recipient")
@@ -238,6 +264,12 @@ export async function markMessageChainFailed({ chainId, errorMessage }) {
   return data;
 }
 
+/**
+ * Cria ou atualiza uma delivery de read chain.
+ *
+ * Uma delivery representa a tentativa de envio de um step
+ * para um destinatário específico.
+ */
 export async function createMessageChainDelivery({
   chainId,
   chainStepId,
@@ -382,6 +414,12 @@ export async function markMessageChainDeliveryFailed({
 
   return data ?? null;
 }
+
+/**
+ * Atualiza o progresso de um destinatário dentro da read chain.
+ *
+ * Usado quando um step é enviado, lido, falha ou quando a sequência termina.
+ */
 
 export async function updateMessageChainRecipientProgress({
   chainRecipientId,

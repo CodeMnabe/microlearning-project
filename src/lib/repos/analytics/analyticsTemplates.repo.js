@@ -9,6 +9,7 @@ import { countRows } from "./analyticsBase.repo";
  * - templates pendentes;
  * - templates rejeitados/inativos.
  */
+
 export async function getTemplateMetrics(orgId) {
   /**
    * Filtro usado para buscar templates:

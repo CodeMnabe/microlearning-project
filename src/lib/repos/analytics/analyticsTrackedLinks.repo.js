@@ -15,6 +15,7 @@ import {
  * - total de links rastreados;
  * - total de cliques nesses links dentro do período selecionado.
  */
+
 export async function getTrackedLinkMetrics(orgId, periodStart) {
   /**
    * Primeiro vamos buscar todos os links rastreados da organização.

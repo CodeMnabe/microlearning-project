@@ -1,5 +1,12 @@
 import styles from "../analytics.module.css";
 
+/**
+ * Resumo operacional da dashboard.
+ *
+ * Junta indicadores importantes da operação, como utilizadores,
+ * mensagens, automações, broadcasts e templates que exigem atenção.
+ */
+
 export default function OperationalSummary({
   translation,
   users,

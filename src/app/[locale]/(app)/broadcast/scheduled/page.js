@@ -7,7 +7,11 @@ import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./scheduled.module.css";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 
-import { normalizeUser } from "./helpers/recipient.helpers";
+import {
+  normalizeUser,
+  uniqueRecipients,
+} from "./helpers/recipient.helpers";
+
 import {
   STATUS_OPTIONS,
   CHANNEL_OPTIONS,
@@ -27,138 +31,25 @@ import ScheduledEditModal from "./components/ScheduledEditModal";
 
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 
+/**
+ * Página de gestão de broadcasts agendados.
+ *
+ * Responsabilidades:
+ * - carregar broadcasts agendados da organização atual;
+ * - carregar utilizadores disponíveis para edição de recipients;
+ * - aplicar filtros por pesquisa, estado, canal e data;
+ * - abrir modais de visualização e edição;
+ * - atualizar broadcasts agendados;
+ * - eliminar agendamentos quando permitido.
+ *
+ * A page deve funcionar como orquestrador da interface.
+ * Regras reutilizáveis devem ficar em helpers e componentes locais.
+ **/
+
+
+
 const MODAL_CLOSE_MS = 280;
 
-function cleanText(value) {
-  if (value === undefined || value === null) return "";
-  return String(value).trim();
-}
-
-function looksLikeWhatsappBsuid(value) {
-  return /^[A-Z]{2}\.\d+$/i.test(cleanText(value));
-}
-
-function normalizeSavedRecipient(recipient, channel) {
-  if (typeof recipient === "string" || typeof recipient === "number") {
-    const value = cleanText(recipient);
-
-    if (!value) return null;
-
-    if (channel === "teams") {
-      return {
-        userId: value,
-      };
-    }
-
-    if (looksLikeWhatsappBsuid(value)) {
-      return {
-        userId: null,
-        name: null,
-        phoneNumber: null,
-        whatsappBsuid: value,
-        whatsappUsername: null,
-        birdContactId: null,
-      };
-    }
-
-    return {
-      userId: null,
-      name: null,
-      phoneNumber: value,
-      whatsappBsuid: null,
-      whatsappUsername: null,
-      birdContactId: null,
-    };
-  }
-
-  if (!recipient || typeof recipient !== "object") return null;
-
-  if (channel === "teams") {
-    const userId =
-      cleanText(recipient.userId) ||
-      cleanText(recipient.user_id) ||
-      cleanText(recipient.id);
-
-    if (!userId) return null;
-
-    return {
-      userId,
-      name: cleanText(recipient.name) || null,
-      email: cleanText(recipient.email) || null,
-    };
-  }
-
-  const phoneNumber =
-    cleanText(recipient.phoneNumber) ||
-    cleanText(recipient.phone_number) ||
-    cleanText(recipient.phone);
-
-  const whatsappBsuid =
-    cleanText(recipient.whatsappBsuid) ||
-    cleanText(recipient.whatsapp_bsuid) ||
-    cleanText(recipient.whatsappPsuid);
-
-  const birdContactId =
-    cleanText(recipient.birdContactId) || cleanText(recipient.bird_contact_id);
-
-  const userId =
-    cleanText(recipient.userId) ||
-    cleanText(recipient.user_id) ||
-    cleanText(recipient.id);
-
-  if (!phoneNumber && !whatsappBsuid && !birdContactId && !userId) {
-    return null;
-  }
-
-  return {
-    userId: userId || null,
-    name: cleanText(recipient.name) || null,
-    phoneNumber: phoneNumber || null,
-
-    // Phone first. Fallback IDs only when no phone exists.
-    whatsappBsuid: phoneNumber ? null : whatsappBsuid || null,
-    whatsappUsername: phoneNumber
-      ? null
-      : cleanText(recipient.whatsappUsername) ||
-        cleanText(recipient.whatsapp_username) ||
-        null,
-    birdContactId: phoneNumber || whatsappBsuid ? null : birdContactId || null,
-  };
-}
-
-function getSavedRecipientKey(recipient, channel) {
-  const normalized = normalizeSavedRecipient(recipient, channel);
-
-  if (!normalized) return "";
-
-  if (channel === "teams") {
-    return cleanText(normalized.userId);
-  }
-
-  return (
-    cleanText(normalized.phoneNumber) ||
-    cleanText(normalized.whatsappBsuid) ||
-    cleanText(normalized.birdContactId) ||
-    cleanText(normalized.userId)
-  );
-}
-
-function uniqueSavedRecipients(recipients, channel) {
-  const seen = new Set();
-  const out = [];
-
-  for (const recipient of recipients || []) {
-    const normalized = normalizeSavedRecipient(recipient, channel);
-    const key = getSavedRecipientKey(normalized, channel);
-
-    if (!normalized || !key || seen.has(key)) continue;
-
-    seen.add(key);
-    out.push(normalized);
-  }
-
-  return out;
-}
 
 export default function ScheduledPage() {
   const t = useTranslations("BroadcastScheduled");
@@ -417,7 +308,7 @@ export default function ScheduledPage() {
       formData.minute,
     );
 
-    const recipients = uniqueSavedRecipients(
+    const recipients = uniqueRecipients(
       formData.recipients,
       formData.channel,
     );
@@ -658,3 +549,4 @@ export default function ScheduledPage() {
     </div>
   );
 }
+

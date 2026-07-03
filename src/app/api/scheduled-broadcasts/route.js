@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOrgScheduledBroadcasts } from "@/lib/repos/scheduledBroadcasts.repo";
+import { getOrgScheduledBroadcasts } from "@/lib/repos/broadcast/scheduledBroadcasts.repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
