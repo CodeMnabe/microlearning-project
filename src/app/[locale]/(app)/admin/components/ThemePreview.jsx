@@ -1,6 +1,13 @@
 "use client";
 import styles from "../admin.module.css";
 
+/**
+ * Preview visual do tema de uma organização.
+ *
+ * Mostra uma simulação simples da interface usando as cores
+ * primária e secundária escolhidas pelo utilizador.
+ */
+
 export default function ThemePreview({ theme }) {
   const primary = theme?.primary || "#4f46e5";
   const secondary = theme?.secondary || "#0ea5e9";
