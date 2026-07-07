@@ -43,7 +43,7 @@ function formatDate(value) {
  * Define a classe visual da taxa de clique.
  *
  * Valores altos, baixos e intermédios recebem estilos diferentes.
- */
+ */ 
 function getRateClass(rate) {
   const n = Number(rate || 0);
   if (n >= 70) return styles.rateGood;
