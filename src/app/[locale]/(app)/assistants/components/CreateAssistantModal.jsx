@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import styles from "./assistants.module.css";
+import styles from "../assistants.module.css";
 import { useTranslations } from "next-intl";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import Slider from "@/app/components/Slider/Slider";
