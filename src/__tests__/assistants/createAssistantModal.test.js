@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import CreateAssistantModal from "@/app/[locale]/(app)/assistants/CreateAssistantModal";
+import CreateAssistantModal from "@/app/[locale]/(app)/assistants/components/CreateAssistantModal";
 
 vi.mock("@/app/components/PillSelect/PillSelect", () => ({
   default: ({ value, options = [], onChange, placeholder }) =>

@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import ChatSandbox from "@/app/[locale]/(app)/assistants/Chatbox/Chatbox.jsx";
+import ChatSandbox from "@/app/[locale]/(app)/assistants/components/ChatSandbox.jsx";
 
 function makeResponse(data, ok = true) {
   return Promise.resolve({

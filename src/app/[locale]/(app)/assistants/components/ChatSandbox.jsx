@@ -1,8 +1,7 @@
 // /app/assistants/Chatbox/Chatbox.jsx
 "use client";
 import { useState } from "react";
-import styles from "./chatbox.module.css";
-import ui from "../assistants.module.css";
+import styles from "../assistants.module.css";
 import { useTranslations } from "next-intl";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 
@@ -146,7 +145,7 @@ export default function ChatSandbox({ assistant }) {
         {/* 👇 same pill style as "Criar e Associar" */}
         <button
           type="submit"
-          className={`${ui.ctaPrimary} ${styles.sendBtn}`}
+          className={`${styles.ctaPrimary} ${styles.sendBtn}`}
           disabled={isSending || !input.trim()}
         >
           {translation("Chatbox.send")}

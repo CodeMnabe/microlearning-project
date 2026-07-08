@@ -1,3 +1,12 @@
+/**
+ * Helpers da integração OpenAI.
+ *
+ * Gere:
+ * - limpeza de respostas vindas da OpenAI;
+ * - remoção de citações internas;
+ * - normalização de texto antes de ser apresentado na UI.
+ *
+ */
 export function stripOpenAICitations(input) {
   return (
     String(input)

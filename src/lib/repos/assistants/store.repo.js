@@ -1,6 +1,19 @@
 // src/lib/repos/store.repo.js
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+/**
+ * Repo da tabela vector_store.
+ *
+ * Gere:
+ * - criação de vector stores na base de dados;
+ * - carregamento de vector stores por ID;
+ * - listagem dos ficheiros associados à store;
+ * - remoção de vector stores.
+ *
+ * Este repo trabalha apenas com dados persistidos na Supabase.
+ *
+ */
+
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
