@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
-import { sendMessageToAi } from "@/lib/services/oAi.services";
+import { sendMessageToAi } from "@/lib/services/openai/openai.service";
+
+/**
+ * Endpoint legado de envio de mensagem para assistente.
+ *
+ * Endpoint:
+ * - POST /api/assistants/:assistantId/message
+ *
+ * Nota:
+ * Este endpoint parece ter sido substituído por:
+ * - /api/assistants/:assistantId/messages
+ *
+ * Diferença principal:
+ * - este endpoint exige threadId;
+ * - o endpoint /messages cria uma thread OpenAI quando ainda não existe.
+ *
+ * Antes de remover este ficheiro, confirmar se ainda existe algum frontend
+ * ou integração externa a chamar esta rota.
+ */
 
 require("dotenv").config();
 const OpenAI = require("openai");

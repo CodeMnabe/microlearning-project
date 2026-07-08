@@ -15,6 +15,24 @@ import CreateAssistantModal from "./components/CreateAssistantModal";
 
 import { useAssistantsHub } from "./hooks/assistants.hooks";
 
+/**
+ * Página principal da camada Assistants.
+ *
+ * Responsabilidades:
+ * - compor a interface de gestão de assistentes;
+ * - apresentar a lista de assistentes da organização atual;
+ * - apresentar o detalhe do assistente selecionado;
+ * - apresentar gestão da coleção de documentos/vector store;
+ * - apresentar o chat de teste do assistente selecionado;
+ * - delegar lógica de dados e ações para hooks locais.
+ *
+ * Esta página não deve:
+ * - fazer fetch diretamente;
+ * - comunicar diretamente com Supabase;
+ * - gerir regras de criação, edição ou remoção;
+ * - conter JSX detalhado dos cards internos.
+ */
+
 export default function AssistantsHub() {
   const translation = useTranslations();
   const confirm = useConfirm();

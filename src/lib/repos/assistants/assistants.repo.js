@@ -1,6 +1,26 @@
 // /lib/repos/assistants.repo.js
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+
+/**
+ * Repo da tabela assistant.
+ *
+ * Gere:
+ * - criação de assistentes na base de dados;
+ * - listagem de assistentes por organização;
+ * - carregamento de assistente por ID;
+ * - atualização de assistentes;
+ * - remoção de assistentes;
+ * - associação de vector store ao assistente;
+ * - remoção da associação de vector store.
+ *
+ * Este repo deve falar apenas com Supabase.
+ *
+ */
+
+
+
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,

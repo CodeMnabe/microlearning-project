@@ -20,8 +20,8 @@ import {
 import {
   getAssistantById,
   getAssistantsInOrg,
-} from "@/lib/repos/assistants.repo";
-import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
+} from "@/lib/repos/assistants/assistants.repo";
+import { createOAiThread, sendMessageToAi } from "@/lib/services/openai/openai.service";
 import {
   getOrganization,
   getOrganizationByChannelId,

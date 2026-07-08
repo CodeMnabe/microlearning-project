@@ -2,6 +2,28 @@
 //require("dotenv").config();
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+/**
+ * Repo da tabela thread.
+ *
+ * Responsabilidades:
+ * - criar threads de conversa;
+ * - procurar threads individuais por utilizador/canal;
+ * - procurar threads de grupo por conversa externa;
+ * - obter threads por ID interno ou ID da OpenAI;
+ * - atualizar last_message_at.
+ *
+ * Este repo é partilhado por várias features:
+ * - assistants;
+ * - Teams;
+ * - WhatsApp;
+ * - automações;
+ * - broadcasts.
+ *
+ * Este ficheiro deve apenas consultar/alterar a tabela thread.
+ */
+
+
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,

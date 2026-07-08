@@ -1,17 +1,26 @@
 // /src/lib/repos/files.repo.js
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
 /**
- * Table: file
- *  - id (int4, PK)
- *  - vector_store_id (int4, FK -> vector_store.id)
- *  - open_ai_id (text)
- *  - name (text)
- *  - size (int4)
+ * Repo da tabela file associada às vector stores.
  *
- * IMPORTANT:
- *  • Use SUPABASE_SERVICE_ROLE_KEY (bypasses RLS for server-side ops)
- *  • Prefer DB-level cleanup via ON DELETE CASCADE on file.vector_store_id
+ * Gere:
+ * - criação de registos de ficheiros;
+ * - criação de múltiplos ficheiros;
+ * - carregamento de ficheiros por ID;
+ * - listagem de ficheiros por vector store;
+ * - remoção de ficheiros;
+ * - desassociação de ficheiros de uma vector store.
+ *
+ * Este repo guarda apenas metadados dos ficheiros na base de dados.
+ *
+ * Não deve:
+ * - fazer upload para Supabase Storage;
+ * - enviar ficheiros para a OpenAI;
+ * - conter lógica de vector store;
+ * - renderizar JSX;
+ * - usar hooks React.
  */
 
 const sb = createServiceClient(

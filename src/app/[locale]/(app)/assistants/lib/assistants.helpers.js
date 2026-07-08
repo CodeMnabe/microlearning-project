@@ -1,12 +1,47 @@
 import { DEFAULT_CREATE_ASSISTANT_FORM } from "./assistants.constants";
 
+/**
+ * Helpers puros da camada Assistants.
+ *
+ * Responsabilidades:
+ * - normalizar listas vindas da API;
+ * - construir payloads para criação/edição;
+ * - construir paths de upload;
+ * - normalizar metadados de ficheiros;
+ * - validar dados mínimos de formulários.
+ *
+ * Este ficheiro não deve:
+ * - usar React;
+ * - usar JSX;
+ * - chamar Supabase;
+ * - fazer fetch;
+ * - mostrar alerts;
+ * - alterar estado diretamente.
+ */
+
+/**
+ * Garante que a resposta da API é sempre tratada como array.
+ */
 export function normalizeAssistantsList(data) {
   return Array.isArray(data) ? data : [];
 }
 
+
+/**
+ * Devolve o ID do primeiro assistente da lista.
+ *
+ * A API devolve os assistentes ordenados por created_at desc,
+ * por isso o primeiro tende a ser o mais recente.
+ */
 export function getFirstAssistantId(assistants) {
   return assistants[0]?.id ?? null;
 }
+
+/**
+ * Constrói o payload usado para atualizar um assistente.
+ *
+ * Mantém apenas os campos que a API precisa de receber.
+ */
 
 export function buildAssistantUpdatePayload(selected, draft) {
   return {

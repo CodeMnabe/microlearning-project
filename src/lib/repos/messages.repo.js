@@ -1,5 +1,26 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+
+/**
+ * Repo da tabela message.
+ *
+ * Responsabilidades:
+ * - guardar mensagens recebidas e enviadas;
+ * - listar histórico de mensagens de uma thread;
+ * - encontrar mensagens por ID interno ou ID externo/provider;
+ * - atualizar estados de entrega, leitura e falha;
+ * - apoiar integrações com WhatsApp, Teams, automações e broadcasts.
+ *
+ * Este repo é partilhado por várias camadas.
+ *
+ * Não deve:
+ * - chamar OpenAI;
+ * - decidir respostas do assistente;
+ * - renderizar UI;
+ * - conter regras específicas de componentes.
+ */
+
+
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,

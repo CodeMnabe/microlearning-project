@@ -18,6 +18,32 @@ import {
   updateCreateAssistantForm,
 } from "../lib/assistants.helpers";
 
+/**
+ * Hook principal da camada Assistants.
+ *
+ * Gere:
+ * - autenticação do utilizador atual;
+ * - organização ativa do utilizador;
+ * - carregamento dos assistentes da organização;
+ * - seleção e carregamento do assistente ativo;
+ * - edição local dos dados do assistente;
+ * - gravação das alterações via API;
+ * - remoção de assistentes;
+ * - criação de novos assistentes;
+ * - criação e remoção de vector stores;
+ * - upload de ficheiros para Supabase Storage;
+ * - estados de loading, saving, modal e formulário.
+ *
+ * Este hook coordena a feature no frontend.
+ *
+ * Não deve:
+ * - renderizar JSX;
+ * - conter markup visual;
+ * - conter helpers puros inline quando estes podem estar em lib/;
+ * - falar diretamente com tabelas da base de dados.
+ *
+ */
+
 export function useAssistantsHub({
   translation,
   confirm,
@@ -25,23 +51,27 @@ export function useAssistantsHub({
   startLoading,
   stopLoading,
 }) {
+  // Auth e organização atual
   const { user, loading: authLoading, supabase } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
-
   const orgId = org?.id || null;
 
+  // Estado principal da lista e seleção de assistentes
   const [assistants, setAssistants] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selected, setSelected] = useState(null);
 
+  // Estado de edição do assistente selecionado
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Estado da vector store associada ao assistente
   const [vectorStore, setVectorStore] = useState(null);
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
 
+  // Estado do modal de criação de assistente
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState(getEmptyCreateAssistantForm);
   const [isCreating, setIsCreating] = useState(false);
@@ -62,6 +92,13 @@ export function useAssistantsHub({
     [showAlert],
   );
 
+
+  /**
+   * Carrega todos os assistentes da organização atual.
+   *
+   * Também pode selecionar automaticamente o primeiro assistente da lista,
+   * útil após criar ou apagar assistentes.
+   */
   const fetchAssistants = useCallback(
     async ({ selectFirst = false } = {}) => {
       if (!orgId) return [];
@@ -85,6 +122,12 @@ export function useAssistantsHub({
     [orgId],
   );
 
+/**
+ * Carrega os detalhes de um assistente específico.
+ *
+ * Se o assistente tiver vector store associada,
+ * carrega também a coleção de documentos dessa store.
+ */
   const fetchAssistant = useCallback(
     async (id) => {
       if (!id) return;
@@ -154,9 +197,20 @@ export function useAssistantsHub({
     setIsModalOpen(false);
   }
 
+
   function handleCreateFormChange(field, value) {
     setCreateForm((prev) => updateCreateAssistantForm(prev, field, value));
   }
+
+  /**
+ * Cria um novo assistente através da API.
+ *
+ * Depois de criar:
+ * - limpa o formulário;
+ * - fecha o modal;
+ * - recarrega a lista de assistentes;
+ * - seleciona o primeiro assistente da lista.
+ */
 
   async function handleCreateAssistant(event) {
     event.preventDefault();
@@ -222,6 +276,13 @@ export function useAssistantsHub({
     }));
   }
 
+  /**
+ * Guarda alterações do assistente selecionado.
+ *
+ * Usa o draft local para construir o payload enviado à API.
+ * Após guardar, volta a carregar os dados atualizados do assistente.
+ */
+
   async function handleSave() {
     if (!selected || !draft) return;
 
@@ -252,6 +313,13 @@ export function useAssistantsHub({
     }
   }
 
+  /**
+ * Remove o assistente selecionado.
+ *
+ * Antes de apagar, pede confirmação ao utilizador.
+ * Depois de apagar, atualiza a lista local e seleciona outro assistente,
+ * se ainda existir algum.
+ */
   async function deleteAssistant() {
     if (!selected) return;
 
@@ -294,6 +362,17 @@ export function useAssistantsHub({
   function handleVectorStoreFilesChange(files) {
     setVsFiles(Array.from(files || []));
   }
+
+  /**
+ * Cria uma vector store para o assistente selecionado.
+ *
+ * Fluxo:
+ * - envia os ficheiros para Supabase Storage;
+ * - normaliza os dados dos ficheiros enviados;
+ * - envia esses dados para a API criar a vector store;
+ * - limpa o formulário local;
+ * - recarrega o assistente atualizado.
+ */
 
   async function handleAddVectorStore() {
     if (!selected || !hasVectorStoreFormData(vsName, vsFiles)) return;
@@ -359,6 +438,13 @@ export function useAssistantsHub({
       stopLoading();
     }
   }
+
+  /**
+ * Remove a vector store associada ao assistente selecionado.
+ *
+ * Antes de apagar, pede confirmação ao utilizador.
+ * Depois de apagar, recarrega o assistente para refletir a alteração.
+ */
 
   async function deleteVectorStore() {
     if (!selected || !selected.vectorStoreId) return;

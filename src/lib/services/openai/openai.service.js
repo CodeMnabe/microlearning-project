@@ -1,8 +1,28 @@
 import fs from "fs";
-import { stripOpenAICitations } from "./removeOAiCitations";
+import { stripOpenAICitations } from "./openai.helpers";
 require("dotenv").config();
 const OpenAI = require("openai");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+
+/**
+ * Service de integração com OpenAI.
+ *
+ * Responsabilidades:
+ * - criação de assistentes na OpenAI;
+ * - atualização de assistentes na OpenAI;
+ * - remoção de assistentes na OpenAI;
+ * - criação de threads;
+ * - envio de mensagens para assistentes;
+ * - execução de runs;
+ * - criação de ficheiros na OpenAI;
+ * - criação de vector stores;
+ * - associação de vector stores a assistentes;
+ * - remoção de vector stores e ficheiros na OpenAI.
+ *
+ * Este service centraliza chamadas diretas à OpenAI.
+ *
+ */
 
 export async function createOAiAssistant(body) {
   try {
@@ -236,4 +256,76 @@ async function deleteVectorStoreCompat(vectorStoreId) {
 export async function createOAiThread() {
   const aiThread = await client.beta.threads.create();
   return aiThread;
+}
+
+export async function sendMessageToAssistant({
+  openAiAssistantId,
+  message,
+  threadId,
+}) {
+  let aiThreadId = threadId;
+
+  if (!aiThreadId) {
+    const thread = await client.beta.threads.create();
+    aiThreadId = thread.id;
+  }
+
+  await client.beta.threads.messages.create(aiThreadId, {
+    role: "user",
+    content: message,
+  });
+
+  const run = await client.beta.threads.runs.create(aiThreadId, {
+    assistant_id: openAiAssistantId,
+  });
+
+  let status = run.status;
+  const start = Date.now();
+
+  while (
+    ![
+      "completed",
+      "failed",
+      "requires_action",
+      "cancelled",
+      "expired",
+    ].includes(status)
+  ) {
+    if (Date.now() - start > 30000) {
+      const error = new Error("Run timed out");
+      error.status = 504;
+      error.threadId = aiThreadId;
+      throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const fresh = await client.beta.threads.runs.retrieve(aiThreadId, run.id);
+    status = fresh.status;
+  }
+
+  if (status !== "completed") {
+    const error = new Error(`Run ${status}`);
+    error.status = 500;
+    error.threadId = aiThreadId;
+    throw error;
+  }
+
+  const messages = await client.beta.threads.messages.list(aiThreadId, {
+    limit: 10,
+  });
+
+  const assistantMessage = messages.data.find(
+    (messageItem) => messageItem.role === "assistant",
+  );
+
+  const reply =
+    assistantMessage?.content?.[0]?.type === "text"
+      ? assistantMessage.content[0].text.value
+      : "";
+
+  return {
+    reply,
+    threadId: aiThreadId,
+  };
 }
