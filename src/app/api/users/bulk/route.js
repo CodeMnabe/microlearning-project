@@ -1,47 +1,66 @@
 import { NextResponse } from "next/server";
-import createSupabaseServerClient from "@/utils/supabase/server";
 import { deleteUser } from "@/lib/repos/user.repo";
+import {
+  assertAssistantBelongsToOrg,
+  assertUsersBelongToOrg,
+  handleApiError,
+  requireOrgForUser,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 export async function PATCH(req) {
   try {
-    const supabase = await createSupabaseServerClient();
     const { ids, assistantId, orgId } = await req.json();
+    const userIds = (ids || []).map(Number).filter(Boolean);
 
-    if (!Array.isArray(ids) || ids.length === 0) {
+    if (!Array.isArray(ids) || userIds.length === 0) {
       return NextResponse.json({ error: "ids required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("user")
-      .update({ assistant_id: assistantId })
-      .in("id", ids)
-      .eq("organization_id", orgId);
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
+    const safeAssistantId = await assertAssistantBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      assistantId,
+    );
+
+    const { error } = await orgAuth.admin
+      .from("user")
+      .update({ assistant_id: safeAssistantId })
+      .in("id", userIds)
+      .eq("organization_id", orgAuth.orgId);
+
+    if (error) throw error;
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return handleApiError(error, "Failed to update users");
   }
 }
 
 export async function DELETE(req) {
   try {
     const { ids } = await req.json();
+    const userIds = (ids || []).map(Number).filter(Boolean);
 
-    if (!Array.isArray(ids) || ids.length === 0) {
+    if (!Array.isArray(ids) || userIds.length === 0) {
       return NextResponse.json({ error: "ids required" }, { status: 400 });
     }
 
+    const orgAuth = await requireOrgForUser(userIds[0]);
+    if (orgAuth.error) return orgAuth.error;
+
+    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
+
     const results = await Promise.allSettled(
-      ids.map((id) => deleteUser(Number(id))),
+      userIds.map((id) => deleteUser(id)),
     );
 
     const failed = results
-      .map((result, index) => ({ result, id: ids[index] }))
+      .map((result, index) => ({ result, id: userIds[index] }))
       .filter(({ result }) => result.status === "rejected")
       .map(({ result, id }) => ({
         id,
@@ -50,12 +69,11 @@ export async function DELETE(req) {
 
     return NextResponse.json({
       ok: failed.length === 0,
-      deleted: ids.length - failed.length,
+      deleted: userIds.length - failed.length,
       failedCount: failed.length,
       failed,
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return handleApiError(error, "Failed to delete users");
   }
 }

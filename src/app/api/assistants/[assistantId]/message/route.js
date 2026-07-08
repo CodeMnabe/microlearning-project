@@ -1,34 +1,36 @@
 import { NextResponse } from "next/server";
 import { sendMessageToAi } from "@/lib/services/oAi.services";
-
-require("dotenv").config();
-const OpenAI = require("openai");
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { handleApiError, requireOrgForAssistant } from "@/lib/auth/guards";
 
 export async function POST(req, { params }) {
   try {
-    const body = await params;
-    const { assistantId, message, threadId } = await req.json();
-    if (!assistantId || !message) {
+    const { assistantId } = await params;
+    const { message, threadId } = await req.json();
+
+    const orgAuth = await requireOrgForAssistant(assistantId);
+    if (orgAuth.error) return orgAuth.error;
+
+    if (!message?.trim() || !threadId) {
       return NextResponse.json(
-        { error: "Invalid or missing components" },
-        { status: 400 }
+        { error: "Missing message or threadId" },
+        { status: 400 },
       );
     }
 
-    const aiMessage = await sendMessageToAi(assistantId, message, threadId);
+    const aiMessage = await sendMessageToAi(
+      orgAuth.assistant.open_ai_id,
+      message,
+      threadId,
+    );
 
     return NextResponse.json(
       {
-        reply: aiMessage.aiResponse,
-        threadId: aiMessage.threadId,
+        reply: aiMessage.handleApiError,
+        threadId: aiMessage.threadID,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
-    return NextResponse.json(
-      { error: "Failed to POST to the assistant: " + err.message },
-      { status: 500 }
-    );
+    return handleApiError(err, "FAiled to send assistant message");
   }
 }

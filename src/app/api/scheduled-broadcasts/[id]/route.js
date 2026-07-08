@@ -3,6 +3,11 @@ import {
   updateScheduledBroadcast,
   deleteScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
+import {
+  cleanPatch,
+  handleApiError,
+  requireOrgForScheduledBroadcast,
+} from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,20 +21,24 @@ const ALLOWED_PATCH_FIELDS = [
   "recipient_count",
 ];
 
+const ALLOWED_MANUAL_STATUSES = new Set(["queued", "cancelled"]);
+
 export async function PATCH(req, { params }) {
   try {
     const { id } = await params;
     const body = await req.json();
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required." }, { status: 400 });
-    }
+    const orgAuth = await requireOrgForScheduledBroadcast(id);
+    if (orgAuth.error) return orgAuth.error;
 
-    const patch = Object.fromEntries(
-      Object.entries(body || {}).filter(([key]) =>
-        ALLOWED_PATCH_FIELDS.includes(key),
-      ),
-    );
+    const patch = cleanPatch(body, ALLOWED_PATCH_FIELDS);
+
+    if (patch.status && !ALLOWED_MANUAL_STATUSES.has(patch.status)) {
+      return NextResponse.json(
+        { error: "Invalid manual status update." },
+        { status: 400 },
+      );
+    }
 
     if (Object.keys(patch).length === 0) {
       return NextResponse.json(
@@ -38,15 +47,10 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    const data = await updateScheduledBroadcast(id, patch);
+    const data = await updateScheduledBroadcast(orgAuth.broadcastId, patch);
     return NextResponse.json({ item: data });
   } catch (err) {
-    console.error("PATCH error:", err);
-
-    return NextResponse.json(
-      { error: "Failed to update scheduled broadcast." },
-      { status: 500 },
-    );
+    return handleApiError(err, "Failed to update scheduled broadcast");
   }
 }
 
@@ -54,19 +58,13 @@ export async function DELETE(_req, { params }) {
   try {
     const { id } = await params;
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
-    }
+    const orgAuth = await requireOrgForScheduledBroadcast(id);
+    if (orgAuth.error) return orgAuth.error;
 
-    await deleteScheduledBroadcast(id);
+    await deleteScheduledBroadcast(orgAuth.broadcastId);
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("DELETE error:", err);
-
-    return NextResponse.json(
-      { error: "Failed to delete scheduled broadcast" },
-      { status: 500 },
-    );
+    return handleApiError(err, "Failed to delete scheduled broadcast");
   }
 }

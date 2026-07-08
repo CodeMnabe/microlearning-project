@@ -6,6 +6,13 @@ import {
   deleteUser,
 } from "@/lib/repos/user.repo";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+import {
+  assertAssistantBelongsToOrg,
+  assertTagsBelongToOrg,
+  handleApiError,
+  requireOrgForUser,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 export async function GET(req) {
   try {
@@ -18,15 +25,13 @@ export async function GET(req) {
       Math.max(1, Number(searchParams.get("pageSize") || 100)),
     );
 
-    if (!orgId) {
-      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
-    }
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
 
-    const result = await getUsersInOrg(orgId, { page, pageSize });
+    const result = await getUsersInOrg(orgAuth.orgId, { page, pageSize });
     return NextResponse.json(result);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to load users");
   }
 }
 
@@ -51,6 +56,15 @@ export async function POST(req) {
       );
     }
 
+    const orgAuth = await requireOwnedOrg(organizationId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const safeAssistantId = await assertAssistantBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      assistantId,
+    );
+
     const normalizedNational =
       typeof phoneNational === "string"
         ? phoneNational.replace(/\s+/g, "")
@@ -67,11 +81,11 @@ export async function POST(req) {
         ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
         : null);
 
-    const _newUser = await createUserWithAutomations({
-      organizationId,
+    const newUser = await createUserWithAutomations({
+      organizationId: orgAuth.orgId,
       name,
       email,
-      assistantId: assistantId ?? null,
+      assistantId: safeAssistantId,
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
       phoneNational: normalizedNational,
@@ -79,7 +93,7 @@ export async function POST(req) {
       teamsFromId: teamsFromId ?? null,
     });
 
-    return NextResponse.json(_newUser, { status: 201 });
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     if (error.code === "USER_LIMIT_REACHED") {
       return NextResponse.json(
@@ -93,23 +107,19 @@ export async function POST(req) {
         { status: 409 },
       );
     }
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to create User: " + error.message },
-      { status: 500 },
-    );
+
+    return handleApiError(error, "Failed to create user");
   }
 }
 
-// src/app/api/users/route.js  (PATCH)
 export async function PATCH(req) {
   try {
     const {
       id,
       name,
-      phoneNumber, // optional full number
-      phoneCountryCode, // "+351"
-      phoneNational, // "912345678"
+      phoneNumber,
+      phoneCountryCode,
+      phoneNational,
       email,
       teamsAadObjectId,
       teamsFromId,
@@ -124,16 +134,29 @@ export async function PATCH(req) {
       );
     }
 
+    const orgAuth = await requireOrgForUser(id);
+    if (orgAuth.error) return orgAuth.error;
+
+    const safeAssistantId = await assertAssistantBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      assistantId,
+    );
+
+    const safeTagIds = Array.isArray(tagIds)
+      ? await assertTagsBelongToOrg(orgAuth.admin, orgAuth.orgId, tagIds)
+      : tagIds;
+
     const normalizedNational =
       typeof phoneNational === "string"
         ? phoneNational.replace(/\s+/g, "")
-        : undefined; // undefined means "don't touch" in updateUser
+        : undefined;
 
     const normalizedCode =
       typeof phoneCountryCode === "string" && phoneCountryCode.trim()
         ? phoneCountryCode.trim()
         : typeof phoneCountryCode === "string"
-          ? "" // allow clearing
+          ? ""
           : undefined;
 
     const fullPhone =
@@ -143,11 +166,11 @@ export async function PATCH(req) {
           ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
           : undefined;
 
-    const updatedUser = await updateUser(id, {
+    const updatedUser = await updateUser(orgAuth.userId, {
       name,
       email,
-      assistantId,
-      tagIds,
+      assistantId: safeAssistantId,
+      tagIds: safeTagIds,
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
       phoneNational: normalizedNational,
@@ -157,8 +180,7 @@ export async function PATCH(req) {
 
     return NextResponse.json(updatedUser);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to update user");
   }
 }
 
@@ -166,20 +188,14 @@ export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = Number(searchParams.get("id"));
-    if (!userId) {
-      return NextResponse.json(
-        {
-          error: "Missing UserId",
-        },
-        { status: 400 },
-      );
-    }
 
-    await deleteUser(userId);
+    const orgAuth = await requireOrgForUser(userId);
+    if (orgAuth.error) return orgAuth.error;
+
+    await deleteUser(orgAuth.userId);
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to delete user");
   }
 }

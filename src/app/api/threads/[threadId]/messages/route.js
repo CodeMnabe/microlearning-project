@@ -1,17 +1,17 @@
-// app/api/threads/[threadId]/messages/route.js
 import { NextResponse } from "next/server";
 import { getMessagesInThread } from "@/lib/repos/messages.repo";
+import { handleApiError, requireOrgForThread } from "@/lib/auth/guards";
 
-export async function GET(req, { params }) {
+export async function GET(_req, { params }) {
   try {
     const threadId = Number(params.threadId);
-    if (!threadId) {
-      return NextResponse.json({ error: "Missing threadId" }, { status: 400 });
-    }
+
+    const orgAuth = await requireOrgForThread(threadId);
+    if (orgAuth.error) return orgAuth.error;
+
     const messages = await getMessagesInThread(threadId);
     return NextResponse.json({ messages });
   } catch (err) {
-    console.error("GET /api/threads/[threadId]/messages error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to load thread messages");
   }
 }

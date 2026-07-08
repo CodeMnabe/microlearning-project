@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
-import { getOrganization } from "@/lib/repos/organizations.repo";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
+import {
+  assertUsersBelongToOrg,
+  extractRecipientUserIds,
+  handleApiError,
+  requireAllRecipientsToBeKnownUsers,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 export async function POST(req) {
   try {
@@ -23,6 +29,9 @@ export async function POST(req) {
       );
     }
 
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
     if (!["teams", "whatsapp"].includes(channel)) {
       return NextResponse.json({ error: "Invalid channel" }, { status: 400 });
     }
@@ -42,37 +51,48 @@ export async function POST(req) {
       );
     }
 
-    const org = await getOrganization(orgId);
-    if (!org) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 400 },
+    const payloadRecipients = Array.isArray(payload?.recipients)
+      ? payload.recipients
+      : [];
+
+    const recipientUserIds =
+      requireAllRecipientsToBeKnownUsers(payloadRecipients);
+    await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      recipientUserIds,
+    );
+
+    let safeCreatedByUserId = null;
+    if (createdByUserId) {
+      const [verifiedUserId] = await assertUsersBelongToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        [createdByUserId],
       );
+      safeCreatedByUserId = verifiedUserId ?? null;
     }
 
-    // Do NOT store createdByUserId inside payload.
-    // Keep it only in created_by_user_id column.
     const cleanPayload = {
       ...payload,
+      recipients: payloadRecipients,
     };
 
     const row = await createScheduledBroadcast({
-      organization_id: orgId,
-      created_by_user_id: createdByUserId,
+      organization_id: orgAuth.orgId,
+      created_by_user_id: safeCreatedByUserId,
       channel,
       status: "queued",
       scheduled_for: when.toISOString(),
       timezone: timezone || null,
       payload: cleanPayload,
-      recipient_count: Number(recipientCount || 0),
+      recipient_count: Number(
+        recipientCount || extractRecipientUserIds(payloadRecipients).length,
+      ),
     });
 
     return NextResponse.json({ ok: true, item: row });
   } catch (err) {
-    console.error("Schedule broadcast error:", err);
-    return NextResponse.json(
-      { error: err?.message || String(err) },
-      { status: 500 },
-    );
+    return handleApiError(err, "Failed to schedule broadcast");
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrgScheduledBroadcasts } from "@/lib/repos/scheduledBroadcasts.repo";
+import { handleApiError, requireOwnedOrg } from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,28 +11,17 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const orgIdRaw = searchParams.get("orgId");
+    const orgId = searchParams.get("orgId");
     const sourceRaw = searchParams.get("source") || "all";
-
-    const orgId = Number(orgIdRaw);
     const source = ALLOWED_SOURCES.has(sourceRaw) ? sourceRaw : "all";
 
-    if (!orgIdRaw || Number.isNaN(orgId)) {
-      return NextResponse.json(
-        { error: "orgId is required." },
-        { status: 400 },
-      );
-    }
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
 
     const data = await getOrgScheduledBroadcasts(orgId, { source });
 
     return NextResponse.json({ items: data });
   } catch (err) {
-    console.error("GET /api/scheduled-broadcasts error:", err);
-
-    return NextResponse.json(
-      { error: "Failed to load scheduled broadcasts." },
-      { status: 500 },
-    );
+    return handleApiError(err, "Failed to load scheduled broadcasts");
   }
 }

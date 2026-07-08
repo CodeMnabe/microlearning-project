@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { getTrackedLinkReportDetail } from "@/lib/repos/trackedLinks.repo";
+import { handleApiError, requireOwnedOrg } from "@/lib/auth/guards";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-
     const orgId = Number(searchParams.get("orgId"));
     const sendGroupId = String(searchParams.get("sendGroupId") || "").trim();
 
-    if (!orgId || !sendGroupId) {
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
+    if (!sendGroupId) {
       return NextResponse.json(
         { error: "Missing required params" },
         { status: 400 },
@@ -16,26 +19,12 @@ export async function GET(req) {
     }
 
     const result = await getTrackedLinkReportDetail({
-      orgId,
+      orgId: orgAuth.orgId,
       sendGroupId,
     });
 
-    if (!result) {
-      return NextResponse.json(
-        { error: "Tracked link report not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      ...result,
-    });
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("Tracked link report detail error:", err);
-    return NextResponse.json(
-      { error: err?.message || String(err) },
-      { status: 500 },
-    );
+    return handleApiError(err, "Failed to load tracked-link report detail");
   }
 }

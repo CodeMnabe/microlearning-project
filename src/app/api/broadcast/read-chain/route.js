@@ -8,6 +8,11 @@ import {
   createMessageChainSteps,
 } from "@/lib/repos/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
+import {
+  assertUsersBelongToOrg,
+  handleApiError,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 function normalizeRecipient(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -102,9 +107,8 @@ export async function POST(req) {
       timezone = null,
     } = body || {};
 
-    if (!orgId) {
-      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
-    }
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
 
     if (channel !== "whatsapp") {
       return NextResponse.json(
@@ -124,7 +128,7 @@ export async function POST(req) {
     }
 
     const enabled = await isReadChainsEnabled({
-      organizationId: orgId,
+      organizationId: orgAuth.orgId,
       channel,
     });
 
@@ -147,6 +151,12 @@ export async function POST(req) {
         { status: 400 },
       );
     }
+
+    await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      dedupedRecipients.map((recipient) => recipient.userId),
+    );
 
     if (
       !hasFallbackTemplate({
@@ -191,7 +201,7 @@ export async function POST(req) {
     }
 
     const chain = await createMessageChain({
-      organizationId: orgId,
+      organizationId: orgAuth.orgId,
       createdByUserId,
       channel,
       status: isScheduled ? "scheduled" : "active",
@@ -305,14 +315,7 @@ export async function POST(req) {
           : null,
     });
   } catch (error) {
-    console.error("[broadcast/read-chain] failed:", error);
-
-    return NextResponse.json(
-      {
-        error: error.message || "Failed to create read chain.",
-      },
-      { status: 500 },
-    );
+    return handleApiError(error, "Failed to create read chain");
   }
 }
 
