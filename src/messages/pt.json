@@ -1154,6 +1154,7 @@
 
     "statuses": {
       "new": "Novo",
+      "active": "Ativo",
       "approved": "Aprovado",
       "pending": "Pendente",
       "rejected": "Rejeitado",

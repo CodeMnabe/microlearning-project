@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
-import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
+import { listTrackedLinkReports } from "@/lib/services/broadcast/trackedLinks";
 
 export async function GET(req) {
   try {
-    const { searchParams } = new URL(req.url);
-    const orgId = Number(searchParams.get("orgId"));
+    const orgId = Number(new URL(req.url).searchParams.get("orgId"));
 
     if (!orgId) {
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
     }
 
-    const items = await getTrackedLinkReportsByOrg(orgId);
-
     return NextResponse.json({
       ok: true,
-      items,
+      items: await listTrackedLinkReports(orgId),
     });
-  } catch (err) {
-    console.error("Tracked link reports error:", err);
+  } catch (error) {
+    console.error("Tracked link reports error:", error);
     return NextResponse.json(
-      { error: err?.message || String(err) },
-      { status: 500 },
+      { error: error?.message || String(error) },
+      { status: 500 }
     );
   }
 }

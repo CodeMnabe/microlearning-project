@@ -1,4 +1,10 @@
-import { createTrackedLink } from "@/lib/repos/broadcast/trackedLinks.repo";
+import {
+  createTrackedLink,
+  createTrackedLinkEvent,
+  getTrackedLinkByToken,
+  getTrackedLinkReportDetail,
+  getTrackedLinkReportsByOrg,
+} from "@/lib/repos/broadcast/trackedLinks.repo";
 import crypto from "crypto";
 
 function makeToken() {
@@ -103,4 +109,41 @@ export async function resolveTrackedLinksForRecipient({
   }
 
   return resolved;
+}
+
+/**
+ * Resolves a public tracked-link token and records its click event.
+ * Returns null when the token does not exist so the route can preserve its
+ * current not-found response contract.
+ */
+export async function resolveTrackedLinkClick({
+  token,
+  ipHash = null,
+  userAgent = null,
+  referer = null,
+}) {
+  const trackedLink = await getTrackedLinkByToken(token);
+
+  if (!trackedLink) return null;
+
+  await createTrackedLinkEvent({
+    tracked_link_id: trackedLink.id,
+    event_type: "click",
+    ip_hash: ipHash,
+    user_agent: userAgent,
+    referer,
+  });
+
+  return {
+    destinationUrl: trackedLink.destination_url,
+    linkLabel: trackedLink.link_label,
+  };
+}
+
+export async function listTrackedLinkReports(orgId) {
+  return getTrackedLinkReportsByOrg(orgId);
+}
+
+export async function getTrackedLinkReport({ orgId, sendGroupId }) {
+  return getTrackedLinkReportDetail({ orgId, sendGroupId });
 }
