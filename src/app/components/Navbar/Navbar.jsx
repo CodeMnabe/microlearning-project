@@ -36,7 +36,9 @@ export default function Navbar() {
 
   const pathNoLocale = pathName.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
   const [pendingHref, setPendingHref] = useState(null);
-  const isAdmin = !!org && org.id === 1;
+  const ADMIN_ORGANIZATION_ID = 2;
+  const isAdmin = Number(org?.id) === ADMIN_ORGANIZATION_ID;
+
 
   const isActive = useCallback(
     (href) => {
@@ -250,18 +252,18 @@ export default function Navbar() {
                       <span>{translation("Nav.trackedLinks")}</span>
                     </Link>
                     {isAdmin && (
-                      <Link
-                        href="/templates"
-                        onClick={onNavClick("/templates")}
-                        className={`${styles.navItem} ${
-                          isActive("/templates") ? styles.active : ""
-                        }`}
-                      >
-                        <FileText aria-hidden className={styles.icon} />
-                        <span>{translation("Nav.templates")} </span>
-                        <span className={styles.smallText}>WhatsApp</span>
-                      </Link>
-                    )}
+                    <Link
+                      href="/broadcast/templates"
+                      onClick={onNavClick("/broadcast/templates")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/templates") ? styles.active : ""
+                      }`}
+                    >
+                      <FileText aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.templates")}</span>
+                      <span className={styles.smallText}>WhatsApp</span>
+                    </Link>
+                  )}
                   </div>
                 )}
               </div>

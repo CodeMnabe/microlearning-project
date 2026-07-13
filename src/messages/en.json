@@ -1145,6 +1145,7 @@
 
     "statuses": {
       "new": "New",
+      "active": "Active",
       "approved": "Approved",
       "pending": "Pending",
       "rejected": "Rejected",

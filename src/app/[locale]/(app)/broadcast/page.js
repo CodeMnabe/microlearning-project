@@ -55,8 +55,6 @@ import {
  * anexos, templates, links rastreados e read chains deve ficar nos hooks
  * e helpers locais da feature.
  *
- * Esta page não deve fazer queries diretas à Supabase,
- * nem conter regras longas de envio/agendamento.
  */
 
 
