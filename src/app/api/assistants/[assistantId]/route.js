@@ -51,11 +51,31 @@ export async function PATCH(req, { params }) {
     const patch = cleanPatch(updates, ALLOWED_ASSISTANT_PATCH_FIELDS);
 
     if (patch.vector_store_id !== undefined && patch.vector_store_id !== null) {
-      await assertAssistantBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        orgAuth.assistantId,
-      );
+      const vectorStoreId = Number(patch.vector_store_id);
+
+      if (!Number.isInteger(vectorStoreId) || vectorStoreId <= 0) {
+        return NextResponse.json(
+          { error: "Invalid vector store id" },
+          { status: 400 },
+        );
+      }
+
+      const { data: vectorStore, error } = await orgAuth.admin
+        .from("vector_store")
+        .select("id, organization_id")
+        .eq("id", vectorStoreId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!vectorStore || Number(vectorStore.organization_id) !== Number(orgAuth.orgId)) {
+        return NextResponse.json(
+          { error: "Vector store does not belong to this organization" },
+          { status: 403 },
+        );
+      }
+
+      patch.vector_store_id = vectorStoreId;
     }
 
     if (!Object.keys(patch).length) {

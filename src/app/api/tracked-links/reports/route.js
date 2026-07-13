@@ -10,7 +10,7 @@ export async function GET(req) {
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
 
-    const items = await getTrackedLinkReportsByOrg(orgId);
+    const items = await getTrackedLinkReportsByOrg(orgAuth.orgId);
     return NextResponse.json({ items });
   } catch (err) {
     return handleApiError(err, "Failed to load tracked-link reports");

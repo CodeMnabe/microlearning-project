@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import createSupabaseServerClient from "@/utils/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
 
@@ -176,31 +177,69 @@ export async function requireOrgForTag(tagId) {
 }
 
 export async function requireOrgForScheduledBroadcast(id) {
-  const parsedId = parsePositiveInt(id);
-  if (!parsedId) return { error: jsonError("Invalid broadcast id", 400) };
+  const broadcastId =
+    typeof id === "string" ? id.trim() : "";
+
+  const isValidUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      broadcastId,
+    );
+
+  if (!isValidUuid) {
+    return {
+      error: jsonError(
+        "Invalid scheduled broadcast id",
+        400,
+      ),
+    };
+  }
 
   const auth = await requireUser();
   if (auth.error) return auth;
 
   const { data: broadcast, error } = await auth.admin
     .from("scheduled_broadcast")
-    .select("id, organization_id, status")
-    .eq("id", parsedId)
+    .select(
+      "id, organization_id, status, scheduled_for, payload, created_by_user_id",
+    )
+    .eq("id", broadcastId)
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] scheduled broadcast lookup failed", error);
-    return { error: jsonError("Authorization check failed", 500) };
+    console.error(
+      "[Auth] scheduled broadcast lookup failed",
+      error,
+    );
+
+    return {
+      error: jsonError(
+        "Authorization check failed",
+        500,
+      ),
+    };
   }
 
   if (!broadcast) {
-    return { error: jsonError("Scheduled broadcast not found", 404) };
+    return {
+      error: jsonError(
+        "Scheduled broadcast not found",
+        404,
+      ),
+    };
   }
 
-  const orgAuth = await requireOwnedOrg(broadcast.organization_id, auth);
+  const orgAuth = await requireOwnedOrg(
+    broadcast.organization_id,
+    auth,
+  );
+
   if (orgAuth.error) return orgAuth;
 
-  return { ...orgAuth, broadcast, broadcastId: parsedId };
+  return {
+    ...orgAuth,
+    broadcast,
+    broadcastId,
+  };
 }
 
 export async function requireOrgForThread(threadId) {
@@ -212,7 +251,7 @@ export async function requireOrgForThread(threadId) {
 
   const { data: thread, error } = await auth.admin
     .from("thread")
-    .select("id, user_id, assistant_id, organization_id")
+    .select("id, user_id, assistant_id, ai_thread_id")
     .eq("id", parsedThreadId)
     .maybeSingle();
 
@@ -223,9 +262,9 @@ export async function requireOrgForThread(threadId) {
 
   if (!thread) return { error: jsonError("Thread not found", 404) };
 
-  let orgId = thread.organization_id ?? null;
+  let orgId = null;
 
-  if (!orgId && thread.user_id) {
+  if (thread.user_id) {
     const { data: userRow, error: userError } = await auth.admin
       .from("user")
       .select("organization_id")
@@ -264,8 +303,9 @@ export async function requireOrgForThread(threadId) {
 }
 
 export async function requireOrgForAutomationRule(id) {
-  const parsedId = parsePositiveInt(id);
-  if (!parsedId) return { error: jsonError("Invalid automation rule id", 400) };
+  if (!id || typeof id !== "string") {
+    return { error: jsonError("Invalid automation rule id", 400) };
+  }
 
   const auth = await requireUser();
   if (auth.error) return auth;
@@ -273,7 +313,7 @@ export async function requireOrgForAutomationRule(id) {
   const { data: rule, error } = await auth.admin
     .from("automation_rule")
     .select("id, organization_id, assistant_id")
-    .eq("id", parsedId)
+    .eq("id", id)
     .maybeSingle();
 
   if (error) {
@@ -286,7 +326,7 @@ export async function requireOrgForAutomationRule(id) {
   const orgAuth = await requireOwnedOrg(rule.organization_id, auth);
   if (orgAuth.error) return orgAuth;
 
-  return { ...orgAuth, rule, ruleId: parsedId };
+  return { ...orgAuth, rule, ruleId: id };
 }
 
 export async function assertUsersBelongToOrg(admin, orgId, userIds) {
@@ -355,6 +395,11 @@ export async function assertAssistantBelongsToOrg(admin, orgId, assistantId) {
   return parsedAssistantId;
 }
 
+function isUuid(value) {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 export async function assertWhatsappTemplateBelongsToOrg(
   admin,
   orgId,
@@ -362,13 +407,14 @@ export async function assertWhatsappTemplateBelongsToOrg(
 ) {
   if (templateId == null || templateId === "") return null;
 
-  const parsedTemplateId = parsePositiveInt(templateId);
-  if (!parsedTemplateId) throwHttpError("Invalid WhatsApp template id", 400);
+  if (typeof templateId !== "string") {
+    throwHttpError("Invalid WhatsApp template id", 400);
+  }
 
   const { data, error } = await admin
     .from("whatsapp_templates")
     .select("id, org_id")
-    .eq("id", parsedTemplateId)
+    .eq("id", templateId)
     .maybeSingle();
 
   if (error) throw error;
@@ -381,7 +427,36 @@ export async function assertWhatsappTemplateBelongsToOrg(
     );
   }
 
-  return parsedTemplateId;
+  return templateId;
+}
+
+export async function assertWhatsappProviderTemplateBelongsToOrg(
+  admin,
+  orgId,
+  providerTemplateId,
+) {
+  const normalizedId = String(providerTemplateId || "").trim();
+  if (!normalizedId) return null;
+
+  const { data, error } = await admin
+    .from("whatsapp_templates")
+    .select("id, org_id, provider_template_id")
+    .eq("provider_template_id", normalizedId);
+
+  if (error) throw error;
+
+  const template = (data || []).find(
+    (row) => row.org_id == null || Number(row.org_id) === Number(orgId),
+  );
+
+  if (!template) {
+    throwHttpError(
+      "WhatsApp template does not belong to this organization",
+      403,
+    );
+  }
+
+  return template;
 }
 
 export function extractRecipientUserIds(recipients = []) {
@@ -415,4 +490,63 @@ export function requireAllRecipientsToBeKnownUsers(recipients = []) {
   }
 
   return ids;
+}
+
+const TEAMS_JWKS = createRemoteJWKSet(
+  new URL("https://login.botframework.com/v1/.well-known/keys"),
+);
+
+function getTeamsJwtConfig() {
+  const appId = process.env.BOT_APP_ID?.trim();
+  const tenantId = process.env.AZURE_TENANT_ID?.trim() || null;
+
+  if (!appId) {
+    throwHttpError("Missing BOT_APP_ID", 500);
+  }
+
+  return { appId, tenantId };
+}
+
+export async function requireValidTeamsRequest(req, activity) {
+  const authHeader = req.headers.get("authorization") || "";
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+
+  if (!match) {
+    return { error: jsonError("Unauthorized", 401) };
+  }
+
+  const token = match[1].trim();
+  if (!token) {
+    return { error: jsonError("Unauthorized", 401) };
+  }
+
+  const { appId } = getTeamsJwtConfig();
+
+  try {
+    const { payload } = await jwtVerify(token, TEAMS_JWKS, {
+      audience: appId,
+      issuer: "https://api.botframework.com",
+      algorithms: ["RS256"],
+    });
+
+    const tokenServiceUrl = String(payload.serviceurl || "")
+      .trim()
+      .replace(/\/$/, "");
+    const activityServiceUrl = String(activity?.serviceUrl || "")
+      .trim()
+      .replace(/\/$/, "");
+
+    if (!tokenServiceUrl || !activityServiceUrl) {
+      return { error: jsonError("Unauthorized", 401) };
+    }
+
+    if (tokenServiceUrl !== activityServiceUrl) {
+      return { error: jsonError("Unauthorized", 401) };
+    }
+
+    return { ok: true, payload };
+  } catch (error) {
+    console.warn("[Teams Auth] invalid request", error?.message || error);
+    return { error: jsonError("Unauthorized", 401) };
+  }
 }

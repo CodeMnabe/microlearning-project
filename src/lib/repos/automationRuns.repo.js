@@ -39,6 +39,25 @@ export async function getAutomationRunById(id) {
   return data ?? null;
 }
 
+export async function getAutomationRunForScheduledBroadcast({
+  id,
+  organizationId,
+  scheduledBroadcastId,
+}) {
+  if (!id || !organizationId || !scheduledBroadcastId) return null;
+
+  const { data, error } = await sb
+    .from("automation_run")
+    .select("*")
+    .eq("id", id)
+    .eq("organization_id", organizationId)
+    .eq("scheduled_broadcast_id", scheduledBroadcastId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
 export async function getDueAutomationRuns(limit = 100) {
   const nowIso = new Date().toISOString();
 
@@ -72,12 +91,21 @@ export async function markAutomationRunMaterialized(id, scheduledBroadcastId) {
   return data ?? null;
 }
 
-export async function markAutomationRunProcessing(id) {
-  const { data, error } = await sb
+export async function markAutomationRunProcessing(id, context = {}) {
+  let query = sb
     .from("automation_run")
     .update({ status: "processing", updated_at: new Date().toISOString() })
     .eq("id", id)
-    .in("status", ["queued", "materialized"])
+    .in("status", ["queued", "materialized"]);
+
+  if (context.organizationId) {
+    query = query.eq("organization_id", context.organizationId);
+  }
+  if (context.scheduledBroadcastId) {
+    query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
+  }
+
+  const { data, error } = await query
     .select()
     .maybeSingle();
 
@@ -85,24 +113,37 @@ export async function markAutomationRunProcessing(id) {
   return data ?? null;
 }
 
-export async function markAutomationRunSent(id) {
-  const { data, error } = await sb
+export async function markAutomationRunSent(id, context = {}) {
+  let query = sb
     .from("automation_run")
     .update({
       status: "sent",
       processed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id)
+    .eq("id", id);
+
+  if (context.organizationId) {
+    query = query.eq("organization_id", context.organizationId);
+  }
+  if (context.scheduledBroadcastId) {
+    query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
+  }
+
+  const { data, error } = await query
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data ?? null;
 }
 
-export async function markAutomationRunFailed(id, lastError = null) {
-  const { data, error } = await sb
+export async function markAutomationRunFailed(
+  id,
+  lastError = null,
+  context = {},
+) {
+  let query = sb
     .from("automation_run")
     .update({
       status: "failed",
@@ -110,12 +151,21 @@ export async function markAutomationRunFailed(id, lastError = null) {
       processed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id)
+    .eq("id", id);
+
+  if (context.organizationId) {
+    query = query.eq("organization_id", context.organizationId);
+  }
+  if (context.scheduledBroadcastId) {
+    query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
+  }
+
+  const { data, error } = await query
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data ?? null;
 }
 
 export async function markAutomationRunCancelled(id, lastError = null) {

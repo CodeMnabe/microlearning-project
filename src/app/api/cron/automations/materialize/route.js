@@ -14,7 +14,7 @@ function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
 
   const authHeader = req.headers.get("authorization") || "";
@@ -25,16 +25,6 @@ function isAuthorized(req) {
   const xCronSecret = req.headers.get("x-cron-secret") || "";
 
   return bearer === cronSecret || xCronSecret === cronSecret;
-}
-
-function buildWhatsappRecipient(user) {
-  if (user?.phone_number) return user.phone_number;
-
-  if (user?.phone_country_code && user?.phone_national) {
-    return `${user.phone_country_code}${String(user.phone_national).replace(/\D/g, "")}`;
-  }
-
-  return null;
 }
 
 async function materializeOne(run) {
@@ -67,6 +57,18 @@ async function materializeOne(run) {
       };
     }
 
+    if (Number(user.organization_id) !== Number(run.organization_id)) {
+      await markAutomationRunFailed(
+        run.id,
+        "User does not belong to automation run organization",
+      );
+      return {
+        id: run.id,
+        ok: false,
+        error: "User does not belong to automation run organization",
+      };
+    }
+
     const payload = {
       ...(run.payload || {}),
       orgId: run.organization_id,
@@ -74,7 +76,7 @@ async function materializeOne(run) {
     };
 
     if (run.channel === "whatsapp") {
-      const recipient = buildWhatsappRecipient(user);
+      const recipient = { userId: user.id };
 
       console.log("[materializeOne] whatsapp recipient", {
         recipient,

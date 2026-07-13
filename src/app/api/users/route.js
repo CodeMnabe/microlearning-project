@@ -137,15 +137,31 @@ export async function PATCH(req) {
     const orgAuth = await requireOrgForUser(id);
     if (orgAuth.error) return orgAuth.error;
 
-    const safeAssistantId = await assertAssistantBelongsToOrg(
-      orgAuth.admin,
-      orgAuth.orgId,
-      assistantId,
-    );
+    const safeAssistantId =
+      assistantId !== undefined
+        ? await assertAssistantBelongsToOrg(
+            orgAuth.admin,
+            orgAuth.orgId,
+            assistantId,
+          )
+        : undefined;
 
-    const safeTagIds = Array.isArray(tagIds)
-      ? await assertTagsBelongToOrg(orgAuth.admin, orgAuth.orgId, tagIds)
-      : tagIds;
+    let safeTagIds = undefined;
+
+    if (tagIds !== undefined) {
+      if (!Array.isArray(tagIds)) {
+        return NextResponse.json(
+          { error: "tagIds must be an array" },
+          { status: 400 },
+        );
+      }
+
+      safeTagIds = await assertTagsBelongToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        tagIds,
+      );
+    }
 
     const normalizedNational =
       typeof phoneNational === "string"

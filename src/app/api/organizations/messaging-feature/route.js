@@ -1,73 +1,153 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
 import {
   getOrCreateOrganizationMessagingFeature,
   setReadChainsEnabled,
 } from "@/lib/repos/organizationMessagingFeature.repo";
+import {
+  handleApiError,
+  parsePositiveInt,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
+
+const ALLOWED_CHANNELS = new Set(["whatsapp"]);
+
+function parseChannel(value) {
+  if (value == null || value === "") {
+    return "whatsapp";
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (!ALLOWED_CHANNELS.has(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
 
 function getOrgIdFromUrl(req) {
-  const value = req.nextUrl.searchParams.get("orgId");
-  const orgId = Number(value);
-
-  return Number.isFinite(orgId) && orgId > 0 ? orgId : null;
+  return parsePositiveInt(
+    req.nextUrl.searchParams.get("orgId"),
+  );
 }
 
 function getChannelFromUrl(req) {
-  return req.nextUrl.searchParams.get("channel") || "whatsapp";
+  return parseChannel(
+    req.nextUrl.searchParams.get("channel"),
+  );
 }
 
 export async function GET(req) {
   try {
+    const rawOrgId =
+      req.nextUrl.searchParams.get("orgId");
+
     const orgId = getOrgIdFromUrl(req);
     const channel = getChannelFromUrl(req);
 
-    if (!orgId) {
-      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+    if (rawOrgId == null || rawOrgId === "") {
+      return NextResponse.json(
+        { error: "Missing orgId" },
+        { status: 400 },
+      );
     }
 
-    const feature = await getOrCreateOrganizationMessagingFeature({
-      organizationId: orgId,
-      channel,
-    });
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Invalid organization id" },
+        { status: 400 },
+      );
+    }
+
+    if (!channel) {
+      return NextResponse.json(
+        { error: "Invalid channel" },
+        { status: 400 },
+      );
+    }
+
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const feature =
+      await getOrCreateOrganizationMessagingFeature({
+        organizationId: orgAuth.orgId,
+        channel,
+      });
 
     return NextResponse.json({
       ok: true,
       item: feature,
     });
   } catch (error) {
-    console.error("[messaging-feature] GET failed:", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error.message || "Failed to load messaging feature.",
-      },
-      { status: 500 },
+    return handleApiError(
+      error,
+      "Failed to load messaging feature.",
     );
   }
 }
 
 export async function PATCH(req) {
   try {
-    const body = await req.json().catch(() => ({}));
+    let body;
 
-    const orgId = Number(body.organizationId ?? body.orgId);
-    const channel = body.channel || "whatsapp";
-
-    if (!Number.isFinite(orgId) || orgId <= 0) {
-      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
-    }
-
-    if (typeof body.readChainsEnabled !== "boolean") {
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: "readChainsEnabled must be a boolean" },
+        { error: "Invalid JSON body" },
         { status: 400 },
       );
     }
 
+    const rawOrgId =
+      body?.organizationId ?? body?.orgId;
+
+    const orgId = parsePositiveInt(rawOrgId);
+    const channel = parseChannel(body?.channel);
+
+    if (rawOrgId == null || rawOrgId === "") {
+      return NextResponse.json(
+        { error: "Missing orgId" },
+        { status: 400 },
+      );
+    }
+
+    if (!orgId) {
+      return NextResponse.json(
+        { error: "Invalid organization id" },
+        { status: 400 },
+      );
+    }
+
+    if (!channel) {
+      return NextResponse.json(
+        { error: "Invalid channel" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      typeof body.readChainsEnabled !== "boolean"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "readChainsEnabled must be a boolean",
+        },
+        { status: 400 },
+      );
+    }
+
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
     const feature = await setReadChainsEnabled({
-      organizationId: orgId,
+      organizationId: orgAuth.orgId,
       channel,
       enabled: body.readChainsEnabled,
     });
@@ -77,14 +157,9 @@ export async function PATCH(req) {
       item: feature,
     });
   } catch (error) {
-    console.error("[messaging-feature] PATCH failed:", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error.message || "Failed to update messaging feature.",
-      },
-      { status: 500 },
+    return handleApiError(
+      error,
+      "Failed to update messaging feature.",
     );
   }
 }

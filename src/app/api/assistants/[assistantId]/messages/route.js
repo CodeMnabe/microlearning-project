@@ -1,16 +1,41 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { handleApiError, requireOrgForAssistant } from "@/lib/auth/guards";
+import {
+  handleApiError,
+  requireOrgForAssistant,
+  requireOrgForThread,
+} from "@/lib/auth/guards";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req, { params }) {
   try {
     const { assistantId } = await params;
-    const { message, threadId: incomingAiThreadId } = await req.json();
+    const { message, threadId } = await req.json();
 
     const orgAuth = await requireOrgForAssistant(assistantId);
     if (orgAuth.error) return orgAuth.error;
+
+    let threadAuth = null;
+
+    if (threadId) {
+      threadAuth = await requireOrgForThread(threadId);
+      if (threadAuth.error) return threadAuth.error;
+
+      if (threadAuth.orgId !== orgAuth.orgId) {
+        return NextResponse.json(
+          { error: "Thread does not belong to this assistant organization" },
+          { status: 403 },
+        );
+      }
+
+      if (Number(threadAuth.thread.assistant_id) !== Number(orgAuth.assistantId)) {
+        return NextResponse.json(
+          { error: "Thread does not belong to this assistant" },
+          { status: 403 },
+        );
+      }
+    }
 
     if (!message?.trim()) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 });
@@ -18,7 +43,8 @@ export async function POST(req, { params }) {
 
     const openAiAssistantId = orgAuth.assistant.open_ai_id;
 
-    let aiThreadId = incomingAiThreadId;
+    let aiThreadId = threadAuth?.thread?.ai_thread_id;
+
     if (!aiThreadId) {
       const thread = await client.beta.threads.create();
       aiThreadId = thread.id;
@@ -35,6 +61,7 @@ export async function POST(req, { params }) {
 
     let status = run.status;
     const start = Date.now();
+
     while (
       ![
         "completed",
@@ -50,6 +77,7 @@ export async function POST(req, { params }) {
           { status: 504 },
         );
       }
+
       await new Promise((resolve) => setTimeout(resolve, 800));
       const fresh = await client.beta.threads.runs.retrieve(aiThreadId, run.id);
       status = fresh.status;
@@ -65,7 +93,9 @@ export async function POST(req, { params }) {
     const msgs = await client.beta.threads.messages.list(aiThreadId, {
       limit: 10,
     });
+
     const assistantMsg = msgs.data.find((m) => m.role === "assistant");
+
     const reply =
       assistantMsg?.content?.[0]?.type === "text"
         ? assistantMsg.content[0].text.value

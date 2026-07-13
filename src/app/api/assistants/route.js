@@ -35,13 +35,15 @@ export async function POST(req) {
       );
     }
 
-    const ai = await createOAiAssistant(body);
-    if (!ai) {
-      return NextResponse.json(
-        { error: "Error creating assistant" },
-        { status: 500 },
-      );
-    }
+    const ai = await createOAiAssistant({
+      name: body.name,
+      description: body.description,
+      instructions: body.instructions,
+      model: body.model,
+      top_p: body.top_p,
+      temperature: body.temperature,
+      organizationId: orgAuth.orgId,
+    });
 
     const row = await createAssistant({
       organizationId: orgAuth.orgId,

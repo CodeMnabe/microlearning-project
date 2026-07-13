@@ -20,7 +20,12 @@ export async function PATCH(req) {
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
 
-    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
+    const safeUserIds = await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      userIds,
+    );
+
     const safeAssistantId = await assertAssistantBelongsToOrg(
       orgAuth.admin,
       orgAuth.orgId,
@@ -30,7 +35,7 @@ export async function PATCH(req) {
     const { error } = await orgAuth.admin
       .from("user")
       .update({ assistant_id: safeAssistantId })
-      .in("id", userIds)
+      .in("id", safeUserIds)
       .eq("organization_id", orgAuth.orgId);
 
     if (error) throw error;
@@ -53,14 +58,18 @@ export async function DELETE(req) {
     const orgAuth = await requireOrgForUser(userIds[0]);
     if (orgAuth.error) return orgAuth.error;
 
-    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
+    const safeUserIds = await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      userIds,
+    );
 
     const results = await Promise.allSettled(
-      userIds.map((id) => deleteUser(id)),
+      safeUserIds.map((id) => deleteUser(id)),
     );
 
     const failed = results
-      .map((result, index) => ({ result, id: userIds[index] }))
+      .map((result, index) => ({ result, id: safeUserIds[index] }))
       .filter(({ result }) => result.status === "rejected")
       .map(({ result, id }) => ({
         id,
@@ -69,7 +78,7 @@ export async function DELETE(req) {
 
     return NextResponse.json({
       ok: failed.length === 0,
-      deleted: userIds.length - failed.length,
+      deleted: safeUserIds.length - failed.length,
       failedCount: failed.length,
       failed,
     });

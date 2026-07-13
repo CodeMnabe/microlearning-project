@@ -221,7 +221,9 @@ export async function sendReadChainStep({
   });
 
   await updateMessageChainRecipientProgress({
+    chainId: chain.id,
     chainRecipientId: chainRecipient.id,
+    userId: chainRecipient.user_id,
     currentStepIndex: stepIndex,
     status: "active",
   });

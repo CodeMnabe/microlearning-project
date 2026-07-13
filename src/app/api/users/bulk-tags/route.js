@@ -24,13 +24,22 @@ export async function POST(req) {
     const orgAuth = await requireOrgForUser(userIds[0]);
     if (orgAuth.error) return orgAuth.error;
 
-    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
-    await assertTagsBelongToOrg(orgAuth.admin, orgAuth.orgId, tagIdsNum);
+    const safeUserIds = await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      userIds,
+    );
+
+    const safeTagIds = await assertTagsBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      tagIdsNum,
+    );
 
     if (op === "add") {
       const rows = [];
-      for (const uid of userIds) {
-        for (const tid of tagIdsNum) rows.push({ user_id: uid, tag_id: tid });
+      for (const uid of safeUserIds) {
+        for (const tid of safeTagIds) rows.push({ user_id: uid, tag_id: tid });
       }
 
       const { error } = await orgAuth.admin
@@ -45,8 +54,8 @@ export async function POST(req) {
       const { error } = await orgAuth.admin
         .from("user_tag")
         .delete()
-        .in("user_id", userIds)
-        .in("tag_id", tagIdsNum);
+        .in("user_id", safeUserIds)
+        .in("tag_id", safeTagIds);
 
       if (error) throw error;
       return NextResponse.json({ ok: true });
@@ -56,15 +65,15 @@ export async function POST(req) {
       const { error: delErr } = await orgAuth.admin
         .from("user_tag")
         .delete()
-        .in("user_id", userIds);
+        .in("user_id", safeUserIds);
 
       if (delErr) throw delErr;
 
-      if (!tagIdsNum.length) return NextResponse.json({ ok: true });
+      if (!safeTagIds.length) return NextResponse.json({ ok: true });
 
       const rows = [];
-      for (const uid of userIds) {
-        for (const tid of tagIdsNum) rows.push({ user_id: uid, tag_id: tid });
+      for (const uid of safeUserIds) {
+        for (const tid of safeTagIds) rows.push({ user_id: uid, tag_id: tid });
       }
 
       const { error: addErr } = await orgAuth.admin

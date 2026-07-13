@@ -10,7 +10,7 @@ export async function GET(req) {
     const orgAuth = await requireOrgForUser(userId);
     if (orgAuth.error) return orgAuth.error;
 
-    const userThreads = await getThreadsForUser(Number(userId));
+    const userThreads = await getThreadsForUser(orgAuth.userId);
     return NextResponse.json({ threads: userThreads });
   } catch (err) {
     return handleApiError(err, "Failed to load threads");

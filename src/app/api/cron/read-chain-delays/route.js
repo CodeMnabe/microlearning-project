@@ -128,6 +128,14 @@ async function processDueDelayedSteps(req) {
         continue;
       }
 
+      if (Number(chainRecipient.chain_id) !== Number(chain.id)) {
+        throw new Error("Chain recipient does not belong to chain.");
+      }
+
+      if (Number(chainRecipient.user_id) !== Number(delivery.user_id)) {
+        throw new Error("Chain recipient does not belong to delivery user.");
+      }
+
       const chainStep = await getMessageChainStep({
         chainId: delivery.chain_id,
         stepIndex: delivery.step_index,
@@ -135,6 +143,14 @@ async function processDueDelayedSteps(req) {
 
       if (!chainStep) {
         throw new Error("Could not find delayed chain step");
+      }
+
+      if (String(chainStep.chain_id) !== String(chain.id)) {
+        throw new Error("Chain step does not belong to chain.");
+      }
+
+      if (String(chainStep.id) !== String(delivery.chain_step_id)) {
+        throw new Error("Chain step does not belong to delivery.");
       }
 
       const sendResult = await sendReadChainStep({

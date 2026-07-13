@@ -147,6 +147,55 @@ export async function getMessageChainRecipient({ chainId, userId }) {
   return data ?? null;
 }
 
+export async function getValidatedMessageChainContext({
+  chainId,
+  chainStepId,
+  chainRecipientId,
+  stepIndex,
+  userId,
+  organizationId,
+}) {
+  if (
+    !chainId ||
+    !chainStepId ||
+    !chainRecipientId ||
+    !stepIndex ||
+    !userId ||
+    !organizationId
+  ) {
+    return null;
+  }
+
+  const chain = await getMessageChainById(chainId);
+  if (!chain || Number(chain.organization_id) !== Number(organizationId)) {
+    return null;
+  }
+
+  const { data: step, error: stepError } = await sb
+    .from("message_chain_step")
+    .select("*")
+    .eq("id", chainStepId)
+    .eq("chain_id", chainId)
+    .eq("step_index", Number(stepIndex))
+    .maybeSingle();
+
+  if (stepError) throw stepError;
+  if (!step) return null;
+
+  const { data: recipient, error: recipientError } = await sb
+    .from("message_chain_recipient")
+    .select("*")
+    .eq("id", chainRecipientId)
+    .eq("chain_id", chainId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (recipientError) throw recipientError;
+  if (!recipient) return null;
+
+  return { chain, step, recipient };
+}
+
 export async function getMessageChainRecipientsByChainId(chainId) {
   if (!chainId) {
     throw new Error("chainId is required.");
@@ -253,6 +302,10 @@ export async function createMessageChainDelivery({
   dueAt = null,
   errorMessage = null,
 }) {
+  if (!chainId || !chainStepId || !chainRecipientId || !userId || !stepIndex) {
+    throw new Error("Complete message chain delivery context is required");
+  }
+
   const { data, error } = await sb
     .from("message_chain_delivery")
     .upsert(
@@ -337,6 +390,7 @@ export async function claimDueScheduledMessageChainDeliveries({ limit = 50 }) {
 }
 
 export async function markMessageChainDeliveryRead({
+  chainId,
   chainRecipientId,
   stepIndex,
   readAt = new Date(),
@@ -350,6 +404,7 @@ export async function markMessageChainDeliveryRead({
       read_at: iso,
       updated_at: nowIso(),
     })
+    .eq("chain_id", chainId)
     .eq("chain_recipient_id", chainRecipientId)
     .eq("step_index", stepIndex)
     .select()
@@ -384,7 +439,9 @@ export async function markMessageChainDeliveryFailed({
 }
 
 export async function updateMessageChainRecipientProgress({
+  chainId,
   chainRecipientId,
+  userId,
   currentStepIndex,
   status = null,
 }) {
@@ -401,8 +458,10 @@ export async function updateMessageChainRecipientProgress({
     .from("message_chain_recipient")
     .update(patch)
     .eq("id", chainRecipientId)
+    .eq("chain_id", chainId)
+    .eq("user_id", userId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
 
@@ -410,7 +469,9 @@ export async function updateMessageChainRecipientProgress({
 }
 
 export async function completeMessageChainRecipient({
+  chainId,
   chainRecipientId,
+  userId,
   reason = null,
 }) {
   const { data, error } = await sb
@@ -422,8 +483,10 @@ export async function completeMessageChainRecipient({
       updated_at: nowIso(),
     })
     .eq("id", chainRecipientId)
+    .eq("chain_id", chainId)
+    .eq("user_id", userId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
 

@@ -113,14 +113,23 @@ export async function getMessageById(id) {
   return data ?? null;
 }
 
-export async function getMessageByProviderId(messageId) {
+export async function getMessageByProviderId(
+  messageId,
+  organizationId,
+) {
+  if (!messageId || !organizationId) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("message")
     .select(MESSAGE_SELECT)
     .eq("message_id", messageId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   if (error) throw error;
+
   return data ?? null;
 }
 
@@ -257,9 +266,16 @@ export async function markMessageDeliveredByProviderId(
 export async function markMessageReadByProviderId(
   providerMessageId,
   at = new Date(),
+  organizationId,
 ) {
-  const message = await getMessageByProviderId(providerMessageId);
-  if (!message) return null;
+  const message = await getMessageByProviderId(
+    providerMessageId,
+    organizationId,
+  );
+
+  if (!message) {
+    return null;
+  }
 
   return markMessageRead(message.id, at);
 }
