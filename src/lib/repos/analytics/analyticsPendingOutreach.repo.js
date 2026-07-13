@@ -11,6 +11,7 @@ import { countRows } from "./analyticsBase.repo";
  * - total de registos;
  * - registos ainda ativos.
  */
+
 export async function getPendingOutreachMetrics(orgId, periodStart) {
   /**
    * Executa as contagens em paralelo.

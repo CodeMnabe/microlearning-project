@@ -7,6 +7,9 @@ import { countRows } from "./analyticsBase.repo";
  * - total de assistentes;
  * - assistentes sem OpenAI ID configurado.
  */
+
+
+
 export async function getAssistantMetrics(orgId) {
   /**
    * Executa as duas contagens em paralelo:

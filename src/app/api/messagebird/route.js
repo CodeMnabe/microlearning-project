@@ -20,8 +20,8 @@ import {
 import {
   getAssistantById,
   getAssistantsInOrg,
-} from "@/lib/repos/assistants.repo";
-import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
+} from "@/lib/repos/assistants/assistants.repo";
+import { createOAiThread, sendMessageToAi } from "@/lib/services/openai/openai.service";
 import {
   getOrganization,
   getOrganizationByChannelId,
@@ -33,11 +33,11 @@ import {
 import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
-} from "@/lib/repos/pendingOutreach.repo";
+} from "@/lib/repos/broadcast/pendingOutreach.repo";
 import {
   createMessageChainDelivery,
   updateMessageChainRecipientProgress,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 import { splitE164 } from "@/lib/whatsapp/E164";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 

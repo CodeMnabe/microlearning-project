@@ -1,5 +1,11 @@
 import styles from "../scheduled.module.css";
 
+/**
+ * Cards de resumo dos broadcasts agendados.
+ *
+ * Mostra totais por estado para leitura rápida da operação.
+ */
+
 export default function ScheduledStats({ translation, stats }) {
   return (
     <div className={styles.statsGrid}>

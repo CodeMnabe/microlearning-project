@@ -2,6 +2,12 @@ import { Link } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import styles from "../scheduled.module.css";
 
+/**
+ * Header da página de broadcasts agendados.
+ *
+ * Mostra o título da página e o nome da organização atual.
+ */
+
 export default function ScheduledHeader({ translation, organizationName }) {
   return (
     <div className={styles.header}>

@@ -21,6 +21,16 @@ import {
   mapRecipientsToEntries,
 } from "../helpers/recipient.helpers";
 
+
+
+/**
+ * Seletor de recipients para edição de broadcasts agendados.
+ *
+ * Permite pesquisar utilizadores, selecionar recipients válidos
+ * para Teams ou WhatsApp e mostrar recipients não resolvidos.
+ */
+
+
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }

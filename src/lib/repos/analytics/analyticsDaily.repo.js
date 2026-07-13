@@ -11,6 +11,7 @@ import { getTrackedLinkClickRows } from "./analyticsTrackedLinks.repo";
  * Depois, a service usa buildDailySeries para transformar estas linhas
  * numa série diária com valores por data.
  */
+
 export async function getDailyAnalyticsRows(orgId, trendStart) {
   /**
    * Executa todas as queries em paralelo.

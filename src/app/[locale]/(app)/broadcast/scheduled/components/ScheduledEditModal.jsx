@@ -17,6 +17,13 @@ import {
   uniqueRecipients,
 } from "../helpers/recipient.helpers";
 
+/**
+ * Modal de edição de broadcast agendado.
+ *
+ * Permite alterar mensagem, canal, recipients, data/hora,
+ * timezone, estado e anexos antes do envio.
+ */
+
 function normalizeDisplayText(value, fallback = "") {
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import {
   getOrCreateOrganizationMessagingFeature,
   setReadChainsEnabled,
-} from "@/lib/repos/organizationMessagingFeature.repo";
+} from "@/lib/repos/broadcast/organizationMessagingFeature.repo";
 
 function getOrgIdFromUrl(req) {
   const value = req.nextUrl.searchParams.get("orgId");

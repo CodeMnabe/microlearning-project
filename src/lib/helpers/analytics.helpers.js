@@ -1,30 +1,45 @@
 /**
- * Lista de períodos aceites pela dashboard de Analytics.
+ * Helpers backend da dashboard Analytics.
  *
- * all  → sem filtro nas métricas gerais
- * 7d   → últimos 7 dias
- * 30d  → últimos 30 dias
- * 90d  → últimos 90 dias
+ * Este ficheiro reúne funções puras usadas pela API, service e repos
+ * da área de Analytics.
+ *
+ * Responsabilidades:
+ * - validar períodos aceites pela dashboard;
+ * - calcular datas iniciais para filtros temporais;
+ * - aplicar filtros de período em queries Supabase;
+ * - normalizar valores numéricos antes de enviar para o frontend;
+ * - construir séries diárias contínuas para gráficos;
+ * - ordenar e limitar rankings;
+ * - garantir fallbacks quando métricas opcionais falham.
+ *
+ * Estes helpers não devem conter JSX, estado React, lógica visual
+ * nem chamadas diretas a componentes de frontend.
+ */
+
+/**
+ * Lista de períodos aceites pela dashboard Analytics.
+ *
+ * - all: sem filtro nas métricas gerais
+ * - 7d: últimos 7 dias
+ * - 30d: últimos 30 dias
+ * - 90d: últimos 90 dias
  */
 export const VALID_PERIODS = new Set(["all", "7d", "30d", "90d"]);
 
 /**
- * Verifica se um valor está realmente preenchido.
+ * Verifica se um valor está preenchido.
  *
- * Evita contar valores vazios como:
- * - null
- * - undefined
- * - string vazia
+ * Evita tratar null, undefined ou strings vazias como valores válidos.
  */
 export function hasValue(value) {
   return value !== null && value !== undefined && String(value).trim() !== "";
 }
 
 /**
- * Soma valores numéricos dentro de uma lista.
+ * Soma valores numéricos de uma lista usando uma chave.
  *
- * Exemplo:
- * usado para somar recipient_count das mensagens agendadas.
+ * Valores inválidos são tratados como 0.
  */
 export function sumNumbers(items, key) {
   return items.reduce((sum, item) => {
@@ -37,16 +52,10 @@ export function sumNumbers(items, key) {
 /**
  * Converte o período escolhido numa data inicial.
  *
- * Exemplo:
- * - "7d" devolve a data de há 7 dias
- * - "30d" devolve a data de há 30 dias
- * - "all" devolve null, porque não queremos filtrar por data
+ * "all" devolve null.
+ * Períodos como "7d", "30d" e "90d" devolvem uma data ISO.
  */
 export function getPeriodStart(period) {
-  /**
-   * Se o período não for permitido,
-   * devolvemos valid: false para a service poder lançar erro.
-   */
   if (!VALID_PERIODS.has(period)) {
     return {
       valid: false,
@@ -54,10 +63,6 @@ export function getPeriodStart(period) {
     };
   }
 
-  /**
-   * No período "all", não existe data inicial.
-   * Isto permite buscar dados de todo o histórico.
-   */
   if (period === "all") {
     return {
       valid: true,
@@ -65,19 +70,9 @@ export function getPeriodStart(period) {
     };
   }
 
-  /**
-   * Remove o "d" do período.
-   *
-   * Exemplo:
-   * "30d" → 30
-   */
   const days = Number(period.replace("d", ""));
-
-  /**
-   * Cria uma data com base no dia atual
-   * e subtrai o número de dias escolhido.
-   */
   const date = new Date();
+
   date.setDate(date.getDate() - days);
 
   return {
@@ -87,12 +82,9 @@ export function getPeriodStart(period) {
 }
 
 /**
- * Aplica filtro de data a uma query Supabase.
+ * Aplica filtro temporal a uma query Supabase.
  *
- * Se periodStart for null, não aplica filtro.
- *
- * Por defeito filtra pela coluna created_at,
- * mas podes passar outra coluna, como scheduled_for ou failed_at.
+ * Se não existir periodStart, devolve a query sem alterações.
  */
 export function applyPeriod(query, periodStart, dateColumn = "created_at") {
   if (!periodStart) return query;
@@ -101,47 +93,34 @@ export function applyPeriod(query, periodStart, dateColumn = "created_at") {
 }
 
 /**
- * Converte uma data para o formato YYYY-MM-DD.
+ * Converte uma data numa chave diária no formato YYYY-MM-DD.
  *
- * Usado para agrupar dados por dia nos gráficos.
+ * Usado para agrupar dados nos gráficos diários.
  */
 export function getDayKey(value) {
   if (!value) return null;
 
   const date = new Date(value);
 
-  /**
-   * Se a data for inválida, ignoramos esse valor.
-   */
   if (Number.isNaN(date.getTime())) return null;
 
   return date.toISOString().slice(0, 10);
 }
 
 /**
- * Cria uma lista com todos os dias entre duas datas.
+ * Cria uma lista contínua de dias entre duas datas.
  *
- * Isto garante que os gráficos mostram também dias sem dados,
- * com valor 0.
+ * Garante que os gráficos também mostram dias sem dados.
  */
 export function getDayRange(startDate, endDate = new Date()) {
   const days = [];
 
-  /**
-   * Começa no início do dia da data inicial.
-   */
   const current = new Date(startDate);
   current.setUTCHours(0, 0, 0, 0);
 
-  /**
-   * Termina no início do dia da data final.
-   */
   const end = new Date(endDate);
   end.setUTCHours(0, 0, 0, 0);
 
-  /**
-   * Adiciona todos os dias ao array até chegar à data final.
-   */
   while (current <= end) {
     days.push(current.toISOString().slice(0, 10));
     current.setUTCDate(current.getUTCDate() + 1);
@@ -151,28 +130,16 @@ export function getDayRange(startDate, endDate = new Date()) {
 }
 
 /**
- * Constrói uma série diária para os gráficos.
+ * Constrói uma série diária contínua para gráficos.
  *
- * Recebe linhas da base de dados e transforma em dados por dia.
- *
- * Exemplo de saída:
- * [
- *   { date: "2026-06-01", messages: 5 },
- *   { date: "2026-06-02", messages: 0 },
- *   { date: "2026-06-03", messages: 8 }
- * ]
+ * Recebe linhas da base de dados e transforma-as numa lista por dia.
+ * Dias sem dados entram com valor 0.
  */
 export function buildDailySeries(startDate, rows, dateColumn, valueKey) {
-  /**
-   * Cria todos os dias do período com valor inicial 0.
-   */
   const countsByDay = Object.fromEntries(
     getDayRange(startDate).map((day) => [day, 0])
   );
 
-  /**
-   * Conta quantas linhas existem em cada dia.
-   */
   rows.forEach((row) => {
     const day = getDayKey(row?.[dateColumn]);
 
@@ -181,9 +148,6 @@ export function buildDailySeries(startDate, rows, dateColumn, valueKey) {
     }
   });
 
-  /**
-   * Converte o objeto final num array pronto para os gráficos.
-   */
   return Object.entries(countsByDay).map(([date, value]) => ({
     date,
     [valueKey]: value,
@@ -191,9 +155,9 @@ export function buildDailySeries(startDate, rows, dateColumn, valueKey) {
 }
 
 /**
- * Converte qualquer valor para número de forma segura.
+ * Converte um valor para número seguro antes de enviar para a API.
  *
- * Se o valor não for um número válido, devolve 0.
+ * Valores inválidos devolvem 0.
  */
 export function safeNumberForApi(value) {
   const number = Number(value ?? 0);
@@ -202,11 +166,9 @@ export function safeNumberForApi(value) {
 }
 
 /**
- * Ordena uma lista por uma chave numérica e limita o número de resultados.
+ * Ordena uma lista por uma chave numérica e limita resultados.
  *
- * Usado em rankings, por exemplo:
- * - links mais clicados
- * - automações com mais falhas
+ * Usado em rankings da dashboard.
  */
 export function sortAndLimit(items, key, limit = 5) {
   return [...items]
@@ -217,7 +179,7 @@ export function sortAndLimit(items, key, limit = 5) {
 /**
  * Executa uma métrica opcional com fallback.
  *
- * Se a métrica falhar, a dashboard continua a funcionar
+ * Se a métrica falhar, a dashboard continua funcional
  * e recebe o valor fallback.
  */
 export async function withMetricFallback(label, promise, fallback) {
@@ -231,18 +193,14 @@ export async function withMetricFallback(label, promise, fallback) {
 }
 
 /**
- * Calcula as datas usadas pela dashboard.
+ * Calcula os intervalos temporais usados pela dashboard Analytics.
  *
- * periodStart:
- * usado nas métricas gerais.
+ * periodStart é usado nas métricas gerais.
+ * trendStart é usado nos gráficos diários.
+ * rankingStart é usado nos rankings.
  *
- * trendStart:
- * usado nos gráficos de evolução diária.
- * Se o período for "all", os gráficos usam 90 dias para não ficarem pesados.
- *
- * rankingStart:
- * usado nos rankings.
- * Se o período for "all", os rankings usam todo o histórico.
+ * Quando o período é "all", os gráficos usam 90 dias
+ * para evitar séries demasiado pesadas.
  */
 export function getAnalyticsPeriodRange(period) {
   const { valid, startDate } = getPeriodStart(period);

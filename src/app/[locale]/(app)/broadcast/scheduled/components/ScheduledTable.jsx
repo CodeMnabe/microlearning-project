@@ -3,6 +3,14 @@ import styles from "../scheduled.module.css";
 import { Link } from "@/i18n/navigation";
 import { formatDateTime, previewText } from "../helpers/scheduled.helpers";
 
+
+/**
+ * Tabela de broadcasts agendados.
+ *
+ * Mostra a lista filtrada e expõe ações de visualizar,
+ * editar ou eliminar cada item.
+ */
+
 export default function ScheduledTable({
   loading,
   translation,

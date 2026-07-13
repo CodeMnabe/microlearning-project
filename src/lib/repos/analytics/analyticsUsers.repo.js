@@ -13,6 +13,7 @@ import { fetchRows } from "./analyticsBase.repo";
  * - utilizadores com Teams;
  * - utilizadores com WhatsApp.
  */
+
 export async function getUserMetrics(orgId) {
   /**
    * Vai buscar os utilizadores da organização.

@@ -1,4 +1,4 @@
-import { isReadChainsEnabled } from "@/lib/repos/organizationMessagingFeature.repo";
+import { isReadChainsEnabled } from "@/lib/repos/broadcast/organizationMessagingFeature.repo";
 import {
   completeMessageChainRecipient,
   createMessageChainDelivery,
@@ -7,7 +7,7 @@ import {
   getMessageChainRecipientById,
   getMessageChainStep,
   markMessageChainDeliveryRead,
-} from "@/lib/repos/messageChain.repo";
+} from "@/lib/repos/broadcast/messageChain.repo";
 import { sendReadChainStep } from "./sendReadChainStep";
 
 function getDelayAfterPreviousReadMinutes(stepPayload) {

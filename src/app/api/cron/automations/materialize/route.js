@@ -4,7 +4,7 @@ import {
   markAutomationRunFailed,
   markAutomationRunMaterialized,
 } from "@/lib/repos/automationRuns.repo";
-import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
+import { createScheduledBroadcast } from "@/lib/repos/broadcast/scheduledBroadcasts.repo";
 import { getUserById } from "@/lib/repos/user.repo";
 
 export const runtime = "nodejs";

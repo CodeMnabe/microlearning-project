@@ -1,5 +1,5 @@
 import styles from "../../broadcast.module.css";
-import { getInitial, getWhatsappSubline } from "../../lib/helpers";
+import { getInitial, getWhatsappSubline } from "../../lib/broadcast.helpers";
 
 export default function RecipientRow({
   user,

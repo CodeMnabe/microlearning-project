@@ -1,27 +1,38 @@
 import { NextResponse } from "next/server";
+
 import {
-  getAssistantById,
-  updateAssistant,
-  deleteAssistant,
-} from "@/lib/repos/assistants.repo";
-import {
-  updateOAiAssistant,
-  deleteOAiAssistant,
-} from "@/lib/services/oAi.services";
+  getAssistantDetailsService,
+  updateAssistantService,
+  deleteAssistantService,
+} from "@/lib/services/assistants";
+
+/**
+ * API de detalhe da camada Assistants.
+ *
+ * Endpoints:
+ * - GET /api/assistants/:assistantId
+ * - PATCH /api/assistants/:assistantId
+ * - DELETE /api/assistants/:assistantId
+ *
+ * Gere:
+ * - carregamento de um assistente;
+ * - atualização de dados do assistente;
+ * - remoção do assistente.
+ *
+ * Esta route delega a lógica para os services da camada Assistants.
+ */
 
 export async function GET(req, { params }) {
   try {
     const { assistantId } = await params;
-    const row = await getAssistantById(Number(assistantId));
-    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Map snake_case → UI camelCase where needed
-    const payload = {
-      ...row,
-      vectorStoreId: row.vector_store_id ?? null, // UI reads vectorStoreId
-    };
+    const assistant = await getAssistantDetailsService(Number(assistantId));
 
-    return NextResponse.json(payload, { status: 200 });
+    if (!assistant) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(assistant, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -32,23 +43,16 @@ export async function PATCH(req, { params }) {
     const { assistantId } = await params;
     const updates = await req.json();
 
-    // Keep OpenAI in sync (ignore errors silently or handle as you prefer)
-    try {
-      await updateOAiAssistant(updates);
-    } catch {}
+    const assistant = await updateAssistantService(
+      Number(assistantId),
+      updates,
+    );
 
-    const updated = await updateAssistant(Number(assistantId), updates);
-
-    const payload = {
-      ...updated,
-      vectorStoreId: updated.vector_store_id ?? null,
-    };
-
-    return NextResponse.json(payload, { status: 200 });
+    return NextResponse.json(assistant, { status: 200 });
   } catch (err) {
     return NextResponse.json(
       { error: "Failed to update assistant: " + err.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -56,14 +60,13 @@ export async function PATCH(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const { assistantId } = await params;
-    const row = await getAssistantById(Number(assistantId));
-    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    try {
-      await deleteOAiAssistant(row.open_ai_id);
-    } catch {}
+    const deleted = await deleteAssistantService(Number(assistantId));
 
-    await deleteAssistant(row.id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -19,6 +19,7 @@ import {
  * - execuções processadas;
  * - execuções com erro.
  */
+
 export async function getAutomationMetrics(orgId, periodStart) {
   /**
    * Executa várias contagens em paralelo para melhorar a performance.

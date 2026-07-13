@@ -7,8 +7,8 @@ import { NextResponse } from "next/server";
 import {
   getAssistantById,
   getFirstAssistantInOrg,
-} from "@/lib/repos/assistants.repo";
-import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
+} from "@/lib/repos/assistants/assistants.repo";
+import { createOAiThread, sendMessageToAi } from "@/lib/services/openai/openai.service";
 import {
   getOrganization,
   getOrganizationByTeamsTenantId,

@@ -20,6 +20,14 @@ import {
   phonesMatch,
 } from "../helpers/recipient.helpers";
 
+
+/**
+ * Modal de visualização de broadcast agendado.
+ *
+ * Mostra detalhes do payload, recipients, anexos, estado
+ * e resultados de processamento quando disponíveis.
+ */
+
 function safeTranslate(translation, key, fallback) {
   try {
     if (typeof translation?.has === "function") {

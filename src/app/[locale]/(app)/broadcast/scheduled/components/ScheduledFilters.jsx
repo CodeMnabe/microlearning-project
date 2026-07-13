@@ -2,6 +2,13 @@ import { RefreshCw, Search, X } from "lucide-react";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import styles from "../scheduled.module.css";
 
+
+/**
+ * Filtros da página Scheduled.
+ *
+ * Permite filtrar broadcasts por pesquisa, canal, estado e data.
+ */
+
 export default function ScheduledFilters({
   translation,
   search,
