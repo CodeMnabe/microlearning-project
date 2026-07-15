@@ -13,7 +13,7 @@ function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
 
   const authHeader = req.headers.get("authorization") || "";

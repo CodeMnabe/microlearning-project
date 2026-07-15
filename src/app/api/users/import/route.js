@@ -2,19 +2,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getUsersInOrg } from "@/lib/repos/user.repo";
 import {
   getTagsByExactNamesInOrg,
   addTagsToUser,
 } from "@/lib/repos/tag.repo.js";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
-
-const admin = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } },
-);
+import {
+  assertAssistantBelongsToOrg,
+  handleApiError,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 function cleanText(value) {
   if (value == null) return "";
@@ -196,6 +194,9 @@ export async function POST(req) {
       );
     }
 
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
     const requestedTagNames = new Set();
 
     users.forEach((rawUser) => {
@@ -205,8 +206,8 @@ export async function POST(req) {
     });
 
     const tagRows = await getTagsByExactNamesInOrg(
-      admin,
-      orgId,
+      orgAuth.admin,
+      orgAuth.orgId,
       Array.from(requestedTagNames),
     );
 
@@ -220,7 +221,7 @@ export async function POST(req) {
       }
     });
 
-    const existingUsersResult = await getUsersInOrg(orgId, {
+    const existingUsersResult = await getUsersInOrg(orgAuth.orgId, {
       page: 1,
       pageSize: 1000,
     });
@@ -384,7 +385,7 @@ export async function POST(req) {
 
       toProcess.push({
         action: "create",
-        organizationId: orgId,
+        organizationId: orgAuth.orgId,
         name,
         email,
         assistantId,
@@ -400,18 +401,52 @@ export async function POST(req) {
       });
     });
 
+    const requestedAssistantIds = [
+      ...new Set(
+        toProcess
+          .map((item) => item.assistantId ?? item.patch?.assistant_id ?? null)
+          .filter(Boolean),
+      ),
+    ];
+
+    const safeAssistantIds = new Map();
+
+    for (const requestedAssistantId of requestedAssistantIds) {
+      const safeAssistantId = await assertAssistantBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        requestedAssistantId,
+      );
+
+      safeAssistantIds.set(requestedAssistantId, safeAssistantId);
+    }
+
+    toProcess.forEach((item) => {
+      if (item.assistantId != null) {
+        item.assistantId = safeAssistantIds.get(item.assistantId);
+      }
+
+      if (item.patch?.assistant_id != null) {
+        item.patch.assistant_id = safeAssistantIds.get(item.patch.assistant_id);
+      }
+    });
+
     const results = await Promise.allSettled(
       toProcess.map(async (item) => {
         if (item.action === "update") {
           const updatedUser = await updateImportedUser(
-            admin,
-            orgId,
+            orgAuth.admin,
+            orgAuth.orgId,
             item.existingUserId,
             item.patch,
           );
 
           if (item.tagIds.length) {
-            await addTagsToUser(admin, item.existingUserId, item.tagIds);
+            await addTagsToUser(
+              orgAuth.admin,
+              item.existingUserId,
+              item.tagIds,
+            );
           }
 
           return {
@@ -441,7 +476,7 @@ export async function POST(req) {
             );
           }
 
-          await addTagsToUser(admin, createdUserId, item.tagIds);
+          await addTagsToUser(orgAuth.admin, createdUserId, item.tagIds);
         }
 
         return {
@@ -490,11 +525,6 @@ export async function POST(req) {
       failedRows,
     });
   } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Import failed: " + error.message },
-      { status: 500 },
-    );
+    return handleApiError(error, "Import failed");
   }
 }

@@ -96,7 +96,7 @@ function normalizeSavedRecipient(recipient, channel) {
   const whatsappBsuid =
     cleanText(recipient.whatsappBsuid) ||
     cleanText(recipient.whatsapp_bsuid) ||
-    cleanText(recipient.whatsappPsuid);
+    cleanText(recipient.whatsappBsuid);
 
   const birdContactId =
     cleanText(recipient.birdContactId) || cleanText(recipient.bird_contact_id);

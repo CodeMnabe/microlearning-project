@@ -6,6 +6,7 @@ import {
   getMessageChainDelivery,
   getMessageChainRecipientById,
   getMessageChainStep,
+  getValidatedMessageChainContext,
   markMessageChainDeliveryRead,
 } from "@/lib/repos/messageChain.repo";
 import { sendReadChainStep } from "./sendReadChainStep";
@@ -36,6 +37,7 @@ export async function processReadChainAfterRead(message) {
 
   if (
     !message.message_chain_recipient_id ||
+    !message.message_chain_step_id ||
     !message.message_chain_step_index
   ) {
     return {
@@ -81,9 +83,27 @@ export async function processReadChainAfterRead(message) {
   }
 
   const currentStepIndex = Number(message.message_chain_step_index);
+  const context = await getValidatedMessageChainContext({
+    chainId: message.message_chain_id,
+    chainStepId: message.message_chain_step_id,
+    chainRecipientId: message.message_chain_recipient_id,
+    stepIndex: currentStepIndex,
+    userId: message.user_id,
+    organizationId: message.organization_id,
+  });
+
+  if (!context) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "Message chain metadata does not match its organization and user.",
+    };
+  }
+
   const nextStepIndex = currentStepIndex + 1;
 
   await markMessageChainDeliveryRead({
+    chainId: chain.id,
     chainRecipientId: message.message_chain_recipient_id,
     stepIndex: currentStepIndex,
     readAt: message.read_at || new Date(),
@@ -96,7 +116,9 @@ export async function processReadChainAfterRead(message) {
 
   if (!nextStep) {
     await completeMessageChainRecipient({
+      chainId: chain.id,
       chainRecipientId: message.message_chain_recipient_id,
+      userId: message.user_id,
       reason: "All chain steps completed.",
     });
 

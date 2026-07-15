@@ -6,6 +6,8 @@ import {
   getLastOutboundForUserAssistant,
 } from "@/lib/repos/messages.repo";
 import { queueAutomationRunForRule } from "@/lib/services/automations/automationEngine";
+import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
+import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
 
   const authHeader = req.headers.get("authorization") || "";
@@ -125,7 +127,7 @@ function wasSentBySameAutomationRule(message, rule) {
     return false;
   }
 
-  return Number(messageRuleId) === Number(rule.id);
+  return String(messageRuleId) === String(rule.id);
 }
 
 async function processOrganizationChannel({ organizationId, channel, rules }) {
@@ -135,6 +137,7 @@ async function processOrganizationChannel({ organizationId, channel, rules }) {
   let skipped = 0;
 
   const { specificByAssistant, fallbackRule } = buildRuleResolver(rules);
+  const admin = getSupabaseAdminClient();
 
   while (true) {
     const result = await getUsersInOrg(organizationId, {
@@ -157,6 +160,8 @@ async function processOrganizationChannel({ organizationId, channel, rules }) {
         skipped += 1;
         continue;
       }
+
+      await assertAssistantBelongsToOrg(admin, organizationId, userAssistantId);
 
       const chosenRule =
         specificByAssistant.get(Number(userAssistantId)) ||

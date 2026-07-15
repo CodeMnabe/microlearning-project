@@ -1,40 +1,64 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  handleApiError,
+  requireOwnedOrg,
+  requireUser,
+} from "@/lib/auth/guards";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
-
-async function getOrgById(orgId) {
-  const { data, error } = await supabaseAdmin
+async function getOrgById(admin, orgId) {
+  const { data, error } = await admin
     .from("organization")
-    .select("id, waba_id,waba_namespace, channel_id")
+    .select("id, waba_id, waba_namespace, channel_id")
     .eq("id", orgId)
     .single();
-  if (error) throw new Error(error.message);
+
+  if (error) throw error;
   return data;
 }
 
 export async function POST(req) {
   try {
+    const auth = await requireUser();
+    if (auth.error) return auth.error;
+
+    const body = await req.json();
+
     const {
       orgId,
       name,
       language = "pt",
       category = "MARKETING",
       components,
-    } = await req.json();
+    } = body || {};
 
-    if (!orgId || !name || !components?.length) {
+    const orgAuth = await requireOwnedOrg(orgId, auth);
+    if (orgAuth.error) return orgAuth.error;
+
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      !Array.isArray(components) ||
+      components.length === 0
+    ) {
       return NextResponse.json(
-        { error: "org, name and components are required" },
-        { status: 400 }
+        { error: "name and components are required" },
+        { status: 400 },
       );
     }
 
-    const org = await getOrgById(orgId);
+    if (
+      typeof language !== "string" ||
+      !language.trim() ||
+      typeof category !== "string" ||
+      !category.trim()
+    ) {
+      return NextResponse.json(
+        { error: "Invalid language or category" },
+        { status: 400 },
+      );
+    }
+
+    const org = await getOrgById(orgAuth.admin, orgAuth.orgId);
 
     const mb = await fetch(
       "https://integrations.messagebird.com/v2/platforms/whatsapp/templates",
@@ -45,50 +69,44 @@ export async function POST(req) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          language,
-          category,
+          name: name.trim(),
+          language: language.trim(),
+          category: category.trim(),
           wabaId: org.waba_id,
           components,
         }),
-      }
+      },
     );
+
     const mbData = await mb.json();
-    if (!mb.ok)
-      return new Response(JSON.stringify({ error: mbData }), {
-        status: mb.status,
-      });
-    const upsert = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}` /
-        rest /
-        v1 /
-        whatsapp_templates,
-      {
-        method: "POST",
-        headers: {
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          Authorization: `Access ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          org_id: orgId,
-          name,
-          language,
-          category,
-          status: mbData.status ?? "NEW",
-          components,
-          provider_template_id: mbData.id ?? null,
-          waba_id: org.waba_id,
-          namespace: org.wa_namespace || null,
-        }),
-      }
+
+    if (!mb.ok) {
+      return NextResponse.json({ error: mbData }, { status: mb.status });
+    }
+
+    const { data: template, error } = await orgAuth.admin
+      .from("whatsapp_templates")
+      .insert({
+        org_id: orgAuth.orgId,
+        name: name.trim(),
+        language: language.trim(),
+        category: category.trim(),
+        status: mbData.status ?? "NEW",
+        components,
+        provider_template_id: mbData.id ?? null,
+        waba_id: org.waba_id,
+        namespace: org.waba_namespace || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(
+      { ok: true, template },
+      { status: 201 },
     );
-    const [tpl] = await upsert.json();
-    return new Response(JSON.stringify({ ok: true, template: tpl }), {
-      status: 201,
-    });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to create WhatsApp template");
   }
 }

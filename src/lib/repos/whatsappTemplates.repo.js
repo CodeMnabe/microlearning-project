@@ -17,6 +17,27 @@ export async function getWhatsappTemplateById(id) {
   return data ?? null;
 }
 
+export async function getWhatsappTemplateByProviderId(
+  providerTemplateId,
+  orgId,
+) {
+  const normalizedId = String(providerTemplateId || "").trim();
+  if (!normalizedId || !orgId) return null;
+
+  const { data, error } = await sb
+    .from("whatsapp_templates")
+    .select("*")
+    .eq("provider_template_id", normalizedId);
+
+  if (error) throw error;
+
+  return (
+    (data || []).find(
+      (row) => row.org_id == null || Number(row.org_id) === Number(orgId),
+    ) || null
+  );
+}
+
 export async function getOrgWhatsappTemplates(orgId) {
   let query = sb
     .from("whatsapp_templates")

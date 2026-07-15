@@ -1,52 +1,67 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getAssistantById } from "@/lib/repos/assistants.repo";
+import {
+  handleApiError,
+  requireOrgForAssistant,
+  requireOrgForThread,
+} from "@/lib/auth/guards";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req, { params }) {
   try {
     const { assistantId } = await params;
-    const {
-      message,
-      threadId: incomingAiThreadId, // OpenAI thread id (string)
-      assistantId: bodyOpenAiId, // optional override
-    } = await req.json();
+    const { message, threadId } = await req.json();
+
+    const orgAuth = await requireOrgForAssistant(assistantId);
+    if (orgAuth.error) return orgAuth.error;
+
+    let threadAuth = null;
+
+    if (threadId) {
+      threadAuth = await requireOrgForThread(threadId);
+      if (threadAuth.error) return threadAuth.error;
+
+      if (threadAuth.orgId !== orgAuth.orgId) {
+        return NextResponse.json(
+          { error: "Thread does not belong to this assistant organization" },
+          { status: 403 },
+        );
+      }
+
+      if (Number(threadAuth.thread.assistant_id) !== Number(orgAuth.assistantId)) {
+        return NextResponse.json(
+          { error: "Thread does not belong to this assistant" },
+          { status: 403 },
+        );
+      }
+    }
 
     if (!message?.trim()) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 });
     }
 
-    const dbAssistant = await getAssistantById(Number(assistantId));
-    if (!dbAssistant) {
-      return NextResponse.json(
-        { error: "Assistant not found" },
-        { status: 404 }
-      );
-    }
-    const openAiAssistantId = bodyOpenAiId || dbAssistant.open_ai_id;
+    const openAiAssistantId = orgAuth.assistant.open_ai_id;
 
-    // Ensure an OpenAI thread id
-    let aiThreadId = incomingAiThreadId;
+    let aiThreadId = threadAuth?.thread?.ai_thread_id;
+
     if (!aiThreadId) {
       const thread = await client.beta.threads.create();
-      aiThreadId = thread.id; // e.g. "thread_abc..."
+      aiThreadId = thread.id;
     }
 
-    // Send user message
     await client.beta.threads.messages.create(aiThreadId, {
       role: "user",
       content: message,
     });
 
-    // Run assistant
     const run = await client.beta.threads.runs.create(aiThreadId, {
       assistant_id: openAiAssistantId,
     });
 
-    // Poll until done (basic)
     let status = run.status;
     const start = Date.now();
+
     while (
       ![
         "completed",
@@ -59,25 +74,28 @@ export async function POST(req, { params }) {
       if (Date.now() - start > 30000) {
         return NextResponse.json(
           { error: "Run timed out", threadId: aiThreadId },
-          { status: 504 }
+          { status: 504 },
         );
       }
-      await new Promise((r) => setTimeout(r, 800));
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
       const fresh = await client.beta.threads.runs.retrieve(aiThreadId, run.id);
       status = fresh.status;
     }
+
     if (status !== "completed") {
       return NextResponse.json(
         { error: `Run ${status}`, threadId: aiThreadId },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Latest assistant message
     const msgs = await client.beta.threads.messages.list(aiThreadId, {
       limit: 10,
     });
+
     const assistantMsg = msgs.data.find((m) => m.role === "assistant");
+
     const reply =
       assistantMsg?.content?.[0]?.type === "text"
         ? assistantMsg.content[0].text.value
@@ -85,10 +103,6 @@ export async function POST(req, { params }) {
 
     return NextResponse.json({ reply, threadId: aiThreadId });
   } catch (err) {
-    console.error("messages POST error:", err);
-    return NextResponse.json(
-      { error: "Failed to send message" },
-      { status: 500 }
-    );
+    return handleApiError(err, "Failed to send assistant message");
   }
 }

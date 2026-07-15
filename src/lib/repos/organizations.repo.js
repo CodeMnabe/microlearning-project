@@ -1,25 +1,67 @@
 // /lib/repos/organizations.repo.js
+
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } },
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
-/**
- * Table: organization
- * cols: id (int4), name (text), created_at (timestamp)  ← adjust if different
- */
+export async function createOrganization({
+  name,
+  ownerUserId,
+  channelId,
+}) {
+  if (!name) {
+    throw new Error("Organization name is required");
+  }
 
-export async function createOrganization(name) {
+  if (!ownerUserId) {
+    throw new Error("Organization owner is required");
+  }
+
+  if (!channelId) {
+    throw new Error("Organization channel is required");
+  }
+
+  const { data: existingOrganization, error: lookupError } = await sb
+    .from("organization")
+    .select("id")
+    .eq("channel_id", channelId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  if (existingOrganization) {
+    const error = new Error(
+      "This messaging channel is already assigned to an organization",
+    );
+
+    error.status = 409;
+    throw error;
+  }
+
   const { data, error } = await sb
     .from("organization")
-    .insert([{ name }])
+    .insert([
+      {
+        name,
+        owner_user_id: ownerUserId,
+        channel_id: channelId,
+      },
+    ])
     .select()
     .single();
 
   if (error) throw error;
+
   return data;
 }
 
@@ -28,7 +70,9 @@ export async function getAllOrganization() {
     .from("organization")
     .select("*")
     .order("created_at", { ascending: true });
+
   if (error) throw error;
+
   return data || [];
 }
 
@@ -38,7 +82,9 @@ export async function getOrganization(orgId) {
     .select("*")
     .eq("id", orgId)
     .single();
+
   if (error) throw error;
+
   return data;
 }
 
@@ -52,6 +98,7 @@ export async function getOrganizationByChannelId(channelId) {
     .maybeSingle();
 
   if (error) throw error;
+
   return data;
 }
 
@@ -63,11 +110,14 @@ export async function getOrganizationByTeamsTenantId(tenantId) {
     .maybeSingle();
 
   if (error) throw error;
+
   return data;
 }
 
 export async function getOrganizationBirdConfig(orgId) {
-  if (!orgId) throw new Error("orgId is required");
+  if (!orgId) {
+    throw new Error("orgId is required");
+  }
 
   const { data, error } = await sb
     .from("organization")

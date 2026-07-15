@@ -3,49 +3,187 @@ import {
   updateScheduledBroadcast,
   deleteScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
+import {
+  cleanPatch,
+  handleApiError,
+  requireOrgForScheduledBroadcast,
+} from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_PATCH_FIELDS = [
-  "channel",
   "scheduled_for",
   "timezone",
   "status",
-  "payload",
-  "recipient_count",
 ];
+
+const ALLOWED_MANUAL_STATUSES = new Set([
+  "queued",
+  "cancelled",
+]);
+
+const MUTABLE_STATUSES = new Set([
+  "queued",
+]);
+
+const DELETABLE_STATUSES = new Set([
+  "queued",
+  "cancelled",
+]);
+
+function isValidDate(value) {
+  if (typeof value !== "string") return false;
+
+  const normalized = value.trim();
+
+  if (!normalized) return false;
+
+  return !Number.isNaN(
+    new Date(normalized).getTime(),
+  );
+}
+
+function isValidTimezone(value) {
+  if (typeof value !== "string") return false;
+
+  const normalized = value.trim();
+
+  if (!normalized || normalized.length > 100) {
+    return false;
+  }
+
+  try {
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: normalized,
+    }).format();
+
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function PATCH(req, { params }) {
   try {
     const { id } = await params;
-    const body = await req.json();
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required." }, { status: 400 });
-    }
+    let body;
 
-    const patch = Object.fromEntries(
-      Object.entries(body || {}).filter(([key]) =>
-        ALLOWED_PATCH_FIELDS.includes(key),
-      ),
-    );
-
-    if (Object.keys(patch).length === 0) {
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: "No valid fields provided to update." },
+        { error: "Invalid JSON body" },
         { status: 400 },
       );
     }
 
-    const data = await updateScheduledBroadcast(id, patch);
-    return NextResponse.json({ item: data });
-  } catch (err) {
-    console.error("PATCH error:", err);
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
 
-    return NextResponse.json(
-      { error: "Failed to update scheduled broadcast." },
-      { status: 500 },
+    const orgAuth =
+      await requireOrgForScheduledBroadcast(id);
+
+    if (orgAuth.error) return orgAuth.error;
+
+    if (
+      !MUTABLE_STATUSES.has(
+        String(orgAuth.broadcast.status),
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only queued broadcasts can be updated.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const patch = cleanPatch(
+      body,
+      ALLOWED_PATCH_FIELDS,
+    );
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "status",
+      )
+    ) {
+      if (
+        typeof patch.status !== "string" ||
+        !ALLOWED_MANUAL_STATUSES.has(
+          patch.status,
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid manual status update.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "scheduled_for",
+      ) &&
+      !isValidDate(patch.scheduled_for)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid scheduled_for" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "timezone",
+      ) &&
+      !isValidTimezone(patch.timezone)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid timezone" },
+        { status: 400 },
+      );
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No valid fields provided to update.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const data = await updateScheduledBroadcast(
+      orgAuth.broadcastId,
+      patch,
+    );
+
+    return NextResponse.json({
+      item: data,
+    });
+  } catch (err) {
+    return handleApiError(
+      err,
+      "Failed to update scheduled broadcast",
     );
   }
 }
@@ -54,19 +192,36 @@ export async function DELETE(_req, { params }) {
   try {
     const { id } = await params;
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const orgAuth =
+      await requireOrgForScheduledBroadcast(id);
+
+    if (orgAuth.error) return orgAuth.error;
+
+    if (
+      !DELETABLE_STATUSES.has(
+        String(orgAuth.broadcast.status),
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only queued or cancelled broadcasts can be deleted.",
+        },
+        { status: 409 },
+      );
     }
 
-    await deleteScheduledBroadcast(id);
+    await deleteScheduledBroadcast(
+      orgAuth.broadcastId,
+    );
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+    });
   } catch (err) {
-    console.error("DELETE error:", err);
-
-    return NextResponse.json(
-      { error: "Failed to delete scheduled broadcast" },
-      { status: 500 },
+    return handleApiError(
+      err,
+      "Failed to delete scheduled broadcast",
     );
   }
 }
