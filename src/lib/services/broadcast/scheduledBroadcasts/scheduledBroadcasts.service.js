@@ -19,7 +19,7 @@ import {
   markAutomationRunFailed,
   markAutomationRunProcessing,
   markAutomationRunSent,
-} from "@/lib/repos/automationRuns.repo";
+} from "@/lib/repos/automations/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { BroadcastError } from "../shared";

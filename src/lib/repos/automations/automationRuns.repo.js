@@ -134,3 +134,74 @@ export async function markAutomationRunCancelled(id, lastError = null) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Lista os runs de uma organização.
+ *
+ * Mantém a query que existia diretamente em:
+ * /api/automations/runs
+ */
+export async function getOrganizationAutomationRuns({
+  organizationId,
+  limit = 100,
+}) {
+  const { data, error } = await sb
+    .from("automation_run")
+    .select(
+      `
+        *,
+        user_row:user_id (
+          id,
+          name
+        )
+      `,
+    )
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return data || [];
+}
+
+/**
+ * Lista os runs que já possuem um scheduled broadcast.
+ *
+ * Mantém a query que existia diretamente em:
+ * /api/automations/materialized
+ */
+export async function getOrganizationMaterializedAutomationRuns({
+  organizationId,
+  limit = 100,
+}) {
+  const { data, error } = await sb
+    .from("automation_run")
+    .select(
+      `
+        *,
+        user_row:user!automation_run_user_id_fkey (
+          id,
+          name,
+          email
+        ),
+        scheduled_broadcast:scheduled_broadcast!automation_run_scheduled_broadcast_id_fkey (
+          id,
+          status,
+          channel,
+          scheduled_for,
+          payload,
+          recipient_count,
+          created_at
+        )
+      `,
+    )
+    .eq("organization_id", organizationId)
+    .not("scheduled_broadcast_id", "is", null)
+    .order("scheduled_for", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return data || [];
+}

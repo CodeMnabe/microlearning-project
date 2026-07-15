@@ -36,7 +36,7 @@ export default function Navbar() {
 
   const pathNoLocale = pathName.replace(/^\/(en|pt)(?=\/|$)/, "") || "/";
   const [pendingHref, setPendingHref] = useState(null);
-  const ADMIN_ORGANIZATION_ID = 2;
+  const ADMIN_ORGANIZATION_ID = 1;
   const isAdmin = Number(org?.id) === ADMIN_ORGANIZATION_ID;
 
 

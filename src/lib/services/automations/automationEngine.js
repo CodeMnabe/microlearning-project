@@ -1,6 +1,6 @@
 import { getUserById } from "@/lib/repos/user.repo";
-import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
-import { createAutomationRunIfMissing } from "@/lib/repos/automationRuns.repo";
+import { getActiveAutomationRules } from "@/lib/repos/automations/automationRules.repo";
+import { createAutomationRunIfMissing } from "@/lib/repos/automations/automationRuns.repo";
 
 function addMinutes(baseTime, minutes) {
   const date = new Date(baseTime);
