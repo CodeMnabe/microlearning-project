@@ -1,4 +1,5 @@
 import SiteUnavailable from "../../components/SiteUnavailable/SiteUnavailable";
+import styles from "./marketingShell.module.css";
 
 export default function MarketingLayout({ children }) {
   const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
@@ -7,5 +8,5 @@ export default function MarketingLayout({ children }) {
     return <SiteUnavailable />;
   }
 
-  return children;
+  return <div className={styles.shell}>{children}</div>;
 }

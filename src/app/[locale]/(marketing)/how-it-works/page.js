@@ -3,6 +3,8 @@ import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
 import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 import Footer from "../components/Footer/Footer";
 import HowItWorksExplorer from "./howItWorksExplorer";
+import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
+import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import styles from "./howItWorksPage.module.css";
 
 export default function HowItWorksPage() {
@@ -12,6 +14,11 @@ export default function HowItWorksPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
+        <InteractiveAmbientBackground
+          variant="mist"
+          intensity="subtle"
+          interactive
+        />
 
         <div className={styles.lang}>
           <LanguageSwitch />
@@ -26,13 +33,18 @@ export default function HowItWorksPage() {
             <p className={styles.eyebrow}>{t("hero.eyebrow")}</p>
             <h1 className={styles.title}>{t("hero.title")}</h1>
             <p className={styles.subhead}>{t("hero.subhead")}</p>
+            <MarketingHeroActions
+              primary={t("hero.primaryCta")}
+              secondary={t("hero.secondaryCta")}
+              secondaryHref="/contact"
+            />
           </header>
         </div>
       </section>
 
       <HowItWorksExplorer />
 
-     <div className={styles.footerWrap}>
+      <div className={styles.footerWrap}>
         <Footer />
       </div>
     </main>

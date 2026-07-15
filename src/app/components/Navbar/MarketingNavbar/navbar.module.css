@@ -1,5 +1,5 @@
 .navWrap {
-  padding-top: 10px;
+  padding-top: 0;
   display: flex;
   justify-content: center;
   position: relative;
@@ -9,14 +9,15 @@
 .navbar {
   position: relative;
   width: 100%;
-  max-width: 1500px;
-  padding: 10px 14px;
-  border-radius: 28px;
+  max-width: 1320px;
+  min-height: 66px;
+  padding: 11px 14px;
+  border-radius: 999px;
 
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 20, 38, 0.66);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
 }
 
 .topBar {
@@ -37,7 +38,7 @@
 
 .logoMark {
   display: block;
-  width: 180px;
+  width: 174px;
   height: auto;
   object-fit: contain;
   flex: 0 0 auto;
@@ -66,21 +67,22 @@
 .navLink {
   text-decoration: none;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.75);
-  padding: 6px 8px;
+  color: rgba(255, 255, 255, 0.72);
+  padding: 9px 12px;
   border-radius: 999px;
   transition: background 0.2s ease;
 }
 
 .navLink:hover {
-  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  background: rgba(124, 194, 255, 0.12);
 }
 
 .loginLink {
   text-decoration: none;
   font-size: 14px;
-  background: #fff;
-  color: var(--brand-1);
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
   padding: 10px 16px;
   border-radius: 999px;
   transition: background 0.2s ease;
@@ -88,8 +90,7 @@
 }
 
 .loginLink:hover {
-  background: var(--brand-1);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .signupBtn {
@@ -98,9 +99,9 @@
   font-weight: 700;
   padding: 10px 16px;
   border-radius: 999px;
-  color: white;
-  background: var(--brand-1);
-  box-shadow: 0px 10px 125px var(--ink);
+  color: #081426;
+  background: #34d7b6;
+  box-shadow: 0 12px 30px rgba(52, 215, 182, 0.18);
   text-align: center;
   transition: background 0.2s ease;
   transition: color 0.2s ease;
@@ -108,7 +109,7 @@
 
 .signupBtn:hover {
   background: #fff;
-  color: var(--brand-1);
+  color: #081426;
 }
 
 .userPill {
@@ -145,7 +146,7 @@
   .navbar {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
   }
 
   .topBar {
@@ -164,7 +165,7 @@
   .navLinks {
     display: flex;
     justify-content: center;
-    gap: 14px;
+    gap: 4px;
     flex: 1;
     min-width: 0;
   }
@@ -250,7 +251,7 @@
 @media (max-width: 640px) {
   .navbar {
     padding: 10px 12px;
-    border-radius: 22px;
+    border-radius: 26px;
   }
 
   .brandText {

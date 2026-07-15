@@ -3,12 +3,12 @@
   "socials": [
     { "href": "https://x.com", "labelKey": "socials.x", "icon": "x" },
     {
-      "href": "https://linkedin.com",
+      "href": "https://www.linkedin.com/company/digik",
       "labelKey": "socials.linkedin",
       "icon": "linkedin"
     },
     {
-      "href": "https://youtube.com",
+      "href": "https://www.youtube.com/@digik-digitalknowledge1647",
       "labelKey": "socials.youtube",
       "icon": "youtube"
     }

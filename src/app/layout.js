@@ -1,6 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { AuthProvider } from "./AuthContext";
 import { GlobalLoaderProvider } from "./LoadingScreen/GlobalLoaderContext";
 
@@ -16,14 +16,36 @@ const inter = localFont({
   display: "swap",
 });
 
-export const metadata = {
-  title: "MyDigitalBot",
-  description:
-    "Send any type of messages to your employees or let them have a chat on WhatsApp with a Virtual Assistant powered by AI",
-  // icons: {
-  //   icon: "/favicon.png"
-  // }
-};
+export async function generateMetadata() {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") || "https";
+  const metadataBase = new URL(
+    host ? `${protocol}://${host}` : "https://mydigitalbot.com",
+  );
+
+  const title = "MyDigitalBot | Microlearning no dia a dia";
+  const description =
+    "Microlearning e assistentes de IA nos canais onde as equipas já trabalham, com feedback imediato e impacto real.";
+
+  return {
+    metadataBase,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: [{ url: "/og.png", width: 1732, height: 909, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og.png"],
+    },
+  };
+}
 
 export default async function RootLayout({ children }) {
   const cookieStore = await cookies();

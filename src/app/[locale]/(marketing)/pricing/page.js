@@ -3,6 +3,7 @@ import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
 import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
 import Footer from "../components/Footer/Footer";
 import PricingExplorer from "./PricingExplorer.jsx";
+import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import styles from "./pricingPage.module.css";
 
 export default function PricingPage() {
@@ -12,6 +13,12 @@ export default function PricingPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
+        <InteractiveAmbientBackground
+          variant="mist"
+          intensity="subtle"
+          interactive={false}
+          quality="low"
+        />
 
         <div className={styles.lang}>
           <LanguageSwitch />
@@ -31,7 +38,10 @@ export default function PricingPage() {
       </section>
 
       <PricingExplorer />
-      <Footer />
+
+      <div className={styles.footerWrap}>
+        <Footer />
+      </div>
     </main>
   );
 }

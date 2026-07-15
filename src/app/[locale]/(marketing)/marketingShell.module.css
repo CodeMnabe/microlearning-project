@@ -1,0 +1,113 @@
+.shell {
+  --marketing-night: #081426;
+  --marketing-navy: #101b33;
+  --marketing-blue: #30a9e0;
+  --marketing-sky: #7cc2ff;
+  --marketing-mint: #34d7b6;
+  --marketing-violet: #7c5cfc;
+  --marketing-coral: #ff6b7a;
+  --marketing-cloud: #f7fbff;
+  min-height: 100%;
+  color: var(--marketing-night);
+  background: var(--marketing-cloud);
+}
+
+.shell :global(main) {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(48, 169, 224, 0.1), transparent 24%),
+    var(--marketing-cloud);
+}
+
+.shell :global(main > section:first-child) {
+  position: relative;
+  min-height: clamp(560px, 76svh, 760px);
+  margin: 0;
+  padding: 18px clamp(16px, 3vw, 48px) 80px;
+  overflow: hidden;
+}
+
+.shell :global(main > section:first-child > [aria-hidden="true"]:first-child) {
+  inset: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  border-radius: 0 0 38px 38px !important;
+  background:
+    radial-gradient(circle at 72% 20%, rgba(124, 194, 255, 0.38), transparent 25%),
+    radial-gradient(circle at 20% 80%, rgba(124, 92, 252, 0.2), transparent 26%),
+    linear-gradient(145deg, var(--marketing-night), var(--marketing-navy) 58%, #103a5e) !important;
+}
+
+.shell :global(main > section:first-child h1) {
+  max-width: 980px;
+  margin-inline: auto;
+  font-size: clamp(3.25rem, 7vw, 7rem);
+  font-weight: 870;
+  line-height: 0.9;
+  letter-spacing: -0.065em;
+  text-wrap: balance;
+  animation: marketingTitleIn 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.shell :global(main > section:first-child header > p) {
+  animation: marketingCopyIn 800ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.shell :global(main > section:not(:first-child)) {
+  position: relative;
+}
+
+.shell :global(main > section:not(:first-child) article) {
+  border-color: rgba(16, 27, 51, 0.1);
+  box-shadow: 0 24px 70px rgba(16, 27, 51, 0.08);
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shell :global(main > section:not(:first-child) article:hover) {
+    transform: translateY(-5px);
+    border-color: rgba(48, 169, 224, 0.28);
+    box-shadow: 0 34px 90px rgba(16, 27, 51, 0.13);
+  }
+}
+
+@keyframes marketingTitleIn {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marketingCopyIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .shell :global(main > section:first-child) {
+    min-height: 620px;
+    padding-inline: 10px;
+  }
+
+  .shell :global(main > section:first-child h1) {
+    font-size: clamp(3rem, 14vw, 5.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell :global(main > section:first-child h1),
+  .shell :global(main > section:first-child header > p) {
+    animation: none;
+  }
+}
