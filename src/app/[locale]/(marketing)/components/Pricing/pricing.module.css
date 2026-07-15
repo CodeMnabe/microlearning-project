@@ -1,5 +1,6 @@
 .wrap {
   padding: 72px 18px;
+  overflow: hidden;
   /* background:
     radial-gradient(
       1100px 520px at 20% 10%,
@@ -14,11 +15,14 @@
     var(--background); */
 }
 
+
+
 .header {
   max-width: 1120px;
   margin: 0 auto 34px;
   text-align: center;
   padding: 0 6px;
+  
 }
 
 .eyebrow {
@@ -36,6 +40,7 @@
   letter-spacing: -0.03em;
   font-weight: 760;
   color: rgba(var(--ink-rgb), 0.95);
+  
 }
 
 .subheading {
@@ -53,6 +58,7 @@
   grid-template-columns: 1.1fr 0.9fr;
   gap: 22px;
   align-items: stretch;
+  
 }
 
 /* Left benefits card */

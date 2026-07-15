@@ -37,6 +37,8 @@
   margin: 10px;
   padding: 18px clamp(20px, 3.2vw, 56px) 54px;
   border-radius: 30px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   background: var(--night);
 }
 

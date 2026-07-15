@@ -36,6 +36,7 @@
   overflow: hidden;
   padding: 18px clamp(16px, 3vw, 48px) 76px;
   background: var(--night);
+  border-radius: 0px 0px 35px 35px !important;
 }
 
 .background {
