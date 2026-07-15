@@ -110,7 +110,7 @@
         "4": "Sem LMS complexo nem infraestruturas pesadas."
       },
       "plans": {
-        "popular": { "name": "Pilot", "tagline": "Para validar com 1 equipa" },
+        "popular": { "name": "Starter", "tagline": "Para validar com 1 equipa" },
         "pro": {
           "name": "Growth",
           "tagline": "Para escalar por equipas e áreas"

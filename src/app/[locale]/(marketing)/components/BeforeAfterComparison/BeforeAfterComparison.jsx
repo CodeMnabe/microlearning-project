@@ -112,7 +112,7 @@ export default function BeforeAfterComparison({
           src="/images/after.jpg"
           alt={before.alt}
           fill
-          sizes="(max-width: 900px) calc(100vw - 32px), 1180px"
+           sizes="(max-width: 900px) calc(100vw - 32px), 1080px"
           quality={95}
         />
         <div className={styles.afterLayer} aria-hidden="true">
@@ -121,7 +121,7 @@ export default function BeforeAfterComparison({
             src="/images/before.jpg"
             alt=""
             fill
-            sizes="(max-width: 900px) calc(100vw - 32px), 1180px"
+             sizes="(max-width: 900px) calc(100vw - 32px), 1080px"
             quality={95}
           />
         </div>

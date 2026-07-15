@@ -15,6 +15,7 @@ import Footer from "./components/Footer/Footer";
 import LandingExperience from "./components/LandingExperience/LandingExperience";
 import InteractiveAmbientBackground from "./components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import BeforeAfterComparison from "./components/BeforeAfterComparison/BeforeAfterComparison";
+import FeatureGrid from "./components/FeatureGrid/FeatureGrid";
 import heroContent from "./components/Hero/hero.json";
 import pricingContent from "./components/Pricing/pricing.json";
 import styles from "./components/LandingExperience/landingExperience.module.css";
@@ -37,7 +38,6 @@ function AnimatedLine({ children }) {
 
 export default async function LocaleIndex() {
   const tHero = await getTranslations("LandingPage.Hero");
-  const tFeature = await getTranslations("LandingPage.FeatureGrid");
   const tBeforeAfter = await getTranslations("LandingPage.BeforeAfter");
   const tPricing = await getTranslations("LandingPage.Pricing");
   const tJourney = await getTranslations("LandingPage.Journey");
@@ -113,48 +113,6 @@ export default async function LocaleIndex() {
                 </span>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className={`${styles.scene} ${styles.transformComparisonScene}`}>
-          <div className={styles.comparisonInner}>
-            <header className={styles.sectionHeader} data-reveal>
-              <div>
-                <p className={styles.eyebrow}>
-                  {tJourney("transformationEyebrow")}
-                </p>
-                <h2 className={styles.sectionTitle}>
-                  {tBeforeAfter("heading")}
-                </h2>
-              </div>
-              <p className={styles.sectionText}>
-                {tBeforeAfter("subheading")}
-              </p>
-            </header>
-
-            <BeforeAfterComparison
-              ariaLabel={tBeforeAfter("story.ariaLabel")}
-              before={{
-                label: tBeforeAfter("before.label"),
-                alt: tBeforeAfter("before.alt"),
-              }}
-              after={{
-                label: tBeforeAfter("after.label"),
-                alt: tBeforeAfter("after.alt"),
-              }}
-              beforeBullets={[
-                tBeforeAfter("before.bullets.1"),
-                tBeforeAfter("before.bullets.0"),
-                tBeforeAfter("before.bullets.2"),
-                tBeforeAfter("before.bullets.4"),
-              ]}
-              afterBullets={[
-                tBeforeAfter("after.bullets.0"),
-                tBeforeAfter("after.bullets.1"),
-                tBeforeAfter("after.bullets.2"),
-                tBeforeAfter("after.bullets.4"),
-              ]}
-            />
           </div>
         </section>
 
@@ -367,6 +325,50 @@ export default async function LocaleIndex() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        <FeatureGrid />
+
+        <section className={`${styles.scene} ${styles.transformComparisonScene}`}>
+          <div className={styles.comparisonInner}>
+            <header className={styles.sectionHeader} data-reveal>
+              <div>
+                <p className={styles.eyebrow}>
+                  {tJourney("transformationEyebrow")}
+                </p>
+                <h2 className={styles.sectionTitle}>
+                  {tBeforeAfter("heading")}
+                </h2>
+              </div>
+              <p className={styles.sectionText}>
+                {tBeforeAfter("subheading")}
+              </p>
+            </header>
+
+            <BeforeAfterComparison
+              ariaLabel={tBeforeAfter("story.ariaLabel")}
+              before={{
+                label: tBeforeAfter("before.label"),
+                alt: tBeforeAfter("before.alt"),
+              }}
+              after={{
+                label: tBeforeAfter("after.label"),
+                alt: tBeforeAfter("after.alt"),
+              }}
+              beforeBullets={[
+                tBeforeAfter("before.bullets.1"),
+                tBeforeAfter("before.bullets.0"),
+                tBeforeAfter("before.bullets.2"),
+                tBeforeAfter("before.bullets.4"),
+              ]}
+              afterBullets={[
+                tBeforeAfter("after.bullets.0"),
+                tBeforeAfter("after.bullets.1"),
+                tBeforeAfter("after.bullets.2"),
+                tBeforeAfter("after.bullets.4"),
+              ]}
+            />
           </div>
         </section>
 

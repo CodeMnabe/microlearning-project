@@ -1175,10 +1175,10 @@
 
 .finalTitle {
   margin: 0;
-  font-size: clamp(3.4rem, 8vw, 8rem);
+  font-size: clamp(3.4rem, 6vw, 8rem);
   font-weight: 880;
   line-height: 0.88;
-  letter-spacing: -0.07em;
+  letter-spacing: 0em;
   text-wrap: balance;
 }
 

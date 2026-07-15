@@ -110,7 +110,7 @@
         "4": "No complex LMS or heavy infrastructure."
       },
       "plans": {
-        "popular": { "name": "Pilot", "tagline": "Validate with one team" },
+        "popular": { "name": "Starter", "tagline": "Validate with one team" },
         "pro": { "name": "Growth", "tagline": "Scale across teams and areas" },
         "advanced": {
           "name": "Enterprise",

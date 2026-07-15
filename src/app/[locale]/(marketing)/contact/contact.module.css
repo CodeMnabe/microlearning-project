@@ -1,5 +1,6 @@
 .page {
   min-height: 100vh;
+  background: var(--ink);
 }
 
 .lang {
@@ -12,18 +13,20 @@
 .hero {
   position: relative;
   overflow: hidden;
+  margin: 0;
   padding: 16px;
-  margin: 10px;
   padding-bottom: 72px;
+  background: var(--ink);
+  border-radius: 0;
 }
 
 .background {
   position: absolute;
   inset: 0;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
   background: linear-gradient(135deg, var(--ink), var(--brand-1));
-  height: 62vh;
-  border-radius: 24px;
-  margin: 0 16px;
 }
 
 .navRow {
@@ -313,10 +316,6 @@
     padding: 8px 8px 0;
   }
 
-  .background {
-    height: 52vh;
-  }
-
   .row {
     grid-template-columns: 1fr;
   }
@@ -326,3 +325,6 @@
     padding: 22px;
   }
 }
+
+
+
