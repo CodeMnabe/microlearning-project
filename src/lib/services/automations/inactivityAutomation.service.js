@@ -1,0 +1,303 @@
+import {
+  getActiveAutomationRules,
+} from "@/lib/repos/automations/automationRules.repo";
+
+import {
+  getUsersInOrg,
+} from "@/lib/repos/user.repo";
+
+import {
+  getLastInboundForUserAssistant,
+} from "@/lib/repos/messages.repo";
+
+import {
+  queueAutomationRunForRule,
+} from "@/lib/services/automations/automationEngine";
+
+const PAGE_SIZE = 500;
+
+/**
+ * Organiza as regras de inatividade por âmbito.
+ *
+ * - regras com assistant_id são específicas;
+ * - uma regra sem assistant_id funciona como fallback.
+ *
+ * Mantém exatamente a lógica anteriormente existente
+ * na route do cron de inatividade.
+ */
+function buildRuleResolver(rules) {
+  const specificByAssistant = new Map();
+  let fallbackRule = null;
+
+  for (const rule of rules) {
+    if (rule.assistant_id == null) {
+      fallbackRule = rule;
+      continue;
+    }
+
+    specificByAssistant.set(
+      Number(rule.assistant_id),
+      rule,
+    );
+  }
+
+  return {
+    specificByAssistant,
+    fallbackRule,
+  };
+}
+
+/**
+ * Processa os utilizadores de uma organização
+ * para um canal específico.
+ *
+ * Mantém:
+ * - paginação de 500 utilizadores;
+ * - regra específica com prioridade sobre fallback;
+ * - necessidade de assistant_id;
+ * - cálculo do dueAt;
+ * - construção do triggerKey;
+ * - payload atual do run;
+ * - contadores atuais.
+ */
+async function processOrganizationChannel({
+  organizationId,
+  channel,
+  rules,
+}) {
+  let page = 1;
+  let scanned = 0;
+  let created = 0;
+  let skipped = 0;
+
+  const {
+    specificByAssistant,
+    fallbackRule,
+  } = buildRuleResolver(rules);
+
+  while (true) {
+    const result = await getUsersInOrg(
+      organizationId,
+      {
+        page,
+        pageSize: PAGE_SIZE,
+      },
+    );
+
+    const users = result.items || [];
+
+    if (!users.length) {
+      break;
+    }
+
+    for (const user of users) {
+      scanned += 1;
+
+      const userAssistantId =
+        user.assistant_id ?? null;
+
+      if (userAssistantId == null) {
+        skipped += 1;
+        continue;
+      }
+
+      const chosenRule =
+        specificByAssistant.get(
+          Number(userAssistantId),
+        ) ||
+        fallbackRule ||
+        null;
+
+      if (!chosenRule) {
+        skipped += 1;
+        continue;
+      }
+
+      const lastInbound =
+        await getLastInboundForUserAssistant(
+          user.id,
+          userAssistantId,
+          channel,
+        );
+
+      if (!lastInbound) {
+        skipped += 1;
+        continue;
+      }
+
+      const dueAt = new Date(
+        new Date(
+          lastInbound.created_at,
+        ).getTime() +
+          Number(
+            chosenRule.delay_minutes || 0,
+          ) *
+            60 *
+            1000,
+      );
+
+      if (dueAt > new Date()) {
+        skipped += 1;
+        continue;
+      }
+
+      const triggerKey =
+        `user.inactive:${channel}:` +
+        `${user.id}:` +
+        `${userAssistantId}:` +
+        `${lastInbound.id}`;
+
+      const run =
+        await queueAutomationRunForRule({
+          rule: chosenRule,
+          user,
+          assistantId: userAssistantId,
+          sourceMessageRowId:
+            lastInbound.id,
+          baseTime:
+            lastInbound.created_at,
+          triggerKey,
+
+          payload: {
+            lastInboundMessageId:
+              lastInbound.id,
+
+            lastInboundAt:
+              lastInbound.created_at,
+
+            resolvedByRuleId:
+              chosenRule.id,
+
+            ruleScopeAssistantId:
+              chosenRule.assistant_id ??
+              null,
+
+            usedFallbackRule:
+              chosenRule.assistant_id ==
+              null,
+          },
+        });
+
+      if (run) {
+        created += 1;
+      } else {
+        skipped += 1;
+      }
+    }
+
+    if (
+      page * PAGE_SIZE >=
+      (result.total || 0)
+    ) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return {
+    organizationId,
+    channel,
+    scanned,
+    created,
+    skipped,
+    specificRules:
+      specificByAssistant.size,
+    hasFallbackRule:
+      Boolean(fallbackRule),
+  };
+}
+
+/**
+ * Processa todas as regras ativas de inatividade.
+ *
+ * organizationId é opcional e mantém o filtro
+ * atualmente aceite pela route através da query string.
+ */
+export async function processInactivityAutomations({
+  organizationId = null,
+} = {}) {
+  let rules =
+    await getActiveAutomationRules({
+      triggerType: "user.inactive",
+    });
+
+  if (organizationId) {
+    rules = rules.filter(
+      (rule) =>
+        Number(rule.organization_id) ===
+        Number(organizationId),
+    );
+  }
+
+  if (!rules.length) {
+    return {
+      ok: true,
+      message:
+        "No active inactivity rules",
+      processedGroups: 0,
+      results: [],
+    };
+  }
+
+  const grouped = new Map();
+
+  for (const rule of rules) {
+    const key =
+      `${rule.organization_id}:` +
+      `${rule.channel}`;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(rule);
+  }
+
+  const results = [];
+
+  for (const groupRules of grouped.values()) {
+    const groupOrganizationId = Number(
+      groupRules[0].organization_id,
+    );
+
+    const channel =
+      groupRules[0].channel;
+
+    results.push(
+      await processOrganizationChannel({
+        organizationId:
+          groupOrganizationId,
+        channel,
+        rules: groupRules,
+      }),
+    );
+  }
+
+  return {
+    ok: true,
+
+    processedGroups:
+      results.length,
+
+    createdRuns: results.reduce(
+      (sum, item) =>
+        sum + item.created,
+      0,
+    ),
+
+    scannedUsers: results.reduce(
+      (sum, item) =>
+        sum + item.scanned,
+      0,
+    ),
+
+    skipped: results.reduce(
+      (sum, item) =>
+        sum + item.skipped,
+      0,
+    ),
+
+    results,
+  };
+}

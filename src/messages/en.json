@@ -1241,201 +1241,229 @@
   },
 
   "Automations": {
-    "searchAutomations": "Search automations...",
-    "refresh": "Refresh",
-    "runInactivity": "Run inactivity",
-    "materialize": "Materialize",
-    "newAutomation": "New automation",
-    "createAutomation": "Create automation",
+  "searchAutomations": "Search automations...",
+  "refresh": "Refresh",
+  "runInactivity": "Run inactivity",
+  "materialize": "Materialize",
+  "newAutomation": "New automation",
+  "createAutomation": "Create automation",
+  "rules": "Rules",
+  "queue": "Queue",
+  "deliveries": "Deliveries",
+
+  "userCreated": "New user",
+  "userInactive": "Inactive user",
+  "messageRead": "Message read",
+  "messageUnread": "Unread message",
+
+  "triggerDescriptions": {
+    "userCreated": "Send X minutes after a new user is created.",
+    "userInactive": "Send X minutes after a period of user inactivity.",
+    "messageRead": "Reserved for future automations based on read receipts.",
+    "messageUnread": "Reserved for future automations based on unread messages."
+  },
+
+  "rulesTable": {
+    "rule": "Rule",
+    "user": "User",
+    "channel": "Channel",
+    "scheduledFor": "Scheduled for",
+    "broadcastStatus": "Delivery status",
+    "message": "Message",
     "rules": "Rules",
-    "queue": "Queue",
-    "deliveries": "Deliveries",
+    "name": "Name",
+    "trigger": "Trigger",
+    "dueAt": "Due at",
+    "runStatus": "Run status",
+    "queueDetails": "Queue details",
+    "delay": "Delay",
+    "assistant": "Assistant",
+    "active": "Active",
+    "activate": "Activate",
+    "paused": "Paused",
+    "pause": "Pause",
+    "any": "Any",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
 
-    "userCreated": "User created",
-    "userInactive": "User inactive",
-    "messageRead": "Message read",
-    "messageUnread": "Message unread",
-    "unknown": "Other / unknown",
+  "queueTable": {
+    "rule": "Rule",
+    "trigger": "Trigger",
+    "channel": "Channel",
+    "dueAt": "Due at",
+    "runStatus": "Run status",
+    "queueDetails": "Queue details"
+  },
 
-    "triggerDescriptions": {
-      "userCreated": "Send X minutes after a user is created.",
-      "userInactive": "Send X minutes without a user inbound message.",
-      "messageRead": "Reserved for future read-receipt automations.",
-      "messageUnread": "Reserved for future unread-message automations."
-    },
+  "modal": {
+    "newTitle": "New automation",
+    "editTitle": "Edit automation",
+    "name": "Name",
+    "trigger": "Trigger",
+    "channel": "Channel",
+    "assistantScope": "Assistant scope",
+    "anyAssistant": "Any assistant",
+    "anyAssistantFallback": "Any assistant (fallback)",
+    "assistantFallbackHelp": "Assistant-specific inactivity rules take priority. “Any assistant (fallback)” only applies when the user's current assistant does not have a specific inactivity rule for this channel.",
+    "delay": "Delay (minutes)",
+    "message": "Message",
+    "whatsappTemplate": "WhatsApp template",
+    "noTemplate": "No template",
+    "templateBindings": "Template variables",
+    "comingSoon": "coming soon",
+    "staticText": "Static text",
+    "systemUserName": "System: user name",
+    "systemOrganizationName": "System: organization name",
+    "systemUserEmail": "System: user email",
+    "systemUserPhone": "System: user phone",
+    "valueFor": "Value for {key}",
+    "createAutomation": "Create automation",
+    "save": "Save",
+    "saving": "Saving...",
+    "messagePlaceholder": "Welcome {userName} to {organizationName}!",
+    "cancel": "Cancel",
 
-    "rulesTable": {
-      "rule": "Rule",
-      "user": "User",
-      "channel": "Channel",
-      "scheduledFor": "Scheduled for",
-      "broadcastStatus": "Broadcast status",
-      "message": "Message",
-      "rules": "Rules",
-      "name": "Name",
-      "trigger": "Trigger",
-      "dueAt": "Due at",
-      "runStatus": "Run status",
-      "queueDetails": "Queue details",
-      "delay": "Delay",
-      "assistant": "Assistant",
-      "active": "Active",
-      "activate": "Activate",
-      "paused": "Paused",
-      "pause": "Pause",
-      "any": "Any",
-      "edit": "Edit",
-      "delete": "Delete"
-    },
-
-    "queueTable": {
-      "rule": "Rule",
-      "trigger": "Event",
-      "channel": "Channel",
-      "dueAt": "Due at",
-      "runStatus": "Run status",
-      "queueDetails": "Queue details"
-    },
-
-    "modal": {
-      "newTitle": "New automation",
-      "editTitle": "Edit automation",
-      "name": "Name",
-      "trigger": "Trigger",
-      "channel": "Channel",
-      "assistantScope": "Assistant scope",
-      "anyAssistant": "Any assistant",
-      "anyAssistantFallback": "Any assistant (fallback)",
-      "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
-      "delay": "Delay (minutes)",
-      "message": "Message",
-      "whatsappTemplate": "WhatsApp template",
-      "noTemplate": "No template",
-      "templateBindings": "Template bindings",
-      "comingSoon": "coming soon",
-      "staticText": "Static text",
-      "systemUserName": "System: user.name",
-      "systemOrganizationName": "System: organization.name",
-      "systemUserEmail": "System: user.email",
-      "systemUserPhone": "System: user.phone",
-      "valueFor": "Value for {key}",
-      "createAutomation": "Create automation",
-      "save": "Save",
-      "saving": "Saving...",
-      "messagePlaceholder": "Welcome {userName} to {organizationName}!",
-      "cancel": "Cancel",
-      "alerts": {
-        "disabledTrigger": {
-          "title": "Unavailable event",
-          "message": "This event is not available for automations yet."
-        },
-        "nameRequired": {
-          "title": "Missing name",
-          "message": "Fill in the automation name before saving."
-        },
-        "invalidDelay": {
-          "title": "Invalid delay",
-          "message": "Delay must be a number equal to or greater than 0 minutes."
-        },
-        "contentRequired": {
-          "title": "Missing content",
-          "message": "Write a message or choose a WhatsApp template before saving."
-        },
-        "templateRequired": {
-          "title": "Missing template",
-          "message": "Choose a WhatsApp template or write a manual message."
-        },
-        "templateBindingsRequired": {
-          "title": "Missing template fields",
-          "message": "Fill in the required template fields: {fields}."
-        }
-      }
-    },
-    "deliveriesTable": {
-      "rule": "Rule",
-      "user": "User",
-      "channel": "Channel",
-      "scheduledFor": "Scheduled for",
-      "broadcastStatus": "Broadcast status",
-      "message": "Message"
-    },
-
-    "statuses": {
-      "queued": "Queued",
-      "materialized": "Materialized",
-      "processing": "Processing",
-      "sent": "Sent",
-      "partial": "Partial",
-      "failed": "Failed",
-      "cancelled": "Cancelled",
-      "skipped": "Skipped"
-    },
-
-    "deletedRule": "Deleted rule",
-    "userFallback": "User #{id}",
-
-    "confirmDelete": {
-      "title": "Delete \"{name}\"?",
-      "message": "This will remove the automation rule. Existing runs will remain in the history.",
-      "confirm": "Delete",
-      "cancel": "Cancel"
-    },
-
-    "errors": {
-      "saveRule": "Could not save the automation rule.",
-      "deleteRule": "Could not delete the automation rule.",
-      "updateRule": "Could not update the automation rule.",
-      "cron": "Cron execution failed."
-    },
     "alerts": {
-      "noOrg": {
-        "title": "Missing organization",
-        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      "disabledTrigger": {
+        "title": "Trigger unavailable",
+        "message": "This trigger is not yet available for automations."
       },
-      "refreshSuccess": {
-        "title": "Automations updated",
-        "message": "Rules, queue and deliveries were updated successfully."
+      "nameRequired": {
+        "title": "Missing name",
+        "message": "Enter an automation name before saving."
       },
-      "loadFailed": {
-        "title": "Failed to load automations",
-        "message": "Automation data could not be loaded. Please try again in a few seconds."
+      "invalidDelay": {
+        "title": "Invalid delay",
+        "message": "The delay must be a number equal to or greater than 0 minutes."
       },
-      "ruleCreated": {
-        "title": "Automation created",
-        "message": "The automation rule was created successfully."
+      "contentRequired": {
+        "title": "Missing content",
+        "message": "Write a message or select a WhatsApp template before saving."
       },
-      "ruleUpdated": {
-        "title": "Automation updated",
-        "message": "The automation rule changes were saved successfully."
+      "templateRequired": {
+        "title": "Missing template",
+        "message": "Select a WhatsApp template or write a manual message."
       },
-      "saveRuleError": {
-        "title": "Failed to save automation",
-        "message": "The automation rule could not be saved."
-      },
-      "ruleDeleted": {
-        "title": "Automation deleted",
-        "message": "The automation rule was deleted successfully."
-      },
-      "deleteRuleError": {
-        "title": "Failed to delete automation",
-        "message": "The automation rule could not be deleted."
-      },
-      "ruleActivated": {
-        "title": "Automation activated",
-        "message": "The automation rule was activated successfully."
-      },
-
-      "updateRuleError": {
-        "title": "Failed to update automation",
-        "message": "The automation rule could not be updated."
-      },
-
-      "materializeSuccess": {
-        "title": "Deliveries materialized",
-        "message": "The materialization routine ran successfully."
+      "templateBindingsRequired": {
+        "title": "Missing template fields",
+        "message": "Complete the required template fields: {fields}."
       }
     }
   },
+
+  "deliveriesTable": {
+    "rule": "Rule",
+    "user": "User",
+    "channel": "Channel",
+    "scheduledFor": "Scheduled for",
+    "broadcastStatus": "Delivery status",
+    "message": "Message"
+  },
+
+  "statuses": {
+    "queued": "Queued",
+    "materialized": "Materialized",
+    "processing": "Processing",
+    "sent": "Sent",
+    "partial": "Partial",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "skipped": "Skipped"
+  },
+
+  "readChains": {
+    "title": "Read chains",
+    "description": "Send the next WhatsApp message after the previous message is read.",
+    "enabled": "Feature enabled",
+    "disabled": "Feature disabled",
+    "enable": "Enable read chains",
+    "disable": "Disable read chains",
+    "on": "On",
+    "off": "Off",
+    "saving": "Saving..."
+  },
+
+  "deletedRule": "Deleted rule",
+  "userFallback": "User #{id}",
+
+  "confirmDelete": {
+    "title": "Delete \"{name}\"?",
+    "message": "This will remove the automation rule. Existing runs will remain in the history.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+
+  "errors": {
+    "saveRule": "The automation rule could not be saved.",
+    "deleteRule": "The automation rule could not be deleted.",
+    "updateRule": "The automation rule could not be updated.",
+    "cron": "The cron execution failed."
+  },
+
+  "alerts": {
+    "noOrg": {
+      "title": "Missing organization",
+      "message": "The organization could not be identified yet. Please try again in a few seconds."
+    },
+    "refreshSuccess": {
+      "title": "Automations updated",
+      "message": "The rules, queues and deliveries were updated successfully."
+    },
+    "loadFailed": {
+      "title": "Error loading automations",
+      "message": "The automation data could not be loaded. Please try again in a few seconds."
+    },
+    "ruleCreated": {
+      "title": "Automation created",
+      "message": "The automation rule was created successfully."
+    },
+    "ruleUpdated": {
+      "title": "Automation updated",
+      "message": "The changes to the automation rule were saved successfully."
+    },
+    "saveRuleError": {
+      "title": "Error saving automation",
+      "message": "The automation rule could not be saved."
+    },
+    "ruleDeleted": {
+      "title": "Automation deleted",
+      "message": "The automation rule was deleted successfully."
+    },
+    "deleteRuleError": {
+      "title": "Error deleting automation",
+      "message": "The automation rule could not be deleted."
+    },
+    "ruleActivated": {
+      "title": "Automation activated",
+      "message": "The automation rule was activated successfully."
+    },
+    "updateRuleError": {
+      "title": "Error updating automation",
+      "message": "The automation rule could not be updated."
+    },
+    "materializeSuccess": {
+      "title": "Deliveries materialized",
+      "message": "The materialization process was completed successfully."
+    },
+    "readChainsEnabled": {
+      "title": "Read chains enabled",
+      "message": "Broadcasts can now create WhatsApp message chains that continue after each read receipt."
+    },
+    "readChainsDisabled": {
+      "title": "Read chains disabled",
+      "message": "Broadcasts can no longer create new WhatsApp read chains."
+    },
+    "readChainsUpdateError": {
+      "title": "Error updating read chains",
+      "message": "This feature could not be updated. Please try again."
+    },
+    "cronFailed": {
+      "title": "Error running automations",
+      "message": "The automation processing could not be executed."
+    }
+  }
+},
 
   "Broadcast": {
     "title": "WhatsApp Messages",

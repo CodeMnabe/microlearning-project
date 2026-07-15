@@ -1380,6 +1380,18 @@
       "skipped": "Ignorado"
     },
 
+    "readChains": {
+    "title": "Cadeias de leitura",
+    "description": "Envia a mensagem WhatsApp seguinte depois de a mensagem anterior ser lida.",
+    "enabled": "Funcionalidade ativa",
+    "disabled": "Funcionalidade inativa",
+    "enable": "Ativar cadeias de leitura",
+    "disable": "Desativar cadeias de leitura",
+    "on": "Ativo",
+    "off": "Inativo",
+    "saving": "A guardar..."
+  },
+
     "deletedRule": "Regra eliminada",
     "userFallback": "Utilizador #{id}",
 
@@ -1442,6 +1454,23 @@
       "materializeSuccess": {
         "title": "Envios materializados",
         "message": "A rotina de materialização foi executada com sucesso."
+      },
+
+      "readChainsEnabled": {
+      "title": "Cadeias de leitura ativadas",
+      "message": "Os broadcasts já podem criar cadeias de mensagens WhatsApp que continuam após cada confirmação de leitura."
+      },
+      "readChainsDisabled": {
+        "title": "Cadeias de leitura desativadas",
+        "message": "Os broadcasts já não podem criar novas cadeias de leitura no WhatsApp."
+      },
+      "readChainsUpdateError": {
+        "title": "Erro ao atualizar as cadeias de leitura",
+        "message": "Não foi possível atualizar esta funcionalidade. Tenta novamente."
+      },
+      "cronFailed": {
+        "title": "Erro ao executar as automações",
+        "message": "Não foi possível executar o processamento das automações."
       }
     }
   },
