@@ -30,9 +30,10 @@
 
 .hero {
   position: relative;
-  display: flex;
-  min-height: clamp(610px, 78svh, 780px);
-  flex-direction: column;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100svh;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
   margin: 10px;
   padding: 18px clamp(20px, 3.2vw, 56px) 54px;
@@ -84,7 +85,7 @@
   position: absolute;
   top: 9%;
   right: -8%;
-  z-index: 1;
+  z-index: 0;
   width: min(48vw, 650px);
   aspect-ratio: 1;
   opacity: 0.68;
@@ -153,17 +154,18 @@
 .container {
   position: relative;
   z-index: 2;
-  display: flex;
+  display: grid;
   width: min(1280px, 100%);
   flex: 1;
-  align-items: flex-end;
+  place-items: center;
   margin: 0 auto;
   padding: 68px 12px 24px;
 }
 
 .header {
-  width: min(920px, 100%);
+  width: min(1100px, 100%);
   color: white;
+  text-align: center;
   animation: heroCopyIn 820ms 60ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -185,8 +187,8 @@
 }
 
 .page .hero .title {
-  max-width: 12.2em;
-  margin: 0;
+  max-width: 1100px;
+  margin: 0 auto;
   color: var(--cloud);
   font-size: clamp(3rem, 5.5vw, 5.35rem);
   font-weight: 820;
@@ -196,15 +198,15 @@
 }
 
 .subhead {
-  max-width: 670px;
-  margin: 24px 0 0;
+  max-width: 760px;
+  margin: 24px auto 0;
   color: rgba(247, 251, 255, 0.72);
   font-size: clamp(1rem, 1.35vw, 1.1rem);
   line-height: 1.68;
 }
 
 .header > div:last-child {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 /* EDITORIAL NARRATIVE */
@@ -435,7 +437,7 @@
   padding: 14px 0 14px 24px;
   border-bottom: 1px solid rgba(8, 20, 38, 0.08);
   color: rgba(8, 20, 38, 0.68);
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.48;
 }
 
@@ -494,10 +496,6 @@
 }
 
 @media (max-width: 900px) {
-  .hero {
-    min-height: clamp(600px, 80svh, 720px);
-  }
-
   .heroSignal {
     top: 10%;
     right: -16%;
@@ -551,7 +549,6 @@
 
 @media (max-width: 760px) {
   .hero {
-    min-height: 620px;
     margin: 6px;
     padding: 14px 12px 44px;
     border-radius: 24px;
@@ -577,7 +574,13 @@
   }
 
   .header > div:last-child {
-    justify-content: flex-start;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .header > div:last-child a {
+    width: min(100%, 320px);
   }
 
   .explorer {
@@ -653,7 +656,8 @@
 
 @media (max-width: 420px) {
   .hero {
-    min-height: 650px;
+    min-height: 100vh;
+    min-height: 100svh;
   }
 
   .page .hero .title {

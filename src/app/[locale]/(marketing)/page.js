@@ -61,10 +61,6 @@ export default async function LocaleIndex() {
   return (
     <main>
       <LandingExperience>
-        <div className={styles.lang}>
-          <LanguageSwitch />
-        </div>
-
         <section className={`${styles.scene} ${styles.heroScene}`}>
           <div className={styles.sceneSticky} data-scene-sticky>
             <div className={styles.heroBackdrop} aria-hidden="true" />
@@ -74,7 +70,7 @@ export default async function LocaleIndex() {
               interactive
             />
             <div className={styles.navRow}>
-              <MarketingNavbar />
+              <MarketingNavbar trailing={<LanguageSwitch />} />
             </div>
 
             <div className={styles.heroInner}>

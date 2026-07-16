@@ -27,12 +27,8 @@ export default function SolutionPage() {
           <span />
         </div>
 
-        <div className={styles.lang}>
-          <LanguageSwitch />
-        </div>
-
         <div className={styles.navRow}>
-          <MarketingNavbar />
+          <MarketingNavbar trailing={<LanguageSwitch />} />
         </div>
 
         <div className={styles.container}>

@@ -20,12 +20,8 @@ export default function HowItWorksPage() {
           interactive
         />
 
-        <div className={styles.lang}>
-          <LanguageSwitch />
-        </div>
-
         <div className={styles.navRow}>
-          <MarketingNavbar />
+          <MarketingNavbar trailing={<LanguageSwitch />} />
         </div>
 
         <div className={styles.container}>

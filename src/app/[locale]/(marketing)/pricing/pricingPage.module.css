@@ -42,9 +42,10 @@
 
 .page > .hero.hero {
   position: relative;
-  display: flex;
-  min-height: clamp(430px, 52svh, 520px);
-  flex-direction: column;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100svh;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
   padding: 18px clamp(16px, 3vw, 48px) 46px;
   background: var(--night);
@@ -93,7 +94,7 @@
   flex: 1;
   place-items: center;
   margin: 0 auto;
-  padding: 38px 16px 0;
+  padding: 0 16px clamp(72px, 15vh, 108px);
 }
 
 .header {
@@ -117,7 +118,7 @@
 }
 
 .page .hero .title {
-  max-width: 800px;
+  max-width: 750px;
   margin: 0 auto;
   color: var(--cloud);
   font-size: clamp(2.7rem, 4.8vw, 4.35rem);
@@ -220,7 +221,7 @@
   border-radius: 999px;
   color: rgba(8, 20, 38, 0.56);
   background: transparent;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 760;
   white-space: nowrap;
   cursor: pointer;
@@ -246,7 +247,7 @@
   border-radius: 999px;
   color: #126d5a;
   background: rgba(52, 215, 182, 0.16);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 850;
   line-height: 1;
 }
@@ -360,7 +361,7 @@
 .planTagline {
   max-width: 48ch;
   margin: 14px 0 0;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .priceBlock {
@@ -385,7 +386,7 @@
 .priceUnit {
   padding-bottom: 3px;
   color: rgba(8, 20, 38, 0.48);
-  font-size: 12px;
+  font-size: 18px;
 }
 
 .metrics {
@@ -418,7 +419,7 @@
   order: 2;
   overflow: hidden;
   color: rgba(8, 20, 38, 0.46);
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -429,7 +430,7 @@
   overflow: hidden;
   margin: 0;
   color: rgba(8, 20, 38, 0.9);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.1;
   text-overflow: ellipsis;
@@ -511,7 +512,7 @@
 .featureSummaryLabel {
   margin: 0 0 14px;
   color: rgba(8, 20, 38, 0.42);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -530,7 +531,7 @@
   gap: 10px;
   align-items: flex-start;
   color: rgba(8, 20, 38, 0.68);
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.45;
 }
 
@@ -579,12 +580,12 @@
 
 .enterpriseTagline {
   margin: 14px 0 0;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .enterpriseSummary {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .enterpriseDetails {
@@ -654,7 +655,7 @@
   border: 0;
   color: #176f99;
   background: transparent;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 780;
   cursor: pointer;
   transition: color 180ms ease;
@@ -744,14 +745,14 @@
 
 .comparisonTable tbody th:not([colspan]) {
   color: rgba(8, 20, 38, 0.7);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 620;
   line-height: 1.4;
 }
 
 .comparisonTable tbody td {
   color: rgba(8, 20, 38, 0.72);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .comparisonTable tbody tr:not(.tableGroupHeader):hover > * {
@@ -761,7 +762,7 @@
 .tablePlanName {
   display: block;
   color: var(--night);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 820;
 }
 
@@ -772,7 +773,7 @@
   border-radius: 999px;
   color: #126c59;
   background: rgba(52, 215, 182, 0.13);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -802,7 +803,7 @@
 .tableGroupHeader span {
   display: block;
   color: var(--night);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.025em;
 }
@@ -812,7 +813,7 @@
   max-width: 70ch;
   margin-top: 6px;
   color: rgba(8, 20, 38, 0.48);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
 }
@@ -835,7 +836,7 @@
   min-height: 28px;
   padding: 4px 9px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 760;
 }
 
@@ -1238,13 +1239,12 @@
 
 @media (max-width: 640px) {
   .page > .hero.hero {
-    min-height: 500px;
     padding-inline: 10px;
     padding-bottom: 40px;
   }
 
   .container {
-    padding: 32px 10px 0;
+    padding: 24px 10px 56px;
   }
 
   .page .hero .title {

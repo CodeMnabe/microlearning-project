@@ -21,7 +21,7 @@ const NAV = [
 // { href: "/blog", key: "blog" },
 ];
 
-export default function MarketingNavbar() {
+export default function MarketingNavbar({ trailing = null }) {
   const translation = useTranslations("LandingPage.Hero.Nav");
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(null);
@@ -73,6 +73,10 @@ export default function MarketingNavbar() {
             />
             {/* <span className={styles.brandText}>MyDigitalBot</span> */}
           </LoaderLink>
+
+          {trailing ? (
+            <div className={styles.mobileTrailing}>{trailing}</div>
+          ) : null}
 
           <button
             type="button"
@@ -132,6 +136,7 @@ export default function MarketingNavbar() {
                 </LoaderLink>
               </>
             )}
+            {trailing}
           </div>
         </div>
       </nav>

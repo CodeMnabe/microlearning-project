@@ -22,7 +22,10 @@
 
 .shell :global(main > section:first-child) {
   position: relative;
-  min-height: clamp(560px, 76svh, 760px);
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr;
   margin: 0;
   padding: 18px clamp(16px, 3vw, 48px) 80px;
   overflow: hidden;
@@ -96,7 +99,8 @@
 
 @media (max-width: 760px) {
   .shell :global(main > section:first-child) {
-    min-height: 620px;
+    min-height: 100vh;
+    min-height: 100svh;
     padding-inline: 10px;
   }
 

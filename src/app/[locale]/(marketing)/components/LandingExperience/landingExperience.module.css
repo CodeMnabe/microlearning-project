@@ -61,6 +61,7 @@
 }
 
 .heroScene {
+  min-height: 100vh;
   min-height: 100svh;
   background: var(--night);
 }
@@ -983,7 +984,7 @@
   grid-template-columns: 26px 1fr;
   gap: 12px;
   color: rgba(8, 20, 38, 0.7);
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.5;
 }
 
@@ -1061,7 +1062,7 @@
 .planPrice {
   margin-top: 8px;
   font-size: clamp(2.4rem, 4vw, 4rem);
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.06em;
 }
@@ -1079,7 +1080,7 @@
   margin: 18px 0 0;
   color: currentColor;
   opacity: 0.63;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -1176,7 +1177,7 @@
 .finalTitle {
   margin: 0;
   font-size: clamp(3.4rem, 6vw, 8rem);
-  font-weight: 880;
+  font-weight: 780;
   line-height: 0.88;
   letter-spacing: 0em;
   text-wrap: balance;
@@ -1362,6 +1363,16 @@
   .heroTitle {
     font-size: clamp(2.75rem, 12vw, 4.5rem);
     line-height: 0.94;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
   }
 
   .sectionHeader,

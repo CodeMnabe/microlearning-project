@@ -19,7 +19,8 @@ function Lang({ to, active, pathname, query }) {
         padding: "6px 10px",
         fontWeight: 600,
         textDecoration: "none",
-        opacity: active ? 1 : 0.7,
+        color: "#081426",
+        opacity: 1,
         background: active ? "#fff" : "transparent",
         lineHeight: 1,
       }}

@@ -27,6 +27,12 @@
   gap: 16px;
 }
 
+.mobileTrailing {
+  display: none;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -180,6 +186,11 @@
 
 /* Mobile / tablet */
 @media (max-width: 960px) {
+  .mobileTrailing {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
   .menuButton {
     display: inline-flex;
   }

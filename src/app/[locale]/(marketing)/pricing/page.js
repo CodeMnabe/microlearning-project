@@ -20,12 +20,8 @@ export default function PricingPage() {
           quality="low"
         />
 
-        <div className={styles.lang}>
-          <LanguageSwitch />
-        </div>
-
         <div className={styles.navRow}>
-          <MarketingNavbar />
+          <MarketingNavbar trailing={<LanguageSwitch />} />
         </div>
 
         <div className={styles.container}>

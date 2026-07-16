@@ -7,10 +7,12 @@ export default function PublicDocument({
   sections,
 }) {
   return (
-    <section className={styles.page}>
+    <section className={styles.page} aria-labelledby="legal-document-title">
       <div className={styles.container}>
         <header className={styles.hero}>
-          <h1 className={styles.title}>{title}</h1>
+          <h1 id="legal-document-title" className={styles.title}>
+            {title}
+          </h1>
           <p className={styles.subhead}>
             <span className={styles.subheadStrong}>{subtitle} </span>
             {lastUpdated}
@@ -31,9 +33,6 @@ export default function PublicDocument({
 
                   {!!paragraph.list?.length && (
                     <div>
-                      {paragraph.list.title ?? (
-                        <p className={styles.listTitle}></p>
-                      )}
                       <ul className={styles.list}>
                         {paragraph.list.map((item, listIndex) => (
                           <li
