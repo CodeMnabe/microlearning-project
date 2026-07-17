@@ -11,7 +11,7 @@ import {
   resolveTrackedLinksForRecipient,
 } from "@/lib/services/broadcast/trackedLinks";
 
-describe("SEC-01 tracked-link creation guards", () => {
+describe("Tracked-link creation guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
@@ -55,7 +55,11 @@ describe("SEC-01 tracked-link creation guards", () => {
         channel: "whatsapp",
         trackedLinks: [
           { key: "ok", label: "OK", destinationUrl: "https://example.com" },
-          { key: "bad", label: "Bad", destinationUrl: "data:text/html,SEC-01" },
+          {
+            key: "bad",
+            label: "Bad",
+            destinationUrl: "data:text/html,unsafe-test-payload",
+          },
         ],
       }),
     ).rejects.toMatchObject({ status: 400, code: "INVALID_TRACKED_LINK_URL" });

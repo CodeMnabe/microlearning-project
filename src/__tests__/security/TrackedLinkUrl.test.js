@@ -8,7 +8,7 @@ import {
 const javascriptPayload =
   "javascript:document.body.dataset.securityTest='executed'";
 
-describe("SEC-01 tracked-link destination validation", () => {
+describe("Tracked-link destination validation", () => {
   it("accepts only absolute http and https URLs and canonicalizes them", () => {
     expect(validateTrackedLinkDestination("https://example.com")).toBe(
       "https://example.com/",
@@ -27,7 +27,7 @@ describe("SEC-01 tracked-link destination validation", () => {
     javascriptPayload,
     "JaVaScRiPt:document.body.dataset.securityTest='executed'",
     ` \t${javascriptPayload}`,
-    "data:text/html,<p>SEC-01</p>",
+    "data:text/html,<p>unsafe-test-payload</p>",
     "file:///tmp/test",
     "vbscript:msgbox(1)",
     "custom-scheme:value",

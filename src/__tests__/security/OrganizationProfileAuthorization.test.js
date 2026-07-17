@@ -32,7 +32,7 @@ function patchOrganization(body) {
   );
 }
 
-describe("SEC-02 organization profile boundary", () => {
+describe("Organization profile authorization boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireOwnedOrg.mockResolvedValue({ orgId: 7 });

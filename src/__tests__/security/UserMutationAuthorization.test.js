@@ -43,7 +43,7 @@ function apiRequest(method, body) {
   });
 }
 
-describe("SEC-02 authorized user mutation paths", () => {
+describe("Authorized user mutation paths", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireOwnedOrg.mockResolvedValue({ orgId: 7, admin: {} });

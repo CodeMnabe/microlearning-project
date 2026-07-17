@@ -60,7 +60,7 @@ const invalidLink = {
     "javascript:document.body.dataset.securityTest='executed'",
 };
 
-describe("SEC-01 broadcast caller validation", () => {
+describe("Broadcast caller validation", () => {
   it.each([
     ["whatsapp", postWhatsapp, { recipients: [{ userId: 1 }] }],
     ["teams", postTeams, { recipients: [{ userId: 1 }] }],

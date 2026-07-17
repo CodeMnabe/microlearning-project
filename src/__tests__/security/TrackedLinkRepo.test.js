@@ -18,7 +18,7 @@ vi.mock("@supabase/supabase-js", () => ({
 
 import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
 
-describe("SEC-01 repository defense in depth", () => {
+describe("Tracked-link repository defense in depth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     supabaseMocks.insert.mockReturnValue({

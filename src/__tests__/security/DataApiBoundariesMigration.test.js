@@ -6,7 +6,7 @@ const migrationPath = path.join(
   process.cwd(),
   "supabase",
   "migrations",
-  "20260717000000_fix_sec02_data_api_boundaries.sql",
+  "20260717000000_fix_data_api_boundaries.sql",
 );
 const snapshotPath = path.join(
   process.cwd(),
@@ -29,7 +29,7 @@ const migration = fs.readFileSync(migrationPath, "utf8");
 const snapshot = fs.readFileSync(snapshotPath, "utf8");
 const adminPage = fs.readFileSync(adminPagePath, "utf8");
 
-describe("SEC-02 migration contract", () => {
+describe("Data API boundaries migration contract", () => {
   it("removes direct organization and user mutation grants", () => {
     expect(migration).toMatch(
       /revoke all privileges on table public\.organization\s+from public, anon, authenticated/i,
@@ -232,10 +232,10 @@ describe("SEC-02 migration contract", () => {
     expect(migration).toMatch(/server_version_num/i);
     expect(migration).toMatch(/v_server_version_num >= 150000/i);
     expect(migration).toMatch(
-      /create function public\.sec02_clear_user_assistant_before_delete/i,
+      /create function public\.clear_user_assistant_reference_before_delete/i,
     );
     expect(migration).toMatch(
-      /before delete on public\.assistant[\s\S]*execute function public\.sec02_clear_user_assistant_before_delete/i,
+      /before delete on public\.assistant[\s\S]*execute function public\.clear_user_assistant_reference_before_delete/i,
     );
     expect(migration).toMatch(/set assistant_id = null/i);
     expect(migration).toMatch(/on delete no action/i);

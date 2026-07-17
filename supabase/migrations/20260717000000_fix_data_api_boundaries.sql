@@ -1,4 +1,4 @@
--- SEC-02: close direct Data API mutation paths and enforce tenant invariants.
+-- Close direct Data API mutation paths and enforce tenant invariants.
 -- This migration is intentionally fail-closed: it does not clean production data.
 
 begin;
@@ -16,7 +16,7 @@ declare
 begin
   if v_server_version_num < 150000 then
     raise notice
-      'SEC-02: PostgreSQL % uses the compatible assistant delete trigger',
+      'Data API boundaries: PostgreSQL % uses the compatible assistant delete trigger',
       current_setting('server_version');
   end if;
 end
@@ -40,7 +40,7 @@ begin
     raise exception using
       errcode = '23505',
       message = format(
-        'SEC-02 preflight failed: %s duplicate channel_id group(s) require cleanup',
+        'Data API boundaries preflight failed: %s duplicate channel_id group(s) require cleanup',
         v_count
       );
   end if;
@@ -54,7 +54,7 @@ begin
     raise exception using
       errcode = '23514',
       message = format(
-        'SEC-02 preflight failed: %s blank channel_id row(s) require cleanup',
+        'Data API boundaries preflight failed: %s blank channel_id row(s) require cleanup',
         v_count
       );
   end if;
@@ -73,7 +73,7 @@ begin
     raise exception using
       errcode = '23505',
       message = format(
-        'SEC-02 preflight failed: %s duplicate teams_tenant_id group(s) require cleanup',
+        'Data API boundaries preflight failed: %s duplicate teams_tenant_id group(s) require cleanup',
         v_count
       );
   end if;
@@ -88,7 +88,7 @@ begin
     raise exception using
       errcode = '23514',
       message = format(
-        'SEC-02 preflight failed: %s blank teams_tenant_id row(s) require cleanup',
+        'Data API boundaries preflight failed: %s blank teams_tenant_id row(s) require cleanup',
         v_count
       );
   end if;
@@ -103,7 +103,7 @@ begin
     raise exception using
       errcode = '23503',
       message = format(
-        'SEC-02 preflight failed: %s cross-tenant user/assistant relation(s) require cleanup',
+        'Data API boundaries preflight failed: %s cross-tenant user/assistant relation(s) require cleanup',
         v_count
       );
   end if;
@@ -121,7 +121,7 @@ alter table public.organization
 
 -- Evaluate the UNIQUE definition in pg_constraint, not only its name. If the
 -- expected name is occupied by an incompatible constraint, use a dedicated
--- SEC-02 name. The duplicate preflight above makes this addition fail-closed.
+-- fallback. The duplicate preflight above makes this addition fail-closed.
 do $$
 declare
   v_attnum smallint;
@@ -138,7 +138,7 @@ begin
   if v_attnum is null then
     raise exception using
       errcode = '42703',
-      message = 'SEC-02 preflight failed: organization.teams_tenant_id is missing';
+      message = 'Data API boundaries preflight failed: organization.teams_tenant_id is missing';
   end if;
 
   select exists (
@@ -157,7 +157,7 @@ begin
       where c.conrelid = 'public.organization'::regclass
         and c.conname = 'organization_teams_tenant_id_key'
     ) then
-      v_constraint_name := 'organization_teams_tenant_id_unique_sec02';
+      v_constraint_name := 'organization_teams_tenant_id_unique_fallback';
     else
       v_constraint_name := 'organization_teams_tenant_id_key';
     end if;
@@ -171,7 +171,7 @@ begin
       raise exception using
         errcode = '42710',
         message = format(
-          'SEC-02 preflight failed: constraint name %s is occupied but no exact teams_tenant_id UNIQUE exists',
+          'Data API boundaries preflight failed: constraint name %s is occupied but no exact teams_tenant_id UNIQUE exists',
           v_constraint_name
         );
     end if;
@@ -191,7 +191,7 @@ begin
   ) then
     raise exception using
       errcode = '23505',
-      message = 'SEC-02 failed to enforce exact UNIQUE on organization.teams_tenant_id';
+      message = 'Data API boundaries failed to enforce exact UNIQUE on organization.teams_tenant_id';
   end if;
 end
 $$;
@@ -217,7 +217,7 @@ begin
     $ddl$;
   else
     execute $function$
-      create function public.sec02_clear_user_assistant_before_delete()
+      create function public.clear_user_assistant_reference_before_delete()
       returns trigger
       language plpgsql
       security invoker
@@ -242,17 +242,17 @@ begin
     $ddl$;
 
     execute $ddl$
-      create trigger sec02_clear_user_assistant_before_delete
+      create trigger clear_user_assistant_reference_before_delete
       before delete on public.assistant
       for each row
-      execute function public.sec02_clear_user_assistant_before_delete()
+      execute function public.clear_user_assistant_reference_before_delete()
     $ddl$;
 
     revoke all privileges on function
-      public.sec02_clear_user_assistant_before_delete()
+      public.clear_user_assistant_reference_before_delete()
       from public, anon, authenticated;
     grant execute on function
-      public.sec02_clear_user_assistant_before_delete()
+      public.clear_user_assistant_reference_before_delete()
       to service_role;
   end if;
 end
@@ -434,13 +434,13 @@ begin
   if v_org_sequence is null then
     raise exception using
       errcode = '55000',
-      message = 'SEC-02 preflight failed: organization.id has no associated sequence';
+      message = 'Data API boundaries preflight failed: organization.id has no associated sequence';
   end if;
 
   if v_user_sequence is null then
     raise exception using
       errcode = '55000',
-      message = 'SEC-02 preflight failed: user.id has no associated sequence';
+      message = 'Data API boundaries preflight failed: user.id has no associated sequence';
   end if;
 
   for v_sequence in
@@ -515,7 +515,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: browser role inherits sequence privilege on %s',
+          'Data API boundaries preflight failed: browser role inherits sequence privilege on %s',
           v_sequence.qualified_name
         );
     end if;
@@ -524,7 +524,7 @@ begin
   if not v_org_found or not v_user_found then
     raise exception using
       errcode = '55000',
-      message = 'SEC-02 preflight failed: indispensable id sequence dependency is missing';
+      message = 'Data API boundaries preflight failed: indispensable id sequence dependency is missing';
   end if;
 end
 $$;
@@ -583,7 +583,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: anon inherits table privilege on %s',
+          'Data API boundaries preflight failed: anon inherits table privilege on %s',
           v_table.table_name
         );
     end if;
@@ -604,7 +604,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: authenticated inherits forbidden table privilege on %s',
+          'Data API boundaries preflight failed: authenticated inherits forbidden table privilege on %s',
           v_table.table_name
         );
     end if;
@@ -615,7 +615,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: authenticated SELECT is missing on %s',
+          'Data API boundaries preflight failed: authenticated SELECT is missing on %s',
           v_table.table_name
         );
     end if;
@@ -655,7 +655,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: anon inherits column privilege on %s',
+          'Data API boundaries preflight failed: anon inherits column privilege on %s',
           v_column.column_name
         );
     end if;
@@ -670,7 +670,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: authenticated inherits forbidden column privilege on %s',
+          'Data API boundaries preflight failed: authenticated inherits forbidden column privilege on %s',
           v_column.column_name
         );
     end if;
@@ -681,7 +681,7 @@ begin
       raise exception using
         errcode = '42501',
         message = format(
-          'SEC-02 preflight failed: authenticated column SELECT is missing on %s',
+          'Data API boundaries preflight failed: authenticated column SELECT is missing on %s',
           v_column.column_name
         );
     end if;
@@ -698,7 +698,7 @@ begin
   ) then
     raise exception using
       errcode = '42501',
-      message = 'SEC-02 preflight failed: service_role lacks required user table privileges';
+      message = 'Data API boundaries preflight failed: service_role lacks required user table privileges';
   end if;
 
   if pg_catalog.has_function_privilege(
@@ -712,7 +712,7 @@ begin
   ) then
     raise exception using
       errcode = '42501',
-      message = 'SEC-02 preflight failed: browser role inherits RPC EXECUTE';
+      message = 'Data API boundaries preflight failed: browser role inherits RPC EXECUTE';
   end if;
 end
 $$;

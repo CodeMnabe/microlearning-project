@@ -9,7 +9,7 @@ vi.mock("@/lib/repos/trackedLinks.repo", () => repoMocks);
 
 import { GET } from "@/app/api/tracked-links/[token]/route.js";
 
-describe("SEC-01 public tracked-link resolver", () => {
+describe("Public tracked-link resolver", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repoMocks.createTrackedLinkEvent.mockResolvedValue({ id: 1 });
