@@ -34,41 +34,82 @@ function isAuthorized(req) {
 }
 
 async function syncAutomationRunProcessing(automationRunId, context) {
-  if (!automationRunId) return;
+  if (!automationRunId) return null;
 
   try {
-    await markAutomationRunProcessing(automationRunId, context);
+    const claimed = await markAutomationRunProcessing(automationRunId, context);
+
+    if (claimed === null) {
+      console.warn("[Automations] Automation run claim was lost", {
+        automationRunId,
+        scheduledBroadcastId: context.scheduledBroadcastId,
+      });
+    }
+
+    return claimed;
   } catch (error) {
     console.warn("[Automations] Failed to mark run processing", {
       automationRunId,
       message: error?.message || String(error),
     });
+    throw error;
   }
 }
 
 async function syncAutomationRunSuccess(automationRunId, context) {
-  if (!automationRunId) return;
+  if (!automationRunId) return null;
 
   try {
-    await markAutomationRunSent(automationRunId, context);
+    const sentRun = await markAutomationRunSent(automationRunId, context);
+
+    if (sentRun === null) {
+      console.warn("[Automations] Run sent transition lost ownership", {
+        automationRunId,
+        scheduledBroadcastId: context.scheduledBroadcastId,
+      });
+    }
+
+    return sentRun;
   } catch (error) {
     console.warn("[Automations] Failed to mark run sent", {
       automationRunId,
       message: error?.message || String(error),
     });
+    return null;
   }
 }
 
-async function syncAutomationRunFailure(automationRunId, errorMessage, context) {
-  if (!automationRunId) return;
+async function syncAutomationRunFailure(
+  automationRunId,
+  errorMessage,
+  context,
+) {
+  if (!automationRunId) return null;
 
   try {
-    await markAutomationRunFailed(automationRunId, errorMessage, context);
+    const failedRun = await markAutomationRunFailed(
+      automationRunId,
+      errorMessage,
+      {
+        ...context,
+        expectedStatuses: ["processing"],
+      },
+    );
+
+    if (failedRun === null) {
+      console.warn("[Automations] Run failed transition lost ownership", {
+        automationRunId,
+        scheduledBroadcastId: context.scheduledBroadcastId,
+      });
+    }
+
+    return failedRun;
   } catch (error) {
     console.warn("[Automations] Failed to mark run failed", {
       automationRunId,
       message: error?.message || String(error),
     });
+    return null;
   }
 }
 
@@ -91,7 +132,10 @@ function normalizeError(err) {
 
 async function processOneBroadcast(broadcast) {
   let locked;
-  const automationRunId = broadcast?.payload?.automationRunId || null;
+  const structuralAutomationRunId = broadcast?.automation_run_id || null;
+  const payloadAutomationRunId = broadcast?.payload?.automationRunId || null;
+  const automationRunId =
+    structuralAutomationRunId || payloadAutomationRunId || null;
   let verifiedAutomationRunId = null;
   const automationContext = {
     organizationId: broadcast.organization_id,
@@ -119,6 +163,16 @@ async function processOneBroadcast(broadcast) {
   }
 
   try {
+    if (
+      structuralAutomationRunId &&
+      payloadAutomationRunId &&
+      String(structuralAutomationRunId) !== String(payloadAutomationRunId)
+    ) {
+      throw new Error(
+        "Scheduled broadcast automation origin does not match its payload",
+      );
+    }
+
     if (automationRunId) {
       const automationRun = await getAutomationRunForScheduledBroadcast({
         id: automationRunId,
@@ -131,11 +185,16 @@ async function processOneBroadcast(broadcast) {
         );
       }
 
-      verifiedAutomationRunId = automationRun.id;
-      await syncAutomationRunProcessing(
-        verifiedAutomationRunId,
+      const claimedAutomationRun = await syncAutomationRunProcessing(
+        automationRun.id,
         automationContext,
       );
+
+      if (claimedAutomationRun === null) {
+        throw new Error("Could not claim automation run for processing");
+      }
+
+      verifiedAutomationRunId = claimedAutomationRun.id;
     }
 
     const storedPayload = broadcast.payload || {};

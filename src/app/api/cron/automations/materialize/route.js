@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   getDueAutomationRuns,
+  materializeAutomationRun,
   markAutomationRunFailed,
-  markAutomationRunMaterialized,
 } from "@/lib/repos/automationRuns.repo";
-import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
 import { getUserById } from "@/lib/repos/user.repo";
 
 export const runtime = "nodejs";
@@ -27,6 +26,49 @@ function isAuthorized(req) {
   return bearer === cronSecret || xCronSecret === cronSecret;
 }
 
+function skippedResult(run, outcome, scheduledBroadcastId = null) {
+  return {
+    id: run.id,
+    ok: true,
+    skipped: true,
+    outcome,
+    scheduledBroadcastId,
+  };
+}
+
+async function recordQueuedFailure(run, message, publicMessage = message) {
+  try {
+    const failedRun = await markAutomationRunFailed(run.id, message, {
+      organizationId: run.organization_id,
+      expectedStatuses: ["queued"],
+    });
+
+    if (failedRun === null) {
+      return skippedResult(run, "claim_lost");
+    }
+
+    return {
+      id: run.id,
+      ok: false,
+      outcome: "failed",
+      error: publicMessage,
+    };
+  } catch (failureError) {
+    console.error("[materializeOne] failed to record queued failure", {
+      runId: run.id,
+      message: failureError?.message || String(failureError),
+    });
+
+    return {
+      id: run.id,
+      ok: false,
+      outcome: "failed",
+      error: publicMessage,
+      stateUpdateError: failureError?.message || String(failureError),
+    };
+  }
+}
+
 async function materializeOne(run) {
   try {
     console.log("[materializeOne] start", {
@@ -46,27 +88,19 @@ async function materializeOne(run) {
     });
 
     if (!user) {
-      await markAutomationRunFailed(
-        run.id,
+      return recordQueuedFailure(
+        run,
         "User not found while materializing automation run",
+        "User not found",
       );
-      return {
-        id: run.id,
-        ok: false,
-        error: "User not found",
-      };
     }
 
     if (Number(user.organization_id) !== Number(run.organization_id)) {
-      await markAutomationRunFailed(
-        run.id,
+      return recordQueuedFailure(
+        run,
+        "User does not belong to automation run organization",
         "User does not belong to automation run organization",
       );
-      return {
-        id: run.id,
-        ok: false,
-        error: "User does not belong to automation run organization",
-      };
     }
 
     const payload = {
@@ -82,65 +116,49 @@ async function materializeOne(run) {
         recipient,
       });
 
-      if (!recipient) {
-        await markAutomationRunFailed(
-          run.id,
-          "User has no WhatsApp destination",
-        );
-        return {
-          id: run.id,
-          ok: false,
-          error: "User has no WhatsApp destination",
-        };
-      }
-
       payload.recipients = [recipient];
     } else if (run.channel === "teams") {
       payload.userIds = [user.id];
     } else {
-      await markAutomationRunFailed(
-        run.id,
+      return recordQueuedFailure(
+        run,
+        `Unsupported channel: ${run.channel}`,
         `Unsupported channel: ${run.channel}`,
       );
-      return {
-        id: run.id,
-        ok: false,
-        error: `Unsupported channel: ${run.channel}`,
-      };
     }
 
-    console.log("[materializeOne] creating scheduled_broadcast", {
-      organization_id: run.organization_id,
-      channel: run.channel,
-      scheduled_for: run.scheduled_for,
-      recipient_count: 1,
-      payload,
-    });
-
-    const broadcast = await createScheduledBroadcast({
-      organization_id: run.organization_id,
-      channel: run.channel,
-      status: "queued",
-      scheduled_for: run.scheduled_for,
-      recipient_count: 1,
-      payload,
-    });
-
-    console.log("[materializeOne] scheduled_broadcast created", {
-      broadcastId: broadcast?.id,
-    });
-
-    await markAutomationRunMaterialized(run.id, broadcast.id);
-
-    console.log("[materializeOne] automation_run marked materialized", {
+    console.log("[materializeOne] materializing atomically", {
       runId: run.id,
-      broadcastId: broadcast.id,
+      organization_id: run.organization_id,
+      channel: run.channel,
+      scheduled_for: run.scheduled_for,
+      recipient_count: 1,
+      payload,
     });
+
+    const result = await materializeAutomationRun({
+      id: run.id,
+      organizationId: run.organization_id,
+      channel: run.channel,
+      scheduledFor: run.scheduled_for,
+      recipientCount: 1,
+      payload,
+    });
+
+    if (result.outcome !== "materialized") {
+      console.log("[materializeOne] skipped", {
+        runId: run.id,
+        outcome: result.outcome,
+        broadcastId: result.scheduledBroadcastId,
+      });
+      return skippedResult(run, result.outcome, result.scheduledBroadcastId);
+    }
 
     return {
       id: run.id,
       ok: true,
-      scheduledBroadcastId: broadcast.id,
+      outcome: "materialized",
+      scheduledBroadcastId: result.scheduledBroadcastId,
     };
   } catch (error) {
     console.error("[materializeOne] failed", {
@@ -149,13 +167,7 @@ async function materializeOne(run) {
       error,
     });
 
-    await markAutomationRunFailed(run.id, error?.message || String(error));
-
-    return {
-      id: run.id,
-      ok: false,
-      error: error?.message || String(error),
-    };
+    return recordQueuedFailure(run, error?.message || String(error));
   }
 }
 
@@ -194,6 +206,10 @@ async function handler(req) {
         ok: true,
         message: "No automation runs due",
         processed: 0,
+        materialized: 0,
+        skipped: 0,
+        claimLost: 0,
+        failed: 0,
         results: [],
       });
     }
@@ -208,8 +224,10 @@ async function handler(req) {
     return NextResponse.json({
       ok: true,
       processed: results.length,
-      materialized: results.filter((r) => r.ok).length,
-      failed: results.filter((r) => !r.ok).length,
+      materialized: results.filter((r) => r.outcome === "materialized").length,
+      skipped: results.filter((r) => r.skipped).length,
+      claimLost: results.filter((r) => r.outcome === "claim_lost").length,
+      failed: results.filter((r) => r.outcome === "failed").length,
       results,
     });
   } catch (error) {

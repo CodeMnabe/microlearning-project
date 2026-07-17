@@ -73,30 +73,62 @@ export async function getDueAutomationRuns(limit = 100) {
   return data || [];
 }
 
-export async function markAutomationRunMaterialized(id, scheduledBroadcastId) {
+const MATERIALIZATION_OUTCOMES = new Set([
+  "materialized",
+  "already_materialized",
+  "claim_lost",
+  "not_due",
+  "not_found",
+  "organization_mismatch",
+]);
+const FAILURE_SOURCE_STATUSES = new Set(["queued", "processing"]);
+
+export async function materializeAutomationRun({
+  id,
+  organizationId,
+  channel,
+  scheduledFor,
+  recipientCount,
+  payload,
+}) {
   const { data, error } = await sb
-    .from("automation_run")
-    .update({
-      status: "materialized",
-      scheduled_broadcast_id: scheduledBroadcastId,
-      processed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    .rpc("materialize_automation_run", {
+      p_automation_run_id: id,
+      p_organization_id: organizationId,
+      p_channel: channel,
+      p_scheduled_for: scheduledFor,
+      p_recipient_count: recipientCount,
+      p_payload: payload,
     })
-    .eq("id", id)
-    .eq("status", "queued")
-    .select()
-    .maybeSingle();
+    .single();
 
   if (error) throw error;
-  return data ?? null;
+
+  if (!data || !MATERIALIZATION_OUTCOMES.has(data.outcome)) {
+    throw new Error("Invalid materialize_automation_run response");
+  }
+
+  return {
+    outcome: data.outcome,
+    automationRunId: data.run_id ?? id,
+    scheduledBroadcastId: data.broadcast_id ?? null,
+    runStatus: data.run_status ?? null,
+    broadcastStatus: data.broadcast_status ?? null,
+  };
 }
 
 export async function markAutomationRunProcessing(id, context = {}) {
+  if (!context.organizationId || !context.scheduledBroadcastId) {
+    throw new Error(
+      "markAutomationRunProcessing requires organization and broadcast context",
+    );
+  }
+
   let query = sb
     .from("automation_run")
     .update({ status: "processing", updated_at: new Date().toISOString() })
     .eq("id", id)
-    .in("status", ["queued", "materialized"]);
+    .eq("status", "materialized");
 
   if (context.organizationId) {
     query = query.eq("organization_id", context.organizationId);
@@ -105,15 +137,19 @@ export async function markAutomationRunProcessing(id, context = {}) {
     query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
   }
 
-  const { data, error } = await query
-    .select()
-    .maybeSingle();
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) throw error;
   return data ?? null;
 }
 
 export async function markAutomationRunSent(id, context = {}) {
+  if (!context.organizationId || !context.scheduledBroadcastId) {
+    throw new Error(
+      "markAutomationRunSent requires organization and broadcast context",
+    );
+  }
+
   let query = sb
     .from("automation_run")
     .update({
@@ -121,7 +157,8 @@ export async function markAutomationRunSent(id, context = {}) {
       processed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("status", "processing");
 
   if (context.organizationId) {
     query = query.eq("organization_id", context.organizationId);
@@ -130,9 +167,7 @@ export async function markAutomationRunSent(id, context = {}) {
     query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
   }
 
-  const { data, error } = await query
-    .select()
-    .maybeSingle();
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) throw error;
   return data ?? null;
@@ -143,6 +178,20 @@ export async function markAutomationRunFailed(
   lastError = null,
   context = {},
 ) {
+  const expectedStatuses = Array.isArray(context.expectedStatuses)
+    ? context.expectedStatuses.filter(Boolean)
+    : ["queued"];
+
+  if (!context.organizationId) {
+    throw new Error("markAutomationRunFailed requires organization context");
+  }
+  if (!expectedStatuses.length) {
+    throw new Error("markAutomationRunFailed requires an expected status");
+  }
+  if (expectedStatuses.some((status) => !FAILURE_SOURCE_STATUSES.has(status))) {
+    throw new Error("markAutomationRunFailed received an unsafe source status");
+  }
+
   let query = sb
     .from("automation_run")
     .update({
@@ -151,7 +200,8 @@ export async function markAutomationRunFailed(
       processed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .in("status", expectedStatuses);
 
   if (context.organizationId) {
     query = query.eq("organization_id", context.organizationId);
@@ -160,9 +210,7 @@ export async function markAutomationRunFailed(
     query = query.eq("scheduled_broadcast_id", context.scheduledBroadcastId);
   }
 
-  const { data, error } = await query
-    .select()
-    .maybeSingle();
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) throw error;
   return data ?? null;

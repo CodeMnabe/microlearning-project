@@ -17,6 +17,20 @@ export async function createScheduledBroadcast(row) {
   return data;
 }
 
+export async function getScheduledBroadcastByAutomationRunId(automationRunId) {
+  if (!automationRunId) return null;
+
+  const { data, error } = await sb
+    .from("scheduled_broadcast")
+    .select("*")
+    .eq("automation_run_id", automationRunId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (data === null) return null;
+  return data;
+}
+
 export async function getOrgScheduledBroadcasts(
   organizationId,
   { source = "all" } = {},
@@ -40,10 +54,10 @@ export async function getOrgScheduledBroadcasts(
 
     return Boolean(
       payload._automation ||
-        payload.automationRunId ||
-        payload.automationRuleId ||
-        payload.ruleId ||
-        payload.source === "automation",
+      payload.automationRunId ||
+      payload.automationRuleId ||
+      payload.ruleId ||
+      payload.source === "automation",
     );
   }
 
