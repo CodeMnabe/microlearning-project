@@ -105,7 +105,7 @@ function isValidHexColor(value) {
   return /^#[0-9A-Fa-f]{6}$/.test(value);
 }
 
-  // 4) save to supabase
+  // 4) save through the server-side allowlisted endpoint
   async function handleSave(org) {
   if (
     !isValidHexColor(org.theme.primary) ||
@@ -128,14 +128,18 @@ function isValidHexColor(value) {
       theme: { primary: org.theme.primary, secondary: org.theme.secondary },
     };
 
-    const { data, error } = await supabase
-      .from("organization")
-      .update(payload)
-      .eq("id", org.id)
-      .select("id, name, theme")
-      .single();
+    const response = await fetch("/api/organizations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ organizationId: org.id, ...payload }),
+    });
+    const result = await response.json();
 
-    if (error) throw error;
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to update organization");
+    }
+
+    const data = result.org;
 
     setOrgs((prev) =>
       prev.map((o) => (o.id === org.id ? { ...o, theme: data.theme } : o))
@@ -167,110 +171,9 @@ function isValidHexColor(value) {
   }
 }
 
-  // 5) (optional) create org – keep your existing code if you still want it.
-  const [name, setName] = useState("");
-  const [creating, setCreating] = useState(false);
-
-  async function handleCreate(e) {
-  e.preventDefault();
-
-  if (!name.trim()) {
-    setMsg(translation("newOrganization.required"));
-
-    await showAlert({
-      title: translation("alerts.organizationNameRequired.title"),
-      message: translation("alerts.organizationNameRequired.message"),
-      tone: "warning",
-    });
-
-    return;
-  }
-
-  if (!user?.id) {
-    await showAlert({
-      title: translation("alerts.notAuthenticated.title"),
-      message: translation("alerts.notAuthenticated.message"),
-      tone: "warning",
-    });
-
-    return;
-  }
-
-  setCreating(true);
-  setMsg(null);
-
-  try {
-    const defTheme = { primary: "#4f46e5", secondary: "#0ea5e9" };
-
-    const { data, error } = await supabase
-      .from("organization")
-      .insert([{ name, owner_user_id: user.id, theme: defTheme }])
-      .select("id, name, theme")
-      .single();
-
-    if (error) throw error;
-
-    setOrgs((prev) => [...prev, data]);
-    setName("");
-
-    setMsg(
-      translation("messages.organizationCreated", {
-        id: data.id,
-        name: data.name,
-      })
-    );
-
-    await showAlert({
-      title: translation("alerts.organizationCreated.title"),
-      message: translation("alerts.organizationCreated.message", {
-        name: data.name,
-      }),
-      tone: "success",
-    });
-  } catch (err) {
-   // console.error(err);
-
-    setMsg(translation("messages.organizationCreateError"));
-
-    await showAlert({
-      title: translation("alerts.organizationCreateError.title"),
-      message: translation("alerts.organizationCreateError.message"),
-      tone: "danger",
-    });
-  } finally {
-    setCreating(false);
-  }
-}
-
   return (
     <main className={styles.pageWrapper}>
       <h1 className={styles.header}>{translation("title")}</h1>
-
-      <section className={styles.formContainer}>
-       <h2 className={styles.title}>{translation("newOrganization.title")}</h2>
-        <form onSubmit={handleCreate} className={styles.form}>
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              e.target.setCustomValidity("");
-            }}
-            onInvalid={(e) => {
-              e.target.setCustomValidity(
-                translation("newOrganization.required")
-              );
-            }}
-            placeholder={translation("newOrganization.placeholder")}
-            required
-            className={styles.input}
-          />
-          <button disabled={creating} className={styles.formButton}>
-           {creating
-            ? translation("newOrganization.creating")
-            : translation("newOrganization.create")}
-          </button>
-        </form>
-      </section>
 
       <section>
         <h2 className={styles.title}>{translation("themes.title")}</h2>

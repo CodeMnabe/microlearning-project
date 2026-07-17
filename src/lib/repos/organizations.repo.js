@@ -12,52 +12,29 @@ const sb = createServiceClient(
   },
 );
 
-export async function createOrganization({
-  name,
-  ownerUserId,
-  channelId,
-}) {
-  if (!name) {
-    throw new Error("Organization name is required");
+export async function updateOrganizationProfile(orgId, updates = {}) {
+  if (!orgId) {
+    throw new Error("Organization id is required");
   }
 
-  if (!ownerUserId) {
-    throw new Error("Organization owner is required");
+  const patch = {};
+
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.theme !== undefined) patch.theme = updates.theme;
+  if (updates.logo_url !== undefined) patch.logo_url = updates.logo_url;
+  if (updates.default_phone_country_code !== undefined) {
+    patch.default_phone_country_code = updates.default_phone_country_code;
   }
 
-  if (!channelId) {
-    throw new Error("Organization channel is required");
-  }
-
-  const { data: existingOrganization, error: lookupError } = await sb
-    .from("organization")
-    .select("id")
-    .eq("channel_id", channelId)
-    .maybeSingle();
-
-  if (lookupError) {
-    throw lookupError;
-  }
-
-  if (existingOrganization) {
-    const error = new Error(
-      "This messaging channel is already assigned to an organization",
-    );
-
-    error.status = 409;
-    throw error;
+  if (!Object.keys(patch).length) {
+    throw new Error("At least one organization profile field is required");
   }
 
   const { data, error } = await sb
     .from("organization")
-    .insert([
-      {
-        name,
-        owner_user_id: ownerUserId,
-        channel_id: channelId,
-      },
-    ])
-    .select()
+    .update(patch)
+    .eq("id", orgId)
+    .select("id, name, theme, logo_url, default_phone_country_code")
     .single();
 
   if (error) throw error;

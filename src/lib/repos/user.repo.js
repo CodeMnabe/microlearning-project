@@ -30,6 +30,42 @@ function sameNullableNumber(a, b) {
   return Number(a) === Number(b);
 }
 
+async function assertAssistantInOrganization(assistantId, organizationId) {
+  if (assistantId == null) return null;
+
+  const parsedAssistantId = Number(assistantId);
+  const parsedOrganizationId = Number(organizationId);
+
+  if (
+    !Number.isInteger(parsedAssistantId) ||
+    parsedAssistantId <= 0 ||
+    !Number.isInteger(parsedOrganizationId) ||
+    parsedOrganizationId <= 0
+  ) {
+    const error = new Error("Invalid assistant or organization id");
+    error.status = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from("assistant")
+    .select("id")
+    .eq("id", parsedAssistantId)
+    .eq("organization_id", parsedOrganizationId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (!data) {
+    const error = new Error("Assistant does not belong to this organization");
+    error.status = 403;
+    error.code = "ASSISTANT_ORGANIZATION_MISMATCH";
+    throw error;
+  }
+
+  return parsedAssistantId;
+}
+
 async function cancelPendingInactivityRunsForAssistantChange(
   userId,
   nextAssistantId,
@@ -70,11 +106,16 @@ export async function createUser({
   whatsappUsername,
   birdContactId,
 }) {
+  const safeAssistantId = await assertAssistantInOrganization(
+    assistantId,
+    organizationId,
+  );
+
   const { data, error } = await supabase.rpc("create_user_with_plan_limit", {
     p_organization_id: organizationId,
     p_phone_number: phoneNumber ?? null,
     p_name: name ?? null,
-    p_assistant_id: assistantId ?? null,
+    p_assistant_id: safeAssistantId,
     p_email: email ?? null,
     p_teams_aad_object_id: teamsAadObjectId ?? null,
     p_teams_from_id: teamsFromId ?? null,
@@ -136,11 +177,19 @@ export async function updateUser(userId, updates) {
     throw new Error("User not found");
   }
 
+  const safeAssistantId =
+    updates.assistantId !== undefined
+      ? await assertAssistantInOrganization(
+          updates.assistantId,
+          currentUser.organization_id,
+        )
+      : undefined;
+
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name;
   if (updates.email !== undefined) patch.email = updates.email;
   if (updates.assistantId !== undefined) {
-    patch.assistant_id = updates.assistantId;
+    patch.assistant_id = safeAssistantId;
   }
 
   if (updates.phoneNumber !== undefined) {
@@ -237,7 +286,7 @@ export async function updateUser(userId, updates) {
 
   const nextAssistantId =
     updates.assistantId !== undefined
-      ? (updates.assistantId ?? null)
+      ? safeAssistantId
       : (currentUser.assistant_id ?? null);
 
   const assistantChanged =
