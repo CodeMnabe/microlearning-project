@@ -12,6 +12,7 @@ import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
+import { validateTrackedLinks } from "./trackedLinkUrl";
 
 export async function sendTeamsBroadcast(input = {}) {
   const {
@@ -25,6 +26,8 @@ export async function sendTeamsBroadcast(input = {}) {
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
+
+  const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
 
   if (!orgId || !Array.isArray(userIds) || userIds.length === 0) {
     throw new BroadcastError("Missing orgId or userIds", 400);
@@ -101,7 +104,7 @@ export async function sendTeamsBroadcast(input = {}) {
       });
 
       const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
-        trackedLinks,
+        trackedLinks: validatedTrackedLinks,
         orgId,
         channel: "teams",
         recipientUserId: userId,

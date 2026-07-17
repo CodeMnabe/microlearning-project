@@ -4,6 +4,7 @@ import {
   getTrackedLinkByToken,
   createTrackedLinkEvent,
 } from "@/lib/repos/trackedLinks.repo";
+import { validateTrackedLinkDestination } from "@/lib/services/broadcast/trackedLinkUrl";
 
 function getClientIp(req) {
   const forwarded = req.headers.get("x-forwarded-for");
@@ -42,6 +43,18 @@ export async function GET(req, { params }) {
       );
     }
 
+    let destinationUrl;
+    try {
+      destinationUrl = validateTrackedLinkDestination(
+        trackedLink.destination_url,
+      );
+    } catch {
+      return NextResponse.json(
+        { error: "Tracked link destination is invalid" },
+        { status: 400 },
+      );
+    }
+
     const userAgent = req.headers.get("user-agent") || null;
     const referer = req.headers.get("referer") || null;
     const ip = getClientIp(req);
@@ -57,7 +70,7 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({
       ok: true,
-      destinationUrl: trackedLink.destination_url,
+      destinationUrl,
       linkLabel: trackedLink.link_label,
     });
   } catch (err) {

@@ -15,6 +15,7 @@ import {
   handleApiError,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
 
 function normalizeRecipient(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -116,6 +117,13 @@ export async function POST(req) {
         { status: 400 },
       );
     }
+
+    const validatedRawSteps = rawSteps.map((step) => ({
+      ...step,
+      trackedLinks: validateTrackedLinks(
+        Array.isArray(step?.trackedLinks) ? step.trackedLinks : [],
+      ),
+    }));
 
     const scheduledForIso = parseScheduledFor(scheduledFor);
     const isScheduled = Boolean(scheduledForIso);
@@ -236,7 +244,7 @@ export async function POST(req) {
       });
     }
 
-    const safeSteps = rawSteps.map((step, index) => ({
+    const safeSteps = validatedRawSteps.map((step, index) => ({
       message: step?.message || "",
       files: Array.isArray(step?.files) ? step.files : [],
       imageUrls: Array.isArray(step?.imageUrls) ? step.imageUrls : [],

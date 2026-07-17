@@ -4,6 +4,7 @@ import {
   assertUsersBelongToOrg,
   jsonError,
 } from "@/lib/auth/guards";
+import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
 import {sendTeamsBroadcast} from "@/lib/services/broadcast/sendTeamsBroadcast";
 
 function getRecipientUserIds(recipients = []) {
@@ -19,6 +20,10 @@ export async function POST(req) {
     const orgAuth = await requireOwnedOrg(body?.orgId);
     if (orgAuth.error) return orgAuth.error;
 
+    const trackedLinks = validateTrackedLinks(
+      Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+    );
+
     const userIds = getRecipientUserIds(body?.recipients);
 
     if (!userIds.length) {
@@ -33,7 +38,7 @@ export async function POST(req) {
       message: body?.message || "",
       files: Array.isArray(body?.files) ? body.files : [],
       imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
-      trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+      trackedLinks,
       scheduledBroadcastId: null,
       createdByUserId: null,
     });

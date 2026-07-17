@@ -14,6 +14,7 @@ import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
+import { validateTrackedLinks } from "./trackedLinkUrl";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -310,6 +311,8 @@ export async function sendWhatsappBroadcast(input = {}) {
     chainMetadata = null,
   } = input;
 
+  const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
+
   if (!orgId) {
     throw new BroadcastError("Missing orgId", 400);
   }
@@ -474,7 +477,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     }
 
     const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
-      trackedLinks,
+      trackedLinks: validatedTrackedLinks,
       orgId,
       channel: "whatsapp",
       recipientUserId: user?.id || recipient.userId || null,

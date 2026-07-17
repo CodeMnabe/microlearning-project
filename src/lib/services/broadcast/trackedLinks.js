@@ -1,5 +1,9 @@
 import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
 import crypto from "crypto";
+import {
+  validateTrackedLinkDestination,
+  validateTrackedLinks,
+} from "./trackedLinkUrl";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -42,6 +46,7 @@ export async function createTrackedLinkForRecipient({
   linkKey = null,
   createdByUserId = null,
 }) {
+  const safeDestinationUrl = validateTrackedLinkDestination(destinationUrl);
   const token = makeToken();
 
   const trackedLink = await createTrackedLink({
@@ -50,7 +55,7 @@ export async function createTrackedLinkForRecipient({
     recipient_user_id: recipientUserId,
     scheduled_broadcast_id: scheduledBroadcastId,
     send_group_id: sendGroupId,
-    destination_url: destinationUrl,
+    destination_url: safeDestinationUrl,
     link_label: linkLabel,
     token,
     link_key: linkKey,
@@ -74,13 +79,14 @@ export async function resolveTrackedLinksForRecipient({
   createdByUserId = null,
 }) {
   const resolved = [];
+  const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
 
-  for (const link of trackedLinks) {
+  for (const link of validatedTrackedLinks) {
     const key = String(link?.key || "").trim();
     const label = String(link?.label || "").trim();
-    const destinationUrl = String(link?.destinationUrl || "").trim();
+    const destinationUrl = link.destinationUrl;
 
-    if (!key || !label || !destinationUrl) continue;
+    if (!key || !label) continue;
 
     const { trackedUrl } = await createTrackedLinkForRecipient({
       orgId,

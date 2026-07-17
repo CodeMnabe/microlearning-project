@@ -8,6 +8,7 @@ import {
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
 
 export async function POST(req) {
   try {
@@ -15,6 +16,10 @@ export async function POST(req) {
 
     const orgAuth = await requireOwnedOrg(body?.orgId);
     if (orgAuth.error) return orgAuth.error;
+
+    const trackedLinks = validateTrackedLinks(
+      Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+    );
 
     const recipientUserIds = requireAllRecipientsToBeKnownUsers(
       body?.recipients,
@@ -56,7 +61,7 @@ export async function POST(req) {
       message: body?.message || "",
       files: Array.isArray(body?.files) ? body.files : [],
       imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
-      trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+      trackedLinks,
       recipients: recipientUserIds.map((userId) => ({ userId })),
       template: safeTemplate,
       whatsappTemplateId: safeWhatsappTemplateId,

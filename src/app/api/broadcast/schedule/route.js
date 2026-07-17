@@ -8,6 +8,7 @@ import {
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
 
 export async function POST(req) {
   try {
@@ -30,6 +31,10 @@ export async function POST(req) {
 
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
+
+    const trackedLinks = validateTrackedLinks(
+      Array.isArray(payload?.trackedLinks) ? payload.trackedLinks : [],
+    );
 
     if (!["teams", "whatsapp"].includes(channel)) {
       return NextResponse.json({ error: "Invalid channel" }, { status: 400 });
@@ -103,9 +108,7 @@ export async function POST(req) {
       message: payload?.message || "",
       files: Array.isArray(payload?.files) ? payload.files : [],
       imageUrls: Array.isArray(payload?.imageUrls) ? payload.imageUrls : [],
-      trackedLinks: Array.isArray(payload?.trackedLinks)
-        ? payload.trackedLinks
-        : [],
+      trackedLinks,
       ...(channel === "teams"
         ? { userIds: recipientUserIds }
         : {

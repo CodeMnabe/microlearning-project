@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { validateTrackedLinkDestination } from "@/lib/services/broadcast/trackedLinkUrl";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,9 +8,14 @@ const supabaseAdmin = createClient(
 );
 
 export async function createTrackedLink(row) {
+  const safeRow = {
+    ...row,
+    destination_url: validateTrackedLinkDestination(row?.destination_url),
+  };
+
   const { data, error } = await supabaseAdmin
     .from("tracked_link")
-    .insert(row)
+    .insert(safeRow)
     .select()
     .single();
 
