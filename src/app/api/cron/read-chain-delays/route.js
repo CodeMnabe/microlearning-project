@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 import {
-  claimDueScheduledMessageChainDeliveries,
+  getDueScheduledMessageChainDeliveries,
   createMessageChainDelivery,
   getMessageChainById,
   getMessageChainRecipientById,
@@ -70,7 +70,7 @@ async function processDueDelayedSteps(req) {
     ? Math.min(Math.max(limitParam, 1), 100)
     : 50;
 
-  const deliveries = await claimDueScheduledMessageChainDeliveries({ limit });
+  const deliveries = await getDueScheduledMessageChainDeliveries({ limit });
 
   const results = [];
 

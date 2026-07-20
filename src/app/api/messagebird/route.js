@@ -341,14 +341,26 @@ async function handleReadInteraction(readInteraction, webhookContext = null) {
     const chainResult = await runWebhookEffect({
       context: webhookContext,
       effectType: "read_chain_processing",
-      effectKey: "advance-chain",
+      effectKey: `advance-chain:${updated.message_chain_recipient_id}:${updated.message_chain_step_index}`,
       isExternal: true,
       request: {
         messageId: readInteraction.messageId,
         messageDbId: updated.id,
         chainId: updated.message_chain_id,
+        chainRecipientId: updated.message_chain_recipient_id,
+        chainStepId: updated.message_chain_step_id,
+        stepIndex: updated.message_chain_step_index,
       },
       operation: () => processReadChainAfterRead(updated),
+      classifyResult: (result) =>
+        result?.sendResult?.unknownOutcome
+          ? {
+              status: "unknown_outcome",
+              lastError:
+                result.sendResult.error ||
+                "Message chain delivery outcome is unknown",
+            }
+          : { status: "succeeded" },
     });
 
     console.log("Read chain processed after read interaction", {

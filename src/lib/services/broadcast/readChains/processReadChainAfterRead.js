@@ -1,9 +1,8 @@
 import { isReadChainsEnabled } from "@/lib/repos/organizationMessagingFeature.repo";
 import {
   completeMessageChainRecipient,
-  createMessageChainDelivery,
+  ensureMessageChainDelivery,
   getMessageChainById,
-  getMessageChainDelivery,
   getMessageChainRecipientById,
   getMessageChainStep,
   getValidatedMessageChainContext,
@@ -96,7 +95,8 @@ export async function processReadChainAfterRead(message) {
     return {
       ok: false,
       skipped: true,
-      reason: "Message chain metadata does not match its organization and user.",
+      reason:
+        "Message chain metadata does not match its organization and user.",
     };
   }
 
@@ -129,40 +129,20 @@ export async function processReadChainAfterRead(message) {
     };
   }
 
-  const existingNextDelivery = await getMessageChainDelivery({
-    chainRecipientId: message.message_chain_recipient_id,
-    stepIndex: nextStepIndex,
-  });
-
-  if (existingNextDelivery) {
-    return {
-      ok: true,
-      skipped: true,
-      reason: "Next step was already created, scheduled, or sent.",
-      nextStepIndex,
-      existingStatus: existingNextDelivery.status,
-    };
-  }
-
   const delayMinutes = getDelayAfterPreviousReadMinutes(nextStep.payload);
 
   if (delayMinutes > 0) {
     const dueAt = new Date(Date.now() + delayMinutes * 60 * 1000);
 
-    const scheduledDelivery = await createMessageChainDelivery({
+    const scheduledDelivery = await ensureMessageChainDelivery({
+      organizationId: chain.organization_id,
       chainId: chain.id,
       chainStepId: nextStep.id,
       chainRecipientId: chainRecipient.id,
       userId: chainRecipient.user_id,
-      messageDbId: null,
-      providerMessageId: null,
       stepIndex: nextStepIndex,
-      status: "scheduled",
-      sentAt: null,
-      readAt: null,
-      failedAt: null,
+      initialStatus: "scheduled",
       dueAt,
-      errorMessage: null,
     });
 
     return {

@@ -350,8 +350,186 @@ export async function getMessageChainDelivery({ chainRecipientId, stepIndex }) {
   return data ?? null;
 }
 
-export async function claimDueScheduledMessageChainDeliveries({ limit = 50 }) {
-  const { data: dueDeliveries, error: selectError } = await sb
+export async function ensureMessageChainDelivery({
+  organizationId,
+  chainId,
+  chainStepId,
+  chainRecipientId,
+  userId,
+  stepIndex,
+  initialStatus = "queued",
+  dueAt = null,
+}) {
+  const { data, error } = await sb
+    .rpc("ensure_message_chain_delivery", {
+      p_organization_id: organizationId,
+      p_chain_id: chainId,
+      p_chain_step_id: chainStepId,
+      p_chain_recipient_id: chainRecipientId,
+      p_user_id: userId,
+      p_step_index: stepIndex,
+      p_initial_status: initialStatus,
+      p_due_at: dueAt ? new Date(dueAt).toISOString() : null,
+    })
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function claimMessageChainDelivery({
+  deliveryId,
+  organizationId,
+  chainId,
+  chainStepId,
+  chainRecipientId,
+  userId,
+  workerId,
+  leaseSeconds = 120,
+}) {
+  const { data, error } = await sb
+    .rpc("claim_message_chain_delivery", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_chain_id: chainId,
+      p_chain_step_id: chainStepId,
+      p_chain_recipient_id: chainRecipientId,
+      p_user_id: userId,
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function renewMessageChainDeliveryLease({
+  deliveryId,
+  organizationId,
+  claimToken,
+  leaseSeconds = 120,
+}) {
+  const { data, error } = await sb
+    .rpc("renew_message_chain_delivery_lease", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function markMessageChainDeliverySendStarted({
+  deliveryId,
+  organizationId,
+  claimToken,
+}) {
+  const { data, error } = await sb
+    .rpc("mark_message_chain_delivery_send_started", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function completeMessageChainDeliverySend({
+  deliveryId,
+  organizationId,
+  claimToken,
+  messageId,
+  providerMessageId = null,
+}) {
+  if (!Number.isInteger(messageId) || messageId < 1) {
+    throw new Error(
+      "messageId is required to complete a message chain delivery",
+    );
+  }
+
+  const { data, error } = await sb
+    .rpc("complete_message_chain_delivery_send", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+      p_message_id: messageId,
+      p_provider_message_id: providerMessageId,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function failMessageChainDeliveryBeforeSend({
+  deliveryId,
+  organizationId,
+  claimToken,
+  lastError,
+}) {
+  const { data, error } = await sb
+    .rpc("fail_message_chain_delivery_before_send", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+      p_last_error: lastError || null,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function failMessageChainDeliveryAfterSend({
+  deliveryId,
+  organizationId,
+  claimToken,
+  lastError,
+  providerMessageId = null,
+}) {
+  const { data, error } = await sb
+    .rpc("fail_message_chain_delivery_after_send", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+      p_last_error: lastError || null,
+      p_provider_message_id: providerMessageId,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function markMessageChainDeliveryUnknownOutcome({
+  deliveryId,
+  organizationId,
+  claimToken,
+  lastError,
+  providerMessageId = null,
+}) {
+  const { data, error } = await sb
+    .rpc("mark_message_chain_delivery_unknown_outcome", {
+      p_delivery_id: deliveryId,
+      p_organization_id: organizationId,
+      p_claim_token: claimToken,
+      p_last_error: lastError || null,
+      p_provider_message_id: providerMessageId,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function getDueScheduledMessageChainDeliveries({ limit = 50 }) {
+  const { data, error } = await sb
     .from("message_chain_delivery")
     .select("*")
     .eq("status", "scheduled")
@@ -359,34 +537,14 @@ export async function claimDueScheduledMessageChainDeliveries({ limit = 50 }) {
     .order("due_at", { ascending: true })
     .limit(limit);
 
-  if (selectError) throw selectError;
+  if (error) throw error;
+  return data || [];
+}
 
-  if (!Array.isArray(dueDeliveries) || dueDeliveries.length === 0) {
-    return [];
-  }
-
-  const claimed = [];
-
-  for (const delivery of dueDeliveries) {
-    const { data, error } = await sb
-      .from("message_chain_delivery")
-      .update({
-        status: "processing",
-        updated_at: nowIso(),
-      })
-      .eq("id", delivery.id)
-      .eq("status", "scheduled")
-      .select("*")
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (data) {
-      claimed.push(data);
-    }
-  }
-
-  return claimed;
+export async function claimDueScheduledMessageChainDeliveries({ limit = 50 }) {
+  // Kept as a compatibility export. Ownership is now acquired only by
+  // claimMessageChainDelivery, which returns a token and lease.
+  return getDueScheduledMessageChainDeliveries({ limit });
 }
 
 export async function markMessageChainDeliveryRead({

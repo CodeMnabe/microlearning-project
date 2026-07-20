@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 
 import {
   claimDueScheduledMessageChains,
-  getMessageChainDelivery,
   getMessageChainRecipientsByChainId,
   getMessageChainStep,
   markMessageChainActive,
@@ -91,24 +90,6 @@ async function processDueReadChains(req) {
             continue;
           }
 
-          const existingDelivery = await getMessageChainDelivery({
-            chainRecipientId: chainRecipient.id,
-            stepIndex: 1,
-          });
-
-          if (existingDelivery) {
-            result.skipped += 1;
-
-            result.results.push({
-              userId: chainRecipient.user_id,
-              ok: true,
-              skipped: true,
-              reason: "Step 1 delivery already exists.",
-            });
-
-            continue;
-          }
-
           const sendResult = await sendReadChainStep({
             chain,
             chainRecipient,
@@ -176,9 +157,7 @@ async function processDueReadChains(req) {
 
   const started = chainResults.filter(
     (result) =>
-      result.ok > 0 ||
-      result.waitingForReply > 0 ||
-      result.skipped > 0,
+      result.ok > 0 || result.waitingForReply > 0 || result.skipped > 0,
   ).length;
 
   const failed = chainResults.filter(
