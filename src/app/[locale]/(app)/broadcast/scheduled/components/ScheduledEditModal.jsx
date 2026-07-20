@@ -421,10 +421,6 @@ export default function ScheduledEditModal({
                     label: translation("Statuses.scheduled"),
                   },
                   {
-                    value: "failed",
-                    label: translation("Statuses.failed"),
-                  },
-                  {
                     value: "cancelled",
                     label: translation("Statuses.cancelled"),
                   },

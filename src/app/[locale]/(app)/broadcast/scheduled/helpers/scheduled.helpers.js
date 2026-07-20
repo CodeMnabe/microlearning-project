@@ -117,9 +117,9 @@ export function normalizeBroadcast(row) {
 }
 
 export function canEditItem(item) {
-  return !["sending", "sent"].includes(item.status);
+  return item.status === "scheduled";
 }
 
 export function canDeleteItem(item) {
-  return !["sending", "sent"].includes(item.status);
+  return item.status === "scheduled";
 }

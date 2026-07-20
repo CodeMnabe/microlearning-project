@@ -1,310 +1,167 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import {
-  getDueScheduledBroadcasts,
-  markScheduledBroadcastProcessing,
-  finishScheduledBroadcast,
+  claimDueScheduledBroadcasts,
+  completeScheduledBroadcast,
+  maintainScheduledBroadcastLifecycle,
+  markScheduledBroadcastSendStarted,
+  renewScheduledBroadcastLease,
 } from "@/lib/repos/scheduledBroadcasts.repo";
-import {
-  getAutomationRunForScheduledBroadcast,
-  markAutomationRunFailed,
-  markAutomationRunProcessing,
-  markAutomationRunSent,
-} from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
+import { startLeaseHeartbeat } from "@/lib/webhooks/leaseHeartbeat";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const LEASE_SECONDS = 120;
+const MAX_ATTEMPTS = 3;
+
 function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    return false;
-  }
-
+  if (!cronSecret) return false;
   const authHeader = req.headers.get("authorization") || "";
   const bearer = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : "";
-
-  const xCronSecret = req.headers.get("x-cron-secret") || "";
-
-  return bearer === cronSecret || xCronSecret === cronSecret;
+  return bearer === cronSecret || req.headers.get("x-cron-secret") === cronSecret;
 }
 
-async function syncAutomationRunProcessing(automationRunId, context) {
-  if (!automationRunId) return null;
-
-  try {
-    const claimed = await markAutomationRunProcessing(automationRunId, context);
-
-    if (claimed === null) {
-      console.warn("[Automations] Automation run claim was lost", {
-        automationRunId,
-        scheduledBroadcastId: context.scheduledBroadcastId,
-      });
-    }
-
-    return claimed;
-  } catch (error) {
-    console.warn("[Automations] Failed to mark run processing", {
-      automationRunId,
-      message: error?.message || String(error),
-    });
-    throw error;
-  }
+function normalizeError(error) {
+  if (typeof error?.message === "string") return error.message;
+  return String(error || "Unknown error");
 }
 
-async function syncAutomationRunSuccess(automationRunId, context) {
-  if (!automationRunId) return null;
-
-  try {
-    const sentRun = await markAutomationRunSent(automationRunId, context);
-
-    if (sentRun === null) {
-      console.warn("[Automations] Run sent transition lost ownership", {
-        automationRunId,
-        scheduledBroadcastId: context.scheduledBroadcastId,
-      });
-    }
-
-    return sentRun;
-  } catch (error) {
-    console.warn("[Automations] Failed to mark run sent", {
-      automationRunId,
-      message: error?.message || String(error),
-    });
-    return null;
-  }
+function compactProviderResult(result) {
+  return {
+    ok: Number(result?.ok || 0),
+    failed: Number(result?.failed || 0),
+    recipients: Array.isArray(result?.results)
+      ? result.results.map((entry) => ({
+          userId: entry?.userId ?? null,
+          ok: Boolean(entry?.ok),
+          status: Number.isFinite(Number(entry?.status))
+            ? Number(entry.status)
+            : null,
+          providerMessageId: entry?.providerMessageId ?? null,
+        }))
+      : [],
+  };
 }
 
-async function syncAutomationRunFailure(
-  automationRunId,
-  errorMessage,
-  context,
-) {
-  if (!automationRunId) return null;
-
-  try {
-    const failedRun = await markAutomationRunFailed(
-      automationRunId,
-      errorMessage,
-      {
-        ...context,
-        expectedStatuses: ["processing"],
-      },
-    );
-
-    if (failedRun === null) {
-      console.warn("[Automations] Run failed transition lost ownership", {
-        automationRunId,
-        scheduledBroadcastId: context.scheduledBroadcastId,
-      });
-    }
-
-    return failedRun;
-  } catch (error) {
-    console.warn("[Automations] Failed to mark run failed", {
-      automationRunId,
-      message: error?.message || String(error),
-    });
-    return null;
-  }
-}
-
-function normalizeError(err) {
-  if (!err) return "Unknown error";
-
-  if (typeof err === "string") return err;
-  if (typeof err?.message === "string" && err.message !== "[object Object]") {
-    return err.message;
-  }
-  if (typeof err?.error === "string") return err.error;
-  if (typeof err?.data?.error === "string") return err.data.error;
-
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
+function buildPayload(broadcast) {
+  const storedPayload = broadcast.payload || {};
+  return {
+    orgId: broadcast.organization_id,
+    message: storedPayload.message || "",
+    files: Array.isArray(storedPayload.files) ? storedPayload.files : [],
+    imageUrls: Array.isArray(storedPayload.imageUrls)
+      ? storedPayload.imageUrls
+      : [],
+    trackedLinks: Array.isArray(storedPayload.trackedLinks)
+      ? storedPayload.trackedLinks
+      : [],
+    scheduledBroadcastId: broadcast.id,
+    createdByUserId: null,
+    ...(broadcast.channel === "whatsapp"
+      ? {
+          recipients: Array.isArray(storedPayload.recipients)
+            ? storedPayload.recipients
+            : [],
+          template: storedPayload.template || null,
+          whatsappTemplateId: storedPayload.whatsappTemplateId || null,
+          chainMetadata: null,
+        }
+      : {
+          userIds: Array.isArray(storedPayload.userIds)
+            ? storedPayload.userIds
+            : [],
+        }),
+  };
 }
 
 async function processOneBroadcast(broadcast) {
-  let locked;
-  const structuralAutomationRunId = broadcast?.automation_run_id || null;
-  const payloadAutomationRunId = broadcast?.payload?.automationRunId || null;
-  const automationRunId =
-    structuralAutomationRunId || payloadAutomationRunId || null;
-  let verifiedAutomationRunId = null;
-  const automationContext = {
+  const context = {
+    id: broadcast.id,
     organizationId: broadcast.organization_id,
-    scheduledBroadcastId: broadcast.id,
+    claimToken: broadcast.claim_token,
+    workerId: broadcast.worker_id,
   };
+  let sendStarted = false;
+  const heartbeat = startLeaseHeartbeat({
+    label: `scheduled broadcast ${broadcast.id}`,
+    leaseSeconds: LEASE_SECONDS,
+    renew: () =>
+      renewScheduledBroadcastLease({
+        ...context,
+        leaseSeconds: LEASE_SECONDS,
+      }),
+  });
 
   try {
-    locked = await markScheduledBroadcastProcessing(broadcast.id);
-  } catch (err) {
-    return {
-      id: broadcast.id,
-      ok: false,
-      skipped: true,
-      error: normalizeError(err),
-    };
-  }
-
-  if (!locked) {
-    return {
-      id: broadcast.id,
-      ok: false,
-      skipped: true,
-      error: "Could not lock broadcast for processing",
-    };
-  }
-
-  try {
-    if (
-      structuralAutomationRunId &&
-      payloadAutomationRunId &&
-      String(structuralAutomationRunId) !== String(payloadAutomationRunId)
-    ) {
-      throw new Error(
-        "Scheduled broadcast automation origin does not match its payload",
-      );
+    await heartbeat.renewNow();
+    const started = await markScheduledBroadcastSendStarted(context);
+    if (!started) {
+      return { id: broadcast.id, ok: false, skipped: true, error: "Claim lost before send" };
     }
+    sendStarted = true;
+    heartbeat.assertOwned();
 
-    if (automationRunId) {
-      const automationRun = await getAutomationRunForScheduledBroadcast({
-        id: automationRunId,
-        ...automationContext,
-      });
+    const payload = buildPayload(broadcast);
+    const result =
+      broadcast.channel === "whatsapp"
+        ? await sendWhatsappBroadcast(payload)
+        : broadcast.channel === "teams"
+          ? await sendTeamsBroadcast(payload)
+          : (() => {
+              throw new Error(`Unsupported channel: ${broadcast.channel}`);
+            })();
+    heartbeat.assertOwned();
 
-      if (!automationRun) {
-        throw new Error(
-          "Automation run does not belong to this scheduled broadcast",
-        );
-      }
-
-      const claimedAutomationRun = await syncAutomationRunProcessing(
-        automationRun.id,
-        automationContext,
-      );
-
-      if (claimedAutomationRun === null) {
-        throw new Error("Could not claim automation run for processing");
-      }
-
-      verifiedAutomationRunId = claimedAutomationRun.id;
-    }
-
-    const storedPayload = broadcast.payload || {};
-    const payload = {
-      orgId: broadcast.organization_id,
-      message: storedPayload.message || "",
-      files: Array.isArray(storedPayload.files) ? storedPayload.files : [],
-      imageUrls: Array.isArray(storedPayload.imageUrls)
-        ? storedPayload.imageUrls
-        : [],
-      trackedLinks: Array.isArray(storedPayload.trackedLinks)
-        ? storedPayload.trackedLinks
-        : [],
-      scheduledBroadcastId: broadcast.id,
-      createdByUserId: null,
-      ...(broadcast.channel === "whatsapp"
-        ? {
-            recipients: Array.isArray(storedPayload.recipients)
-              ? storedPayload.recipients
-              : [],
-            template: storedPayload.template || null,
-            whatsappTemplateId: storedPayload.whatsappTemplateId || null,
-            chainMetadata: null,
-          }
-        : {
-            userIds: Array.isArray(storedPayload.userIds)
-              ? storedPayload.userIds
-              : [],
-          }),
-    };
-
-    console.log("[Schedule Broadcast] payload before send", {
-      broadcastId: broadcast.id,
-      channel: broadcast.channel,
-      payload,
+    const providerResult = compactProviderResult(result);
+    const outcome =
+      providerResult.ok > 0 && providerResult.failed > 0
+        ? "partial"
+        : providerResult.ok > 0
+          ? "sent"
+          : "unknown_outcome";
+    const finished = await completeScheduledBroadcast({
+      ...context,
+      outcome,
+      providerResult,
+      maxAttempts: MAX_ATTEMPTS,
+      lastError:
+        outcome === "unknown_outcome"
+          ? "Provider did not confirm a successful scheduled broadcast send"
+          : null,
     });
-
-    let result;
-
-    if (broadcast.channel === "whatsapp") {
-      result = await sendWhatsappBroadcast(payload);
-    } else if (broadcast.channel === "teams") {
-      result = await sendTeamsBroadcast(payload);
-    } else {
-      throw new Error(`Unsupported channel: ${broadcast.channel}`);
+    if (!finished) {
+      throw new Error("Scheduled broadcast claim was lost before finalization");
     }
-
-    const okCount = Number(result?.ok || 0);
-    const failedCount = Number(result?.failed || 0);
-
-    let finalStatus = "sent";
-    if (okCount > 0 && failedCount > 0) finalStatus = "partial";
-    if (okCount === 0 && failedCount > 0) finalStatus = "failed";
-
-    await finishScheduledBroadcast(broadcast.id, {
-      status: finalStatus,
-    });
-
-    if (finalStatus === "failed") {
-      await syncAutomationRunFailure(
-        verifiedAutomationRunId,
-        JSON.stringify(result?.results || result || {}),
-        automationContext,
-      );
-    } else {
-      await syncAutomationRunSuccess(
-        verifiedAutomationRunId,
-        automationContext,
-      );
-    }
-
-    return {
-      id: broadcast.id,
-      ok: finalStatus !== "failed",
-      status: finalStatus,
-      result,
-    };
-  } catch (err) {
-    console.error("[Schedule Broadcast] processOneBroadcast failed", {
-      broadcastId: broadcast.id,
-      channel: broadcast.channel,
-      payload: broadcast.payload,
-      err,
-      message: err?.message,
-      stack: err?.stack,
-    });
-
+    return { id: broadcast.id, ok: outcome !== "unknown_outcome", status: outcome };
+  } catch (error) {
+    const message = normalizeError(error);
     try {
-      await finishScheduledBroadcast(broadcast.id, { status: "failed" });
-    } catch (finishErr) {
-      console.error(
-        `[Schedule Broadcast] Failed to mark ${broadcast.id} as failed:`,
-        finishErr,
-      );
+      await completeScheduledBroadcast({
+        ...context,
+        outcome: sendStarted ? "unknown_outcome" : "retryable_failed",
+        lastError: message,
+        maxAttempts: MAX_ATTEMPTS,
+      });
+    } catch (finalizationError) {
+      console.error("[Schedule Broadcast] terminal outcome persistence failed", {
+        broadcastId: broadcast.id,
+        message: normalizeError(finalizationError),
+      });
     }
-
-    const normalizedError = normalizeError(err);
-
-    await syncAutomationRunFailure(
-      verifiedAutomationRunId,
-      normalizedError,
-      automationContext,
-    );
-
     return {
       id: broadcast.id,
       ok: false,
-      status: "failed",
-      error: normalizedError,
+      status: sendStarted ? "unknown_outcome" : "retryable_failed",
+      error: message,
     };
+  } finally {
+    await heartbeat.stop();
   }
 }
 
@@ -313,54 +170,40 @@ async function handler(req) {
     if (!isAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    let limit = 500;
-
+    let limit = 100;
     try {
-      if (req.method === "POST") {
-        const body = await req.json().catch(() => ({}));
-        if (body?.limit) limit = Number(body.limit) || 500;
-      } else {
-        const url = new URL(req.url);
-        const rawLimit = url.searchParams.get("limit");
-        if (rawLimit) limit = Number(rawLimit) || 500;
-      }
-    } catch {
-      // keep default
-    }
+      const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+      const rawLimit = body?.limit ?? new URL(req.url).searchParams.get("limit");
+      if (rawLimit) limit = Math.min(500, Math.max(1, Number(rawLimit) || 100));
+    } catch {}
 
-    const due = await getDueScheduledBroadcasts(limit);
-
-    if (!due.length) {
-      return NextResponse.json({
-        ok: true,
-        message: "No schedule broadcasts due",
-        processed: 0,
-        results: [],
-      });
-    }
-
+    const maintenance = await maintainScheduledBroadcastLifecycle({
+      limit,
+      maxAttempts: MAX_ATTEMPTS,
+    });
+    const workerId = `scheduled-broadcast:${randomUUID()}`;
+    const claimed = await claimDueScheduledBroadcasts({
+      workerId,
+      limit,
+      leaseSeconds: LEASE_SECONDS,
+      maxAttempts: MAX_ATTEMPTS,
+    });
     const results = [];
-    for (const broadcast of due) {
-      const result = await processOneBroadcast(broadcast);
-      results.push(result);
-    }
+    for (const broadcast of claimed) results.push(await processOneBroadcast(broadcast));
 
     return NextResponse.json({
       ok: true,
-      processed: results.length,
-      sent: results.filter((r) => r.status === "sent").length,
-      partial: results.filter((r) => r.status === "partial").length,
-      failed: results.filter((r) => r.status === "failed").length,
-      skipped: results.filter((r) => r.skipped).length,
+      maintenance,
+      claimed: claimed.length,
+      sent: results.filter((item) => item.status === "sent").length,
+      partial: results.filter((item) => item.status === "partial").length,
+      retryableFailed: results.filter((item) => item.status === "retryable_failed").length,
+      unknownOutcome: results.filter((item) => item.status === "unknown_outcome").length,
       results,
     });
-  } catch (err) {
-    console.error("[Schedule Broadcast] Cron error:", err);
-    return NextResponse.json(
-      { error: err?.message || String(err) },
-      { status: 500 },
-    );
+  } catch (error) {
+    console.error("[Schedule Broadcast] Cron error", error);
+    return NextResponse.json({ error: normalizeError(error) }, { status: 500 });
   }
 }
 

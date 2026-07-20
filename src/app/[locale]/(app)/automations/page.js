@@ -60,6 +60,7 @@ const STATUS_META = {
   processing: { label: "Processing", className: styles.chip },
   sent: { label: "Sent", className: styles.chipSuccess || styles.chip },
   partial: { label: "Partial", className: styles.chip },
+  unknown_outcome: { label: "Outcome unknown", className: styles.chipDark },
   failed: { label: "Failed", className: styles.rowActBtnDanger },
   cancelled: { label: "Cancelled", className: styles.chipDark },
   skipped: { label: "Skipped", className: styles.chipDark },

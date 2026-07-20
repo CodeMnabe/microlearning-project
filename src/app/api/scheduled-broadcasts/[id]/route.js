@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import {
-  updateScheduledBroadcast,
-  deleteScheduledBroadcast,
+  cancelScheduledBroadcast,
+  editScheduledBroadcast,
+  toBrowserScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
 import {
   cleanPatch,
@@ -15,22 +16,8 @@ export const dynamic = "force-dynamic";
 const ALLOWED_PATCH_FIELDS = [
   "scheduled_for",
   "timezone",
-  "status",
+  "expected_updated_at",
 ];
-
-const ALLOWED_MANUAL_STATUSES = new Set([
-  "queued",
-  "cancelled",
-]);
-
-const MUTABLE_STATUSES = new Set([
-  "queued",
-]);
-
-const DELETABLE_STATUSES = new Set([
-  "queued",
-  "cancelled",
-]);
 
 function isValidDate(value) {
   if (typeof value !== "string") return false;
@@ -39,9 +26,7 @@ function isValidDate(value) {
 
   if (!normalized) return false;
 
-  return !Number.isNaN(
-    new Date(normalized).getTime(),
-  );
+  return !Number.isNaN(new Date(normalized).getTime());
 }
 
 function isValidTimezone(value) {
@@ -73,74 +58,50 @@ export async function PATCH(req, { params }) {
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    if (
-      !body ||
-      typeof body !== "object" ||
-      Array.isArray(body)
-    ) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json(
         { error: "Invalid request body" },
         { status: 400 },
       );
     }
 
-    const orgAuth =
-      await requireOrgForScheduledBroadcast(id);
+    const orgAuth = await requireOrgForScheduledBroadcast(id);
 
     if (orgAuth.error) return orgAuth.error;
 
-    if (
-      !MUTABLE_STATUSES.has(
-        String(orgAuth.broadcast.status),
-      )
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Only queued broadcasts can be updated.",
-        },
-        { status: 409 },
-      );
-    }
-
-    const patch = cleanPatch(
-      body,
-      ALLOWED_PATCH_FIELDS,
-    );
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        patch,
-        "status",
-      )
-    ) {
-      if (
-        typeof patch.status !== "string" ||
-        !ALLOWED_MANUAL_STATUSES.has(
-          patch.status,
-        )
-      ) {
+    if (Object.prototype.hasOwnProperty.call(body, "status")) {
+      if (body.status !== "cancelled") {
         return NextResponse.json(
-          {
-            error:
-              "Invalid manual status update.",
-          },
+          { error: "Status changes are not supported by PATCH." },
           { status: 400 },
         );
       }
+
+      const cancelled = await cancelScheduledBroadcast({
+        id: orgAuth.broadcastId,
+        organizationId: orgAuth.orgId,
+        cancelledByUserId: orgAuth.user.id,
+      });
+
+      if (!cancelled) {
+        return NextResponse.json(
+          { error: "Broadcast state changed; it can no longer be cancelled." },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json({
+        item: toBrowserScheduledBroadcast(cancelled),
+      });
     }
 
+    const patch = cleanPatch(body, ALLOWED_PATCH_FIELDS);
+
     if (
-      Object.prototype.hasOwnProperty.call(
-        patch,
-        "scheduled_for",
-      ) &&
+      Object.prototype.hasOwnProperty.call(patch, "scheduled_for") &&
       !isValidDate(patch.scheduled_for)
     ) {
       return NextResponse.json(
@@ -149,42 +110,53 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        patch,
-        "timezone",
-      ) &&
-      !isValidTimezone(patch.timezone)
-    ) {
+    if (!isValidDate(patch.expected_updated_at)) {
       return NextResponse.json(
-        { error: "Invalid timezone" },
+        { error: "expected_updated_at is required" },
         { status: 400 },
       );
     }
 
-    if (Object.keys(patch).length === 0) {
+    if (
+      Object.prototype.hasOwnProperty.call(patch, "timezone") &&
+      !isValidTimezone(patch.timezone)
+    ) {
+      return NextResponse.json({ error: "Invalid timezone" }, { status: 400 });
+    }
+
+    if (
+      !Object.prototype.hasOwnProperty.call(patch, "scheduled_for") &&
+      !Object.prototype.hasOwnProperty.call(patch, "timezone")
+    ) {
       return NextResponse.json(
         {
-          error:
-            "No valid fields provided to update.",
+          error: "No valid fields provided to update.",
         },
         { status: 400 },
       );
     }
 
-    const data = await updateScheduledBroadcast(
-      orgAuth.broadcastId,
-      patch,
-    );
+    const data = await editScheduledBroadcast({
+      id: orgAuth.broadcastId,
+      organizationId: orgAuth.orgId,
+      actorUserId: orgAuth.user.id,
+      scheduledFor: patch.scheduled_for ?? null,
+      timezone: patch.timezone ?? null,
+      expectedUpdatedAt: patch.expected_updated_at,
+    });
+
+    if (!data) {
+      return NextResponse.json(
+        { error: "Broadcast state changed; refresh and try again." },
+        { status: 409 },
+      );
+    }
 
     return NextResponse.json({
-      item: data,
+      item: toBrowserScheduledBroadcast(data),
     });
   } catch (err) {
-    return handleApiError(
-      err,
-      "Failed to update scheduled broadcast",
-    );
+    return handleApiError(err, "Failed to update scheduled broadcast");
   }
 }
 
@@ -192,36 +164,29 @@ export async function DELETE(_req, { params }) {
   try {
     const { id } = await params;
 
-    const orgAuth =
-      await requireOrgForScheduledBroadcast(id);
+    const orgAuth = await requireOrgForScheduledBroadcast(id);
 
     if (orgAuth.error) return orgAuth.error;
 
-    if (
-      !DELETABLE_STATUSES.has(
-        String(orgAuth.broadcast.status),
-      )
-    ) {
+    const cancelled = await cancelScheduledBroadcast({
+      id: orgAuth.broadcastId,
+      organizationId: orgAuth.orgId,
+      cancelledByUserId: orgAuth.user.id,
+      reason: "Cancelled from scheduled broadcasts UI",
+    });
+
+    if (!cancelled) {
       return NextResponse.json(
-        {
-          error:
-            "Only queued or cancelled broadcasts can be deleted.",
-        },
+        { error: "Broadcast state changed; it cannot be removed." },
         { status: 409 },
       );
     }
 
-    await deleteScheduledBroadcast(
-      orgAuth.broadcastId,
-    );
-
     return NextResponse.json({
       success: true,
+      item: toBrowserScheduledBroadcast(cancelled),
     });
   } catch (err) {
-    return handleApiError(
-      err,
-      "Failed to delete scheduled broadcast",
-    );
+    return handleApiError(err, "Failed to delete scheduled broadcast");
   }
 }

@@ -1,218 +1,150 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getDueScheduledBroadcasts: vi.fn(),
-  markScheduledBroadcastProcessing: vi.fn(),
-  finishScheduledBroadcast: vi.fn(),
-  getAutomationRunForScheduledBroadcast: vi.fn(),
-  markAutomationRunFailed: vi.fn(),
-  markAutomationRunProcessing: vi.fn(),
-  markAutomationRunSent: vi.fn(),
+  maintainScheduledBroadcastLifecycle: vi.fn(),
+  claimDueScheduledBroadcasts: vi.fn(),
+  renewScheduledBroadcastLease: vi.fn(),
+  markScheduledBroadcastSendStarted: vi.fn(),
+  completeScheduledBroadcast: vi.fn(),
   sendTeamsBroadcast: vi.fn(),
   sendWhatsappBroadcast: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/scheduledBroadcasts.repo", () => ({
-  getDueScheduledBroadcasts: mocks.getDueScheduledBroadcasts,
-  markScheduledBroadcastProcessing: mocks.markScheduledBroadcastProcessing,
-  finishScheduledBroadcast: mocks.finishScheduledBroadcast,
+  maintainScheduledBroadcastLifecycle: mocks.maintainScheduledBroadcastLifecycle,
+  claimDueScheduledBroadcasts: mocks.claimDueScheduledBroadcasts,
+  renewScheduledBroadcastLease: mocks.renewScheduledBroadcastLease,
+  markScheduledBroadcastSendStarted: mocks.markScheduledBroadcastSendStarted,
+  completeScheduledBroadcast: mocks.completeScheduledBroadcast,
 }));
-
-vi.mock("@/lib/repos/automationRuns.repo", () => ({
-  getAutomationRunForScheduledBroadcast:
-    mocks.getAutomationRunForScheduledBroadcast,
-  markAutomationRunFailed: mocks.markAutomationRunFailed,
-  markAutomationRunProcessing: mocks.markAutomationRunProcessing,
-  markAutomationRunSent: mocks.markAutomationRunSent,
-}));
-
 vi.mock("@/lib/services/broadcast/sendTeamsBroadcast", () => ({
   sendTeamsBroadcast: mocks.sendTeamsBroadcast,
 }));
-
 vi.mock("@/lib/services/broadcast/sendWhatsappBroadcast", () => ({
   sendWhatsappBroadcast: mocks.sendWhatsappBroadcast,
+}));
+vi.mock("@/lib/webhooks/leaseHeartbeat", () => ({
+  startLeaseHeartbeat: ({ renew }) => ({
+    renewNow: async () => {
+      const row = await renew();
+      if (!row) throw new Error("lease ownership was lost");
+    },
+    assertOwned: () => {},
+    stop: async () => {},
+  }),
 }));
 
 import { GET as processBroadcastsGet } from "@/app/api/cron/process-scheduled-broadcasts/route.js";
 
-const runId = "00000000-0000-4000-8000-000000000003";
-const broadcastAId = "00000000-0000-4000-8000-000000000030";
-const broadcastBId = "00000000-0000-4000-8000-000000000031";
-
-function broadcast({
-  id = broadcastAId,
-  automationRunId = runId,
-  payloadAutomationRunId = runId,
-} = {}) {
+function broadcast(overrides = {}) {
   return {
-    id,
+    id: "00000000-0000-4000-8000-000000000030",
     organization_id: 7,
     channel: "teams",
-    status: "queued",
-    scheduled_for: "2026-07-17T10:00:00.000Z",
-    automation_run_id: automationRunId,
-    payload: {
-      message: "Scheduled broadcast processing synthetic message",
-      userIds: [11],
-      ...(payloadAutomationRunId
-        ? { automationRunId: payloadAutomationRunId }
-        : {}),
-    },
+    status: "processing",
+    claim_token: "00000000-0000-4000-8000-000000000031",
+    worker_id: "worker-test",
+    payload: { message: "synthetic", userIds: [11] },
+    ...overrides,
   };
 }
 
 function request() {
-  return new Request(
-    "http://scheduled-broadcast-processing.invalid/api/cron/process-scheduled-broadcasts",
-    {
-      headers: {
-        authorization: "Bearer scheduled-broadcast-processing-test-secret",
-      },
-    },
-  );
+  return new Request("http://scheduled-broadcast.invalid/api/cron/process-scheduled-broadcasts", {
+    headers: { authorization: "Bearer scheduled-broadcast-test-secret" },
+  });
 }
 
-describe("Scheduled broadcast automation processing claims", () => {
+describe("Scheduled broadcast lifecycle worker", () => {
   let originalCronSecret;
-  let logSpy;
-  let warnSpy;
-  let errorSpy;
 
   beforeEach(() => {
     originalCronSecret = process.env.CRON_SECRET;
-    process.env.CRON_SECRET = "scheduled-broadcast-processing-test-secret";
+    process.env.CRON_SECRET = "scheduled-broadcast-test-secret";
     vi.clearAllMocks();
-
-    mocks.markScheduledBroadcastProcessing.mockImplementation(
-      async (itemId) => ({
-        ...broadcast({ id: itemId }),
-        status: "processing",
-      }),
-    );
-    mocks.finishScheduledBroadcast.mockImplementation(async (id, patch) => ({
-      id,
-      ...patch,
+    mocks.maintainScheduledBroadcastLifecycle.mockResolvedValue({
+      retryable_failed_count: 0,
+      failed_count: 0,
+      unknown_outcome_count: 0,
+    });
+    mocks.renewScheduledBroadcastLease.mockImplementation(async (args) => ({
+      id: args.id,
+      claim_token: args.claimToken,
     }));
-    mocks.getAutomationRunForScheduledBroadcast.mockResolvedValue({
-      id: runId,
-      organization_id: 7,
-      scheduled_broadcast_id: broadcastAId,
-      status: "materialized",
-    });
-    mocks.markAutomationRunProcessing.mockResolvedValue({
-      id: runId,
-      organization_id: 7,
-      scheduled_broadcast_id: broadcastAId,
-      status: "processing",
-    });
-    mocks.markAutomationRunSent.mockResolvedValue({
-      id: runId,
-      status: "sent",
-    });
-    mocks.markAutomationRunFailed.mockResolvedValue({
-      id: runId,
-      status: "failed",
-    });
+    mocks.markScheduledBroadcastSendStarted.mockImplementation(async (args) => ({
+      id: args.id,
+      claim_token: args.claimToken,
+      send_started_at: "2026-07-20T10:00:00.000Z",
+    }));
+    mocks.completeScheduledBroadcast.mockResolvedValue(broadcast({ status: "sent" }));
     mocks.sendTeamsBroadcast.mockResolvedValue({
       ok: 1,
       failed: 0,
-      results: [{ ok: true }],
+      results: [{ userId: 11, ok: true, status: 202, providerMessageId: "teams-1" }],
     });
-    mocks.sendWhatsappBroadcast.mockResolvedValue({
-      ok: 1,
-      failed: 0,
-      results: [{ ok: true }],
-    });
-
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
     if (originalCronSecret === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = originalCronSecret;
-    logSpy.mockRestore();
-    warnSpy.mockRestore();
-    errorSpy.mockRestore();
   });
 
-  it("does not call a provider when the automation run claim returns null", async () => {
-    mocks.getDueScheduledBroadcasts.mockResolvedValue([broadcast()]);
-    mocks.markAutomationRunProcessing.mockResolvedValue(null);
-
+  it("runs maintenance before atomically claiming a batch", async () => {
+    mocks.claimDueScheduledBroadcasts.mockResolvedValue([]);
     const response = await processBroadcastsGet(request());
-    const body = await response.json();
-
-    expect(body).toMatchObject({ processed: 1, failed: 1 });
-    expect(mocks.sendTeamsBroadcast).not.toHaveBeenCalled();
-    expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
-    expect(mocks.markAutomationRunFailed).not.toHaveBeenCalled();
-    expect(mocks.finishScheduledBroadcast).toHaveBeenCalledWith(broadcastAId, {
-      status: "failed",
-    });
-  });
-
-  it("allows at most one provider call for two broadcasts naming the same run", async () => {
-    const linked = broadcast();
-    const historicalDuplicate = broadcast({
-      id: broadcastBId,
-      automationRunId: null,
-    });
-    mocks.getDueScheduledBroadcasts.mockResolvedValue([
-      linked,
-      historicalDuplicate,
-    ]);
-    mocks.getAutomationRunForScheduledBroadcast.mockImplementation(
-      async ({ scheduledBroadcastId }) =>
-        scheduledBroadcastId === broadcastAId
-          ? {
-              id: runId,
-              organization_id: 7,
-              scheduled_broadcast_id: broadcastAId,
-              status: "materialized",
-            }
-          : null,
+    expect(response.status).toBe(200);
+    expect(mocks.maintainScheduledBroadcastLifecycle).toHaveBeenCalledBefore(
+      mocks.claimDueScheduledBroadcasts,
     );
-
-    const response = await processBroadcastsGet(request());
-    const body = await response.json();
-
-    expect(body).toMatchObject({ processed: 2, sent: 1, failed: 1 });
-    expect(mocks.sendTeamsBroadcast).toHaveBeenCalledTimes(1);
-    expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
+    expect(mocks.claimDueScheduledBroadcasts).toHaveBeenCalledWith(
+      expect.objectContaining({ leaseSeconds: 120, maxAttempts: 3 }),
+    );
   });
 
-  it("keeps the historical NULL automation_run_id compatibility path", async () => {
-    const historical = broadcast({ automationRunId: null });
-    mocks.getDueScheduledBroadcasts.mockResolvedValue([historical]);
-
-    const response = await processBroadcastsGet(request());
-    const body = await response.json();
-
-    expect(body).toMatchObject({ processed: 1, sent: 1, failed: 0 });
-    expect(mocks.getAutomationRunForScheduledBroadcast).toHaveBeenCalledWith({
-      id: runId,
-      organizationId: 7,
-      scheduledBroadcastId: broadcastAId,
-    });
+  it("marks send started before one sender invocation and persists a compact provider result", async () => {
+    mocks.claimDueScheduledBroadcasts.mockResolvedValue([broadcast()]);
+    await processBroadcastsGet(request());
+    expect(mocks.markScheduledBroadcastSendStarted).toHaveBeenCalledBefore(
+      mocks.sendTeamsBroadcast,
+    );
     expect(mocks.sendTeamsBroadcast).toHaveBeenCalledTimes(1);
+    expect(mocks.completeScheduledBroadcast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "sent",
+        claimToken: "00000000-0000-4000-8000-000000000031",
+        providerResult: {
+          ok: 1,
+          failed: 0,
+          recipients: [{ userId: 11, ok: true, status: 202, providerMessageId: "teams-1" }],
+        },
+      }),
+    );
   });
 
-  it("rejects disagreement between structural origin and legacy payload", async () => {
-    const mismatched = broadcast({
-      payloadAutomationRunId: "00000000-0000-4000-8000-000000000099",
-    });
-    mocks.getDueScheduledBroadcasts.mockResolvedValue([mismatched]);
-
-    const response = await processBroadcastsGet(request());
-    const body = await response.json();
-
-    expect(body).toMatchObject({ processed: 1, failed: 1 });
-    expect(mocks.getAutomationRunForScheduledBroadcast).not.toHaveBeenCalled();
-    expect(mocks.markAutomationRunProcessing).not.toHaveBeenCalled();
+  it("does not call the sender when mark send started loses ownership", async () => {
+    mocks.claimDueScheduledBroadcasts.mockResolvedValue([broadcast()]);
+    mocks.markScheduledBroadcastSendStarted.mockResolvedValue(null);
+    await processBroadcastsGet(request());
     expect(mocks.sendTeamsBroadcast).not.toHaveBeenCalled();
-    expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
+  });
+
+  it("marks a timeout after send started as unknown_outcome, never retryable_failed", async () => {
+    mocks.claimDueScheduledBroadcasts.mockResolvedValue([broadcast()]);
+    mocks.sendTeamsBroadcast.mockRejectedValue(new Error("timeout after provider acceptance"));
+    await processBroadcastsGet(request());
+    expect(mocks.completeScheduledBroadcast).toHaveBeenLastCalledWith(
+      expect.objectContaining({ outcome: "unknown_outcome" }),
+    );
+  });
+
+  it("allows at most one sender invocation when two cron requests race for one row", async () => {
+    let claimed = false;
+    mocks.claimDueScheduledBroadcasts.mockImplementation(async () => {
+      if (claimed) return [];
+      claimed = true;
+      return [broadcast()];
+    });
+    await Promise.all([processBroadcastsGet(request()), processBroadcastsGet(request())]);
+    expect(mocks.sendTeamsBroadcast).toHaveBeenCalledTimes(1);
   });
 });

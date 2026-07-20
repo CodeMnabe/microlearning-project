@@ -477,6 +477,7 @@ export default function ScheduledPage() {
         nextPayload.recipients = recipients;
       }
 
+      const isCancellation = formData.status === "cancelled";
       const response = await fetch(
         `/api/scheduled-broadcasts/${editingItem.id}`,
         {
@@ -484,15 +485,16 @@ export default function ScheduledPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            channel: formData.channel,
-            scheduled_for: scheduledIso,
-            timezone: formData.timezone.trim() || "Europe/Lisbon",
-            status:
-              formData.status === "scheduled" ? "queued" : formData.status,
-            payload: nextPayload,
-            recipient_count: recipients.length,
-          }),
+          body: JSON.stringify(
+            isCancellation
+              ? { status: "cancelled" }
+              : {
+                  scheduled_for: scheduledIso,
+                  timezone: formData.timezone.trim() || "Europe/Lisbon",
+                  expected_updated_at:
+                    editingItem.updatedAt || editingItem.raw?.updated_at,
+                },
+          ),
         },
       );
 
@@ -561,7 +563,10 @@ export default function ScheduledPage() {
         );
       }
 
-      setItems((prev) => prev.filter((row) => row.id !== item.id));
+        const normalized = normalizeBroadcast(result.item);
+        setItems((prev) =>
+          prev.map((row) => (row.id === normalized.id ? normalized : row)),
+        );
 
       if (selectedItem?.id === item.id) {
         setIsViewModalOpen(false);
