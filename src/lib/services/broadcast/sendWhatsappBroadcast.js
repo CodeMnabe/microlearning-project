@@ -3,7 +3,14 @@ import crypto from "crypto";
 import { toE164 } from "@/lib/whatsapp/E164";
 import { getUserById } from "@/lib/repos/user.repo";
 import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
-import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
+import {
+  completePendingOutreachTemplateReservation,
+  createPendingOutreach,
+  failPendingOutreachTemplateReservation,
+  markPendingOutreachTemplateSendStarted,
+  renewPendingOutreachTemplateReservation,
+} from "@/lib/repos/pendingOutreach.repo";
+import { startLeaseHeartbeat } from "@/lib/webhooks/leaseHeartbeat";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
   getWhatsappTemplateById,
@@ -582,46 +589,153 @@ export async function sendWhatsappBroadcast(input = {}) {
         resolvedTemplate,
       });
 
-      const r = await sendTemplate({
-        endpoint: messagesEndpoint,
-        accessKey,
-        contact,
-        template: resolvedTemplate,
-        kvPairs,
-      });
+      const needsPendingOutreach = Boolean(user && hasResolvedFreeformContent);
+      const reservationWorkerId = `template-reservation:${crypto.randomUUID()}`;
+      const pendingReservation = needsPendingOutreach
+        ? await createPendingOutreach({
+            orgId,
+            userId: user.id,
+            payload: {
+              message: resolvedMessage,
+              imageUrls: onlyImageUrls,
+            },
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            messageChainId: chainMetadata?.messageChainId || null,
+            messageChainStepId: chainMetadata?.messageChainStepId || null,
+            messageChainRecipientId:
+              chainMetadata?.messageChainRecipientId || null,
+            messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
+            workerId: reservationWorkerId,
+          })
+        : null;
 
-      console.log("[WA template result]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        ok: r.ok,
-        status: r.status,
-        providerMessageId: r.providerMessageId,
-        data: r.data,
-      });
-
-      if (r.ok && user && hasResolvedFreeformContent) {
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const templateMessageId = r.providerMessageId;
-
-        await createPendingOutreach({
-          orgId,
+      if (needsPendingOutreach && !pendingReservation) {
+        return {
+          recipient: label,
+          to,
+          whatsappBsuid,
+          birdContactId,
+          kind: "template",
           userId: user.id,
-          payload: {
-            message: resolvedMessage,
-            imageUrls: onlyImageUrls,
+          userName: user.name || recipient.name || null,
+          resolvedMessage,
+          ok: false,
+          status: 409,
+          retryable: false,
+          outcome: "pending_outreach_active",
+          data: {
+            error:
+              "An active pending outreach already exists for this organization and user.",
           },
-          expiresAt,
-          templateMessageId,
-          messageChainId: chainMetadata?.messageChainId || null,
-          messageChainStepId: chainMetadata?.messageChainStepId || null,
-          messageChainRecipientId:
-            chainMetadata?.messageChainRecipientId || null,
-          messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
+        };
+      }
+
+      let r;
+      const reservationHeartbeat = pendingReservation
+        ? startLeaseHeartbeat({
+            label: "pending outreach template reservation",
+            leaseSeconds: 120,
+            renew: () =>
+              renewPendingOutreachTemplateReservation({
+                id: pendingReservation.id,
+                organizationId: orgId,
+                userId: user.id,
+                claimToken: pendingReservation.claim_token,
+                leaseSeconds: 120,
+              }),
+          })
+        : null;
+      try {
+        if (pendingReservation) {
+          const started = await markPendingOutreachTemplateSendStarted({
+            id: pendingReservation.id,
+            organizationId: orgId,
+            userId: user.id,
+            claimToken: pendingReservation.claim_token,
+          });
+          if (!started) {
+            throw new BroadcastError(
+              "Pending outreach template reservation was lost before provider send",
+              409,
+            );
+          }
+          reservationHeartbeat.assertOwned();
+        }
+
+        r = await sendTemplate({
+          endpoint: messagesEndpoint,
+          accessKey,
+          contact,
+          template: resolvedTemplate,
+          kvPairs,
         });
+        reservationHeartbeat?.assertOwned();
+
+        console.log("[WA template result]", {
+          sendGroupId,
+          recipient: label,
+          to,
+          whatsappBsuid,
+          birdContactId,
+          contact,
+          ok: r.ok,
+          status: r.status,
+          providerMessageId: r.providerMessageId,
+          data: r.data,
+        });
+
+        if (pendingReservation) {
+          if (r.ok) {
+            if (!r.providerMessageId) {
+              throw new Error(
+                "Bird accepted a template without a provider message identifier",
+              );
+            }
+            const completed = await completePendingOutreachTemplateReservation({
+              id: pendingReservation.id,
+              organizationId: orgId,
+              userId: user.id,
+              claimToken: pendingReservation.claim_token,
+              templateMessageId: r.providerMessageId,
+            });
+            if (!completed) {
+              throw new Error(
+                "Pending outreach template reservation was lost before completion",
+              );
+            }
+          } else {
+            await failPendingOutreachTemplateReservation({
+              id: pendingReservation.id,
+              organizationId: orgId,
+              userId: user.id,
+              claimToken: pendingReservation.claim_token,
+              lastError: `Bird rejected template with status ${r.status || "unknown"}`,
+            });
+          }
+        }
+      } catch (error) {
+        if (pendingReservation) {
+          try {
+            await failPendingOutreachTemplateReservation({
+              id: pendingReservation.id,
+              organizationId: orgId,
+              userId: user.id,
+              claimToken: pendingReservation.claim_token,
+              lastError: error?.message || String(error),
+            });
+          } catch (reservationError) {
+            console.error(
+              "Could not persist pending outreach template failure",
+              {
+                pendingOutreachId: pendingReservation.id,
+                error: reservationError?.message || String(reservationError),
+              },
+            );
+          }
+        }
+        throw error;
+      } finally {
+        await reservationHeartbeat?.stop();
       }
 
       return {

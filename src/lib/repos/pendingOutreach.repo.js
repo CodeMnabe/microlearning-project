@@ -13,64 +13,111 @@ export async function createPendingOutreach({
   userId,
   payload,
   expiresAt, // Date or ISO string
-  templateMessageId = null,
   messageChainId = null,
   messageChainStepId = null,
   messageChainRecipientId = null,
   messageChainStepIndex = null,
+  workerId,
+  leaseSeconds = 120,
 }) {
   const expiresISO =
     expiresAt instanceof Date
       ? expiresAt.toISOString()
       : new Date(expiresAt).toISOString();
   const { data, error } = await supabase
-    .from("pending_outreach")
-    .insert([
-      {
-        org_id: orgId,
-        user_id: userId,
-        payload, // jsonb
-        status: "pending",
-        expires_at: expiresISO, // <- toISOString() (was toIsoString)
-        template_message_id: templateMessageId,
-        message_chain_id: messageChainId,
-        message_chain_step_id: messageChainStepId,
-        message_chain_recipient_id: messageChainRecipientId,
-        message_chain_step_index: messageChainStepIndex,
-      },
-    ])
-    .select()
-    .single();
+    .rpc("reserve_pending_outreach", {
+      p_organization_id: orgId,
+      p_user_id: userId,
+      p_payload: payload,
+      p_expires_at: expiresISO,
+      p_message_chain_id: messageChainId,
+      p_message_chain_step_id: messageChainStepId,
+      p_message_chain_recipient_id: messageChainRecipientId,
+      p_message_chain_step_index: messageChainStepIndex,
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
   if (error) throw error;
-  return data;
+  return data ?? null;
 }
 
-export async function getAllPendingOutreachByUser(userId) {
+export async function completePendingOutreachTemplateReservation({
+  id,
+  organizationId,
+  userId,
+  claimToken,
+  templateMessageId,
+}) {
   const { data, error } = await supabase
-    .from("pending_outreach")
-    .select(
-      `
-        id,
-        org_id,
-        user_id,
-        payload,
-        status,
-        expires_at,
-        template_message_id,
-        message_chain_id,
-        message_chain_step_id,
-        message_chain_recipient_id,
-        message_chain_step_index,
-        created_at
-      `,
-    )
-    .eq("user_id", userId)
-    .eq("status", "pending")
-    .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: true });
-
+    .rpc("complete_pending_outreach_template_reservation", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_claim_token: claimToken,
+      p_template_message_id: templateMessageId,
+    })
+    .maybeSingle();
   if (error) throw error;
-  return data ?? [];
+  return data ?? null;
+}
+
+export async function failPendingOutreachTemplateReservation({
+  id,
+  organizationId,
+  userId,
+  claimToken,
+  lastError = null,
+}) {
+  const { data, error } = await supabase
+    .rpc("fail_pending_outreach_template_reservation", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_claim_token: claimToken,
+      p_last_error: lastError,
+    })
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function renewPendingOutreachTemplateReservation({
+  id,
+  organizationId,
+  userId,
+  claimToken,
+  leaseSeconds = 120,
+}) {
+  const { data, error } = await supabase
+    .rpc("renew_pending_outreach_template_reservation", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_claim_token: claimToken,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function markPendingOutreachTemplateSendStarted({
+  id,
+  organizationId,
+  userId,
+  claimToken,
+}) {
+  const { data, error } = await supabase
+    .rpc("mark_pending_outreach_template_send_started", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_claim_token: claimToken,
+    })
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
 }
 
 export async function markPendingOutreachReplied(id, replyMessageId) {
@@ -88,27 +135,40 @@ export async function markPendingOutreachReplied(id, replyMessageId) {
   return data;
 }
 
-export async function claimPendingOutreachForWebhook({
-  id,
+export async function claimPendingOutreachForReply({
   organizationId,
   userId,
   webhookEventId,
   eventClaimToken,
+  workerId,
   leaseSeconds = 120,
 }) {
   const { data, error } = await supabase
-    .rpc("claim_pending_outreach_for_webhook", {
-      p_pending_outreach_id: id,
+    .rpc("claim_pending_outreach_for_reply", {
       p_organization_id: organizationId,
       p_user_id: userId,
       p_webhook_event_id: webhookEventId,
       p_event_claim_token: eventClaimToken,
+      p_worker_id: workerId,
       p_lease_seconds: leaseSeconds,
     })
     .maybeSingle();
-
   if (error) throw error;
   return data ?? null;
+}
+
+export async function maintainPendingOutreach({ limit = 25 } = {}) {
+  const { data, error } = await supabase.rpc("maintain_pending_outreach", {
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (
+    data?.[0] ?? {
+      failed_count: 0,
+      expired_count: 0,
+      unknown_outcome_count: 0,
+    }
+  );
 }
 
 export async function renewPendingOutreachForWebhook({

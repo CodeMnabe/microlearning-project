@@ -31,9 +31,7 @@ import {
   markMessageReadByProviderId,
 } from "@/lib/repos/messages.repo";
 import {
-  getAllPendingOutreachByUser,
-  markPendingOutreachReplied,
-  claimPendingOutreachForWebhook,
+  claimPendingOutreachForReply,
   markPendingOutreachSendStarted,
   renewPendingOutreachForWebhook,
   transitionPendingOutreachForWebhook,
@@ -829,16 +827,25 @@ async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
     return;
   }
 
-  const pendingMessages = await getAllPendingOutreachByUser(user.id);
+  const pendingMessage = webhookContext?.eventId
+    ? await claimPendingOutreachForReply({
+        organizationId: user.organization_id,
+        userId: user.id,
+        webhookEventId: webhookContext.eventId,
+        eventClaimToken: webhookContext.claimToken,
+        workerId: webhookContext.workerId,
+        leaseSeconds: webhookContext.leaseSeconds || 120,
+      })
+    : null;
 
-  if (Array.isArray(pendingMessages) && pendingMessages.length > 0) {
+  if (pendingMessage) {
     await handlePendingMessages({
       user,
       inboundMsgId,
       contactId,
       inboundIdentity: identity,
       inboundText: text,
-      pendingMessages,
+      pendingMessage,
       sentChannelId,
       webhookContext,
     });
@@ -977,7 +984,7 @@ async function handlePendingMessages({
   contactId,
   inboundIdentity,
   inboundText,
-  pendingMessages,
+  pendingMessage,
   sentChannelId,
   webhookContext = null,
 }) {
@@ -1007,39 +1014,24 @@ async function handlePendingMessages({
   const outgoingChannelId =
     normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
-  for (const row of pendingMessages) {
-    const claimed = webhookContext?.eventId
-      ? await claimPendingOutreachForWebhook({
+  const row = pendingMessage;
+  const claimed = row;
+
+  const processPending = async () => {
+    const pendingHeartbeat = startLeaseHeartbeat({
+      label: "pending outreach",
+      leaseSeconds: webhookContext.leaseSeconds || 120,
+      renew: () =>
+        renewPendingOutreachForWebhook({
           id: row.id,
           organizationId: user.organization_id,
           userId: user.id,
           webhookEventId: webhookContext.eventId,
           eventClaimToken: webhookContext.claimToken,
+          claimToken: claimed.claim_token,
           leaseSeconds: webhookContext.leaseSeconds || 120,
-        })
-      : row;
-
-    if (!claimed) {
-      continue;
-    }
-
-    const pendingHeartbeat = webhookContext?.eventId
-      ? startLeaseHeartbeat({
-          label: "pending outreach",
-          leaseSeconds: webhookContext.leaseSeconds || 120,
-          renew: () =>
-            renewPendingOutreachForWebhook({
-              id: row.id,
-              organizationId: user.organization_id,
-              userId: user.id,
-              webhookEventId: webhookContext.eventId,
-              eventClaimToken: webhookContext.claimToken,
-              claimToken: claimed.claim_token,
-              leaseSeconds: webhookContext.leaseSeconds || 120,
-            }),
-        })
-      : null;
-
+        }),
+    });
     try {
       const p = safePayload(row.payload);
 
@@ -1052,7 +1044,7 @@ async function handlePendingMessages({
           userId: user.id,
         });
 
-        continue;
+        return;
       }
 
       const body = hasImages
@@ -1101,25 +1093,35 @@ async function handlePendingMessages({
       pendingHeartbeat?.assertOwned();
 
       if (!sendRes.ok) {
+        const pendingStatus =
+          sendRes.outcome === "unknown"
+            ? "unknown_outcome"
+            : Number(sendRes.status || 0) >= 500
+              ? "retryable_failed"
+              : "failed";
+        let effectivePendingStatus = pendingStatus;
         if (webhookContext?.eventId) {
-          await transitionPendingOutreachForWebhook({
+          const transitioned = await transitionPendingOutreachForWebhook({
             id: row.id,
             organizationId: user.organization_id,
             userId: user.id,
             webhookEventId: webhookContext.eventId,
             eventClaimToken: webhookContext.claimToken,
             claimToken: claimed.claim_token,
-            status:
-              sendRes.outcome === "unknown"
-                ? "unknown_outcome"
-                : Number(sendRes.status || 0) >= 500
-                  ? "retryable_failed"
-                  : "failed",
+            status: pendingStatus,
             lastError: `Bird rejected pending outreach with status ${sendRes.status || "unknown"}`,
           });
+          effectivePendingStatus = transitioned?.status || "unknown_outcome";
         }
 
-        throwForProviderResult(sendRes, "Bird");
+        const error = new Error(
+          "Bird did not accept the requested outbound message",
+        );
+        error.webhookState = effectivePendingStatus;
+        if (effectivePendingStatus === "retryable_failed") {
+          error.beforeExternalRequest = true;
+        }
+        throw error;
       }
 
       const outboundId = sendRes.providerMessageId;
@@ -1220,13 +1222,23 @@ async function handlePendingMessages({
           error.webhookState = "retryable_failed";
           throw error;
         }
-      } else {
-        await markPendingOutreachReplied(row.id, inboundMsgId);
       }
     } finally {
       await pendingHeartbeat?.stop();
     }
-  }
+  };
+
+  return runWebhookEffect({
+    context: webhookContext,
+    effectType: "pending_outreach_reply",
+    effectKey: `pending-outreach:${row.id}`,
+    isExternal: true,
+    request: {
+      pendingOutreachId: row.id,
+      inboundMessageId: inboundMsgId,
+    },
+    operation: processPending,
+  });
 }
 
 async function getAssistantFromUser(user, organization) {

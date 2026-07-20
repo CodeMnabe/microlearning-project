@@ -90,7 +90,8 @@ describe("webhook processing behaviour", () => {
   });
 
   it("coordinates pending outreach and read receipts through claims/effects", () => {
-    expect(messageBirdRoute).toMatch(/claimPendingOutreachForWebhook/);
+    expect(messageBirdRoute).toMatch(/claimPendingOutreachForReply/);
+    expect(messageBirdRoute).toMatch(/pending-outreach:\$\{row\.id\}/);
     expect(messageBirdRoute).toMatch(/effectType: "persist_read_receipt"/);
     expect(messageBirdRoute).toMatch(/effectType: "read_chain_processing"/);
   });

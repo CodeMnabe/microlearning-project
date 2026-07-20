@@ -137,6 +137,9 @@ export async function processWebhookEventBatch(options = {}) {
     Math.max(Number(options.leaseSeconds || DEFAULT_LEASE_SECONDS), 15),
     900,
   );
+  const { maintainPendingOutreach } =
+    await import("@/lib/repos/pendingOutreach.repo");
+  const maintenance = await maintainPendingOutreach({ limit });
   const events = await claimWebhookEvents({ workerId, limit, leaseSeconds });
   const results = [];
 
@@ -150,5 +153,5 @@ export async function processWebhookEventBatch(options = {}) {
     );
   }
 
-  return { workerId, claimed: events.length, results };
+  return { workerId, claimed: events.length, maintenance, results };
 }

@@ -173,6 +173,26 @@ create unique index message_webhook_effect_key_idx
   where webhook_event_id is not null
     and webhook_effect_key is not null;
 
+-- The historic CHECK still permits this status.  Check it before replacing the
+-- constraint so the migration fails with a reconcilable error instead of an
+-- opaque constraint violation.
+do $$
+begin
+  if exists (
+    select 1
+    from public.pending_outreach
+    where status = 'waiting_template_reply'
+  ) then
+    raise exception using
+      errcode = '23514',
+      message = 'pending_outreach migration blocked: historical waiting_template_reply rows require manual reconciliation';
+  end if;
+end
+$$;
+
+alter table public.pending_outreach
+  alter column status set default 'pending';
+
 alter table public.pending_outreach
   drop constraint if exists pending_outreach_status_check,
   add column attempt_count integer not null default 0,
