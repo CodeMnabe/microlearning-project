@@ -9,9 +9,7 @@ import {
   getFirstAssistantInOrg,
 } from "@/lib/repos/assistants.repo";
 import { createOAiThread, sendMessageToAi } from "@/lib/services/oAi.services";
-import {
-  getOrganizationByTeamsTenantId,
-} from "@/lib/repos/organizations.repo";
+import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 import { createMessage } from "@/lib/repos/messages.repo";
 
 import {
@@ -25,23 +23,22 @@ import {
   getUserThreadForChannel,
   getGroupThreadForConversation,
 } from "@/lib/repos/threads.repo";
-import {
-  upsertTeamsInstallation,
-} from "@/lib/repos/teamsInstallations.repo";
+import { upsertTeamsInstallation } from "@/lib/repos/teamsInstallations.repo";
 import { getBotToken } from "@/lib/teams/auth";
 
+import { handleApiError, requireValidTeamsRequest } from "@/lib/auth/guards";
+import { registerWebhookEvent } from "@/lib/repos/webhookEvents.repo";
 import {
-  handleApiError,
-  requireValidTeamsRequest,
-} from "@/lib/auth/guards";
+  buildTeamsEventIdentity,
+  getTeamsTenantId,
+} from "@/lib/webhooks/eventIdentity";
+import { runWebhookEffect } from "@/lib/webhooks/effectRunner";
+import { getOrCreateReservedThread } from "@/lib/webhooks/conversationReservation";
 
 function userBelongsToOrganization(user, organizationId) {
   if (!user || !organizationId) return false;
 
-  return (
-    Number(user.organization_id) ===
-    Number(organizationId)
-  );
+  return Number(user.organization_id) === Number(organizationId);
 }
 
 function assistantBelongsToOrganization(assistant, organizationId) {
@@ -50,43 +47,25 @@ function assistantBelongsToOrganization(assistant, organizationId) {
   const assistantOrganizationId =
     assistant.organization_id ?? assistant.org_id ?? null;
 
-  return (
-    Number(assistantOrganizationId) ===
-    Number(organizationId)
-  );
+  return Number(assistantOrganizationId) === Number(organizationId);
 }
 
-async function getTeamsUserForOrganization({
-  aadObjectId,
-  organizationId,
-}) {
+async function getTeamsUserForOrganization({ aadObjectId, organizationId }) {
   if (!aadObjectId || !organizationId) {
     return null;
   }
 
-  const user = await getUserByAadObjectId(
-    aadObjectId,
-  );
+  const user = await getUserByAadObjectId(aadObjectId);
 
   if (!user) return null;
 
-  if (
-    !userBelongsToOrganization(
-      user,
-      organizationId,
-    )
-  ) {
-    console.warn(
-      "[TEAMS] AAD user organization mismatch",
-      {
-        aadObjectId,
-        expectedOrganizationId:
-          organizationId,
-        actualOrganizationId:
-          user.organization_id,
-        userId: user.id,
-      },
-    );
+  if (!userBelongsToOrganization(user, organizationId)) {
+    console.warn("[TEAMS] AAD user organization mismatch", {
+      aadObjectId,
+      expectedOrganizationId: organizationId,
+      actualOrganizationId: user.organization_id,
+      userId: user.id,
+    });
 
     return null;
   }
@@ -94,17 +73,13 @@ async function getTeamsUserForOrganization({
   return user;
 }
 
-async function assertAssistantMatchesOrganization(
-  assistant,
-  organizationId,
-) {
+async function assertAssistantMatchesOrganization(assistant, organizationId) {
   const assistantOrganizationId =
     assistant?.organization_id ?? assistant?.org_id ?? null;
 
   if (
     !assistant ||
-    Number(assistantOrganizationId) !==
-      Number(organizationId)
+    Number(assistantOrganizationId) !== Number(organizationId)
   ) {
     const error = new Error(
       "Assistant does not belong to the Teams organization",
@@ -125,11 +100,11 @@ async function sendReply(activity, text, opts = {}) {
   } = opts;
 
   if (!serviceUrl || !conversationId) {
-    console.error("[TEAMS] sendReply missing serviceUrl/conversationId", {
-      serviceUrl,
-      conversationId,
-    });
-    return { ok: false, error: "Missing serviceUrl/conversationId" };
+    const error = new Error(
+      "Teams reply is missing serviceUrl or conversationId",
+    );
+    error.beforeExternalRequest = true;
+    throw error;
   }
 
   const token = await getBotToken();
@@ -143,19 +118,30 @@ async function sendReply(activity, text, opts = {}) {
     ...(replyToId ? { replyToId } : {}),
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let res;
+
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (cause) {
+    const error = new Error("Teams reply outcome is unknown");
+    error.cause = cause;
+    error.webhookState = "unknown_outcome";
+    throw error;
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     console.error("[TEAMS] Failed to send reply", res.status, body);
-    return { ok: false, status: res.status, body };
+    const error = new Error(`Teams rejected reply with status ${res.status}`);
+    error.webhookState = res.status >= 500 ? "retryable_failed" : "failed";
+    throw error;
   }
 
   return { ok: true };
@@ -178,34 +164,23 @@ async function cmdConnect(activity) {
   const aadObjectId = GetAadObjectId(activity);
   const fromId = GetFromId(activity);
 
-  const conversationId =
-    activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id || null;
 
-  const serviceUrl =
-    activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl || null;
 
-  const conversationType =
-    GetConversationType(activity);
+  const conversationType = GetConversationType(activity);
 
   if (!tenantId) {
     return "The Tenant Id couldn't be detected. Please try again or contact support.";
   }
 
-  const org =
-    await getOrganizationByTeamsTenantId(
-      tenantId,
-    );
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
     return "Your organization isn't registered in MyDigitalBot.com. Ask your admin or register it first.";
   }
 
-  if (
-    !aadObjectId ||
-    !fromId ||
-    !conversationId ||
-    !serviceUrl
-  ) {
+  if (!aadObjectId || !fromId || !conversationId || !serviceUrl) {
     return [
       "I'm missing required data to connect your account",
       `AAD Object ID: ${aadObjectId || "-"}`,
@@ -215,11 +190,10 @@ async function cmdConnect(activity) {
     ].join("<br>");
   }
 
-  const user =
-    await getTeamsUserForOrganization({
-      aadObjectId,
-      organizationId: org.id,
-    });
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+    organizationId: org.id,
+  });
 
   if (!user) {
     return [
@@ -230,15 +204,9 @@ async function cmdConnect(activity) {
     ].join("<br>");
   }
 
-  const assistant =
-    await getAssistantById(
-      user.assistant_id,
-    );
+  const assistant = await getAssistantById(user.assistant_id);
 
-  await assertAssistantMatchesOrganization(
-    assistant,
-    org.id,
-  );
+  await assertAssistantMatchesOrganization(assistant, org.id);
 
   await upsertTeamsInstallation({
     organization_id: org.id,
@@ -265,14 +233,11 @@ async function cmdCreateUser(args, activity) {
   const aadObjectId = GetAadObjectId(activity);
   const fromId = GetFromId(activity);
 
-  const conversationId =
-    activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id || null;
 
-  const serviceUrl =
-    activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl || null;
 
-  const conversationType =
-    GetConversationType(activity);
+  const conversationType = GetConversationType(activity);
 
   const email = Array.isArray(args)
     ? (args[0] || "").trim()
@@ -294,27 +259,16 @@ async function cmdCreateUser(args, activity) {
     return "Missing conversationId/serviceUrl. Try again in a 1:1 chat.";
   }
 
-  const org =
-    await getOrganizationByTeamsTenantId(
-      tenantId,
-    );
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
     return "Your organization isn't registered in MyDigitalBot.com. Ask your admin.";
   }
 
-  const existingByAad =
-    await getUserByAadObjectId(
-      aadObjectId,
-    );
+  const existingByAad = await getUserByAadObjectId(aadObjectId);
 
   if (existingByAad) {
-    if (
-      !userBelongsToOrganization(
-        existingByAad,
-        org.id,
-      )
-    ) {
+    if (!userBelongsToOrganization(existingByAad, org.id)) {
       return (
         "This Teams account is already linked " +
         "to a user in another organization. " +
@@ -322,15 +276,9 @@ async function cmdCreateUser(args, activity) {
       );
     }
 
-    const assistant =
-      await getAssistantById(
-        existingByAad.assistant_id,
-      );
+    const assistant = await getAssistantById(existingByAad.assistant_id);
 
-    await assertAssistantMatchesOrganization(
-      assistant,
-      org.id,
-    );
+    await assertAssistantMatchesOrganization(assistant, org.id);
 
     await upsertTeamsInstallation({
       organization_id: org.id,
@@ -359,16 +307,9 @@ async function cmdCreateUser(args, activity) {
   let userRefByEmail = null;
 
   try {
-    userRefByEmail =
-      await getUserByEmail(
-        email,
-        tenantId,
-      );
+    userRefByEmail = await getUserByEmail(email, tenantId);
   } catch (error) {
-    if (
-      error.code ===
-      "AMBIGUOUS_EMAIL_TENANT"
-    ) {
+    if (error.code === "AMBIGUOUS_EMAIL_TENANT") {
       return (
         `Este email: ${email} já existe em duplicado ` +
         "na aplicação, por favor pede ao administrador " +
@@ -380,47 +321,25 @@ async function cmdCreateUser(args, activity) {
   }
 
   const userIdByEmail =
-    typeof userRefByEmail === "object"
-      ? userRefByEmail?.id
-      : userRefByEmail;
+    typeof userRefByEmail === "object" ? userRefByEmail?.id : userRefByEmail;
 
   if (userIdByEmail) {
-    const fullUser =
-      await getUserById(
-        userIdByEmail,
-      );
+    const fullUser = await getUserById(userIdByEmail);
 
-    if (
-      !userBelongsToOrganization(
-        fullUser,
-        org.id,
-      )
-    ) {
+    if (!userBelongsToOrganization(fullUser, org.id)) {
       return (
         "The email belongs to a user in another organization. " +
         "Ask your administrator to correct the account."
       );
     }
 
-    const assistant =
-      await getAssistantById(
-        fullUser.assistant_id,
-      );
+    const assistant = await getAssistantById(fullUser.assistant_id);
 
-    await assertAssistantMatchesOrganization(
-      assistant,
-      org.id,
-    );
+    await assertAssistantMatchesOrganization(assistant, org.id);
 
-    const alreadyLinked =
-      await getUserByAadObjectId(
-        aadObjectId,
-      );
+    const alreadyLinked = await getUserByAadObjectId(aadObjectId);
 
-    if (
-      !alreadyLinked ||
-      Number(alreadyLinked.id) !== Number(userIdByEmail)
-    ) {
+    if (!alreadyLinked || Number(alreadyLinked.id) !== Number(userIdByEmail)) {
       return (
         "For security, an existing account can only be connected after " +
         "an administrator has linked this Teams identity to it."
@@ -446,8 +365,7 @@ async function cmdCreateUser(args, activity) {
     });
 
     return (
-      `Conta encontrada para ${email}. ` +
-      "Teams ligado e conversa conectada."
+      `Conta encontrada para ${email}. ` + "Teams ligado e conversa conectada."
     );
   }
 
@@ -457,19 +375,90 @@ async function cmdCreateUser(args, activity) {
   );
 }
 
+function isSupportedTeamsActivity(activity) {
+  return Boolean(
+    (activity?.type === "message" &&
+      typeof activity.text === "string" &&
+      activity.text.trim()) ||
+    (activity?.type === "installationUpdate" && activity.action === "add"),
+  );
+}
+
+function registrationResponse(registration) {
+  if (registration.outcome === "payload_conflict") {
+    return NextResponse.json(
+      { ok: false, error: "Webhook identity conflict" },
+      { status: 409 },
+    );
+  }
+
+  if (
+    registration.outcome === "duplicate_succeeded" ||
+    registration.outcome === "duplicate_processing"
+  ) {
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      status: registration.status,
+    });
+  }
+
+  return NextResponse.json(
+    { ok: true, accepted: true, status: registration.status },
+    { status: 202 },
+  );
+}
+
+export async function processTeamsWebhookEvent(
+  activity,
+  webhookContext = null,
+) {
+  const dispatch = async () => {
+    if (
+      activity.type === "message" &&
+      typeof activity.text === "string" &&
+      activity.text.trim()
+    ) {
+      await handleUserInteraction(activity, webhookContext);
+      return;
+    }
+
+    if (activity.type === "installationUpdate" && activity.action === "add") {
+      const conversationType = GetConversationType(activity);
+      if (
+        conversationType === "channel" ||
+        conversationType === "groupChat" ||
+        activity.conversation?.isGroup === true
+      ) {
+        await handleGroupInstallation(activity, webhookContext);
+      } else {
+        await handleUserInstallation(activity);
+      }
+    }
+  };
+
+  if (!webhookContext?.eventId) return dispatch();
+
+  return runWebhookEffect({
+    context: webhookContext,
+    effectType: "teams_event_dispatch",
+    effectKey: "dispatch",
+    isExternal: true,
+    request: activity,
+    operation: dispatch,
+  });
+}
+
 async function cmdReconnect(args, activity) {
   const tenantId = GetTenantId(activity);
   const aadObjectId = GetAadObjectId(activity);
   const fromId = GetFromId(activity);
 
-  const conversationId =
-    activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id || null;
 
-  const serviceUrl =
-    activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl || null;
 
-  const conversationType =
-    GetConversationType(activity);
+  const conversationType = GetConversationType(activity);
 
   const email = Array.isArray(args)
     ? (args[0] || "").trim()
@@ -491,10 +480,7 @@ async function cmdReconnect(args, activity) {
     return "Missing conversationId/serviceUrl. Try again in a 1:1 chat.";
   }
 
-  const org =
-    await getOrganizationByTeamsTenantId(
-      tenantId,
-    );
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
     return "Your organization isn't registered in MyDigitalBot.com.";
@@ -503,69 +489,42 @@ async function cmdReconnect(args, activity) {
   let userRef;
 
   try {
-    userRef = await getUserByEmail(
-      email,
-      tenantId,
-    );
+    userRef = await getUserByEmail(email, tenantId);
   } catch (error) {
-    if (
-      error.code ===
-      "AMBIGUOUS_EMAIL_TENANT"
-    ) {
+    if (error.code === "AMBIGUOUS_EMAIL_TENANT") {
       return "That email exists multiple times in this tenant. Ask your admin to fix duplicates.";
     }
 
     throw error;
   }
 
-  const userId =
-    typeof userRef === "object"
-      ? userRef?.id
-      : userRef;
+  const userId = typeof userRef === "object" ? userRef?.id : userRef;
 
   if (!userId) {
     return `No user found for ${email} in this tenant.`;
   }
 
-  const fullUser =
-    await getUserById(userId);
+  const fullUser = await getUserById(userId);
 
-  if (
-    !userBelongsToOrganization(
-      fullUser,
-      org.id,
-    )
-  ) {
+  if (!userBelongsToOrganization(fullUser, org.id)) {
     return (
       "The selected user does not belong to this organization. " +
       "Ask your administrator to correct the account."
     );
   }
 
-  const alreadyLinked =
-    await getUserByAadObjectId(
-      aadObjectId,
-    );
+  const alreadyLinked = await getUserByAadObjectId(aadObjectId);
 
-  if (
-    !alreadyLinked ||
-    String(alreadyLinked.id) !== String(userId)
-  ) {
+  if (!alreadyLinked || String(alreadyLinked.id) !== String(userId)) {
     return (
       "For security, an administrator must link this Teams identity " +
       "to the requested account before reconnecting it."
     );
   }
 
-  const assistant =
-    await getAssistantById(
-      fullUser.assistant_id,
-    );
+  const assistant = await getAssistantById(fullUser.assistant_id);
 
-  await assertAssistantMatchesOrganization(
-    assistant,
-    org.id,
-  );
+  await assertAssistantMatchesOrganization(assistant, org.id);
 
   await updateUser(userId, {
     teamsAadObjectId: aadObjectId,
@@ -588,13 +547,9 @@ async function cmdReconnect(args, activity) {
   return `Linked Teams to ${email} and connected this conversation.`;
 }
 
-async function CheckForCommandMessage(
-  activity,
-) {
+async function CheckForCommandMessage(activity) {
   const message =
-    typeof activity?.text === "string"
-      ? activity.text.trim()
-      : "";
+    typeof activity?.text === "string" ? activity.text.trim() : "";
 
   if (!message) {
     return { isCommand: false };
@@ -608,18 +563,11 @@ async function CheckForCommandMessage(
     return { isCommand: false };
   }
 
-  const name =
-    hasCommand[2].toLowerCase();
+  const name = hasCommand[2].toLowerCase();
 
-  const argString = (
-    hasCommand[3] ??
-    hasCommand[4] ??
-    ""
-  ).trim();
+  const argString = (hasCommand[3] ?? hasCommand[4] ?? "").trim();
 
-  const args = argString
-    ? argString.split(/\s+/)
-    : [];
+  const args = argString ? argString.split(/\s+/) : [];
 
   return {
     isCommand: true,
@@ -650,22 +598,17 @@ async function CheckCommands(cmd, activity) {
       text = `Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br>Para mais opções, escreve --help`;
       return text;
     case "reconnect":
-      return await cmdReconnect(
-        cmd.args,
-        activity,
-      );
+      return await cmdReconnect(cmd.args, activity);
     default:
       return `Comando desconhecido: ${cmd.command}<br>Tenta --help`;
   }
 }
 
-async function handleUserInteraction(activity) {
-  const cmd =
-    await CheckForCommandMessage(activity);
+async function handleUserInteraction(activity, webhookContext = null) {
+  const cmd = await CheckForCommandMessage(activity);
 
   if (cmd.isCommand) {
-    const text =
-      await CheckCommands(cmd, activity);
+    const text = await CheckCommands(cmd, activity);
 
     await sendReply(activity, text);
     return;
@@ -673,10 +616,7 @@ async function handleUserInteraction(activity) {
 
   const tenantId = GetTenantId(activity);
 
-  const org =
-    await getOrganizationByTeamsTenantId(
-      tenantId,
-    );
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
     await sendReply(
@@ -687,38 +627,25 @@ async function handleUserInteraction(activity) {
     return;
   }
 
-  const aadObjectId =
-    GetAadObjectId(activity);
+  const aadObjectId = GetAadObjectId(activity);
 
   const message =
-    typeof activity?.text === "string"
-      ? activity.text.trim()
-      : "";
+    typeof activity?.text === "string" ? activity.text.trim() : "";
 
-  const conversationId =
-    activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id || null;
 
-  const conversationType =
-    GetConversationType(activity);
+  const conversationType = GetConversationType(activity);
 
-  if (
-    !aadObjectId ||
-    !conversationId ||
-    !message
-  ) {
-    await sendReply(
-      activity,
-      "Invalid Teams message.",
-    );
+  if (!aadObjectId || !conversationId || !message) {
+    await sendReply(activity, "Invalid Teams message.");
 
     return;
   }
 
-  const user =
-    await getTeamsUserForOrganization({
-      aadObjectId,
-      organizationId: org.id,
-    });
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+    organizationId: org.id,
+  });
 
   let text;
 
@@ -730,76 +657,51 @@ async function handleUserInteraction(activity) {
       "Exemplo: --register nome@email.pt<br><br>" +
       "Para mais opções, escreve: --help";
   } else {
-    const assistant =
-      await getAssistantById(
-        user.assistant_id,
-      );
+    const assistant = await getAssistantById(user.assistant_id);
 
-    await assertAssistantMatchesOrganization(
-      assistant,
-      org.id,
-    );
+    await assertAssistantMatchesOrganization(assistant, org.id);
 
     const channel = "teams";
-    let thread;
+    let existingThread;
 
     if (conversationType === "personal") {
-      thread =
-        await getUserThreadForChannel({
-          userId: user.id,
-          assistantId: assistant.id,
-          channel,
-        });
-
-      if (!thread) {
-        const aiThread =
-          await createOAiThread();
-
-        thread = await createThread({
-          userId: user.id,
-          assistantId: assistant.id,
-          aiThreadId: aiThread.id,
-          channel,
-          scope: "user",
-          externalConversationId:
-            conversationId,
-        });
-      }
+      existingThread = await getUserThreadForChannel({
+        userId: user.id,
+        assistantId: assistant.id,
+        channel,
+      });
     } else {
-      thread =
-        await getGroupThreadForConversation({
-          assistantId: assistant.id,
-          channel,
-          externalConversationId:
-            conversationId,
-        });
-
-      if (!thread) {
-        const aiThread =
-          await createOAiThread();
-
-        thread = await createThread({
-          userId: null,
-          assistantId: assistant.id,
-          aiThreadId: aiThread.id,
-          channel,
-          scope: "group",
-          externalConversationId:
-            conversationId,
-        });
-      }
+      existingThread = await getGroupThreadForConversation({
+        assistantId: assistant.id,
+        channel,
+        externalConversationId: conversationId,
+      });
     }
+
+    const isPersonal = conversationType === "personal";
+    const thread = await getOrCreateReservedThread({
+      context: webhookContext,
+      userId: isPersonal ? user.id : null,
+      assistantId: assistant.id,
+      channel,
+      existingThread,
+      createRemoteThread: () => createOAiThread(),
+      createLocalThread: (remote) =>
+        createThread({
+          userId: isPersonal ? user.id : null,
+          assistantId: assistant.id,
+          aiThreadId: remote.id,
+          channel,
+          scope: isPersonal ? "user" : "group",
+          externalConversationId: conversationId,
+        }),
+    });
 
     if (!thread?.ai_thread_id) {
-      throw new Error(
-        "Thread is missing ai_thread_id",
-      );
+      throw new Error("Thread is missing ai_thread_id");
     }
 
-    if (
-      Number(thread.assistant_id) !==
-      Number(assistant.id)
-    ) {
+    if (Number(thread.assistant_id) !== Number(assistant.id)) {
       const error = new Error(
         "Thread does not belong to the selected assistant",
       );
@@ -812,18 +714,16 @@ async function handleUserInteraction(activity) {
       threadId: thread.id,
       userId: user.id,
       messageId: activity.id,
-      externalContactId:
-        activity?.from?.id || null,
+      externalContactId: activity?.from?.id || null,
       content: message,
       role: "user",
     });
 
-    const aiResponse =
-      await sendMessageToAi(
-        assistant.open_ai_id,
-        message,
-        thread.ai_thread_id,
-      );
+    const aiResponse = await sendMessageToAi(
+      assistant.open_ai_id,
+      message,
+      thread.ai_thread_id,
+    );
 
     text = aiResponse.aiResponse;
 
@@ -860,26 +760,18 @@ function GetConversationType(activity) {
   return activity?.conversation?.conversationType || "personal";
 }
 
-async function handleUserInstallation(
-  activity,
-) {
-  const aadObjectId =
-    GetAadObjectId(activity);
+async function handleUserInstallation(activity) {
+  const aadObjectId = GetAadObjectId(activity);
 
-  const tenantId =
-    GetTenantId(activity);
+  const tenantId = GetTenantId(activity);
 
-  const teamsUserId =
-    GetFromId(activity);
+  const teamsUserId = GetFromId(activity);
 
-  const conversationId =
-    activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id || null;
 
-  const serviceUrl =
-    activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl || null;
 
-  const conversationType =
-    GetConversationType(activity);
+  const conversationType = GetConversationType(activity);
 
   if (
     !aadObjectId ||
@@ -888,16 +780,13 @@ async function handleUserInstallation(
     !serviceUrl ||
     !tenantId
   ) {
-    console.warn(
-      "[TEAMS install] Missing required fields",
-      {
-        aadObjectId,
-        teamsUserId,
-        conversationId,
-        serviceUrl,
-        tenantId,
-      },
-    );
+    console.warn("[TEAMS install] Missing required fields", {
+      aadObjectId,
+      teamsUserId,
+      conversationId,
+      serviceUrl,
+      tenantId,
+    });
 
     await sendReply(
       activity,
@@ -907,10 +796,7 @@ async function handleUserInstallation(
     return;
   }
 
-  const org =
-    await getOrganizationByTeamsTenantId(
-      tenantId,
-    );
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
     await sendReply(
@@ -921,11 +807,10 @@ async function handleUserInstallation(
     return;
   }
 
-  const user =
-    await getTeamsUserForOrganization({
-      aadObjectId,
-      organizationId: org.id,
-    });
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+    organizationId: org.id,
+  });
 
   if (!user) {
     await sendReply(
@@ -936,15 +821,9 @@ async function handleUserInstallation(
     return;
   }
 
-  const assistant =
-    await getAssistantById(
-      user.assistant_id,
-    );
+  const assistant = await getAssistantById(user.assistant_id);
 
-  await assertAssistantMatchesOrganization(
-    assistant,
-    org.id,
-  );
+  await assertAssistantMatchesOrganization(assistant, org.id);
 
   await upsertTeamsInstallation({
     organization_id: org.id,
@@ -960,32 +839,23 @@ async function handleUserInstallation(
   });
 
   try {
-    if (
-      user.teams_from_id !==
-      teamsUserId
-    ) {
+    if (user.teams_from_id !== teamsUserId) {
       await updateUser(user.id, {
         teamsFromId: teamsUserId,
       });
     }
   } catch (error) {
-    console.error(
-      "[TEAMS] Failed to sync teamsFromId",
-      {
-        userId: user.id,
-        teamsUserId,
-        error,
-      },
-    );
+    console.error("[TEAMS] Failed to sync teamsFromId", {
+      userId: user.id,
+      teamsUserId,
+      error,
+    });
   }
 
-  await sendReply(
-    activity,
-    "Conversation successfully connected.",
-  );
+  await sendReply(activity, "Conversation successfully connected.");
 }
 
-async function handleGroupInstallation(activity) {
+async function handleGroupInstallation(activity, webhookContext = null) {
   // console.log(activity);
   const tenantId = GetTenantId(activity);
   const serviceUrl = activity?.serviceUrl || null;
@@ -1016,13 +886,10 @@ async function handleGroupInstallation(activity) {
     return;
   }
 
-  const defaultAssistant =
-    await getFirstAssistantInOrg(org.id);
+  const defaultAssistant = await getFirstAssistantInOrg(org.id);
 
   if (!defaultAssistant) {
-    throw new Error(
-      "Organization does not have an assistant",
-    );
+    throw new Error("Organization does not have an assistant");
   }
 
   if (!assistantBelongsToOrganization(defaultAssistant, org.id)) {
@@ -1051,23 +918,28 @@ async function handleGroupInstallation(activity) {
   });
 
   const channel = "teams";
-  let thread = await getGroupThreadForConversation({
+  const existingThread = await getGroupThreadForConversation({
     assistantId: defaultAssistant.id,
     channel,
     externalConversationId: conversationId,
   });
-
-  if (!thread) {
-    const aiThread = await createOAiThread();
-    thread = await createThread({
-      userId: null,
-      assistantId: defaultAssistant.id,
-      aiThreadId: aiThread.id,
-      channel,
-      scope: "group",
-      externalConversationId: conversationId,
-    });
-  }
+  const thread = await getOrCreateReservedThread({
+    context: webhookContext,
+    userId: null,
+    assistantId: defaultAssistant.id,
+    channel,
+    existingThread,
+    createRemoteThread: () => createOAiThread(),
+    createLocalThread: (remote) =>
+      createThread({
+        userId: null,
+        assistantId: defaultAssistant.id,
+        aiThreadId: remote.id,
+        channel,
+        scope: "group",
+        externalConversationId: conversationId,
+      }),
+  });
 
   if (!thread?.ai_thread_id) {
     throw new Error("Group thread is missing ai_thread_id");
@@ -1106,17 +978,10 @@ export async function POST(req) {
     try {
       activity = await req.json();
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    if (
-      !activity ||
-      typeof activity !== "object" ||
-      Array.isArray(activity)
-    ) {
+    if (!activity || typeof activity !== "object" || Array.isArray(activity)) {
       return NextResponse.json(
         { error: "Invalid Teams activity" },
         { status: 400 },
@@ -1129,47 +994,37 @@ export async function POST(req) {
       return teamsAuth.error;
     }
 
-    if (
-      activity.type === "message" &&
-      typeof activity.text === "string" &&
-      activity.text.trim()
-    ) {
-      await handleUserInteraction(activity);
+    if (!isSupportedTeamsActivity(activity)) {
+      return NextResponse.json({ ok: true, ignored: true });
     }
 
-    if (
-      activity.type ===
-        "installationUpdate" &&
-      activity.action === "add"
-    ) {
-      const conversationType =
-        GetConversationType(activity);
-
-      if (
-        conversationType === "channel" ||
-        conversationType === "groupChat" ||
-        activity.conversation?.isGroup ===
-          true
-      ) {
-        await handleGroupInstallation(
-          activity,
-        );
-      } else {
-        await handleUserInstallation(
-          activity,
-        );
-      }
+    const tenantId = getTeamsTenantId(activity);
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "Teams activity is missing tenant identity" },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json(
-      { ok: true },
-      { status: 200 },
-    );
+    const organization = await getOrganizationByTeamsTenantId(tenantId);
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Teams tenant organization was not found" },
+        { status: 404 },
+      );
+    }
+
+    const identity = buildTeamsEventIdentity(activity, organization.id);
+    if (!identity) {
+      return NextResponse.json(
+        { error: "Teams activity identity is incomplete" },
+        { status: 400 },
+      );
+    }
+
+    return registrationResponse(await registerWebhookEvent(identity));
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to process Teams message",
-    );
+    return handleApiError(error, "Failed to process Teams message");
   }
 }
 

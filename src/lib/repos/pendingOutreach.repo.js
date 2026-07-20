@@ -87,3 +87,105 @@ export async function markPendingOutreachReplied(id, replyMessageId) {
   if (error) throw error;
   return data;
 }
+
+export async function claimPendingOutreachForWebhook({
+  id,
+  organizationId,
+  userId,
+  webhookEventId,
+  eventClaimToken,
+  leaseSeconds = 120,
+}) {
+  const { data, error } = await supabase
+    .rpc("claim_pending_outreach_for_webhook", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_webhook_event_id: webhookEventId,
+      p_event_claim_token: eventClaimToken,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function renewPendingOutreachForWebhook({
+  id,
+  organizationId,
+  userId,
+  webhookEventId,
+  eventClaimToken,
+  claimToken,
+  leaseSeconds = 120,
+}) {
+  const { data, error } = await supabase
+    .rpc("renew_pending_outreach_for_webhook", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_webhook_event_id: webhookEventId,
+      p_event_claim_token: eventClaimToken,
+      p_claim_token: claimToken,
+      p_lease_seconds: leaseSeconds,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function markPendingOutreachSendStarted({
+  id,
+  organizationId,
+  userId,
+  webhookEventId,
+  eventClaimToken,
+  claimToken,
+}) {
+  const { data, error } = await supabase
+    .rpc("mark_pending_outreach_send_started", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_webhook_event_id: webhookEventId,
+      p_event_claim_token: eventClaimToken,
+      p_claim_token: claimToken,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function transitionPendingOutreachForWebhook({
+  id,
+  organizationId,
+  userId,
+  webhookEventId,
+  eventClaimToken,
+  claimToken,
+  status,
+  replyMessageId = null,
+  lastError = null,
+  nextAttemptAt = null,
+}) {
+  const { data, error } = await supabase
+    .rpc("transition_pending_outreach_for_webhook", {
+      p_pending_outreach_id: id,
+      p_organization_id: organizationId,
+      p_user_id: userId,
+      p_webhook_event_id: webhookEventId,
+      p_event_claim_token: eventClaimToken,
+      p_claim_token: claimToken,
+      p_status: status,
+      p_reply_message_id: replyMessageId,
+      p_last_error: lastError,
+      p_next_attempt_at: nextAttemptAt,
+    })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}

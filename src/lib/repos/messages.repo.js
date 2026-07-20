@@ -33,6 +33,8 @@ const MESSAGE_SELECT = `
   message_chain_step_id,
   message_chain_recipient_id,
   message_chain_step_index,
+  webhook_event_id,
+  webhook_effect_key,
   created_at
 `;
 
@@ -57,35 +59,51 @@ export async function createMessage({
   messageChainStepId = null,
   messageChainRecipientId = null,
   messageChainStepIndex = null,
+  webhookEventId = null,
+  webhookEffectKey = null,
 }) {
+  const row = {
+    thread_id: threadId ?? null,
+    user_id: userId ?? null,
+    organization_id: organizationId,
+    assistant_id: assistantId,
+    channel,
+    message_id: messageId,
+    contact_id: externalContactId,
+    content,
+    role,
+    delivery_status: deliveryStatus,
+    delivered_at: deliveredAt,
+    read_at: readAt,
+    failed_at: failedAt,
+    scheduled_broadcast_id: scheduledBroadcastId,
+    automation_run_id: automationRunId,
+
+    message_chain_id: messageChainId,
+    message_chain_step_id: messageChainStepId,
+    message_chain_recipient_id: messageChainRecipientId,
+    message_chain_step_index: messageChainStepIndex,
+    webhook_event_id: webhookEventId,
+    webhook_effect_key: webhookEffectKey,
+  };
+
   const { data, error } = await supabase
     .from("message")
-    .insert([
-      {
-        thread_id: threadId ?? null,
-        user_id: userId ?? null,
-        organization_id: organizationId,
-        assistant_id: assistantId,
-        channel,
-        message_id: messageId,
-        contact_id: externalContactId,
-        content,
-        role,
-        delivery_status: deliveryStatus,
-        delivered_at: deliveredAt,
-        read_at: readAt,
-        failed_at: failedAt,
-        scheduled_broadcast_id: scheduledBroadcastId,
-        automation_run_id: automationRunId,
-
-        message_chain_id: messageChainId,
-        message_chain_step_id: messageChainStepId,
-        message_chain_recipient_id: messageChainRecipientId,
-        message_chain_step_index: messageChainStepIndex,
-      },
-    ])
+    .insert([row])
     .select(MESSAGE_SELECT)
     .single();
+
+  if (error?.code === "23505" && webhookEventId && webhookEffectKey) {
+    const { data: existing, error: lookupError } = await supabase
+      .from("message")
+      .select(MESSAGE_SELECT)
+      .eq("webhook_event_id", webhookEventId)
+      .eq("webhook_effect_key", webhookEffectKey)
+      .single();
+
+    if (lookupError) throw lookupError;
+    return existing;
+  }
 
   if (error) throw error;
   return data;
@@ -113,10 +131,7 @@ export async function getMessageById(id) {
   return data ?? null;
 }
 
-export async function getMessageByProviderId(
-  messageId,
-  organizationId,
-) {
+export async function getMessageByProviderId(messageId, organizationId) {
   if (!messageId || !organizationId) {
     return null;
   }

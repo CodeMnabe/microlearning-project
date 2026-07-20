@@ -5,7 +5,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
+  { auth: { persistSession: false } },
 );
 
 const SELECT_COLS = `
@@ -38,7 +38,7 @@ export async function createThread({
 }) {
   if (!assistantId || !aiThreadId || !channel || !scope) {
     throw new Error(
-      "createThread requires assistantId, aiThreadId, channel and scope"
+      "createThread requires assistantId, aiThreadId, channel and scope",
     );
   }
 
@@ -57,6 +57,11 @@ export async function createThread({
     .insert([payload])
     .select(SELECT_COLS)
     .single();
+
+  if (error?.code === "23505") {
+    const existing = await getThreadByAiId(aiThreadId);
+    if (existing) return existing;
+  }
 
   if (error) throw error;
   return data;
@@ -93,6 +98,7 @@ export async function getUserThreadForChannel({
     .eq("channel", channel)
     .eq("scope", "user")
     .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -114,6 +120,8 @@ export async function getGroupThreadForConversation({
     .eq("channel", channel)
     .eq("scope", "group")
     .eq("external_conversation_id", externalConversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;

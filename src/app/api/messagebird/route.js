@@ -33,6 +33,10 @@ import {
 import {
   getAllPendingOutreachByUser,
   markPendingOutreachReplied,
+  claimPendingOutreachForWebhook,
+  markPendingOutreachSendStarted,
+  renewPendingOutreachForWebhook,
+  transitionPendingOutreachForWebhook,
 } from "@/lib/repos/pendingOutreach.repo";
 import {
   createMessageChainDelivery,
@@ -43,6 +47,14 @@ import { splitE164 } from "@/lib/whatsapp/E164";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
+import { registerWebhookEvent } from "@/lib/repos/webhookEvents.repo";
+import {
+  buildMessageBirdEventIdentity,
+  getMessageBirdChannelId,
+} from "@/lib/webhooks/eventIdentity";
+import { runWebhookEffect } from "@/lib/webhooks/effectRunner";
+import { getOrCreateReservedThread } from "@/lib/webhooks/conversationReservation";
+import { startLeaseHeartbeat } from "@/lib/webhooks/leaseHeartbeat";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
@@ -140,9 +152,7 @@ function isFreshTimestamp(timestamp, toleranceSeconds = 300) {
   }
 
   const timestampMs =
-    numericTimestamp > 1e12
-      ? numericTimestamp
-      : numericTimestamp * 1000;
+    numericTimestamp > 1e12 ? numericTimestamp : numericTimestamp * 1000;
 
   return Math.abs(Date.now() - timestampMs) <= toleranceSeconds * 1000;
 }
@@ -249,7 +259,7 @@ function extractReadInteraction(evt) {
   };
 }
 
-async function handleReadInteraction(readInteraction) {
+async function handleReadInteraction(readInteraction, webhookContext = null) {
   if (!readInteraction.messageId) {
     console.warn("Read interaction missing messageId", {
       channelId: readInteraction.channelId,
@@ -269,9 +279,7 @@ async function handleReadInteraction(readInteraction) {
   let organization;
 
   try {
-    organization = await getOrganizationByChannelId(
-      readInteraction.channelId,
-    );
+    organization = await getOrganizationByChannelId(readInteraction.channelId);
   } catch (err) {
     console.error("Could not resolve read interaction organization", {
       channelId: readInteraction.channelId,
@@ -291,11 +299,22 @@ async function handleReadInteraction(readInteraction) {
     return;
   }
 
-  const updated = await markMessageReadByProviderId(
-    readInteraction.messageId,
-    readInteraction.readAt,
-    organization.id,
-  );
+  const updated = await runWebhookEffect({
+    context: webhookContext,
+    effectType: "persist_read_receipt",
+    effectKey: "message-read",
+    request: {
+      messageId: readInteraction.messageId,
+      organizationId: organization.id,
+      readAt: readInteraction.readAt,
+    },
+    operation: () =>
+      markMessageReadByProviderId(
+        readInteraction.messageId,
+        readInteraction.readAt,
+        organization.id,
+      ),
+  });
 
   if (!updated) {
     console.warn("Read interaction message not found locally", {
@@ -308,9 +327,7 @@ async function handleReadInteraction(readInteraction) {
     return;
   }
 
-  if (
-    Number(updated.organization_id) !== Number(organization.id)
-  ) {
+  if (Number(updated.organization_id) !== Number(organization.id)) {
     throw new Error(
       "Read receipt message does not belong to channel organization",
     );
@@ -321,7 +338,18 @@ async function handleReadInteraction(readInteraction) {
   }
 
   try {
-    const chainResult = await processReadChainAfterRead(updated);
+    const chainResult = await runWebhookEffect({
+      context: webhookContext,
+      effectType: "read_chain_processing",
+      effectKey: "advance-chain",
+      isExternal: true,
+      request: {
+        messageId: readInteraction.messageId,
+        messageDbId: updated.id,
+        chainId: updated.message_chain_id,
+      },
+      operation: () => processReadChainAfterRead(updated),
+    });
 
     console.log("Read chain processed after read interaction", {
       messageId: readInteraction.messageId,
@@ -338,6 +366,8 @@ async function handleReadInteraction(readInteraction) {
       stepIndex: updated.message_chain_step_index,
       error: err?.message || String(err),
     });
+
+    throw err;
   }
 }
 
@@ -361,7 +391,6 @@ async function findUserFromPhone(rawPhone, organizationId) {
 
   return user;
 }
-
 
 async function findUserFromWhatsappIdentity(identity, organizationId) {
   if (!organizationId) {
@@ -387,16 +416,11 @@ async function findUserFromWhatsappIdentity(identity, organizationId) {
   }
 
   if (identity.phoneNumber) {
-    return await findUserFromPhone(
-      identity.phoneNumber,
-      organizationId,
-    );
+    return await findUserFromPhone(identity.phoneNumber, organizationId);
   }
 
   return null;
 }
-
-
 
 function buildReceiverContact({ contactId, phoneNumber, whatsappBsuid }) {
   if (contactId) {
@@ -493,6 +517,7 @@ async function sendBirdMessage({
     return {
       ok: false,
       status: 500,
+      outcome: "unknown",
       data: {
         error: "Failed to call Bird API",
         message: err?.message || String(err),
@@ -513,6 +538,7 @@ async function sendBirdMessage({
   return {
     ok: res.ok,
     status: res.status,
+    outcome: res.ok ? "accepted" : "rejected",
     data,
     providerMessageId: extractBirdMessageId(data),
   };
@@ -522,15 +548,71 @@ export async function GET() {
   return NextResponse.json({ ok: true, service: "messagebird" });
 }
 
+function isSupportedMessageBirdEvent(event) {
+  return Boolean(
+    (event?.service === "channels" &&
+      event?.event === "whatsapp.inbound" &&
+      event?.payload?.body?.type === "text") ||
+    (event?.service === "channels" &&
+      event?.event === "whatsapp.interaction" &&
+      event?.payload?.type === "read"),
+  );
+}
+
+function registrationResponse(registration) {
+  if (registration.outcome === "payload_conflict") {
+    console.error("MessageBird webhook identity conflict", {
+      eventId: registration.eventId,
+      status: registration.status,
+    });
+    return NextResponse.json(
+      { ok: false, error: "Webhook identity conflict" },
+      { status: 409 },
+    );
+  }
+
+  if (
+    registration.outcome === "duplicate_succeeded" ||
+    registration.outcome === "duplicate_processing"
+  ) {
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      status: registration.status,
+    });
+  }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      accepted: true,
+      status: registration.status,
+    },
+    { status: 202 },
+  );
+}
+
+function throwForProviderResult(result, providerName) {
+  if (result?.ok) return result;
+
+  const error = new Error(
+    `${providerName} did not accept the requested outbound message`,
+  );
+  error.webhookState =
+    result?.outcome === "unknown"
+      ? "unknown_outcome"
+      : Number(result?.status || 0) >= 500
+        ? "retryable_failed"
+        : "failed";
+  throw error;
+}
 
 export async function POST(req) {
   const rawBody = await req.text();
 
-  const sigHeader =
-    req.headers.get("messagebird-signature") ?? "";
+  const sigHeader = req.headers.get("messagebird-signature") ?? "";
 
-  const tsHeader =
-    req.headers.get("messagebird-request-timestamp") ?? "";
+  const tsHeader = req.headers.get("messagebird-request-timestamp") ?? "";
 
   if (!isFreshTimestamp(tsHeader)) {
     console.warn("Expired or invalid MessageBird timestamp");
@@ -540,12 +622,9 @@ export async function POST(req) {
     });
   }
 
-  const proto =
-    req.headers.get("x-forwarded-proto") || "https";
+  const proto = req.headers.get("x-forwarded-proto") || "https";
 
-  const host =
-    req.headers.get("x-forwarded-host") ||
-    req.headers.get("host");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
 
   if (!host) {
     console.warn("MessageBird webhook missing host");
@@ -555,15 +634,9 @@ export async function POST(req) {
     });
   }
 
-  const fullUrl =
-    `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
+  const fullUrl = `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
 
-  const ok = isValid(
-    sigHeader,
-    tsHeader,
-    fullUrl,
-    rawBody,
-  );
+  const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
 
   if (!ok) {
     console.warn("Invalid signature");
@@ -574,9 +647,43 @@ export async function POST(req) {
   }
 
   try {
-    await handleEvent(rawBody);
+    let event;
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
-    return NextResponse.json({ ok: true });
+    if (!isSupportedMessageBirdEvent(event)) {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const channelId = getMessageBirdChannelId(event);
+    if (!channelId) {
+      return NextResponse.json(
+        { error: "MessageBird event identity is incomplete" },
+        { status: 400 },
+      );
+    }
+
+    const organization = await getOrganizationByChannelId(channelId);
+    if (!organization) {
+      return NextResponse.json(
+        { error: "MessageBird channel organization was not found" },
+        { status: 404 },
+      );
+    }
+
+    const identity = buildMessageBirdEventIdentity(event, organization.id);
+    if (!identity) {
+      return NextResponse.json(
+        { error: "MessageBird event identity is incomplete" },
+        { status: 400 },
+      );
+    }
+
+    const registration = await registerWebhookEvent(identity);
+    return registrationResponse(registration);
   } catch (err) {
     console.error("MessageBird webhook failed", {
       message: err?.message,
@@ -586,30 +693,35 @@ export async function POST(req) {
     });
 
     return NextResponse.json(
-      {
-        ok: false,
-        error: err?.message || String(err),
-      },
-      { status: 200 },
+      { ok: false, error: "Webhook event was not accepted durably" },
+      { status: 503 },
     );
   }
 }
 
-
-async function handleEvent(rawJSON) {
-  let evt;
-
-  try {
-    evt = JSON.parse(rawJSON);
-  } catch {
-    console.warn("Webhook - bad JSON");
-    return;
+export async function processMessageBirdWebhookEvent(
+  evt,
+  webhookContext = null,
+) {
+  if (webhookContext?.eventId) {
+    return runWebhookEffect({
+      context: webhookContext,
+      effectType: "messagebird_event_dispatch",
+      effectKey: "dispatch",
+      isExternal: true,
+      request: evt,
+      operation: () => processMessageBirdWebhookEventCore(evt, webhookContext),
+    });
   }
 
+  return processMessageBirdWebhookEventCore(evt, webhookContext);
+}
+
+async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
   const readInteraction = extractReadInteraction(evt);
 
   if (readInteraction) {
-    await handleReadInteraction(readInteraction);
+    await handleReadInteraction(readInteraction, webhookContext);
     return;
   }
 
@@ -643,11 +755,7 @@ async function handleEvent(rawJSON) {
     return;
   }
 
-  if (
-    !identity.phoneNumber &&
-    !identity.whatsappBsuid &&
-    !contactId
-  ) {
+  if (!identity.phoneNumber && !identity.whatsappBsuid && !contactId) {
     console.warn("Inbound WhatsApp event missing usable identity", {
       identity,
       sentChannelId,
@@ -659,8 +767,7 @@ async function handleEvent(rawJSON) {
   let channelOrganization;
 
   try {
-    channelOrganization =
-      await getOrganizationByChannelId(sentChannelId);
+    channelOrganization = await getOrganizationByChannelId(sentChannelId);
   } catch (err) {
     console.error("Could not resolve organization by channel_id", {
       sentChannelId,
@@ -683,21 +790,12 @@ async function handleEvent(rawJSON) {
     channelOrganization.id,
   );
 
-  if (
-    user &&
-    Number(user.organization_id) !==
-      Number(channelOrganization.id)
-  ) {
-    throw new Error(
-      "Webhook user does not belong to channel organization",
-    );
+  if (user && Number(user.organization_id) !== Number(channelOrganization.id)) {
+    throw new Error("Webhook user does not belong to channel organization");
   }
 
   if (user) {
-    user = await updateUserWhatsappIdentity(
-      user.id,
-      identity,
-    );
+    user = await updateUserWhatsappIdentity(user.id, identity);
   }
 
   if (!user) {
@@ -714,23 +812,14 @@ async function handleEvent(rawJSON) {
       },
     });
 
-    if (!response.ok) {
-      console.error(
-        "Failed to send unregistered message:",
-        response.data,
-      );
-    }
+    throwForProviderResult(response, "Bird");
 
     return;
   }
 
-  const pendingMessages =
-    await getAllPendingOutreachByUser(user.id);
+  const pendingMessages = await getAllPendingOutreachByUser(user.id);
 
-  if (
-    Array.isArray(pendingMessages) &&
-    pendingMessages.length > 0
-  ) {
+  if (Array.isArray(pendingMessages) && pendingMessages.length > 0) {
     await handlePendingMessages({
       user,
       inboundMsgId,
@@ -739,79 +828,70 @@ async function handleEvent(rawJSON) {
       inboundText: text,
       pendingMessages,
       sentChannelId,
+      webhookContext,
     });
 
     return;
   }
 
-  const organization =
-    await getOrganization(user.organization_id);
+  const organization = await getOrganization(user.organization_id);
 
   if (!organization) {
     console.warn("Organization not found for user", user.id);
     return;
   }
 
-  if (
-    Number(organization.id) !==
-    Number(channelOrganization.id)
-  ) {
+  if (Number(organization.id) !== Number(channelOrganization.id)) {
     throw new Error(
       "User organization does not match webhook channel organization",
     );
   }
 
-  const assistantRow =
-    await getAssistantFromUser(user, organization);
+  const assistantRow = await getAssistantFromUser(user, organization);
 
   if (!assistantRow) {
-    console.warn(
-      "No assistants found for organization",
-      organization.id,
-    );
+    console.warn("No assistants found for organization", organization.id);
 
     return;
   }
 
-  const assistantOpenAiId =
-    getAssistantOpenAiId(assistantRow);
+  const assistantOpenAiId = getAssistantOpenAiId(assistantRow);
 
   if (!assistantOpenAiId) {
-    throw new Error(
-      `Assistant ${assistantRow.id} is missing open_ai_id`,
-    );
+    throw new Error(`Assistant ${assistantRow.id} is missing open_ai_id`);
   }
 
   const channel = "whatsapp";
 
-  let thread = await getUserThreadForChannel({
+  const existingThread = await getUserThreadForChannel({
     userId: user.id,
     assistantId: assistantRow.id,
     channel,
   });
-
-  let aiThreadId = getThreadAiThreadId(thread);
-
-  if (!thread) {
-    const aiThread = await createOAiThread();
-
-    aiThreadId = normalizeId(aiThread?.id);
-
-    if (!aiThreadId) {
-      throw new Error(
-        "createOAiThread did not return an OpenAI thread id",
-      );
-    }
-
-    thread = await createThread({
-      userId: user.id,
-      assistantId: assistantRow.id,
-      aiThreadId,
-      channel,
-      scope: "user",
-      externalConversationId: null,
-    });
-  }
+  const thread = await getOrCreateReservedThread({
+    context: webhookContext,
+    userId: user.id,
+    assistantId: assistantRow.id,
+    channel,
+    existingThread,
+    createRemoteThread: async () => {
+      const remote = await createOAiThread();
+      if (!normalizeId(remote?.id)) {
+        throw new Error("createOAiThread did not return an OpenAI thread id");
+      }
+      return remote;
+    },
+    createLocalThread: (remote) =>
+      createThread({
+        userId: user.id,
+        assistantId: assistantRow.id,
+        aiThreadId: normalizeId(remote?.id),
+        channel,
+        scope: "user",
+        externalConversationId: null,
+      }),
+  });
+  const aiThreadId = getThreadAiThreadId(thread);
 
   if (!aiThreadId) {
     throw new Error(
@@ -829,35 +909,28 @@ async function handleEvent(rawJSON) {
     externalContactId: contactId,
     content: text,
     role: "user",
+    webhookEventId: webhookContext?.eventId || null,
+    webhookEffectKey: webhookContext?.eventId ? "dispatch:inbound" : null,
   });
 
-  const aiResponse = await sendMessageToAi(
-    assistantOpenAiId,
-    text,
-    aiThreadId,
-  );
+  const aiResponse = await sendMessageToAi(assistantOpenAiId, text, aiThreadId);
 
   const aiText = getAiResponseText(aiResponse);
 
   if (!aiText.trim()) {
-    throw new Error(
-      "OpenAI returned an empty assistant response",
-    );
+    throw new Error("OpenAI returned an empty assistant response");
   }
 
   let outboundId = null;
 
   const outgoingChannelId =
-    normalizeId(organization.channel_id) ||
-    sentChannelId;
+    normalizeId(organization.channel_id) || sentChannelId;
 
   const sendRes = await sendBirdMessage({
     channelId: outgoingChannelId,
     contactId,
-    phoneNumber:
-      identity.phoneNumber || user.phone_number,
-    whatsappBsuid:
-      identity.whatsappBsuid || user.whatsapp_bsuid,
+    phoneNumber: identity.phoneNumber || user.phone_number,
+    whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
     body: {
       type: "text",
       text: {
@@ -866,14 +939,8 @@ async function handleEvent(rawJSON) {
     },
   });
 
-  if (!sendRes.ok) {
-    console.error(
-      "Failed to send assistant message:",
-      sendRes.data,
-    );
-  } else {
-    outboundId = sendRes.providerMessageId;
-  }
+  throwForProviderResult(sendRes, "Bird");
+  outboundId = sendRes.providerMessageId;
 
   await createMessage({
     threadId: thread?.id ?? null,
@@ -885,18 +952,12 @@ async function handleEvent(rawJSON) {
     externalContactId: contactId,
     content: aiText,
     role: "assistant",
-    deliveryStatus: sendRes.ok
-      ? "accepted"
-      : "failed",
-    failedAt: sendRes.ok
-      ? null
-      : new Date().toISOString(),
+    deliveryStatus: sendRes.ok ? "accepted" : "failed",
+    failedAt: sendRes.ok ? null : new Date().toISOString(),
+    webhookEventId: webhookContext?.eventId || null,
+    webhookEffectKey: webhookContext?.eventId ? "dispatch:outbound" : null,
   });
 }
-
-
-
-
 
 async function handlePendingMessages({
   user,
@@ -906,6 +967,7 @@ async function handlePendingMessages({
   inboundText,
   pendingMessages,
   sentChannelId,
+  webhookContext = null,
 }) {
   await createMessage({
     threadId: null,
@@ -917,6 +979,10 @@ async function handlePendingMessages({
     externalContactId: contactId,
     content: inboundText,
     role: "user",
+    webhookEventId: webhookContext?.eventId || null,
+    webhookEffectKey: webhookContext?.eventId
+      ? "dispatch:pending-inbound"
+      : null,
   });
 
   const organization = await getOrganization(user.organization_id);
@@ -930,133 +996,224 @@ async function handlePendingMessages({
     normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
   for (const row of pendingMessages) {
-    const p = safePayload(row.payload);
-
-    const hasImages = Array.isArray(p.imageUrls) && p.imageUrls.length > 0;
-    const hasText = Boolean(String(p.message || "").trim());
-
-    if (!hasImages && !hasText) {
-      console.warn("Skipping empty pending outreach", {
-        pendingOutreachId: row.id,
-        userId: user.id,
-      });
-
-      continue;
-    }
-
-    const body = hasImages
-      ? {
-          type: "image",
-          image: {
-            images: p.imageUrls.map((u) => ({
-              mediaUrl: u,
-            })),
-            ...(hasText ? { text: p.message } : {}),
-          },
-        }
-      : {
-          type: "text",
-          text: {
-            text: p.message || "",
-          },
-        };
-
-    const sendRes = await sendBirdMessage({
-      channelId: outgoingChannelId,
-      contactId,
-      phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
-      whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
-      body,
-    });
-
-    if (!sendRes.ok) {
-      console.error("Failed to send pending outreach:", {
-        pendingOutreachId: row.id,
-        status: sendRes.status,
-        data: sendRes.data,
-      });
-
-      continue;
-    }
-
-    const outboundId = sendRes.providerMessageId;
-
-    const hasChainMetadata =
-      row.message_chain_id &&
-      row.message_chain_step_id &&
-      row.message_chain_recipient_id &&
-      row.message_chain_step_index;
-
-    const chainContext = hasChainMetadata
-      ? await getValidatedMessageChainContext({
-          chainId: row.message_chain_id,
-          chainStepId: row.message_chain_step_id,
-          chainRecipientId: row.message_chain_recipient_id,
-          stepIndex: Number(row.message_chain_step_index),
-          userId: user.id,
+    const claimed = webhookContext?.eventId
+      ? await claimPendingOutreachForWebhook({
+          id: row.id,
           organizationId: user.organization_id,
+          userId: user.id,
+          webhookEventId: webhookContext.eventId,
+          eventClaimToken: webhookContext.claimToken,
+          leaseSeconds: webhookContext.leaseSeconds || 120,
+        })
+      : row;
+
+    if (!claimed) {
+      continue;
+    }
+
+    const pendingHeartbeat = webhookContext?.eventId
+      ? startLeaseHeartbeat({
+          label: "pending outreach",
+          leaseSeconds: webhookContext.leaseSeconds || 120,
+          renew: () =>
+            renewPendingOutreachForWebhook({
+              id: row.id,
+              organizationId: user.organization_id,
+              userId: user.id,
+              webhookEventId: webhookContext.eventId,
+              eventClaimToken: webhookContext.claimToken,
+              claimToken: claimed.claim_token,
+              leaseSeconds: webhookContext.leaseSeconds || 120,
+            }),
         })
       : null;
 
-    await createMessage({
-      threadId: null,
-      userId: user.id,
-      organizationId: user.organization_id,
-      assistantId: user.assistant_id ?? null,
-      channel: "whatsapp",
-      messageId: outboundId,
-      externalContactId: contactId,
-      content: p.message || "",
-      role: "assistant",
-      deliveryStatus: "accepted",
-      messageChainId: chainContext?.chain.id || null,
-      messageChainStepId: chainContext?.step.id || null,
-      messageChainRecipientId: chainContext?.recipient.id || null,
-      messageChainStepIndex: chainContext
-        ? Number(row.message_chain_step_index)
-        : null,
-    });
+    try {
+      const p = safePayload(row.payload);
 
-    if (chainContext) {
-      try {
-        await createMessageChainDelivery({
-          chainId: chainContext.chain.id,
-          chainStepId: chainContext.step.id,
-          chainRecipientId: chainContext.recipient.id,
-          userId: user.id,
-          stepIndex: Number(row.message_chain_step_index),
-          providerMessageId: outboundId,
-          status: "sent",
-          sentAt: new Date().toISOString(),
-        });
+      const hasImages = Array.isArray(p.imageUrls) && p.imageUrls.length > 0;
+      const hasText = Boolean(String(p.message || "").trim());
 
-        await updateMessageChainRecipientProgress({
-          chainId: chainContext.chain.id,
-          chainRecipientId: chainContext.recipient.id,
-          userId: user.id,
-          currentStepIndex: Number(row.message_chain_step_index),
-          status: "active",
-        });
-
-        console.log("Pending outreach chain step sent", {
+      if (!hasImages && !hasText) {
+        console.warn("Skipping empty pending outreach", {
           pendingOutreachId: row.id,
-          chainId: row.message_chain_id,
-          chainStepId: row.message_chain_step_id,
-          chainRecipientId: row.message_chain_recipient_id,
-          stepIndex: row.message_chain_step_index,
-          providerMessageId: outboundId,
+          userId: user.id,
         });
-      } catch (err) {
-        console.error("Failed to update chain state for pending outreach", {
-          pendingOutreachId: row.id,
-          chainId: row.message_chain_id,
-          stepIndex: row.message_chain_step_index,
-          error: err?.message || String(err),
-        });
+
+        continue;
       }
-    }
 
-    await markPendingOutreachReplied(row.id, inboundMsgId);
+      const body = hasImages
+        ? {
+            type: "image",
+            image: {
+              images: p.imageUrls.map((u) => ({
+                mediaUrl: u,
+              })),
+              ...(hasText ? { text: p.message } : {}),
+            },
+          }
+        : {
+            type: "text",
+            text: {
+              text: p.message || "",
+            },
+          };
+
+      if (webhookContext?.eventId) {
+        const marked = await markPendingOutreachSendStarted({
+          id: row.id,
+          organizationId: user.organization_id,
+          userId: user.id,
+          webhookEventId: webhookContext.eventId,
+          eventClaimToken: webhookContext.claimToken,
+          claimToken: claimed.claim_token,
+        });
+        if (!marked) {
+          const error = new Error(
+            "Pending outreach claim was lost before send",
+          );
+          error.webhookState = "retryable_failed";
+          throw error;
+        }
+        pendingHeartbeat.assertOwned();
+      }
+
+      const sendRes = await sendBirdMessage({
+        channelId: outgoingChannelId,
+        contactId,
+        phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
+        whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
+        body,
+      });
+      pendingHeartbeat?.assertOwned();
+
+      if (!sendRes.ok) {
+        if (webhookContext?.eventId) {
+          await transitionPendingOutreachForWebhook({
+            id: row.id,
+            organizationId: user.organization_id,
+            userId: user.id,
+            webhookEventId: webhookContext.eventId,
+            eventClaimToken: webhookContext.claimToken,
+            claimToken: claimed.claim_token,
+            status:
+              sendRes.outcome === "unknown"
+                ? "unknown_outcome"
+                : Number(sendRes.status || 0) >= 500
+                  ? "retryable_failed"
+                  : "failed",
+            lastError: `Bird rejected pending outreach with status ${sendRes.status || "unknown"}`,
+          });
+        }
+
+        throwForProviderResult(sendRes, "Bird");
+      }
+
+      const outboundId = sendRes.providerMessageId;
+
+      const hasChainMetadata =
+        row.message_chain_id &&
+        row.message_chain_step_id &&
+        row.message_chain_recipient_id &&
+        row.message_chain_step_index;
+
+      const chainContext = hasChainMetadata
+        ? await getValidatedMessageChainContext({
+            chainId: row.message_chain_id,
+            chainStepId: row.message_chain_step_id,
+            chainRecipientId: row.message_chain_recipient_id,
+            stepIndex: Number(row.message_chain_step_index),
+            userId: user.id,
+            organizationId: user.organization_id,
+          })
+        : null;
+
+      await createMessage({
+        threadId: null,
+        userId: user.id,
+        organizationId: user.organization_id,
+        assistantId: user.assistant_id ?? null,
+        channel: "whatsapp",
+        messageId: outboundId,
+        externalContactId: contactId,
+        content: p.message || "",
+        role: "assistant",
+        deliveryStatus: "accepted",
+        messageChainId: chainContext?.chain.id || null,
+        messageChainStepId: chainContext?.step.id || null,
+        messageChainRecipientId: chainContext?.recipient.id || null,
+        messageChainStepIndex: chainContext
+          ? Number(row.message_chain_step_index)
+          : null,
+        webhookEventId: webhookContext?.eventId || null,
+        webhookEffectKey: webhookContext?.eventId
+          ? `dispatch:pending-outbound:${row.id}`
+          : null,
+      });
+
+      if (chainContext) {
+        try {
+          await createMessageChainDelivery({
+            chainId: chainContext.chain.id,
+            chainStepId: chainContext.step.id,
+            chainRecipientId: chainContext.recipient.id,
+            userId: user.id,
+            stepIndex: Number(row.message_chain_step_index),
+            providerMessageId: outboundId,
+            status: "sent",
+            sentAt: new Date().toISOString(),
+          });
+
+          await updateMessageChainRecipientProgress({
+            chainId: chainContext.chain.id,
+            chainRecipientId: chainContext.recipient.id,
+            userId: user.id,
+            currentStepIndex: Number(row.message_chain_step_index),
+            status: "active",
+          });
+
+          console.log("Pending outreach chain step sent", {
+            pendingOutreachId: row.id,
+            chainId: row.message_chain_id,
+            chainStepId: row.message_chain_step_id,
+            chainRecipientId: row.message_chain_recipient_id,
+            stepIndex: row.message_chain_step_index,
+            providerMessageId: outboundId,
+          });
+        } catch (err) {
+          console.error("Failed to update chain state for pending outreach", {
+            pendingOutreachId: row.id,
+            chainId: row.message_chain_id,
+            stepIndex: row.message_chain_step_index,
+            error: err?.message || String(err),
+          });
+        }
+      }
+
+      if (webhookContext?.eventId) {
+        const transitioned = await transitionPendingOutreachForWebhook({
+          id: row.id,
+          organizationId: user.organization_id,
+          userId: user.id,
+          webhookEventId: webhookContext.eventId,
+          eventClaimToken: webhookContext.claimToken,
+          claimToken: claimed.claim_token,
+          status: "replied",
+          replyMessageId: inboundMsgId,
+        });
+
+        if (!transitioned) {
+          const error = new Error("Pending outreach claim was lost");
+          error.webhookState = "retryable_failed";
+          throw error;
+        }
+      } else {
+        await markPendingOutreachReplied(row.id, inboundMsgId);
+      }
+    } finally {
+      await pendingHeartbeat?.stop();
+    }
   }
 }
 
