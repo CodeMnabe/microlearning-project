@@ -22,6 +22,8 @@ import {
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
 import { validateTrackedLinks } from "./trackedLinkUrl";
+import { runWithConcurrency } from "./immediateBroadcast";
+import { WHATSAPP_BROADCAST_CONCURRENCY } from "@/lib/limits/costControls";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -316,6 +318,8 @@ export async function sendWhatsappBroadcast(input = {}) {
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
     chainMetadata = null,
+    immediateBroadcastDeliveryId = null,
+    beforeProviderSend = null,
   } = input;
 
   const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
@@ -491,6 +495,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       scheduledBroadcastId,
       sendGroupId,
       createdByUserId,
+      immediateBroadcastDeliveryId,
     });
 
     const messageWithTrackedLinks = replaceTrackedPlaceholders(
@@ -514,6 +519,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     const windowOpen = user ? await isWindowOpenForUser(user.id) : false;
 
     if (windowOpen && hasResolvedFreeformContent) {
+      await beforeProviderSend?.();
       const r = await sendFreeform({
         endpoint: messagesEndpoint,
         accessKey,
@@ -662,6 +668,7 @@ export async function sendWhatsappBroadcast(input = {}) {
           reservationHeartbeat.assertOwned();
         }
 
+        await beforeProviderSend?.();
         r = await sendTemplate({
           endpoint: messagesEndpoint,
           accessKey,
@@ -767,7 +774,17 @@ export async function sendWhatsappBroadcast(input = {}) {
     };
   }
 
-  const settled = await Promise.allSettled(recipients.map(handleOne));
+  const settled = await runWithConcurrency(
+    recipients,
+    WHATSAPP_BROADCAST_CONCURRENCY,
+    async (recipient) => {
+      try {
+        return { status: "fulfilled", value: await handleOne(recipient) };
+      } catch (reason) {
+        return { status: "rejected", reason };
+      }
+    },
+  );
 
   const results = settled.map((r, i) =>
     r.status === "fulfilled"

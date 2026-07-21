@@ -1,54 +1,95 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import {
-  requireOwnedOrg,
   assertUsersBelongToOrg,
-  jsonError,
+  handleApiError,
+  requireOwnedOrg,
 } from "@/lib/auth/guards";
 import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
-import {sendTeamsBroadcast} from "@/lib/services/broadcast/sendTeamsBroadcast";
-
-function getRecipientUserIds(recipients = []) {
-  return recipients
-    .map((recipient) => Number(recipient?.userId ?? recipient?.id))
-    .filter(Boolean);
-}
+import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
+import { processImmediateBroadcast } from "@/lib/services/broadcast/processImmediateBroadcast";
+import {
+  createImmediateBroadcastRequestHash,
+  getIdempotencyKey,
+  normalizeImmediateRecipientIds,
+  publicImmediateBroadcastResult,
+} from "@/lib/services/broadcast/immediateBroadcast";
+import { TEAMS_BROADCAST_CONCURRENCY } from "@/lib/limits/costControls";
+import { reserveImmediateBroadcastRequest } from "@/lib/repos/immediateBroadcasts.repo";
 
 export async function POST(req) {
   try {
     const body = await req.json();
-
+    const idempotencyKey = getIdempotencyKey(req.headers);
+    const recipientUserIds = normalizeImmediateRecipientIds(body?.recipients);
     const orgAuth = await requireOwnedOrg(body?.orgId);
     if (orgAuth.error) return orgAuth.error;
-
-    const trackedLinks = validateTrackedLinks(
-      Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+    await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      recipientUserIds,
     );
-
-    const userIds = getRecipientUserIds(body?.recipients);
-
-    if (!userIds.length) {
-      return jsonError("No valid recipients selected", 400);
-    }
-
-    await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
-
-    const result = await sendTeamsBroadcast({
-      orgId: orgAuth.orgId,
-      userIds,
+    const senderPayload = {
       message: body?.message || "",
       files: Array.isArray(body?.files) ? body.files : [],
       imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
-      trackedLinks,
-      scheduledBroadcastId: null,
-      createdByUserId: null,
+      trackedLinks: validateTrackedLinks(
+        Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+      ),
+    };
+    const requestHash = createImmediateBroadcastRequestHash({
+      organizationId: orgAuth.orgId,
+      actorUserId: orgAuth.user.id,
+      channel: "teams",
+      recipientUserIds,
+      payload: senderPayload,
     });
-
-    return NextResponse.json(result);
+    const workerId = `immediate-teams:${randomUUID()}`;
+    const reserved = await reserveImmediateBroadcastRequest({
+      organizationId: orgAuth.orgId,
+      actorUserId: orgAuth.user.id,
+      channel: "teams",
+      idempotencyKey,
+      requestHash,
+      recipientUserIds,
+      workerId,
+    });
+    if (!reserved?.owner) {
+      const status = [
+        "completed",
+        "partial",
+        "failed",
+        "unknown_outcome",
+      ].includes(reserved?.status)
+        ? 200
+        : 202;
+      return NextResponse.json(publicImmediateBroadcastResult(reserved), {
+        status,
+      });
+    }
+    const summary = await processImmediateBroadcast({
+      requestId: reserved.request_id,
+      organizationId: orgAuth.orgId,
+      actorUserId: orgAuth.user.id,
+      workerId,
+      requestClaimToken: reserved.request_claim_token,
+      recipientUserIds,
+      concurrency: TEAMS_BROADCAST_CONCURRENCY,
+      sendRecipient: ({ userId, deliveryId, beforeProviderSend }) =>
+        sendTeamsBroadcast({
+          orgId: orgAuth.orgId,
+          ...senderPayload,
+          userIds: [userId],
+          sendGroupId: reserved.request_id,
+          createdByUserId: orgAuth.user.id,
+          immediateBroadcastDeliveryId: deliveryId,
+          beforeProviderSend,
+        }).then((result) => result.results?.[0] || result),
+    });
+    return NextResponse.json(publicImmediateBroadcastResult(summary), {
+      status: summary.status === "partial" ? 207 : 200,
+    });
   } catch (error) {
-    console.error("[Teams Broadcast] failed", error);
-    return jsonError(
-      error.message || "Failed to send Teams broadcast",
-      error.status || 500,
-    );
+    return handleApiError(error, "Teams broadcast failed");
   }
 }

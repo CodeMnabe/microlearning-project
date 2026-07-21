@@ -12,13 +12,15 @@ const mocks = vi.hoisted(() => ({
   createMessageChain: vi.fn(),
   createMessageChainSteps: vi.fn(),
   createMessageChainRecipients: vi.fn(),
+  reserveImmediateBroadcastRequest: vi.fn(),
+  recoverImmediateBroadcastRequest: vi.fn(),
+  processImmediateBroadcast: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/guards", () => ({
   requireOwnedOrg: mocks.requireOwnedOrg,
   assertUsersBelongToOrg: mocks.assertUsersBelongToOrg,
-  assertWhatsappTemplateBelongsToOrg:
-    mocks.assertWhatsappTemplateBelongsToOrg,
+  assertWhatsappTemplateBelongsToOrg: mocks.assertWhatsappTemplateBelongsToOrg,
   assertWhatsappProviderTemplateBelongsToOrg:
     mocks.assertWhatsappProviderTemplateBelongsToOrg,
   requireAllRecipientsToBeKnownUsers: (recipients) =>
@@ -26,12 +28,24 @@ vi.mock("@/lib/auth/guards", () => ({
   handleApiError: (error) =>
     Response.json({ error: error.message }, { status: error.status || 500 }),
   jsonError: (message, status) => Response.json({ error: message }, { status }),
+  throwHttpError: (message, status) => {
+    const error = new Error(message);
+    error.status = status;
+    throw error;
+  },
 }));
 vi.mock("@/lib/services/broadcast/sendWhatsappBroadcast", () => ({
   sendWhatsappBroadcast: mocks.sendWhatsappBroadcast,
 }));
 vi.mock("@/lib/services/broadcast/sendTeamsBroadcast", () => ({
   sendTeamsBroadcast: mocks.sendTeamsBroadcast,
+}));
+vi.mock("@/lib/repos/immediateBroadcasts.repo", () => ({
+  reserveImmediateBroadcastRequest: mocks.reserveImmediateBroadcastRequest,
+  recoverImmediateBroadcastRequest: mocks.recoverImmediateBroadcastRequest,
+}));
+vi.mock("@/lib/services/broadcast/processImmediateBroadcast", () => ({
+  processImmediateBroadcast: mocks.processImmediateBroadcast,
 }));
 vi.mock("@/lib/repos/scheduledBroadcasts.repo", () => ({
   createScheduledBroadcast: mocks.createScheduledBroadcast,
@@ -56,8 +70,7 @@ import { POST as postReadChain } from "@/app/api/broadcast/read-chain/route.js";
 const invalidLink = {
   key: "test",
   label: "Test",
-  destinationUrl:
-    "javascript:document.body.dataset.securityTest='executed'",
+  destinationUrl: "javascript:document.body.dataset.securityTest='executed'",
 };
 
 describe("Broadcast caller validation", () => {
@@ -74,34 +87,37 @@ describe("Broadcast caller validation", () => {
         payload: { userIds: [1], trackedLinks: [invalidLink] },
       },
     ],
-  ])("returns HTTP 400 before persistence for %s", async (_name, handler, extra) => {
-    mocks.requireOwnedOrg.mockResolvedValue({
-      orgId: 1,
-      admin: {},
-      user: { id: 1 },
-    });
+  ])(
+    "returns HTTP 400 before persistence for %s",
+    async (_name, handler, extra) => {
+      mocks.requireOwnedOrg.mockResolvedValue({
+        orgId: 1,
+        admin: {},
+        user: { id: 1 },
+      });
 
-    const body = {
-      orgId: 1,
-      message: "test",
-      ...extra,
-    };
+      const body = {
+        orgId: 1,
+        message: "test",
+        ...extra,
+      };
 
-    if (_name !== "schedule") body.trackedLinks = [invalidLink];
+      if (_name !== "schedule") body.trackedLinks = [invalidLink];
 
-    const response = await handler(
-      new Request("https://app.example/api/test", {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: { "content-type": "application/json" },
-      }),
-    );
+      const response = await handler(
+        new Request("https://app.example/api/test", {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers: { "content-type": "application/json" },
+        }),
+      );
 
-    expect(response.status).toBe(400);
-    expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
-    expect(mocks.sendTeamsBroadcast).not.toHaveBeenCalled();
-    expect(mocks.createScheduledBroadcast).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(400);
+      expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
+      expect(mocks.sendTeamsBroadcast).not.toHaveBeenCalled();
+      expect(mocks.createScheduledBroadcast).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns HTTP 400 before creating a read-chain step", async () => {
     mocks.requireOwnedOrg.mockResolvedValue({

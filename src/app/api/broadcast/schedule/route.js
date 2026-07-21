@@ -9,18 +9,13 @@ import {
   requireOwnedOrg,
 } from "@/lib/auth/guards";
 import { validateTrackedLinks } from "@/lib/services/broadcast/trackedLinkUrl";
+import { normalizeImmediateRecipientIds } from "@/lib/services/broadcast/immediateBroadcast";
 
 export async function POST(req) {
   try {
     const body = await req.json();
 
-    const {
-      orgId,
-      channel,
-      scheduledFor,
-      timezone,
-      payload,
-    } = body;
+    const { orgId, channel, scheduledFor, timezone, payload } = body;
 
     if (!orgId || !channel || !scheduledFor || !payload) {
       return NextResponse.json(
@@ -64,7 +59,7 @@ export async function POST(req) {
           ? payload.recipients
           : [];
 
-    const recipientUserIds = requireAllRecipientsToBeKnownUsers(rawRecipients);
+    const recipientUserIds = normalizeImmediateRecipientIds(rawRecipients);
     await assertUsersBelongToOrg(
       orgAuth.admin,
       orgAuth.orgId,

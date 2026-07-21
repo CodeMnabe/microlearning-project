@@ -25,6 +25,8 @@ export async function sendTeamsBroadcast(input = {}) {
     scheduledBroadcastId = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
+    immediateBroadcastDeliveryId = null,
+    beforeProviderSend = null,
   } = input;
 
   const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
@@ -111,6 +113,7 @@ export async function sendTeamsBroadcast(input = {}) {
         scheduledBroadcastId,
         sendGroupId,
         createdByUserId,
+        immediateBroadcastDeliveryId,
       });
 
       let text = replaceTrackedPlaceholders(
@@ -142,6 +145,7 @@ export async function sendTeamsBroadcast(input = {}) {
         attachments: [...imageAttachments, ...videoCardAttachments],
       };
 
+      await beforeProviderSend?.();
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {

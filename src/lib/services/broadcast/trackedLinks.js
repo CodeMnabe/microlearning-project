@@ -45,6 +45,7 @@ export async function createTrackedLinkForRecipient({
   linkLabel,
   linkKey = null,
   createdByUserId = null,
+  immediateBroadcastDeliveryId = null,
 }) {
   const safeDestinationUrl = validateTrackedLinkDestination(destinationUrl);
   const token = makeToken();
@@ -61,6 +62,7 @@ export async function createTrackedLinkForRecipient({
     link_key: linkKey,
     source_type: "broadcast",
     created_by_user_id: createdByUserId,
+    immediate_broadcast_delivery_id: immediateBroadcastDeliveryId,
   });
 
   return {
@@ -77,6 +79,7 @@ export async function resolveTrackedLinksForRecipient({
   scheduledBroadcastId = null,
   sendGroupId = null,
   createdByUserId = null,
+  immediateBroadcastDeliveryId = null,
 }) {
   const resolved = [];
   const validatedTrackedLinks = validateTrackedLinks(trackedLinks);
@@ -98,6 +101,7 @@ export async function resolveTrackedLinksForRecipient({
       linkLabel: label,
       linkKey: key,
       createdByUserId,
+      immediateBroadcastDeliveryId,
     });
 
     resolved.push({

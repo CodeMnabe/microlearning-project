@@ -1755,7 +1755,10 @@ export default function BroadcastPage() {
 
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
         body: JSON.stringify(payload),
       });
 

@@ -19,7 +19,26 @@ export async function createTrackedLink(row) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (
+      error.code === "23505" &&
+      safeRow.immediate_broadcast_delivery_id &&
+      safeRow.link_key
+    ) {
+      const { data: existing, error: existingError } = await supabaseAdmin
+        .from("tracked_link")
+        .select()
+        .eq(
+          "immediate_broadcast_delivery_id",
+          safeRow.immediate_broadcast_delivery_id,
+        )
+        .eq("link_key", safeRow.link_key)
+        .single();
+      if (existingError) throw existingError;
+      return existing;
+    }
+    throw error;
+  }
   return data;
 }
 
