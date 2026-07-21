@@ -51,7 +51,6 @@
         "how-it-works": "How it works"
       }
     },
-
     "FeatureGrid": {
       "eyebrow": "HOW IT WORKS",
       "heading": "Learn without leaving the flow of work",
@@ -95,13 +94,14 @@
         }
       }
     },
-
     "Pricing": {
       "eyebrow": "PRICING",
       "heading": "Choose the right plan",
       "subheading": "Start with a pilot, then scale across teams - with measurable impact.",
       "comparison": "See all comparisons",
-      "unit": { "month": "month" },
+      "unit": {
+        "month": "month"
+      },
       "benefits": {
         "0": "High adoption (no new apps).",
         "1": "Daily microlearning with instant feedback.",
@@ -110,15 +110,20 @@
         "4": "No complex LMS or heavy infrastructure."
       },
       "plans": {
-        "popular": { "name": "Pilot", "tagline": "Validate with one team" },
-        "pro": { "name": "Growth", "tagline": "Scale across teams and areas" },
+        "popular": {
+          "name": "Pilot",
+          "tagline": "Validate with one team"
+        },
+        "pro": {
+          "name": "Growth",
+          "tagline": "Scale across teams and areas"
+        },
         "advanced": {
           "name": "Enterprise",
           "tagline": "Advanced needs and integrations"
         }
       }
     },
-
     "BeforeAfter": {
       "heading": "Training that happens at work",
       "subheading": "Less friction, higher adoption - and results you can measure.",
@@ -145,10 +150,16 @@
         }
       }
     },
-
     "Footer": {
-      "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
-      "cols": { "product": "Product", "legal": "Legal" },
+      "socials": {
+        "x": "X",
+        "linkedin": "LinkedIn",
+        "youtube": "YouTube"
+      },
+      "cols": {
+        "product": "Product",
+        "legal": "Legal"
+      },
       "links": {
         "payments": "Integrations",
         "auth": "Security",
@@ -161,7 +172,10 @@
         "privacy": "Privacy Policy",
         "security": "Security & Providers"
       },
-      "badges": { "gdpr": "GDPR compliant", "status": "Status" }
+      "badges": {
+        "gdpr": "GDPR compliant",
+        "status": "Status"
+      }
     },
     "Contact": {
       "eyebrow": "Contact",
@@ -201,7 +215,6 @@
       }
     }
   },
-
   "SolutionsPage": {
     "hero": {
       "eyebrow": "Solutions",
@@ -210,7 +223,6 @@
       "primaryCta": "Book a demo",
       "secondaryCta": "Talk to sales"
     },
-
     "overview": {
       "eyebrow": "Explore our solutions",
       "title": "How MyDigitalBot adapts to the challenges of your organization",
@@ -255,7 +267,6 @@
       }
     }
   },
-
   "ProductPage": {
     "hero": {
       "eyebrow": "Product",
@@ -264,7 +275,6 @@
       "primaryCta": "Schedule a demo",
       "secondaryCta": "Talk to the team"
     },
-
     "explorer": {
       "eyebrow": "DISCOVER HOW IT WORKS",
       "title": "PRODUCT",
@@ -282,7 +292,6 @@
         },
         "alt": "MyDigitalBot messages mockup"
       },
-
       "assistants": {
         "title": "Intelligent assistants tailored to your organization",
         "description": "Create configurable assistants by topic, such as HR, training or support.",
@@ -294,7 +303,6 @@
         },
         "alt": "MyDigitalBot intelligent assistants mockup"
       },
-
       "knowledge": {
         "title": "Knowledge accessible at the right moment",
         "description": "FAQs, documents and internal content always available to users.",
@@ -305,7 +313,6 @@
         },
         "alt": "MyDigitalBot internal knowledge mockup"
       },
-
       "channels": {
         "title": "Where users already are",
         "description": "Bring communication and assistants to the channels your teams already use.",
@@ -319,7 +326,6 @@
       }
     }
   },
-
   "PricingPage": {
     "hero": {
       "eyebrow": "Pricing",
@@ -419,12 +425,20 @@
       "setup": {
         "title": "Setup and rollout",
         "description": "Use these rows to explain onboarding, implementation, and configuration differences.",
-        "rows": ["Initial setup", "Custom branding", "Migration help"]
+        "rows": [
+          "Initial setup",
+          "Custom branding",
+          "Migration help"
+        ]
       },
       "automation": {
         "title": "Automation and AI",
         "description": "Use this area to show what becomes more powerful as plans grow.",
-        "rows": ["Automated flows", "Usage reporting", "Advanced logic"]
+        "rows": [
+          "Automated flows",
+          "Usage reporting",
+          "Advanced logic"
+        ]
       },
       "governance": {
         "title": "Governance and control",
@@ -471,7 +485,6 @@
       "secondary": "Back to homepage"
     }
   },
-
   "HowItWorksPage": {
     "hero": {
       "eyebrow": "How it works",
@@ -545,7 +558,6 @@
       "alt": "Simple integrations with existing channels and systems"
     }
   },
-
   "Public": {
     "Dpa": {
       "Title": "Data Processing Agreement (DPA)",
@@ -889,7 +901,7 @@
     "login": "Login",
     "options": "Options",
     "logout": "Sign out",
-     "analytics": "Analytics"
+    "analytics": "Analytics"
   },
   "Common": {
     "search": "Search",
@@ -938,7 +950,6 @@
   "Navbar": {
     "orgUnknown": "-"
   },
-
   "Users": {
     "title": "Users",
     "searchPlaceholder": "Search",
@@ -950,7 +961,6 @@
       "tags": "Tags",
       "assistant": "Assistant"
     },
-
     "pagination": {
       "summary": "Page {page} of {totalPages} · {totalUsers} users",
       "perPage": "{count} / page",
@@ -972,7 +982,6 @@
     "assistantUpdateFailed": "Failed to update assistant",
     "confirmDeleteTitle": "Delete {name}?",
     "confirmDeleteMessage": "This action cannot be undone.",
-
     "alerts": {
       "noOrg": {
         "title": "Missing organization",
@@ -1028,7 +1037,6 @@
       }
     }
   },
-
   "UserPage": {
     "selectUser": "Select a user.",
     "id": "ID",
@@ -1043,7 +1051,6 @@
     "threads": "Threads",
     "noThreads": "This user has no threads."
   },
-
   "MessagesList": {
     "empty": "No messages yet.",
     "id": "ID",
@@ -1051,7 +1058,6 @@
     "content": "Content",
     "noText": "No text found!"
   },
-
   "ViewUserModal": {
     "read": "Read",
     "delivered": "Delivered",
@@ -1086,7 +1092,6 @@
     "confirmDeleteTitle": "Delete this user",
     "confirmDeleteMsg": "This action cannot be undone."
   },
-
   "CreateUserModal": {
     "title": "Create a new User",
     "userName": "User Name:",
@@ -1110,39 +1115,31 @@
     "cancel": "Cancel",
     "removeLabel": "Remove {name}"
   },
-
   "Templates": {
     "title": "WhatsApp Templates",
     "tabList": "List",
     "tabCreate": "Create",
     "sync": "Sync",
     "syncing": "Syncing…",
-
     "name": "Name",
     "language": "Language",
     "category": "Category",
     "status": "Status",
-
     "noTemplates": "No templates. Go to \"Create\" to add one.",
     "sendTest": "Send test",
-
     "MARKETING": "Marketing",
     "UTILITY": "Utility",
     "AUTHENTICATION": "Authentication",
-
     "model": "Model",
     "Model": "Model",
-
     "text_quickreplies": "Text + quick replies",
     "image_header_quickreplies": "Image header + quick replies",
     "quiz_url_button": "Quiz with variable URL button",
-
     "notices": {
       "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
       "submitted": "Template \"{name}\" submitted. Status: {status}",
       "sent": "Template sent."
     },
-
     "statuses": {
       "new": "New",
       "approved": "Approved",
@@ -1154,7 +1151,6 @@
       "pending_deletion": "Pending deletion",
       "unknown": "Unknown"
     },
-
     "createForm": {
       "name": "Name",
       "language": "Language",
@@ -1165,7 +1161,6 @@
       "reset": "Reset example",
       "creating": "Creating…"
     },
-
     "modal": {
       "title": "Send test",
       "to": "To (E.164 or national)",
@@ -1176,7 +1171,6 @@
       "sending": "Sending…",
       "close": "Close"
     },
-
     "errors": {
       "noOrg": "No organization found.",
       "fetch": "Failed to fetch templates: {message}",
@@ -1186,7 +1180,6 @@
       "createFailed": "Create failed: {message}",
       "sendFailed": "Send failed: {message}"
     },
-
     "alerts": {
       "syncFailed": {
         "title": "Failed to sync templates",
@@ -1238,7 +1231,6 @@
       }
     }
   },
-
   "Automations": {
     "searchAutomations": "Search automations...",
     "refresh": "Refresh",
@@ -1249,20 +1241,17 @@
     "rules": "Rules",
     "queue": "Queue",
     "deliveries": "Deliveries",
-
     "userCreated": "User created",
     "userInactive": "User inactive",
     "messageRead": "Message read",
     "messageUnread": "Message unread",
     "unknown": "Other / unknown",
-
     "triggerDescriptions": {
       "userCreated": "Send X minutes after a user is created.",
       "userInactive": "Send X minutes without a user inbound message.",
       "messageRead": "Reserved for future read-receipt automations.",
       "messageUnread": "Reserved for future unread-message automations."
     },
-
     "rulesTable": {
       "rule": "Rule",
       "user": "User",
@@ -1286,7 +1275,6 @@
       "edit": "Edit",
       "delete": "Delete"
     },
-
     "queueTable": {
       "rule": "Rule",
       "trigger": "Event",
@@ -1295,7 +1283,6 @@
       "runStatus": "Run status",
       "queueDetails": "Queue details"
     },
-
     "modal": {
       "newTitle": "New automation",
       "editTitle": "Edit automation",
@@ -1358,7 +1345,6 @@
       "broadcastStatus": "Broadcast status",
       "message": "Message"
     },
-
     "statuses": {
       "queued": "Queued",
       "materialized": "Materialized",
@@ -1369,17 +1355,14 @@
       "cancelled": "Cancelled",
       "skipped": "Skipped"
     },
-
     "deletedRule": "Deleted rule",
     "userFallback": "User #{id}",
-
     "confirmDelete": {
       "title": "Delete \"{name}\"?",
       "message": "This will remove the automation rule. Existing runs will remain in the history.",
       "confirm": "Delete",
       "cancel": "Cancel"
     },
-
     "errors": {
       "saveRule": "Could not save the automation rule.",
       "deleteRule": "Could not delete the automation rule.",
@@ -1423,19 +1406,16 @@
         "title": "Automation activated",
         "message": "The automation rule was activated successfully."
       },
-
       "updateRuleError": {
         "title": "Failed to update automation",
         "message": "The automation rule could not be updated."
       },
-
       "materializeSuccess": {
         "title": "Deliveries materialized",
         "message": "The materialization routine ran successfully."
       }
     }
   },
-
   "Broadcast": {
     "title": "WhatsApp Messages",
     "selected": "Selected:",
@@ -1483,7 +1463,6 @@
       "first": "Add placeholders like",
       "second": "inside the message."
     },
-
     "alerts": {
       "usersLoadFailed": {
         "title": "Failed to load recipients",
@@ -1564,7 +1543,6 @@
       "chainDelayMinutesHours": "Wait {hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}} after read"
     }
   },
-
   "BroadcastScheduled": {
     "Title": "Scheduled messages",
     "Subtitle": "Scheduled messages for organization {organization}",
@@ -1671,7 +1649,6 @@
         "title": "Missing organization",
         "message": "The organization could not be identified yet. Please try again in a few seconds."
       },
-
       "loadError": {
         "title": "Failed to load messages",
         "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
@@ -1702,7 +1679,6 @@
       }
     }
   },
-
   "TrackedLinks": {
     "title": "Tracked Links",
     "subtitle": "View click performance for your organization's tracked links.",
@@ -1722,7 +1698,6 @@
       "created": "Created"
     },
     "view": "View",
-
     "detail": {
       "alerts": {
         "noOrg": {
@@ -1820,7 +1795,6 @@
     "create": "Create",
     "cancel": "Cancel"
   },
-
   "Chatbox": {
     "try": "Try Assistant",
     "threadId": "Thread ID:",
@@ -1828,7 +1802,6 @@
     "send": "Send",
     "errorReply": "Error in reply",
     "errorApi": "Error communicating with the API.",
-
     "alerts": {
       "emptyMessage": {
         "title": "Empty message",
@@ -2057,7 +2030,6 @@
       }
     }
   },
-
   "Auth": {
     "brand": "MyDigitalBot",
     "example": "example@example.com",
@@ -2089,7 +2061,6 @@
       "updated": "Password updated! Redirecting…"
     }
   },
-
   "Alert": {
     "noContact": {
       "title": "Missing Contact",
@@ -2102,12 +2073,10 @@
       "ok": "OK"
     }
   },
-
   "PillSelect": {
     "placeholder": "Select…",
     "empty": "No options."
   },
-
   "ThemePreview": {
     "sampleCard": "Sample card",
     "sampleBody": "Body text using your theme. Tweak colors to see it change.",
@@ -2119,13 +2088,11 @@
     "buttonUser": "Got to Users",
     "buttonLogin": "Go to Login"
   },
-
   "Delete": {
     "title": "Are you sure?",
     "namedTitle": "Are you sure you want to delete {name}?",
     "deleteMessage": "This action cannot be undone."
   },
-
   "QuickActions": {
     "selected": "selected",
     "clear": "Clear",
@@ -2145,79 +2112,75 @@
       "cancel": "Cancel"
     }
   },
-
   "Analytics": {
-  "title": "Analytics",
-  
-  "refresh": "Refresh",
-  "loading": "Loading metrics...",
-  "errors": {
-    "load": "Metrics could not be loaded. Please try again in a few seconds.",
-    "noOrg": "The current organization could not be identified."
-  },
-  "health": {
-    "ok": "All good",
-    "noErrors": "No issues were found in the loaded data.",
-    "needsAttention": "Needs attention",
-    "errorsFound": "{count} issue(s) found in the current data."
-  },
-  "cards": {
-    "users": "Users",
-    "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
-    "assistants": "Assistants",
-    "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
-    "messages": "Messages",
-    "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
-    "delivery": "Delivery",
-    "deliveryHelper": "{read} read, {failed} failed.",
-    "templates": "Templates WhatsApp",
-    "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
-    "automations": "Automations",
-    "automationsHelper": "{active} active, {paused} paused.",
-    "automationRuns": "Automation runs",
-    "automationRunsHelper": "{processed} processed, {failed} failed.",
-    "scheduledBroadcasts": "Scheduled messages",
-    "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
-    "trackedLinks": "Tracked clicks",
-    "trackedLinksHelper": "{links} tracked links.",
-    "pendingOutreach": "Pending messages",
-    "pendingOutreachHelper": "{active} still active.",
-    "health": "Overall health",
-    "assistantCoverage": "Assigned assistants",
-    "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
-    "readRate": "Read rate",
-    "readRateHelper": "{read}/{total} messages read.",
-    "failureRate": "Failure rate",
-    "failureRateHelper": "{failed}/{total} failed messages.",
-    "clickDensity": "Clicks per link",
-    "clickDensityHelper": "{clicks} clicks across {links} links."
-    
-  },
-  "sections": {
-  "breakdownTitle": "Operational summary",
-  "users": {
-    "title": "Coverage",
-    "value": "{withAssistant}/{total} with assistant",
-    "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
-  },
-  "messages": {
-    "title": "Activity",
-    "value": "{total} registered messages",
-    "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
-  },
-  "attention": {
-    "title": "Attention points",
-    "value": "{total} active issues",
-    "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
-  },
-  "next": {
-    "title": "Next improvement",
-    "value": "Add charts",
-    "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
-     }
+    "title": "Analytics",
+    "refresh": "Refresh",
+    "loading": "Loading metrics...",
+    "errors": {
+      "load": "Metrics could not be loaded. Please try again in a few seconds.",
+      "noOrg": "The current organization could not be identified."
     },
-
-      "charts": {
+    "health": {
+      "ok": "All good",
+      "noErrors": "No issues were found in the loaded data.",
+      "needsAttention": "Needs attention",
+      "errorsFound": "{count} issue(s) found in the current data."
+    },
+    "cards": {
+      "users": "Users",
+      "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
+      "assistants": "Assistants",
+      "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
+      "messages": "Messages",
+      "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+      "delivery": "Delivery",
+      "deliveryHelper": "{read} read, {failed} failed.",
+      "templates": "Templates WhatsApp",
+      "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
+      "automations": "Automations",
+      "automationsHelper": "{active} active, {paused} paused.",
+      "automationRuns": "Automation runs",
+      "automationRunsHelper": "{processed} processed, {failed} failed.",
+      "scheduledBroadcasts": "Scheduled messages",
+      "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
+      "trackedLinks": "Tracked clicks",
+      "trackedLinksHelper": "{links} tracked links.",
+      "pendingOutreach": "Pending messages",
+      "pendingOutreachHelper": "{active} still active.",
+      "health": "Overall health",
+      "assistantCoverage": "Assigned assistants",
+      "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
+      "readRate": "Read rate",
+      "readRateHelper": "{read}/{total} messages read.",
+      "failureRate": "Failure rate",
+      "failureRateHelper": "{failed}/{total} failed messages.",
+      "clickDensity": "Clicks per link",
+      "clickDensityHelper": "{clicks} clicks across {links} links."
+    },
+    "sections": {
+      "breakdownTitle": "Operational summary",
+      "users": {
+        "title": "Coverage",
+        "value": "{withAssistant}/{total} with assistant",
+        "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
+      },
+      "messages": {
+        "title": "Activity",
+        "value": "{total} registered messages",
+        "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
+      },
+      "attention": {
+        "title": "Attention points",
+        "value": "{total} active issues",
+        "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
+      },
+      "next": {
+        "title": "Next improvement",
+        "value": "Add charts",
+        "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
+      }
+    },
+    "charts": {
       "email": "Email",
       "phone": "Phone",
       "teams": "Teams",
@@ -2230,7 +2193,6 @@
       "messages": "Messages",
       "automations": "Automations",
       "scheduled": "Scheduled",
-      
       "messagesTitle": "Messages by channel",
       "messagesDescription": "Comparison between WhatsApp and Teams messages.",
       "templatesTitle": "Template status",
@@ -2240,94 +2202,92 @@
       "sectionTitle": "Current distribution",
       "sectionDescription": "A snapshot of the current state and selected period metrics."
     },
-
-  "periods": {
-  "label": "Filter by period",
-  "all": "All",
-  "last7Days": "7 days",
-  "last30Days": "30 days",
-  "last90Days": "90 days"
-  
-  },
-  "trends": {
-  "title": "Daily trends",
-  "description": "These charts follow the selected period. When All is selected, they show the last 30 days.",
-  "messagesTitle": "Messages per day",
-  "messagesDescription": "Total messages registered each day.",
-  "clicksTitle": "Clicks per day",
-  "clicksDescription": "Tracked link clicks registered each day.",
-  "failuresTitle": "Failures per day",
-  "failuresDescription": "Messages that failed each day.",
-  "automationsTitle": "Processed automations per day",
-  "automationsDescription": "Automation runs processed each day.",
-  "empty": "No data to show for this period."
-  },
+    "periods": {
+      "label": "Filter by period",
+      "all": "All",
+      "last7Days": "7 days",
+      "last30Days": "30 days",
+      "last90Days": "90 days"
+    },
+    "trends": {
+      "title": "Daily trends",
+      "description": "These charts follow the selected period. When All is selected, they show the last 30 days.",
+      "messagesTitle": "Messages per day",
+      "messagesDescription": "Total messages registered each day.",
+      "clicksTitle": "Clicks per day",
+      "clicksDescription": "Tracked link clicks registered each day.",
+      "failuresTitle": "Failures per day",
+      "failuresDescription": "Messages that failed each day.",
+      "automationsTitle": "Processed automations per day",
+      "automationsDescription": "Automation runs processed each day.",
+      "empty": "No data to show for this period."
+    },
     "groups": {
-  "overview": {
-    "title": "Overview",
-    "description": "Current organization setup and configuration status."
+      "overview": {
+        "title": "Overview",
+        "description": "Current organization setup and configuration status."
+      },
+      "activity": {
+        "title": "Activity",
+        "description": "Messages, delivery and activity metrics for the selected period."
+      },
+      "automations": {
+        "title": "Automations",
+        "description": "Automation rules, automation runs and scheduled messages."
+      },
+      "engagement": {
+        "title": "Engagement",
+        "description": "Tracked link activity and click performance."
+      }
+    },
+    "customization": {
+      "title": "Dashboard customization",
+      "description": "Show or hide metric groups. Your choice is saved in this browser.",
+      "show": "Show",
+      "hide": "Hide",
+      "reset": "Reset groups",
+      "resetCharts": "Reset charts",
+      "exports": "Export",
+      "resetDashboard": "Reset dashboard"
+    },
+    "rankings": {
+      "title": "Rankings",
+      "description": "The most relevant items for the selected period.",
+      "topLinksTitle": "Top tracked links",
+      "topLinksDescription": "Links with the highest number of clicks.",
+      "automationFailuresTitle": "Automation failures",
+      "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
+      "empty": "No ranking data for this period.",
+      "columns": {
+        "link": "Link",
+        "clicks": "Clicks",
+        "automation": "Automation",
+        "failures": "Failures",
+        "viewAllLinks": "View full list ({count})",
+        "allLinksTitle": "Full links list",
+        "allLinksDescription": "All tracked links ordered by number of clicks.",
+        "close": "Close"
+      }
+    }
   },
-  "activity": {
-    "title": "Activity",
-    "description": "Messages, delivery and activity metrics for the selected period."
-  },
-  "automations": {
-    "title": "Automations",
-    "description": "Automation rules, automation runs and scheduled messages."
-  },
-  "engagement": {
-    "title": "Engagement",
-    "description": "Tracked link activity and click performance."
-  }
-
-  
-
-},
-
-  "customization": {
-  "title": "Dashboard customization",
-  "description": "Show or hide metric groups. Your choice is saved in this browser.",
-  "show": "Show",
-  "hide": "Hide",
-  "reset": "Reset groups",
-  "resetCharts": "Reset charts",
-  "exports": "Export",
-  "resetDashboard": "Reset dashboard"
-},
-
-  "rankings": {
-  "title": "Rankings",
-  "description": "The most relevant items for the selected period.",
-  "topLinksTitle": "Top tracked links",
-  "topLinksDescription": "Links with the highest number of clicks.",
-  "automationFailuresTitle": "Automation failures",
-  "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
-  "empty": "No ranking data for this period.",
-  "columns": {
-    "link": "Link",
-    "clicks": "Clicks",
-    "automation": "Automation",
-    "failures": "Failures",
-    "viewAllLinks": "View full list ({count})",
-    "allLinksTitle": "Full links list",
-    "allLinksDescription": "All tracked links ordered by number of clicks.",
-    "close": "Close"
+  "ImportErrors": {
+    "UNSUPPORTED_FORMAT": "Format not supported. Please use .xlsx or .csv",
+    "EMPTY_FILE": "File is empty.",
+    "INVALID_MIME_TYPE": "Invalid file MIME type.",
+    "INVALID_FILE_SIGNATURE": "Invalid file signature. Not a valid ZIP/XLSX file.",
+    "FILE_TOO_LARGE": "File exceeds maximum allowed size ({max} bytes).",
+    "NO_WORKSHEETS": "No worksheets found in Excel file.",
+    "TOO_MANY_WORKSHEETS": "File has too many worksheets (max {max}).",
+    "EMPTY_WORKSHEET": "Worksheet is empty.",
+    "TOO_MANY_ROWS": "File has too many rows (max {max}).",
+    "TOO_MANY_COLUMNS": "File has too many columns (max {max}).",
+    "CELL_TOO_LARGE": "Cell value exceeds maximum characters (row {row}, col {col}).",
+    "FORBIDDEN_HEADER": "Forbidden header name found: {header}",
+    "WORKER_TIMEOUT": "Excel parsing timed out.",
+    "PARSING_CANCELLED": "Parsing cancelled by user.",
+    "READ_FAILED": "Failed to read file: {message}",
+    "NO_VALID_ROWS": "No valid rows were found in that file.",
+    "IMPORT_FAILED": "Import failed.",
+    "UNKNOWN_ERROR": "An unknown error occurred."
   }
 }
-
-
-
-
-    
-
-  }
-
-}
-
-
-
-
-
-
-
-

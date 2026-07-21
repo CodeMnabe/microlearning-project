@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import Papa from "papaparse";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { parseExcelFile, parseCsvFile } from "./parseImportFile";
 import styles from "./import.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import mapCsvRow from "./helpers";
 import { Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const PREVIEW_LIMIT = 10;
 
@@ -37,12 +38,14 @@ export default function ImportUsersModal({
   defaultPhoneCode = "+351",
   onImported,
 }) {
+  const t = useTranslations("ImportErrors");
   const [rows, setRows] = useState([]);
   const [assistantId, setAssistantId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const parseCancelRef = useRef(null);
 
   const [render, setRender] = useState(isOpen);
 
@@ -50,6 +53,10 @@ export default function ImportUsersModal({
     if (isOpen) {
       setRender(true);
     } else {
+      if (parseCancelRef.current) {
+        parseCancelRef.current();
+        parseCancelRef.current = null;
+      }
       setRows([]);
       setAssistantId("");
       setIsSubmitting(false);
@@ -58,6 +65,15 @@ export default function ImportUsersModal({
       setFileName("");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (parseCancelRef.current) {
+        parseCancelRef.current();
+        parseCancelRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!render) return;
@@ -76,45 +92,7 @@ export default function ImportUsersModal({
 
   const stateClass = isOpen ? styles.open : styles.closing;
 
-  async function readExcelFile(file) {
-    const XLSX = await import("xlsx");
 
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, {
-      type: "array",
-      cellDates: false,
-    });
-
-    const sheetName = workbook.SheetNames.includes("Users")
-      ? "Users"
-      : workbook.SheetNames[0];
-
-    if (!sheetName) {
-      throw new Error("No sheets found in Excel file.");
-    }
-
-    const worksheet = workbook.Sheets[sheetName];
-
-    return XLSX.utils.sheet_to_json(worksheet, {
-      defval: "",
-      raw: false,
-    });
-  }
-
-  async function readCsvFile(file) {
-    const text = await file.text();
-
-    const results = Papa.parse(text, {
-      header: true,
-      skipEmptyLines: true,
-    });
-
-    if (results.errors?.length) {
-      console.warn("CSV parse warnings:", results.errors);
-    }
-
-    return results.data || [];
-  }
 
   async function handleFileChange(file) {
     if (!file) return;
@@ -124,17 +102,25 @@ export default function ImportUsersModal({
     setFileName(file.name);
 
     try {
+      if (parseCancelRef.current) {
+        parseCancelRef.current();
+        parseCancelRef.current = null;
+      }
+
       let data = [];
 
       if (isExcelFile(file)) {
-        data = await readExcelFile(file);
+        const { promise, cancel } = parseExcelFile(file);
+        parseCancelRef.current = cancel;
+        data = await promise;
       } else if (isCsvFile(file)) {
-        data = await readCsvFile(file);
+        data = await parseCsvFile(file);
       } else {
         setRows([]);
-        setError("Please upload a .xlsx or .csv file.");
+        setError(t("UNSUPPORTED_FORMAT"));
         return;
       }
+      parseCancelRef.current = null;
 
       const mapped = data
         .map((row) => {
@@ -165,15 +151,25 @@ export default function ImportUsersModal({
 
       if (!mapped.length) {
         setRows([]);
-        setError("No valid rows were found in that file.");
+        setError(t("NO_VALID_ROWS"));
         return;
       }
 
       setRows(mapped);
     } catch (err) {
       console.error(err);
+      if (err?.code === "PARSING_CANCELLED") return;
       setRows([]);
-      setError("There was a problem reading that file.");
+      if (err && err.code) {
+        try {
+          // If translation exists it will succeed, otherwise we catch and fallback
+          setError(t(err.code, err.details || {}));
+        } catch (translationErr) {
+          setError(t("UNKNOWN_ERROR"));
+        }
+      } else {
+        setError(t("UNKNOWN_ERROR"));
+      }
     }
   }
 
@@ -202,7 +198,7 @@ export default function ImportUsersModal({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Import failed.");
+        setError(data.error || t("IMPORT_FAILED"));
         return;
       }
 
@@ -210,7 +206,7 @@ export default function ImportUsersModal({
       await onImported?.();
     } catch (err) {
       console.error(err);
-      setError("Import failed.");
+      setError(t("IMPORT_FAILED"));
     } finally {
       setIsSubmitting(false);
     }

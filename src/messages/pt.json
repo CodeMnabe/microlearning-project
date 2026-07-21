@@ -51,7 +51,6 @@
         "how-it-works": "Como funciona"
       }
     },
-
     "FeatureGrid": {
       "eyebrow": "COMO FUNCIONA",
       "heading": "Aprender sem sair do fluxo de trabalho",
@@ -95,13 +94,14 @@
         }
       }
     },
-
     "Pricing": {
       "eyebrow": "PREÇOS",
       "heading": "Escolhe o plano ideal",
       "subheading": "Começa com um piloto e escala por equipas - sem fricção e com impacto mensurável.",
       "comparison": "Ver todas as comparações",
-      "unit": { "month": "mês" },
+      "unit": {
+        "month": "mês"
+      },
       "benefits": {
         "0": "Alta adesão (sem novas apps).",
         "1": "Microlearning diário com feedback imediato.",
@@ -110,7 +110,10 @@
         "4": "Sem LMS complexo nem infraestruturas pesadas."
       },
       "plans": {
-        "popular": { "name": "Pilot", "tagline": "Para validar com 1 equipa" },
+        "popular": {
+          "name": "Pilot",
+          "tagline": "Para validar com 1 equipa"
+        },
         "pro": {
           "name": "Growth",
           "tagline": "Para escalar por equipas e áreas"
@@ -121,7 +124,6 @@
         }
       }
     },
-
     "BeforeAfter": {
       "heading": "Formação que acontece no trabalho",
       "subheading": "Menos fricção, mais adesão - e resultados que se medem.",
@@ -148,10 +150,16 @@
         }
       }
     },
-
     "Footer": {
-      "socials": { "x": "X", "linkedin": "LinkedIn", "youtube": "YouTube" },
-      "cols": { "product": "Produto", "legal": "Legal" },
+      "socials": {
+        "x": "X",
+        "linkedin": "LinkedIn",
+        "youtube": "YouTube"
+      },
+      "cols": {
+        "product": "Produto",
+        "legal": "Legal"
+      },
       "links": {
         "payments": "Integrações",
         "auth": "Segurança",
@@ -164,7 +172,10 @@
         "privacy": "Política de Privacidade",
         "security": "Segurança & Fornecedores"
       },
-      "badges": { "gdpr": "Conforme RGPD", "status": "Estado" }
+      "badges": {
+        "gdpr": "Conforme RGPD",
+        "status": "Estado"
+      }
     },
     "Contact": {
       "eyebrow": "Contacto",
@@ -204,7 +215,6 @@
       }
     }
   },
-
   "SolutionsPage": {
     "hero": {
       "eyebrow": "Soluções",
@@ -213,7 +223,6 @@
       "primaryCta": "Agendar demo",
       "secondaryCta": "Falar com a equipa"
     },
-
     "overview": {
       "eyebrow": "Explore as nossas soluções",
       "title": "Como o MyDigitalBot se adapta aos desafios da sua organização",
@@ -258,7 +267,6 @@
       }
     }
   },
-
   "ProductPage": {
     "hero": {
       "eyebrow": "Produto",
@@ -267,13 +275,11 @@
       "primaryCta": "Agendar demo",
       "secondaryCta": "Falar com a equipa"
     },
-
     "explorer": {
       "eyebrow": "DESCUBRA COMO FUNCIONA",
       "title": "Produto",
       "subhead": "Como o MyDigitalBot funciona na prática"
     },
-
     "cards": {
       "messages": {
         "title": "Mensagens que geram interação",
@@ -286,7 +292,6 @@
         },
         "alt": "Mockup de mensagens no MyDigitalBot"
       },
-
       "assistants": {
         "title": "Assistentes inteligentes à medida da sua organização",
         "description": "Crie assistentes configuráveis por tema, como RH, formação ou suporte.",
@@ -298,7 +303,6 @@
         },
         "alt": "Mockup de assistentes inteligentes no MyDigitalBot"
       },
-
       "knowledge": {
         "title": "Conhecimento acessível no momento certo",
         "description": "FAQs, documentos e conteúdos internos sempre disponíveis para os utilizadores.",
@@ -309,7 +313,6 @@
         },
         "alt": "Mockup de conhecimento interno no MyDigitalBot"
       },
-
       "channels": {
         "title": "Onde os utilizadores já estão",
         "description": "Leve a comunicação e os assistentes para os canais que as equipas já usam.",
@@ -323,7 +326,6 @@
       }
     }
   },
-
   "PricingPage": {
     "hero": {
       "eyebrow": "Preços",
@@ -483,7 +485,6 @@
       "secondary": "Voltar à homepage"
     }
   },
-
   "HowItWorksPage": {
     "hero": {
       "eyebrow": "Como funciona",
@@ -557,7 +558,6 @@
       "alt": "Integrações simples com canais e sistemas existentes"
     }
   },
-
   "Public": {
     "Dpa": {
       "Title": "Acordo de Tratamento de Dados (DPA)",
@@ -887,7 +887,6 @@
       }
     }
   },
-
   "Nav": {
     "home": "Início",
     "users": "Colaboradores",
@@ -904,7 +903,6 @@
     "logout": "Sair",
     "analytics": "Métricas"
   },
-
   "Common": {
     "search": "Procurar",
     "filter": "Filtrar",
@@ -939,7 +937,6 @@
     "error": "Erro",
     "areYouSure": "Tem a certeza?"
   },
-
   "Lang": {
     "pt": "PT",
     "en": "EN",
@@ -953,27 +950,23 @@
   "Navbar": {
     "orgUnknown": "-"
   },
-
   "Users": {
     "title": "Utilizadores",
     "searchPlaceholder": "Procurar",
     "manageTags": "Gerir Tags",
     "newUser": "Novo Utilizador",
-
     "pagination": {
       "summary": "Página {page} de {totalPages} · {totalUsers} utilizadores",
       "perPage": "{count} / página",
       "previous": "Anterior",
       "next": "Seguinte"
     },
-
     "list": {
       "name": "Nome",
       "phone": "Nº. Telemóvel",
       "tags": "Tags",
       "assistant": "Assistente"
     },
-
     "row": {
       "more": "Mais opções",
       "view": "Ver",
@@ -989,7 +982,6 @@
     "assistantUpdateFailed": "Falha ao atualizar assistente",
     "confirmDeleteTitle": "Eliminar {name}?",
     "confirmDeleteMessage": "Esta ação não pode ser desfeita.",
-
     "alerts": {
       "noOrg": {
         "title": "Organização em falta",
@@ -1011,7 +1003,6 @@
         "title": "Utilizadores atualizados",
         "message": "A lista de utilizadores foi atualizada com sucesso."
       },
-
       "createUserFailed": {
         "title": "Erro ao criar utilizador",
         "message": "Não foi possível criar o utilizador. Verifica os dados e tenta novamente."
@@ -1038,7 +1029,6 @@
       }
     }
   },
-
   "UserPage": {
     "selectUser": "Selecione um utilizador.",
     "id": "ID",
@@ -1053,7 +1043,6 @@
     "threads": "Threads",
     "noThreads": "Este utilizador não tem threads."
   },
-
   "MessagesList": {
     "empty": "Sem mensagens.",
     "id": "ID",
@@ -1061,7 +1050,6 @@
     "content": "Conteúdo",
     "noText": "Sem texto"
   },
-
   "ViewUserModal": {
     "read": "Lida",
     "delivered": "Entregue",
@@ -1119,39 +1107,31 @@
     "cancel": "Cancelar",
     "removeLabel": "Remover {name}"
   },
-
   "Templates": {
     "title": "WhatsApp Templates",
     "tabList": "Lista",
     "tabCreate": "Criar",
     "sync": "Sincronizar",
     "syncing": "A sincronizar…",
-
     "name": "Nome",
     "language": "Idioma",
     "category": "Categoria",
     "status": "Estado",
-
     "noTemplates": "Sem templates. Vá a \"Criar\" para adicionar um.",
     "sendTest": "Enviar teste",
-
     "MARKETING": "Marketing",
     "UTILITY": "Utilidade",
     "AUTHENTICATION": "Autenticação",
-
     "model": "Modelo",
     "Model": "Modelo",
-
     "text_quickreplies": "Texto + respostas rápidas",
     "image_header_quickreplies": "Imagem no cabeçalho + respostas rápidas",
     "quiz_url_button": "Quiz com botão URL variável",
-
     "notices": {
       "synced": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}",
       "submitted": "Template \"{name}\" submetido. Estado: {status}",
       "sent": "Template enviado."
     },
-
     "statuses": {
       "new": "Novo",
       "approved": "Aprovado",
@@ -1163,7 +1143,6 @@
       "pending_deletion": "A aguardar eliminação",
       "unknown": "Desconhecido"
     },
-
     "createForm": {
       "name": "Nome",
       "language": "Idioma",
@@ -1174,7 +1153,6 @@
       "reset": "Repor exemplo",
       "creating": "A criar…"
     },
-
     "modal": {
       "title": "Enviar teste",
       "to": "Para (E.164 ou nacional)",
@@ -1185,7 +1163,6 @@
       "sending": "A enviar…",
       "close": "Fechar"
     },
-
     "errors": {
       "noOrg": "Não foi encontrada uma organização.",
       "fetch": "Falha ao carregar templates: {message}",
@@ -1240,14 +1217,12 @@
         "title": "Erro ao enviar teste",
         "message": "Não foi possível enviar o template de teste. Verifica o número e tenta novamente."
       },
-
       "noOrg": {
         "title": "Organização em falta",
         "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
       }
     }
   },
-
   "Automations": {
     "searchAutomations": "Pesquisar automações...",
     "refresh": "Atualizar",
@@ -1258,19 +1233,16 @@
     "rules": "Regras",
     "queue": "Fila",
     "deliveries": "Entregas",
-
     "userCreated": "Novo utilizador",
     "userInactive": "Utilizador inativo",
     "messageRead": "Mensagem lida",
     "messageUnread": "Mensagem por ler",
-
     "triggerDescriptions": {
       "userCreated": "Enviar X minutos depois de um novo utilizador ser criado.",
       "userInactive": "Enviar X minutos após um período de inatividade do utilizador.",
       "messageRead": "Reservado para futuras automações com confirmação de leitura.",
       "messageUnread": "Reservado para futuras automações com mensagens por ler."
     },
-
     "rulesTable": {
       "rule": "Regra",
       "user": "Utilizador",
@@ -1294,7 +1266,6 @@
       "edit": "Editar",
       "delete": "Apagar"
     },
-
     "queueTable": {
       "rule": "Regra",
       "trigger": "Evento",
@@ -1303,7 +1274,6 @@
       "runStatus": "Estado da execução",
       "queueDetails": "Detalhes da fila"
     },
-
     "modal": {
       "newTitle": "Nova automação",
       "editTitle": "Editar automação",
@@ -1358,7 +1328,6 @@
         }
       }
     },
-
     "deliveriesTable": {
       "rule": "Regra",
       "user": "Utilizador",
@@ -1367,7 +1336,6 @@
       "broadcastStatus": "Estado do envio",
       "message": "Mensagem"
     },
-
     "statuses": {
       "queued": "Em fila",
       "materialized": "Materializado",
@@ -1378,17 +1346,14 @@
       "cancelled": "Cancelado",
       "skipped": "Ignorado"
     },
-
     "deletedRule": "Regra eliminada",
     "userFallback": "Utilizador #{id}",
-
     "confirmDelete": {
       "title": "Eliminar \"{name}\"?",
       "message": "Isto vai remover a regra de automação. As execuções existentes permanecem no histórico.",
       "confirm": "Eliminar",
       "cancel": "Cancelar"
     },
-
     "errors": {
       "saveRule": "Não foi possível guardar a regra de automação.",
       "deleteRule": "Não foi possível eliminar a regra de automação.",
@@ -1432,19 +1397,16 @@
         "title": "Automação ativada",
         "message": "A regra de automação foi ativada com sucesso."
       },
-
       "updateRuleError": {
         "title": "Erro ao atualizar automação",
         "message": "Não foi possível atualizar a regra de automação."
       },
-
       "materializeSuccess": {
         "title": "Envios materializados",
         "message": "A rotina de materialização foi executada com sucesso."
       }
     }
   },
-
   "Broadcast": {
     "title": "Mensagens WhatsApp",
     "selected": "Selecionados:",
@@ -1572,7 +1534,6 @@
       "chainDelayMinutesHours": "Espera {hours, plural, one {# hora} other {# horas}} e {minutes, plural, one {# minuto} other {# minutos}} depois de ler."
     }
   },
-
   "BroadcastScheduled": {
     "Title": "Mensagens agendadas",
     "Subtitle": "Mensagens agendadas da organização {organization}",
@@ -1679,7 +1640,6 @@
         "title": "Organização em falta",
         "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
       },
-
       "loadError": {
         "title": "Erro ao carregar mensagens",
         "message": "Não foi possível carregar as mensagens agendadas. Tenta novamente dentro de alguns segundos."
@@ -1710,7 +1670,6 @@
       }
     }
   },
-
   "TrackedLinks": {
     "title": "Links Rastreados",
     "subtitle": "Vê as estatísticas do links rastreados da tua organização.",
@@ -1730,7 +1689,6 @@
       "created": "Criado"
     },
     "view": "Ver",
-
     "detail": {
       "alerts": {
         "noOrg": {
@@ -1778,7 +1736,6 @@
       }
     }
   },
-
   "Assistants": {
     "myAssistants": "Os meus Assistentes",
     "createAssistant": "Criar Assistente",
@@ -1829,7 +1786,6 @@
     "create": "Criar",
     "cancel": "Cancelar"
   },
-
   "Chatbox": {
     "try": "Experimentar Assistente",
     "threadId": "Thread ID:",
@@ -2007,7 +1963,6 @@
   },
   "AdminPage": {
     "title": "Admin",
-
     "newOrganization": {
       "title": "Nova organização",
       "placeholder": "Nome da organização…",
@@ -2066,7 +2021,6 @@
       }
     }
   },
-
   "Auth": {
     "brand": "MyDigitalBot",
     "example": "exemplo@exemplo.pt",
@@ -2114,26 +2068,22 @@
     "placeholder": "Selecionar…",
     "empty": "Sem opções."
   },
-
   "ThemePreview": {
     "sampleCard": "Sample card",
     "sampleBody": "Body text using your theme. Tweak colors to see it change.",
     "primaryAction": "Primary action"
   },
-
   "NotFound": {
     "title": "Página não encontrada",
     "message": "A página que procura não existe ou foi movida.",
     "buttonUsers": "Ir para Colaboradores",
     "buttonLogin": "Ir para Login"
   },
-
   "Delete": {
     "title": "Tem a certeza?",
     "namedTitle": "Tem a certeza que quer eliminar {name}?",
     "deleteMessage": "Esta ação não pode ser desfeita."
   },
-
   "QuickActions": {
     "selected": "selecionados",
     "clear": "Limpar",
@@ -2153,176 +2103,182 @@
       "cancel": "Cancelar"
     }
   },
-
-"Analytics": {
-  "title": "Métricas",
-
-  "refresh": "Atualizar",
-  "loading": "A carregar métricas...",
-  "errors": {
-    "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
-    "noOrg": "Não foi possível identificar a organização atual."
-  },
-  "health": {
-    "ok": "Tudo OK",
-    "noErrors": "Não foram encontrados problemas nos dados carregados.",
-    "needsAttention": "Atenção",
-    "errorsFound": "{count} problema(s) encontrado(s) nos dados atuais."
-  },
-  "cards": {
-    "users": "Utilizadores",
-    "usersHelper": "{withAssistant} com assistente, {withoutAssistant} sem assistente.",
-    "assistants": "Assistentes",
-    "assistantsHelper": "{withoutOpenAiId} sem OpenAI ID configurado.",
-    "messages": "Mensagens",
-    "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
-    "delivery": "Entrega",
-    "deliveryHelper": "{read} lidas, {failed} falhadas.",
-    "templates": "Templates WhatsApp",
-    "templatesHelper": "{active} ativos, {pending} pendentes, {rejected} rejeitados.",
-    "automations": "Automações",
-    "automationsHelper": "{active} ativas, {paused} pausadas.",
-    "automationRuns": "Execuções de automação",
-    "automationRunsHelper": "{processed} processadas, {failed} falhadas.",
-    "scheduledBroadcasts": "Mensagens agendadas",
-    "scheduledBroadcastsHelper": "{queued} em fila, {completed} concluídas, {failed} falhadas, {recipients} destinatários.",
-    "trackedLinks": "Cliques rastreados",
-    "trackedLinksHelper": "{links} links rastreados.",
-    "pendingOutreach": "Mensagens pendentes",
-    "pendingOutreachHelper": "{active} ainda ativas.",
-    "health": "Estado geral",
-    "assistantCoverage": "Assistentes atribuídos",
-    "assistantCoverageHelper": "{withAssistant}/{total} utilizadores com assistente.",
-    "readRate": "Taxa de leitura",
-    "readRateHelper": "{read}/{total} mensagens lidas.",
-    "failureRate": "Taxa de falha",
-    "failureRateHelper": "{failed}/{total} mensagens falhadas.",
-    "clickDensity": "Cliques por link",
-    "clickDensityHelper": "{clicks} cliques em {links} links."
-  },
-  "sections": {
-  "breakdownTitle": "Resumo operacional",
-  "users": {
-    "title": "Cobertura",
-    "value": "{withAssistant}/{total} com assistente",
-    "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
-  },
-  "messages": {
-    "title": "Atividade",
-    "value": "{total} mensagens registadas",
-    "text": "{userMessages} mensagens de utilizadores, {assistantMessages} respostas de assistentes, {read} lidas e {failed} falhadas."
-  },
-  "attention": {
-    "title": "Pontos de atenção",
-    "value": "{total} problemas ativos",
-    "text": "{automationFailures} falhas em automações, {scheduledFailures} mensagens agendadas falhadas e {rejectedTemplates} templates rejeitados."
-  },
-  "next": {
-    "title": "Próxima melhoria",
-    "value": "Adicionar gráficos",
-    "text": "O próximo passo é mostrar evolução por período: mensagens por dia, cliques por dia, falhas por dia e automações processadas."
-  }
-  
-  },
-    "charts": {
-  "email": "Email",
-  "phone": "Telefone",
-  "teams": "Teams",
-  "whatsapp": "WhatsApp",
-  "active": "Ativos",
-  "pending": "Pendentes",
-  "rejected": "Rejeitados",
-  "assistants": "Assistentes",
-  "templates": "Templates",
-  "messages": "Mensagens",
-  "automations": "Automações",
-  "scheduled": "Agendadas",
-  
-  "messagesTitle": "Mensagens por canal",
-  "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
-  "templatesTitle": "Estado dos templates",
-  "templatesDescription": "Distribuição dos templates por estado.",
-  "problemsTitle": "Problemas encontrados",
-  "problemsDescription": "Resumo dos pontos que precisam de atenção.",
-  "sectionTitle": "Distribuição atual",
-  "sectionDescription": "Um resumo visual do estado atual e das métricas do período selecionado."
-  },
-  "periods": {
-  "label": "Filtrar por período",
-  "all": "Tudo",
-  "last7Days": "7 dias",
-  "last30Days": "30 dias",
-  "last90Days": "90 dias"
- 
+  "Analytics": {
+    "title": "Métricas",
+    "refresh": "Atualizar",
+    "loading": "A carregar métricas...",
+    "errors": {
+      "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
+      "noOrg": "Não foi possível identificar a organização atual."
     },
-
-  "trends": {
-  "title": "Evolução diária",
-  "description": "Estes gráficos respeitam o período selecionado. Quando Tudo está selecionado, mostram os últimos 30 dias.",
-  "messagesTitle": "Mensagens por dia",
-  "messagesDescription": "Total de mensagens registadas em cada dia.",
-  "clicksTitle": "Cliques por dia",
-  "clicksDescription": "Cliques em links rastreados registados em cada dia.",
-  "failuresTitle": "Falhas por dia",
-  "failuresDescription": "Mensagens que falharam em cada dia.",
-  "automationsTitle": "Automações processadas por dia",
-  "automationsDescription": "Execuções de automação processadas em cada dia.",
-  "empty": "Não há dados para mostrar neste período."
-},
-  "groups": {
-  "overview": {
-    "title": "Resumo geral",
-    "description": "Estado atual da configuração e organização."
-  },
-  "activity": {
-    "title": "Atividade",
-    "description": "Mensagens, entrega e métricas de atividade no período selecionado."
-  },
-  "automations": {
-    "title": "Automações",
-    "description": "Regras de automação, execuções e mensagens agendadas."
-  },
-  "engagement": {
-    "title": "Links Rastreados",
-    "description": "Atividade dos links rastreados e desempenho dos cliques."
-  }
-},
-
-  "customization": {
-  "title": "Personalização da dashboard",
-  "description": "Mostra ou oculta grupos de métricas. A tua escolha fica guardada neste browser.",
-  "show": "Mostrar",
-  "hide": "Ocultar",
-  "reset": "Repor grupos",
-  "resetCharts": "Repor gráficos",
-  "exports":"Exportar",
-  "resetDashboard": "Repor dashboard"
-
-},
+    "health": {
+      "ok": "Tudo OK",
+      "noErrors": "Não foram encontrados problemas nos dados carregados.",
+      "needsAttention": "Atenção",
+      "errorsFound": "{count} problema(s) encontrado(s) nos dados atuais."
+    },
+    "cards": {
+      "users": "Utilizadores",
+      "usersHelper": "{withAssistant} com assistente, {withoutAssistant} sem assistente.",
+      "assistants": "Assistentes",
+      "assistantsHelper": "{withoutOpenAiId} sem OpenAI ID configurado.",
+      "messages": "Mensagens",
+      "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+      "delivery": "Entrega",
+      "deliveryHelper": "{read} lidas, {failed} falhadas.",
+      "templates": "Templates WhatsApp",
+      "templatesHelper": "{active} ativos, {pending} pendentes, {rejected} rejeitados.",
+      "automations": "Automações",
+      "automationsHelper": "{active} ativas, {paused} pausadas.",
+      "automationRuns": "Execuções de automação",
+      "automationRunsHelper": "{processed} processadas, {failed} falhadas.",
+      "scheduledBroadcasts": "Mensagens agendadas",
+      "scheduledBroadcastsHelper": "{queued} em fila, {completed} concluídas, {failed} falhadas, {recipients} destinatários.",
+      "trackedLinks": "Cliques rastreados",
+      "trackedLinksHelper": "{links} links rastreados.",
+      "pendingOutreach": "Mensagens pendentes",
+      "pendingOutreachHelper": "{active} ainda ativas.",
+      "health": "Estado geral",
+      "assistantCoverage": "Assistentes atribuídos",
+      "assistantCoverageHelper": "{withAssistant}/{total} utilizadores com assistente.",
+      "readRate": "Taxa de leitura",
+      "readRateHelper": "{read}/{total} mensagens lidas.",
+      "failureRate": "Taxa de falha",
+      "failureRateHelper": "{failed}/{total} mensagens falhadas.",
+      "clickDensity": "Cliques por link",
+      "clickDensityHelper": "{clicks} cliques em {links} links."
+    },
+    "sections": {
+      "breakdownTitle": "Resumo operacional",
+      "users": {
+        "title": "Cobertura",
+        "value": "{withAssistant}/{total} com assistente",
+        "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
+      },
+      "messages": {
+        "title": "Atividade",
+        "value": "{total} mensagens registadas",
+        "text": "{userMessages} mensagens de utilizadores, {assistantMessages} respostas de assistentes, {read} lidas e {failed} falhadas."
+      },
+      "attention": {
+        "title": "Pontos de atenção",
+        "value": "{total} problemas ativos",
+        "text": "{automationFailures} falhas em automações, {scheduledFailures} mensagens agendadas falhadas e {rejectedTemplates} templates rejeitados."
+      },
+      "next": {
+        "title": "Próxima melhoria",
+        "value": "Adicionar gráficos",
+        "text": "O próximo passo é mostrar evolução por período: mensagens por dia, cliques por dia, falhas por dia e automações processadas."
+      }
+    },
+    "charts": {
+      "email": "Email",
+      "phone": "Telefone",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp",
+      "active": "Ativos",
+      "pending": "Pendentes",
+      "rejected": "Rejeitados",
+      "assistants": "Assistentes",
+      "templates": "Templates",
+      "messages": "Mensagens",
+      "automations": "Automações",
+      "scheduled": "Agendadas",
+      "messagesTitle": "Mensagens por canal",
+      "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
+      "templatesTitle": "Estado dos templates",
+      "templatesDescription": "Distribuição dos templates por estado.",
+      "problemsTitle": "Problemas encontrados",
+      "problemsDescription": "Resumo dos pontos que precisam de atenção.",
+      "sectionTitle": "Distribuição atual",
+      "sectionDescription": "Um resumo visual do estado atual e das métricas do período selecionado."
+    },
+    "periods": {
+      "label": "Filtrar por período",
+      "all": "Tudo",
+      "last7Days": "7 dias",
+      "last30Days": "30 dias",
+      "last90Days": "90 dias"
+    },
+    "trends": {
+      "title": "Evolução diária",
+      "description": "Estes gráficos respeitam o período selecionado. Quando Tudo está selecionado, mostram os últimos 30 dias.",
+      "messagesTitle": "Mensagens por dia",
+      "messagesDescription": "Total de mensagens registadas em cada dia.",
+      "clicksTitle": "Cliques por dia",
+      "clicksDescription": "Cliques em links rastreados registados em cada dia.",
+      "failuresTitle": "Falhas por dia",
+      "failuresDescription": "Mensagens que falharam em cada dia.",
+      "automationsTitle": "Automações processadas por dia",
+      "automationsDescription": "Execuções de automação processadas em cada dia.",
+      "empty": "Não há dados para mostrar neste período."
+    },
+    "groups": {
+      "overview": {
+        "title": "Resumo geral",
+        "description": "Estado atual da configuração e organização."
+      },
+      "activity": {
+        "title": "Atividade",
+        "description": "Mensagens, entrega e métricas de atividade no período selecionado."
+      },
+      "automations": {
+        "title": "Automações",
+        "description": "Regras de automação, execuções e mensagens agendadas."
+      },
+      "engagement": {
+        "title": "Links Rastreados",
+        "description": "Atividade dos links rastreados e desempenho dos cliques."
+      }
+    },
+    "customization": {
+      "title": "Personalização da dashboard",
+      "description": "Mostra ou oculta grupos de métricas. A tua escolha fica guardada neste browser.",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "reset": "Repor grupos",
+      "resetCharts": "Repor gráficos",
+      "exports": "Exportar",
+      "resetDashboard": "Repor dashboard"
+    },
     "rankings": {
-  "title": "Rankings",
-  "description": "Os elementos mais relevantes no período selecionado.",
-  "topLinksTitle": "Links mais clicados",
-  "topLinksDescription": "Links rastreados com maior número de cliques.",
-  "automationFailuresTitle": "Falhas em automações",
-  "automationFailuresDescription": "Regras de automação com maior número de execuções falhadas.",
-  "empty": "Não há dados de ranking neste período.",
-  "columns": {
-    "link": "Link",
-    "clicks": "Cliques",
-    "automation": "Automação",
-    "failures": "Falhas",
-    "viewAllLinks": "Ver lista completa ({count})",
-    "allLinksTitle": "Lista completa de links",
-    "allLinksDescription": "Todos os links rastreados ordenados por número de cliques.",
-    "close": "Fechar"
+      "title": "Rankings",
+      "description": "Os elementos mais relevantes no período selecionado.",
+      "topLinksTitle": "Links mais clicados",
+      "topLinksDescription": "Links rastreados com maior número de cliques.",
+      "automationFailuresTitle": "Falhas em automações",
+      "automationFailuresDescription": "Regras de automação com maior número de execuções falhadas.",
+      "empty": "Não há dados de ranking neste período.",
+      "columns": {
+        "link": "Link",
+        "clicks": "Cliques",
+        "automation": "Automação",
+        "failures": "Falhas",
+        "viewAllLinks": "Ver lista completa ({count})",
+        "allLinksTitle": "Lista completa de links",
+        "allLinksDescription": "Todos os links rastreados ordenados por número de cliques.",
+        "close": "Fechar"
+      }
+    }
+  },
+  "ImportErrors": {
+    "UNSUPPORTED_FORMAT": "Formato não suportado. Por favor, use .xlsx ou .csv",
+    "EMPTY_FILE": "O ficheiro está vazio.",
+    "INVALID_MIME_TYPE": "Tipo MIME de ficheiro inválido.",
+    "INVALID_FILE_SIGNATURE": "Assinatura de ficheiro inválida. Não é um ficheiro ZIP/XLSX válido.",
+    "FILE_TOO_LARGE": "O ficheiro excede o tamanho máximo permitido ({max} bytes).",
+    "NO_WORKSHEETS": "Não foram encontradas folhas no ficheiro Excel.",
+    "TOO_MANY_WORKSHEETS": "O ficheiro tem demasiadas folhas (máx {max}).",
+    "EMPTY_WORKSHEET": "A folha de cálculo está vazia.",
+    "TOO_MANY_ROWS": "O ficheiro tem demasiadas linhas (máx {max}).",
+    "TOO_MANY_COLUMNS": "O ficheiro tem demasiadas colunas (máx {max}).",
+    "CELL_TOO_LARGE": "O valor da célula excede os caracteres máximos (linha {row}, col {col}).",
+    "FORBIDDEN_HEADER": "Nome de cabeçalho proibido encontrado: {header}",
+    "WORKER_TIMEOUT": "O processamento do Excel excedeu o tempo limite.",
+    "PARSING_CANCELLED": "Processamento cancelado pelo utilizador.",
+    "READ_FAILED": "Falha ao ler o ficheiro: {message}",
+    "NO_VALID_ROWS": "Não foram encontradas linhas válidas no ficheiro.",
+    "IMPORT_FAILED": "A importação falhou.",
+    "UNKNOWN_ERROR": "Ocorreu um erro desconhecido."
   }
-}
-
-
-  }
-
-
-
-
 }

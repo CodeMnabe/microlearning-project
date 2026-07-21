@@ -185,6 +185,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
+    if (users.length > 5000) {
+      return NextResponse.json(
+        { error: "Payload exceeds maximum allowed rows (5000)." },
+        { status: 400 },
+      );
+    }
+
     const orgId = Number(organizationId);
 
     if (!Number.isInteger(orgId) || orgId <= 0) {
