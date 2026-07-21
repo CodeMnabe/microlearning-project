@@ -60,12 +60,27 @@ model vector_store {
 }
 
 model file {
-  id              Int          @id @default(autoincrement())
-  open_ai_id      String       @unique
-  name            String
-  size            Int
-  vector_store    vector_store? @relation(fields: [vector_store_id], references: [id])
-  vector_store_id Int?
+  id                      Int           @id @default(autoincrement())
+  open_ai_id              String?       @unique
+  name                    String
+  size                    Int?
+  vector_store            vector_store? @relation(fields: [vector_store_id], references: [id])
+  vector_store_id         Int?
+  organization_id         Int?
+  assistant_id            Int?
+  bucket                  String?
+  object_path             String?
+  original_name           String?
+  safe_extension          String?
+  mime_type               String?
+  size_bytes              BigInt?
+  checksum_sha256         String?
+  status                  String        @default("pending_upload")
+  storage_uploaded_at     DateTime?
+  validation_completed_at DateTime?
+  last_error_code         String?
+  created_at              DateTime      @default(now())
+  updated_at              DateTime      @default(now()) @updatedAt
 }
 
 model thread {

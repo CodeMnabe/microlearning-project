@@ -27,6 +27,8 @@ export async function createDBFile(openAiId, file, vectorStoreId = null) {
     name: file?.name ?? null,
     size: file?.size ?? null,
     vector_store_id: vectorStoreId ?? null,
+    status: 'active',
+    upload_flow: 'legacy'
   };
 
   const { data, error } = await sb
@@ -47,6 +49,8 @@ export async function createDBFiles(fileRows = [], vectorStoreId = null) {
     open_ai_id: f.open_ai_id ?? f.openAiId ?? null,
     name: f.name ?? null,
     size: f.size ?? null,
+    status: 'active',
+    upload_flow: 'legacy'
   }));
 
   const { data, error } = await sb.from("file").insert(toInsert).select();

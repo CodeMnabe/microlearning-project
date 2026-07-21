@@ -1,7 +1,8 @@
-// src/app/api/assistants/[assistantId]/vector-store/route.js
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { toFile } from "openai/uploads";
+import { downloadWithLimit } from "@/lib/security/streamReader";
+import { validateMagicBytes } from "@/lib/security/magicBytes";
 
 import {
   createOAiVectorStore,
@@ -16,6 +17,7 @@ import {
   handleApiError,
   requireOrgForAssistant,
 } from "@/lib/auth/guards";
+import { getFileById } from "@/lib/repos/files.repo";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -30,11 +32,11 @@ export async function POST(req, ctx) {
     const orgAuth = await requireOrgForAssistant(assistantId);
     if (orgAuth.error) return orgAuth.error;
 
-    const { storeName, files } = await req.json();
+    const { storeName, fileIds } = await req.json();
 
-    if (!storeName || !Array.isArray(files) || files.length === 0) {
+    if (!storeName || !Array.isArray(fileIds) || fileIds.length === 0) {
       return NextResponse.json(
-        { error: "Missing storeName/files" },
+        { error: "Missing storeName/fileIds" },
         { status: 400 },
       );
     }
@@ -42,45 +44,47 @@ export async function POST(req, ctx) {
     const uploadedOpenAiIds = [];
     const fileRowsForDb = [];
 
-    for (const f of files) {
-      const { bucket, path, name, type, size } = f || {};
+    for (const fileId of fileIds) {
+      const dbFile = await getFileById(fileId).catch(() => null);
 
-      if (!bucket || !path) {
-        return NextResponse.json(
-          { error: "Each file needs bucket and path" },
-          { status: 400 },
-        );
+      if (!dbFile) {
+        return NextResponse.json({ error: `File not found: ${fileId}` }, { status: 404 });
       }
 
-      if (!path.startsWith(`${orgAuth.orgId}/`)) {
-        return NextResponse.json(
-          { error: "File does not belong to this organization" },
-          { status: 403 },
-        );
+      if (dbFile.organization_id !== orgAuth.orgId || dbFile.assistant_id !== Number(assistantId)) {
+        return NextResponse.json({ error: "File does not belong to this organization/assistant" }, { status: 403 });
+      }
+
+      if (dbFile.status !== "pending_upload" && dbFile.status !== "uploaded") {
+        return NextResponse.json({ error: "File is not pending upload" }, { status: 400 });
       }
 
       const { data: signed, error: signErr } = await sb.storage
-        .from(bucket)
-        .createSignedUrl(path, 60);
+        .from(dbFile.bucket)
+        .createSignedUrl(dbFile.object_path, 60);
 
       if (signErr) throw signErr;
 
-      const resp = await fetch(signed.signedUrl);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const resp = await fetch(signed.signedUrl, { signal: controller.signal, redirect: "error" });
+      clearTimeout(timeoutId);
 
-      if (!resp.ok) {
-        throw new Error(
-          `Failed to fetch ${path} from storage: ${resp.status} ${resp.statusText}`,
-        );
+      const MAX_SIZE = 20 * 1024 * 1024;
+      const { buffer, size, sha256 } = await downloadWithLimit(resp, MAX_SIZE);
+
+      const validation = validateMagicBytes(buffer, dbFile.safe_extension);
+      if (!validation.valid) {
+         // Mark as rejected in DB
+         await sb.from("file").update({ status: "rejected", last_error_code: validation.error }).eq("id", dbFile.id);
+         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
 
       const fileLike = await toFile(
-        resp.body ?? (await resp.blob()),
-        name || "upload.bin",
+        buffer,
+        dbFile.original_name || "upload.bin",
         {
-          type:
-            type ||
-            resp.headers.get("content-type") ||
-            "application/octet-stream",
+          type: dbFile.mime_type || "application/octet-stream",
         },
       );
 
@@ -95,10 +99,23 @@ export async function POST(req, ctx) {
 
       uploadedOpenAiIds.push(uploaded.id);
 
-      fileRowsForDb.push({
+      // Update dbFile locally in memory to pass to createDBStore,
+      // and update the actual DB to reflect the new state.
+      const { error: updErr } = await sb.from("file").update({
         open_ai_id: uploaded.id,
-        name: name || "file",
-        size: Number(size) || null,
+        status: "validated",
+        size_bytes: size,
+        checksum_sha256: sha256,
+        validation_completed_at: new Date().toISOString()
+      }).eq("id", dbFile.id);
+
+      if (updErr) throw updErr;
+
+      fileRowsForDb.push({
+        id: dbFile.id,
+        open_ai_id: uploaded.id,
+        name: dbFile.original_name || "file",
+        size: dbFile.size_bytes || null,
       });
     }
 
@@ -111,20 +128,26 @@ export async function POST(req, ctx) {
       );
     }
 
+    // createDBStore expects to create NEW file rows, BUT we already have the rows created by the intent.
+    // So we just need to update them with vector_store_id.
     const dbStore = await createDBStore(
       { name: oaiStore.name, open_ai_id: oaiStore.id },
-      fileRowsForDb,
+      [] // don't create new files
     );
 
-    await associateStoreToAssistant(orgAuth.assistant.open_ai_id, oaiStore);
+    // Attach the existing files to the new vector store
+    for (const fileRow of fileRowsForDb) {
+      await sb.from("file").update({ vector_store_id: dbStore.id }).eq("id", fileRow.id);
+    }
 
+    await associateStoreToAssistant(orgAuth.assistant.open_ai_id, oaiStore);
     await associateVectorStoreToDbAssistant(orgAuth.assistantId, dbStore.id);
 
     return NextResponse.json(
       {
         id: dbStore.id,
         storeName: dbStore.store_name,
-        files: (dbStore.file || []).map(({ id, name, size }) => ({
+        files: fileRowsForDb.map(({ id, name, size }) => ({
           id,
           name,
           size,

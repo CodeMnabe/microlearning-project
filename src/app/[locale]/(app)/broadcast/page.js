@@ -810,7 +810,7 @@ export default function BroadcastPage() {
     const term = q.trim().toLowerCase();
 
     return normalizedUsers.filter((u) => {
-      const textHay = `${u.name || ""} ${u.phone_number || ""} 
+      const textHay = `${u.name || ""} ${u.phone_number || ""}
         ${u.whatsapp_username || ""} ${u.whatsapp_bsuid}
          ${u.email || ""}`.toLowerCase();
 
@@ -908,41 +908,61 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = "images";
     const uploaded = [];
 
-    const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-      if (!safe) safe = "file";
-      return safe;
-    };
+    const fileMetadata = pickedFiles.map(f => ({
+      name: f.name,
+      type: f.type || guessContentTypeFromName(f.name),
+      size: f.size
+    }));
 
-    for (const file of pickedFiles) {
-      const safeName = makeSafeName(file.name);
-      const key = `broadcasts/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}-${safeName}`;
-      const ct = file.type || guessContentTypeFromName(file.name);
+    // 1. Get upload intent
+    const intentRes = await fetch(`/api/broadcast/images/intent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orgId: params.orgId, files: fileMetadata }),
+    });
 
-      const { error: upErr } = await supabase.storage
-        .from(bucket)
-        .upload(key, file, { upsert: true, contentType: ct });
+    const intentData = await intentRes.json().catch(() => ({}));
+    if (!intentRes.ok) {
+      console.error("Intent error:", intentData.error);
+      throw new Error(intentData.error || "Falha ao preparar upload");
+    }
 
-      if (upErr) {
-        console.error("Supabase upload error:", upErr);
-        throw upErr;
+    // 2. Upload to Signed URLs
+    for (const intentFile of intentData.files) {
+      const originalFile = pickedFiles.find(f => f.name === intentFile.name && f.size === intentFile.size);
+      if (!originalFile) continue;
+
+      const uploadRes = await fetch(intentFile.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": intentFile.type || "application/octet-stream",
+        },
+        body: originalFile,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Erro ao subir ${originalFile.name}: ${uploadRes.statusText}`);
       }
 
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(key);
+      // 3. Finalize upload
+      const finalRes = await fetch(`/api/broadcast/images/finalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: params.orgId, fileId: intentFile.fileId })
+      });
 
-      if (pub?.publicUrl) {
-        uploaded.push({
-          url: pub.publicUrl,
-          name: file.name || safeName,
-          contentType: ct || "application/octet-stream",
-        });
+      const finalData = await finalRes.json().catch(() => ({}));
+      if (!finalRes.ok || !finalData.success) {
+        throw new Error(`Erro na validação de ${originalFile.name}: ${finalData.error || finalRes.statusText}`);
       }
+
+      uploaded.push({
+        url: finalData.url,
+        name: intentFile.name,
+        contentType: intentFile.type,
+      });
     }
 
     return uploaded;

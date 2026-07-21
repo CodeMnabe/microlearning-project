@@ -196,33 +196,52 @@ export default function AssistantsHub() {
 
     startLoading();
     try {
-      const basePath = `${orgId}/${selected.id}/${Date.now()}`;
-      const uploaded = [];
-      for (const f of vsFiles) {
-        const path = `${basePath}-${f.name}`;
-        const { error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(path, f, {
-            upsert: true,
-            contentType: f.type || "application/octet-stream",
-          });
-        if (error) {
-          alert("Erro no upload: " + error.message);
-          return;
-        }
-        uploaded.push({
-          bucket: STORAGE_BUCKET,
-          path,
-          name: f.name,
-          size: f.size,
-          type: f.type,
-        });
+      // 1. Ask for upload intent
+      const fileMetadata = vsFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: f.size
+      }));
+
+      const intentRes = await fetch(`/api/assistants/${selected.id}/files/intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: fileMetadata }),
+      });
+
+      const intentData = await intentRes.json().catch(() => ({}));
+      if (!intentRes.ok) {
+        alert("Erro intent: " + (intentData.error || "Falha ao preparar upload"));
+        return;
       }
 
+      // 2. Upload to Signed URLs
+      const fileIds = [];
+      for (const intentFile of intentData.files) {
+        const originalFile = vsFiles.find(f => f.name === intentFile.name && f.size === intentFile.size);
+        if (!originalFile) continue;
+
+        const uploadRes = await fetch(intentFile.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": intentFile.type || "application/octet-stream",
+          },
+          body: originalFile,
+        });
+
+        if (!uploadRes.ok) {
+          alert(`Erro ao subir ${originalFile.name}: ${uploadRes.statusText}`);
+          return;
+        }
+
+        fileIds.push(intentFile.fileId);
+      }
+
+      // 3. Finalize vector store creation
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeName: vsName, files: uploaded }),
+        body: JSON.stringify({ storeName: vsName, fileIds }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
