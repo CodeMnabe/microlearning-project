@@ -38,6 +38,10 @@ export function registerAppModulePacks() {
       push: appMocks.push,
       replace: appMocks.replace,
     }),
+    redirect: vi.fn(),
+    permanentRedirect: vi.fn(),
+    usePathname: vi.fn(),
+    useSearchParams: vi.fn(),
   }));
 }
 

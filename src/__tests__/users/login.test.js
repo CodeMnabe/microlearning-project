@@ -21,6 +21,21 @@ vi.mock("next/navigation", () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
+  usePathname: vi.fn(),
+  useSearchParams: vi.fn(),
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({
+    push: mocks.push,
+    replace: mocks.replace,
+  }),
+  redirect: vi.fn(),
+  usePathname: vi.fn(),
+  Link: ({ href, children, ...rest }) =>
+    React.createElement("a", { href, ...rest }, children),
 }));
 
 // No JSX here either
