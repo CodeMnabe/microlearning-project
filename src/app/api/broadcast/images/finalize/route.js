@@ -11,6 +11,7 @@ const sb = createServiceClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } }
 );
+import { transitionFileLifecycle } from "@/lib/repos/files.repo";
 
 export async function POST(req) {
   try {
@@ -27,7 +28,7 @@ export async function POST(req) {
     if (!dbFile) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
-    
+
     if (dbFile.organization_id !== orgAuth.orgId) {
       return NextResponse.json({ error: "File does not belong to this organization" }, { status: 403 });
     }
@@ -36,11 +37,31 @@ export async function POST(req) {
       return NextResponse.json({ error: "File is not pending validation" }, { status: 400 });
     }
 
+    try {
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: [dbFile.status],
+        to: "validating"
+      });
+    } catch (e) {
+      return NextResponse.json({ error: "File already being processed or not found" }, { status: 409 });
+    }
+
     const { data: signed, error: signErr } = await sb.storage
       .from("quarantine_images")
       .createSignedUrl(dbFile.object_path, 60);
 
-    if (signErr) throw signErr;
+    if (signErr) {
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "validating",
+        to: "retryable_failed",
+        metadata: { last_error_message: "Failed to get signed URL" }
+      });
+      throw signErr;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -49,10 +70,16 @@ export async function POST(req) {
 
     const MAX_SIZE = 5 * 1024 * 1024;
     const { buffer } = await downloadWithLimit(resp, MAX_SIZE);
-    
+
     const validation = validateMagicBytes(buffer, dbFile.safe_extension);
     if (!validation.valid) {
-      await sb.from("file").update({ status: "rejected", last_error_code: validation.error }).eq("id", dbFile.id);
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "validating",
+        to: "rejected",
+        metadata: { last_error_code: validation.error }
+      });
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
@@ -65,36 +92,79 @@ export async function POST(req) {
         .toFormat(format, { quality: 85 })
         .toBuffer();
     } catch (e) {
-      await sb.from("file").update({ status: "rejected", last_error_code: "Image decoding failed" }).eq("id", dbFile.id);
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "validating",
+        to: "rejected",
+        metadata: { last_error_code: "Image decoding failed" }
+      });
       return NextResponse.json({ error: "Invalid image content" }, { status: 400 });
     }
 
-    // Upload processed to public bucket
     const publicBucket = "images";
+
+    // Save reference before upload to compensate if upload succeeds but DB update fails later
+    await transitionFileLifecycle({
+      fileId: dbFile.id,
+      organizationId: orgAuth.orgId,
+      from: "validating",
+      to: "processing",
+      metadata: {
+        public_bucket: publicBucket,
+        public_object_path: dbFile.object_path
+      }
+    });
+
+    // Upload processed to public bucket
     const { error: uploadErr } = await sb.storage
       .from(publicBucket)
       .upload(dbFile.object_path, processedBuffer, {
         contentType: `image/${format}`,
         upsert: false
       });
-      
+
     if (uploadErr) {
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "processing",
+        to: "retryable_failed",
+        metadata: { last_error_message: uploadErr.message.substring(0, 200) }
+      });
       throw new Error(`Failed to publish image: ${uploadErr.message}`);
     }
-
-    // Delete from quarantine
-    await sb.storage.from("quarantine_images").remove([dbFile.object_path]);
 
     const finalSize = processedBuffer.length;
     const sha256 = require("crypto").createHash("sha256").update(processedBuffer).digest("hex");
 
-    await sb.from("file").update({
-      status: "validated",
-      bucket: publicBucket,
-      size_bytes: finalSize,
-      checksum_sha256: sha256,
-      validation_completed_at: new Date().toISOString()
-    }).eq("id", dbFile.id);
+    try {
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "processing",
+        to: "validated",
+        metadata: {
+          bucket: publicBucket,
+          size_bytes: finalSize,
+          checksum_sha256: sha256,
+          validation_completed_at: new Date().toISOString()
+        }
+      });
+    } catch (dbErr) {
+      // DB failed after upload succeeded!
+      // Attempt a compensating delete of the public object
+      const { error: delErr } = await sb.storage.from(publicBucket).remove([dbFile.object_path]);
+      if (delErr) {
+        // If we also can't delete it, the cron worker will eventually reconcile it
+        // since the DB is stuck in "processing" and has public_bucket/path.
+        console.error("Compensating delete failed for orphaned public image:", delErr);
+      }
+      throw dbErr;
+    }
+
+    // Delete from quarantine (best effort, cron will sweep if fails)
+    await sb.storage.from("quarantine_images").remove([dbFile.object_path]);
 
     return NextResponse.json({
       success: true,

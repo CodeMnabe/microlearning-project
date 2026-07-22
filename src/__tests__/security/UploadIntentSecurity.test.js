@@ -30,7 +30,7 @@ vi.mock("@supabase/supabase-js", () => ({
   }))
 }));
 
-describe("SEC-11A: Secure Upload Intent Flow", () => {
+describe("Upload intent security", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

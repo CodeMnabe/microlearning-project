@@ -277,7 +277,7 @@ describe("AssistantsHub Page", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: "Assistants.details.delete" }),
+      await screen.findByRole("button", { name: "Assistants.details.delete" }),
     );
 
     await waitFor(() => {

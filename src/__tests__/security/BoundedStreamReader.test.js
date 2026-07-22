@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { downloadWithLimit } from "@/lib/security/streamReader";
 
-describe("SEC-11A: Secure Stream Reader", () => {
+describe("Bounded stream reader", () => {
   it("downloads buffer successfully when under limits", async () => {
     const fakeChunk = Buffer.from("hello world");
     let readCount = 0;

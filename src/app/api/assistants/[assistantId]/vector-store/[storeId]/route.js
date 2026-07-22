@@ -90,17 +90,19 @@ export async function DELETE(req, ctx) {
       await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
     } catch (e) {
       console.error("OpenAI delete failed:", e);
+      // We catch the error. The files will still be marked pending_delete
+      // and their individual OpenAI file deletions will be retried by the cron worker.
     }
 
-    for (const f of store.file ?? []) {
-      await deleteFileById(f.id);
-    }
+    const { markVectorStoreFilesPendingDelete, detachFilesFromVectorStore } = require("@/lib/repos/files.repo");
+    await markVectorStoreFilesPendingDelete(sId, orgAuth.orgId, "vector_store_delete");
+    await detachFilesFromVectorStore(sId);
 
     await deleteStoreById(sId);
 
     return NextResponse.json(
-      { message: "Vector store and files deleted" },
-      { status: 200 },
+      { message: "Vector store deleted and files marked for cleanup" },
+      { status: 202 },
     );
   } catch (err) {
     return handleApiError(err, "Failed to delete vector store");

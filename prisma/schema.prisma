@@ -15,22 +15,22 @@ datasource db {
 }
 
 model organization {
-  id            Int       @id @default(autoincrement())
-  channel_id    String    @unique
+  id            Int         @id @default(autoincrement())
+  channel_id    String      @unique
   name          String
-  owner_user_id String    // UUID of the owner user
+  owner_user_id String // UUID of the owner user
   users         user[]
   assistants    assistant[]
-  created_at    DateTime  @default(now())
+  created_at    DateTime    @default(now())
 }
 
 model user {
-  id              Int           @id @default(autoincrement())
-  organization    organization  @relation(fields: [organization_id], references: [id])
+  id              Int          @id @default(autoincrement())
+  organization    organization @relation(fields: [organization_id], references: [id])
   organization_id Int
-  phone_number    String        @unique
+  phone_number    String       @unique
   name            String?
-  created_at      DateTime      @default(now())
+  created_at      DateTime     @default(now())
   threads         thread[]
 }
 
@@ -45,62 +45,105 @@ model assistant {
   model           String?
   top_p           Float?
   temperature     Float?
-  vector_store    vector_store?  @relation(fields: [vector_store_id], references: [id])
+  vector_store    vector_store? @relation(fields: [vector_store_id], references: [id])
   vector_store_id Int?
   created_at      DateTime      @default(now())
   threads         thread[]
 }
 
 model vector_store {
-  id          Int         @id @default(autoincrement())
-  store_name  String
-  created_at  DateTime    @default(now())
-  assistants  assistant[]
-  files       file[]
+  id         Int         @id @default(autoincrement())
+  store_name String
+  created_at DateTime    @default(now())
+  assistants assistant[]
+  files      file[]
 }
 
 model file {
-  id                      Int           @id @default(autoincrement())
-  open_ai_id              String?       @unique
-  name                    String
-  size                    Int?
-  vector_store            vector_store? @relation(fields: [vector_store_id], references: [id])
-  vector_store_id         Int?
-  organization_id         Int?
-  assistant_id            Int?
-  bucket                  String?
-  object_path             String?
-  original_name           String?
-  safe_extension          String?
-  mime_type               String?
-  size_bytes              BigInt?
-  checksum_sha256         String?
-  status                  String        @default("pending_upload")
-  storage_uploaded_at     DateTime?
-  validation_completed_at DateTime?
-  last_error_code         String?
-  created_at              DateTime      @default(now())
-  updated_at              DateTime      @default(now()) @updatedAt
+  id                            Int                     @id @default(autoincrement())
+  open_ai_id                    String?                 @unique
+  name                          String
+  size                          Int?
+  vector_store                  vector_store?           @relation(fields: [vector_store_id], references: [id])
+  vector_store_id               Int?
+  organization_id               Int?
+  assistant_id                  Int?
+  bucket                        String?
+  object_path                   String?
+  original_name                 String?
+  safe_extension                String?
+  mime_type                     String?
+  size_bytes                    BigInt?
+  checksum_sha256               String?
+  status                        String                  @default("pending_upload")
+  storage_uploaded_at           DateTime?
+  validation_completed_at       DateTime?
+  last_error_code               String?
+  upload_flow                   String
+  public_bucket                 String?
+  public_object_path            String?
+  deleted_at                    DateTime?
+  storage_deleted_at            DateTime?
+  openai_deleted_at             DateTime?
+  public_object_deleted_at      DateTime?
+  last_error_message            String?
+  retry_count                   Int                     @default(0)
+  next_retry_at                 DateTime?
+  last_attempt_at               DateTime?
+  claimed_at                    DateTime?
+  claim_expires_at              DateTime?
+  cleanup_reason                String?
+  remote_outcome                String?
+  original_status_before_delete String?
+  created_at                    DateTime                @default(now())
+  updated_at                    DateTime                @default(now()) @updatedAt
+  operations                    file_remote_operation[]
+
+  @@unique([id, organization_id])
+}
+
+model file_remote_operation {
+  id               Int       @id @default(autoincrement())
+  file             file      @relation(fields: [file_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  file_id          Int
+  organization_id  Int
+  operation_key    String    @unique
+  provider         String
+  action           String
+  status           String
+  remote_id        String?
+  remote_bucket    String?
+  remote_path      String?
+  remote_outcome   String?
+  retry_count      Int       @default(0)
+  next_retry_at    DateTime?
+  last_attempt_at  DateTime?
+  claimed_at       DateTime?
+  claim_expires_at DateTime?
+  last_error_code  String?
+  last_error_msg   String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now()) @updatedAt
 }
 
 model thread {
-  id            Int        @id @default(autoincrement())
-  user          user       @relation(fields: [user_id], references: [id])
-  user_id       Int
-  assistant     assistant  @relation(fields: [assistant_id], references: [id])
-  assistant_id  Int
-  ai_thread_id  String     @unique
-  created_at    DateTime   @default(now())
-  messages      message[]
+  id           Int       @id @default(autoincrement())
+  user         user      @relation(fields: [user_id], references: [id])
+  user_id      Int
+  assistant    assistant @relation(fields: [assistant_id], references: [id])
+  assistant_id Int
+  ai_thread_id String    @unique
+  created_at   DateTime  @default(now())
+  messages     message[]
 }
 
 model message {
-  id           Int      @id @default(autoincrement())
-  thread       thread   @relation(fields: [thread_id], references: [id])
-  thread_id    Int
-  message_id   String?  // OpenAI internal ID
-  whatsapp_id  String?  // WhatsApp external ID
-  content      String
-  role         String
-  created_at   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  thread      thread   @relation(fields: [thread_id], references: [id])
+  thread_id   Int
+  message_id  String? // OpenAI internal ID
+  whatsapp_id String? // WhatsApp external ID
+  content     String
+  role        String
+  created_at  DateTime @default(now())
 }

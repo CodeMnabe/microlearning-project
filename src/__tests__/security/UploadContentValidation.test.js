@@ -6,7 +6,7 @@ import { validateMagicBytes } from "@/lib/security/magicBytes";
 
 
 
-describe("SEC-11A: Magic Bytes Validator", () => {
+describe("Upload content validation", () => {
   it("validates correct PDF signature and EOF", () => {
     // Valid minimal PDF
     const pdf = Buffer.concat([

@@ -119,7 +119,11 @@ export async function DELETE(_req, { params }) {
       await deleteOAiAssistant(orgAuth.assistant.open_ai_id);
     } catch (error) {
       console.error("[assistant DELETE] OpenAI delete failed", error);
+      // We catch the error so we can still clean up locally
     }
+
+    const { markAssistantFilesPendingDeleteAndDetach } = require("@/lib/repos/files.repo");
+    await markAssistantFilesPendingDeleteAndDetach(orgAuth.assistantId, orgAuth.orgId, "assistant_delete");
 
     await deleteAssistant(orgAuth.assistantId);
     return new NextResponse(null, { status: 204 });

@@ -1,6 +1,6 @@
 BEGIN;
 
--- SEC-11A File Migration: Hardening Storage Uploads (V6 - Final Validation)
+-- Storage upload hardening and final schema validation
 
 DO $$
 BEGIN
@@ -121,7 +121,7 @@ END $$;
 -- 8. Target Storage Policies Deletion
 DROP POLICY IF EXISTS "Give users access to own folder" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public read access" ON storage.objects;
-DROP POLICY IF EXISTS "sec11a_public_read_images" ON storage.objects;
+DROP POLICY IF EXISTS "public_read_broadcast_images" ON storage.objects;
 
 -- 9. Final Validation Block
 DO $$

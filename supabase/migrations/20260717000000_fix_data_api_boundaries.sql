@@ -22,7 +22,7 @@ begin
 end
 $$;
 
--- Phase 2: abort with aggregate-only diagnostics if remediation is required.
+-- Abort with aggregate-only diagnostics when incompatible privileges or schema state remain.
 do $$
 declare
   v_count bigint;

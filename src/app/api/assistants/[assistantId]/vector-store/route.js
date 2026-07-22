@@ -17,7 +17,8 @@ import {
   handleApiError,
   requireOrgForAssistant,
 } from "@/lib/auth/guards";
-import { getFileById } from "@/lib/repos/files.repo";
+import { getFileById, transitionFileLifecycle } from "@/lib/repos/files.repo";
+import { createOpenAiFileLifecycle, deleteOpenAiFileLifecycle } from "@/lib/helpers/openai.lifecycle";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -59,11 +60,31 @@ export async function POST(req, ctx) {
         return NextResponse.json({ error: "File is not pending upload" }, { status: 400 });
       }
 
+      try {
+        await transitionFileLifecycle({
+          fileId: dbFile.id,
+          organizationId: orgAuth.orgId,
+          from: [dbFile.status],
+          to: "validating"
+        });
+      } catch (e) {
+        return NextResponse.json({ error: "File already being processed or not found" }, { status: 409 });
+      }
+
       const { data: signed, error: signErr } = await sb.storage
         .from(dbFile.bucket)
         .createSignedUrl(dbFile.object_path, 60);
 
-      if (signErr) throw signErr;
+      if (signErr) {
+        await transitionFileLifecycle({
+          fileId: dbFile.id,
+          organizationId: orgAuth.orgId,
+          from: "validating",
+          to: "retryable_failed",
+          metadata: { last_error_message: "Failed to create signed url" }
+        });
+        throw signErr;
+      }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -75,10 +96,22 @@ export async function POST(req, ctx) {
 
       const validation = validateMagicBytes(buffer, dbFile.safe_extension);
       if (!validation.valid) {
-         // Mark as rejected in DB
-         await sb.from("file").update({ status: "rejected", last_error_code: validation.error }).eq("id", dbFile.id);
+         await transitionFileLifecycle({
+           fileId: dbFile.id,
+           organizationId: orgAuth.orgId,
+           from: "validating",
+           to: "rejected",
+           metadata: { last_error_code: validation.error }
+         });
          return NextResponse.json({ error: validation.error }, { status: 400 });
       }
+
+      await transitionFileLifecycle({
+        fileId: dbFile.id,
+        organizationId: orgAuth.orgId,
+        from: "validating",
+        to: "processing"
+      });
 
       const fileLike = await toFile(
         buffer,
@@ -88,28 +121,43 @@ export async function POST(req, ctx) {
         },
       );
 
-      const uploaded = await createOAiFile(fileLike);
+      const oaiResult = await createOpenAiFileLifecycle(fileLike);
 
-      if (!uploaded?.id) {
+      if (!oaiResult.ok || !oaiResult.value?.id) {
+        await transitionFileLifecycle({
+          fileId: dbFile.id,
+          organizationId: orgAuth.orgId,
+          from: "processing",
+          to: "retryable_failed",
+          metadata: { last_error_code: oaiResult.code, last_error_message: oaiResult.message }
+        });
         return NextResponse.json(
           { error: "Failed to upload a file to OpenAI" },
           { status: 500 },
         );
       }
 
+      const uploaded = oaiResult.value;
       uploadedOpenAiIds.push(uploaded.id);
 
-      // Update dbFile locally in memory to pass to createDBStore,
-      // and update the actual DB to reflect the new state.
-      const { error: updErr } = await sb.from("file").update({
-        open_ai_id: uploaded.id,
-        status: "validated",
-        size_bytes: size,
-        checksum_sha256: sha256,
-        validation_completed_at: new Date().toISOString()
-      }).eq("id", dbFile.id);
-
-      if (updErr) throw updErr;
+      try {
+        await transitionFileLifecycle({
+          fileId: dbFile.id,
+          organizationId: orgAuth.orgId,
+          from: "processing",
+          to: "validated",
+          metadata: {
+            open_ai_id: uploaded.id,
+            size_bytes: size,
+            checksum_sha256: sha256,
+            validation_completed_at: new Date().toISOString()
+          }
+        });
+      } catch (updErr) {
+        // Compensating delete if DB update failed
+        await deleteOpenAiFileLifecycle(uploaded.id);
+        throw updErr;
+      }
 
       fileRowsForDb.push({
         id: dbFile.id,

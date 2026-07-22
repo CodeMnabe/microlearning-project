@@ -79,22 +79,116 @@ export async function getFilesByVectorStoreId(vectorStoreId) {
   return data ?? [];
 }
 
-/** Delete a single file row */
+/** Delete a single file row (Legacy hard delete, avoid using) */
 export async function deleteFileById(id) {
   const { error } = await sb.from("file").delete().eq("id", id);
   if (error) throw error;
   return true;
 }
 
+/** Soft delete a single file by setting pending_delete */
+export async function markFilePendingDelete(fileId, organizationId, reason = null) {
+  const fromStates = ['pending_upload', 'uploaded', 'validating', 'validated', 'processing', 'active', 'rejected', 'retryable_failed', 'unknown_outcome', 'reconciliation_required'];
+  return await transitionFileLifecycle({
+    fileId,
+    organizationId,
+    from: fromStates,
+    to: 'pending_delete',
+    metadata: {
+      cleanup_reason: reason,
+      // Record original status before delete if needed, but for now we just append cleanup_reason
+    }
+  });
+}
+
 /**
- * Delete all files of a vector store (useful if you DIDN'T set CASCADE).
- * If you have ON DELETE CASCADE, you can skip calling this and just delete the store.
+ * Transition file lifecycle state with compare-and-set
+ */
+export async function transitionFileLifecycle({
+  fileId,
+  organizationId,
+  from,
+  to,
+  metadata = {}
+}) {
+  const fromStates = Array.isArray(from) ? from : [from];
+
+  const payload = {
+    status: to,
+    updated_at: new Date().toISOString(),
+    ...metadata
+  };
+
+  const { data, error } = await sb
+    .from("file")
+    .update(payload)
+    .eq("id", fileId)
+    .eq("organization_id", organizationId)
+    .in("status", fromStates)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error(`File lifecycle transition failed or unauthorized. fileId=${fileId}`);
+    }
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Delete all files of a vector store (Legacy hard delete, avoid using)
  */
 export async function deleteFilesByVectorStoreId(vectorStoreId) {
   const { error } = await sb
     .from("file")
     .delete()
     .eq("vector_store_id", vectorStoreId);
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Soft delete all files of a vector store by setting pending_delete
+ */
+export async function markVectorStoreFilesPendingDelete(vectorStoreId, organizationId, reason = null) {
+  const fromStates = ['pending_upload', 'uploaded', 'validating', 'validated', 'processing', 'active', 'rejected', 'retryable_failed', 'unknown_outcome', 'reconciliation_required'];
+
+  const { error } = await sb
+    .from("file")
+    .update({
+      status: 'pending_delete',
+      cleanup_reason: reason,
+      updated_at: new Date().toISOString()
+    })
+    .eq("vector_store_id", vectorStoreId)
+    .eq("organization_id", organizationId)
+    .in("status", fromStates);
+
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Soft delete all files of an assistant by setting pending_delete and detaching from the assistant
+ */
+export async function markAssistantFilesPendingDeleteAndDetach(assistantId, organizationId, reason = null) {
+  const fromStates = ['pending_upload', 'uploaded', 'validating', 'validated', 'processing', 'active', 'rejected', 'retryable_failed', 'unknown_outcome', 'reconciliation_required'];
+
+  const { error } = await sb
+    .from("file")
+    .update({
+      status: 'pending_delete',
+      assistant_id: null,
+      cleanup_reason: reason,
+      updated_at: new Date().toISOString()
+    })
+    .eq("assistant_id", assistantId)
+    .eq("organization_id", organizationId)
+    .in("status", fromStates);
+
   if (error) throw error;
   return true;
 }
