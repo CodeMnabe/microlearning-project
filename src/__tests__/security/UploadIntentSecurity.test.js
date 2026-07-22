@@ -15,7 +15,8 @@ vi.mock("@/lib/auth/guards", () => ({
 }));
 
 vi.mock("@/lib/repos/files.repo", () => ({
-  createDBFiles: vi.fn().mockResolvedValue([{ id: 10, object_path: "1/2/uuid.pdf", original_name: "test.pdf", size_bytes: 1024, mime_type: "application/pdf" }]),
+  reserveFileCapacity: vi.fn().mockResolvedValue([{ id: 10, object_path: "1/2/key-0.pdf", original_name: "test.pdf", size_bytes: 1024, mime_type: "application/pdf" }]),
+  markFilePendingDelete: vi.fn().mockResolvedValue(true),
   getFileById: vi.fn().mockResolvedValue({ id: 10, organization_id: 1, assistant_id: 2, bucket: "documents", object_path: "1/2/uuid.pdf", status: "pending_upload" }),
 }));
 
@@ -31,6 +32,8 @@ vi.mock("@supabase/supabase-js", () => ({
 }));
 
 describe("Upload intent security", () => {
+  const reservationKey = "123e4567-e89b-42d3-a456-426614174000";
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -38,6 +41,7 @@ describe("Upload intent security", () => {
   it("document intent ignores client bucket and path, strictly generating UUIDs and checking limits", async () => {
     const req = {
       json: vi.fn().mockResolvedValue({
+        reservationKey,
         files: [
           { name: "test.pdf", size: 1024, type: "application/pdf", bucket: "hacker", path: "../../../secrets" }
         ]
@@ -57,6 +61,7 @@ describe("Upload intent security", () => {
   it("document intent rejects oversized files", async () => {
     const req = {
       json: vi.fn().mockResolvedValue({
+        reservationKey,
         files: [
           { name: "huge.pdf", size: 30 * 1024 * 1024, type: "application/pdf" } // 30MB > 20MB
         ]
@@ -72,6 +77,7 @@ describe("Upload intent security", () => {
   it("document intent rejects invalid mime types like HTML", async () => {
     const req = {
       json: vi.fn().mockResolvedValue({
+        reservationKey,
         files: [
           { name: "index.html", size: 1024, type: "text/html" }
         ]
@@ -88,6 +94,7 @@ describe("Upload intent security", () => {
     const req = {
       json: vi.fn().mockResolvedValue({
         orgId: 1,
+        reservationKey,
         files: [
           { name: "pic.jpg", size: 1024, type: "image/jpeg", path: "../hack" }
         ]

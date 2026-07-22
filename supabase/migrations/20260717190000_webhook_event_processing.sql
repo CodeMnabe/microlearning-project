@@ -906,10 +906,10 @@ begin
 
   if v_provider = 'teams' then
     v_teams_tenant_id := pg_catalog.substring(
-      v_scope_id from '^tenant:([^:]+):conversation:.+$'
+      v_scope_id, '^tenant:([^:]+):conversation:.+$'
     );
     v_teams_conversation_id := pg_catalog.substring(
-      v_scope_id from '^tenant:[^:]+:conversation:(.+)$'
+      v_scope_id, '^tenant:[^:]+:conversation:(.+)$'
     );
     if nullif(v_teams_tenant_id, '') is null
        or nullif(v_teams_conversation_id, '') is null then
@@ -924,7 +924,7 @@ begin
     end if;
   else
     v_messagebird_channel_id := pg_catalog.substring(
-      v_scope_id from '^channel:(.+)$'
+      v_scope_id, '^channel:(.+)$'
     );
     if not exists (
       select 1 from public.organization as organization_row
@@ -1206,7 +1206,7 @@ begin
             reservation_row.channel = 'teams'
             and reservation_row.scope_id ~ '^tenant:[^:]+:conversation:.+$'
             and thread_row.external_conversation_id = pg_catalog.substring(
-              reservation_row.scope_id from '^tenant:[^:]+:conversation:(.+)$'
+              reservation_row.scope_id, '^tenant:[^:]+:conversation:(.+)$'
             )
           )
         )

@@ -55,3 +55,52 @@ export async function deleteOpenAiFileLifecycle(fileId) {
     return { ok: false, outcome: "unknown_outcome", code: "network_error", message: err.message };
   }
 }
+
+export async function createOpenAiVectorStoreLifecycle(storeName, fileIds, operationKey) {
+  try {
+    const vectorStore = await client.vectorStores.create(
+      { name: storeName, file_ids: fileIds },
+      { headers: { "Idempotency-Key": operationKey } },
+    );
+    return { ok: true, value: vectorStore };
+  } catch (err) {
+    if (err instanceof OpenAI.APIError) {
+      if (err.status >= 500 || err.status === 429) {
+        return { ok: false, outcome: "retryable_failed", code: err.code || String(err.status), message: err.message };
+      }
+      return { ok: false, outcome: "permanent_failed", code: err.code || String(err.status), message: err.message };
+    }
+    return { ok: false, outcome: "unknown_outcome", code: "network_error", message: err.message };
+  }
+}
+
+export async function deleteOpenAiVectorStoreLifecycle(vectorStoreId) {
+  if (!vectorStoreId) return { ok: true, value: { deleted: true } };
+
+  try {
+    let value;
+    if (client.vectorStores?.del) value = await client.vectorStores.del(vectorStoreId);
+    else if (client.vectorStores?.delete) value = await client.vectorStores.delete(vectorStoreId);
+    else {
+      const response = await client.core.fetch(
+        `https://api.openai.com/v1/vector_stores/${vectorStoreId}`,
+        { method: "DELETE", headers: { "OpenAI-Beta": "assistants=v2" } },
+      );
+      if (response.status === 404) return { ok: true, value: { deleted: true } };
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      value = await response.json();
+    }
+    return { ok: true, value };
+  } catch (err) {
+    if ((err instanceof OpenAI.APIError && err.status === 404) || err?.status === 404) {
+      return { ok: true, value: { deleted: true } };
+    }
+    if (err instanceof OpenAI.APIError) {
+      if (err.status >= 500 || err.status === 429) {
+        return { ok: false, outcome: "retryable_failed", code: err.code || String(err.status), message: err.message };
+      }
+      return { ok: false, outcome: "permanent_failed", code: err.code || String(err.status), message: err.message };
+    }
+    return { ok: false, outcome: "unknown_outcome", code: "network_error", message: err.message };
+  }
+}

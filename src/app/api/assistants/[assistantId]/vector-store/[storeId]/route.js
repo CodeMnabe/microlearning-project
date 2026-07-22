@@ -1,8 +1,10 @@
 // src/app/api/assistants/[assistantId]/vector-store/[storeId]/route.js
 import { NextResponse } from "next/server";
-import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
-import { deleteFileById } from "@/lib/repos/files.repo";
-import { deleteOAiVectorStoreAndFiles } from "@/lib/services/oAi.services";
+import {
+  getStoreById,
+  transitionVectorStoreLifecycle,
+} from "@/lib/repos/store.repo";
+import { deleteOpenAiVectorStoreLifecycle } from "@/lib/helpers/openai.lifecycle";
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 import {
   handleApiError,
@@ -78,27 +80,40 @@ export async function DELETE(req, ctx) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const openAiFileIds = (store.file ?? [])
-      .map((f) => f.open_ai_id)
-      .filter(Boolean);
-
     const openAiStoreId = store.open_ai_id;
 
     await nullifyVectorStoreToDbAssistant(orgAuth.assistantId);
 
-    try {
-      await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
-    } catch (e) {
-      console.error("OpenAI delete failed:", e);
-      // We catch the error. The files will still be marked pending_delete
-      // and their individual OpenAI file deletions will be retried by the cron worker.
-    }
+    await transitionVectorStoreLifecycle(
+      sId,
+      orgAuth.orgId,
+      ["active", "reconciliation_required"],
+      "pending_delete",
+    );
+
+    const remoteDelete = await deleteOpenAiVectorStoreLifecycle(openAiStoreId);
 
     const { markVectorStoreFilesPendingDelete, detachFilesFromVectorStore } = require("@/lib/repos/files.repo");
     await markVectorStoreFilesPendingDelete(sId, orgAuth.orgId, "vector_store_delete");
     await detachFilesFromVectorStore(sId);
 
-    await deleteStoreById(sId);
+    if (remoteDelete.ok) {
+      await transitionVectorStoreLifecycle(
+        sId,
+        orgAuth.orgId,
+        "pending_delete",
+        "deleted",
+        { deleted_at: new Date().toISOString(), last_error_message: null },
+      );
+    } else {
+      await transitionVectorStoreLifecycle(
+        sId,
+        orgAuth.orgId,
+        "pending_delete",
+        "reconciliation_required",
+        { last_error_message: remoteDelete.message?.slice(0, 1000) },
+      );
+    }
 
     return NextResponse.json(
       { message: "Vector store deleted and files marked for cleanup" },

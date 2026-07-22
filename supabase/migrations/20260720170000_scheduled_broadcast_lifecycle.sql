@@ -724,9 +724,7 @@ begin
        or exists (
          select 1
          from pg_catalog.pg_attribute as attribute
-         cross join lateral pg_catalog.aclexplode(
-           coalesce(attribute.attacl, array[]::pg_catalog.aclitem[])
-         ) as privilege
+         cross join lateral pg_catalog.aclexplode(attribute.attacl) as privilege
          where attribute.attrelid = 'public.scheduled_broadcast'::pg_catalog.regclass
            and attribute.attname = internal_column
            and privilege.grantee = 0
@@ -739,9 +737,7 @@ begin
   if exists (
     select 1
     from pg_catalog.pg_attribute as attribute
-    cross join lateral pg_catalog.aclexplode(
-      coalesce(attribute.attacl, array[]::pg_catalog.aclitem[])
-    ) as privilege
+    cross join lateral pg_catalog.aclexplode(attribute.attacl) as privilege
     where attribute.attrelid in (
       'public.scheduled_broadcast'::pg_catalog.regclass,
       'public.scheduled_broadcast_attempt'::pg_catalog.regclass

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { deleteStorageObjectLifecycle } from "@/lib/helpers/storage.lifecycle";
 import { deleteOpenAiFileLifecycle } from "@/lib/helpers/openai.lifecycle";
+import { completeFileCleanup } from "@/lib/repos/files.repo";
+import { reconcilePendingFileCapacityReservations } from "@/lib/services/fileCapacityReconciliation.service";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -9,67 +11,69 @@ const sb = createServiceClient(
   { auth: { persistSession: false } }
 );
 
+function isAuthorized(req) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+  const authorization = req.headers.get("authorization") || "";
+  return authorization === `Bearer ${cronSecret}`
+    || req.headers.get("x-cron-secret") === cronSecret;
+}
+
 export async function POST(req) {
-  // Typically we'd check req.headers.get("Authorization") for a cron secret here
+  if (!isAuthorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    // 1. Claim up to 50 files for cleanup
+    const reconciliationResults = await reconcilePendingFileCapacityReservations(20);
+
     const { data: files, error: claimErr } = await sb.rpc("claim_files_for_cleanup", {
       p_batch_size: 50,
       p_claim_duration: "10 minutes"
     });
 
     if (claimErr) throw claimErr;
-    if (!files || files.length === 0) {
-      return NextResponse.json({ message: "No files to clean up" }, { status: 200 });
-    }
-
     const results = [];
 
-    // 2. Process each claimed file
-    for (const file of files) {
-      let storageDeleted = !!file.storage_deleted_at;
-      let openaiDeleted = !!file.openai_deleted_at;
+    for (const file of files ?? []) {
+      let storageDeleted = !file.object_path || !file.bucket;
+      let publicObjectDeleted = !file.public_object_path || !file.public_bucket;
+      let openaiDeleted = !file.open_ai_id;
       let lastError = null;
 
       // Try delete Storage
-      if (!storageDeleted && (file.object_path || file.public_object_path)) {
-        if (file.object_path && file.bucket) {
-          const res = await deleteStorageObjectLifecycle(file.bucket, file.object_path);
-          if (res.ok) storageDeleted = true;
-          else lastError = res.message;
-        }
-        if (file.public_object_path && file.public_bucket) {
-          const res = await deleteStorageObjectLifecycle(file.public_bucket, file.public_object_path);
-          if (res.ok) storageDeleted = true; // wait, needs both. we'll assume best effort
-          else lastError = res.message;
-        }
-        if (!file.object_path && !file.public_object_path) {
-          storageDeleted = true; // Nothing to delete
-        }
-      } else {
-        storageDeleted = true;
+      if (!storageDeleted) {
+        const result = await deleteStorageObjectLifecycle(file.bucket, file.object_path);
+        if (result.ok) storageDeleted = true;
+        else lastError = result.message;
+      }
+
+      const sameStorageObject = file.public_bucket === file.bucket
+        && file.public_object_path === file.object_path;
+      if (!publicObjectDeleted && sameStorageObject && storageDeleted) {
+        publicObjectDeleted = true;
+      } else if (!publicObjectDeleted) {
+        const result = await deleteStorageObjectLifecycle(file.public_bucket, file.public_object_path);
+        if (result.ok) publicObjectDeleted = true;
+        else lastError = result.message;
       }
 
       // Try delete OpenAI
-      if (!openaiDeleted && file.open_ai_id) {
+      if (!openaiDeleted) {
         const res = await deleteOpenAiFileLifecycle(file.open_ai_id);
         if (res.ok) openaiDeleted = true;
         else lastError = res.message;
-      } else {
-        openaiDeleted = true;
       }
 
       // Determine outcome
-      if (storageDeleted && openaiDeleted) {
-        // Success: mark as tombstone (deleted)
-        await sb.from("file").update({
-          status: "deleted",
-          storage_deleted_at: file.storage_deleted_at || (file.object_path ? new Date().toISOString() : null),
-          openai_deleted_at: file.openai_deleted_at || (file.open_ai_id ? new Date().toISOString() : null),
-          deleted_at: new Date().toISOString(),
-          claim_expires_at: null,
-          claimed_at: null
-        }).eq("id", file.id);
+      if (storageDeleted && publicObjectDeleted && openaiDeleted) {
+        await completeFileCleanup({
+          organizationId: file.organization_id,
+          fileId: file.id,
+          storageDeleted,
+          publicObjectDeleted,
+          openAiDeleted: openaiDeleted,
+        });
         results.push({ id: file.id, status: "deleted" });
       } else {
         // Retryable failure
@@ -84,12 +88,16 @@ export async function POST(req) {
           next_retry_at: nextRetry.toISOString(),
           claim_expires_at: null,
           claimed_at: null
-        }).eq("id", file.id);
+        }).eq("id", file.id).eq("organization_id", file.organization_id);
         results.push({ id: file.id, status: "failed", error: lastError });
       }
     }
 
-    return NextResponse.json({ processed: files.length, results }, { status: 200 });
+    return NextResponse.json({
+      processed: files?.length ?? 0,
+      results,
+      reconciliations: reconciliationResults,
+    }, { status: 200 });
   } catch (err) {
     console.error("Cron file cleanup failed:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

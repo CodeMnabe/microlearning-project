@@ -20,50 +20,135 @@ const sb = createServiceClient(
   { auth: { persistSession: false } }
 );
 
-/** Create a single file row */
-export async function createDBFile(openAiId, file, vectorStoreId = null) {
-  const payload = {
-    open_ai_id: openAiId ?? null,
-    name: file?.name ?? null,
-    size: file?.size ?? null,
-    vector_store_id: vectorStoreId ?? null,
-    status: 'active',
-    upload_flow: 'legacy'
-  };
-
-  const { data, error } = await sb
-    .from("file")
-    .insert([payload])
-    .select()
-    .single();
+export async function reserveFileCapacity({
+  organizationId,
+  assistantId = null,
+  reservationKey,
+  uploadFlow,
+  files,
+  expiresAt,
+  requestedVectorStoreCount,
+}) {
+  const { data, error } = await sb.rpc("reserve_file_capacity", {
+    p_organization_id: organizationId,
+    p_assistant_id: assistantId,
+    p_reservation_key: reservationKey,
+    p_upload_flow: uploadFlow,
+    p_files: files,
+    p_expires_at: expiresAt,
+    p_requested_vector_store_count: requestedVectorStoreCount,
+  });
   if (error) throw error;
-  return data; // { id, open_ai_id, name, size, vector_store_id }
+  return data ?? [];
 }
 
-/** Bulk create file rows; accepts [{ open_ai_id, name, size }] */
-export async function createDBFiles(fileRows = [], vectorStoreId = null) {
-  if (!Array.isArray(fileRows) || fileRows.length === 0) return [];
-
-  const toInsert = fileRows.map((f) => ({
-    vector_store_id: vectorStoreId ?? null,
-    open_ai_id: f.open_ai_id ?? f.openAiId ?? null,
-    name: f.name ?? null,
-    size: f.size ?? null,
-    status: 'active',
-    upload_flow: 'legacy'
-  }));
-
-  const { data, error } = await sb.from("file").insert(toInsert).select();
+export async function getFileCapacityReservation(organizationId, reservationKey) {
+  const { data, error } = await sb
+    .from("file_capacity_reservation")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("reservation_key", reservationKey)
+    .maybeSingle();
   if (error) throw error;
-  return data; // array of inserted rows
+  return data ?? null;
+}
+
+export async function getFilesByCapacityReservation(organizationId, reservationId) {
+  const { data, error } = await sb
+    .from("file")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("capacity_reservation_id", reservationId)
+    .order("id", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function adjustFileReservedCapacity(organizationId, fileId, actualBytes) {
+  const { data, error } = await sb.rpc("adjust_file_reserved_capacity", {
+    p_organization_id: organizationId,
+    p_file_id: fileId,
+    p_actual_bytes: actualBytes,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export async function completeFileCleanup({
+  organizationId,
+  fileId,
+  storageDeleted,
+  publicObjectDeleted,
+  openAiDeleted,
+}) {
+  const { data, error } = await sb.rpc("complete_file_cleanup", {
+    p_organization_id: organizationId,
+    p_file_id: fileId,
+    p_storage_deleted: storageDeleted,
+    p_public_object_deleted: publicObjectDeleted,
+    p_openai_deleted: openAiDeleted,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export async function markFileCapacityReconciliationRequired({
+  organizationId,
+  reservationKey,
+  remoteVectorStoreId,
+  errorMessage,
+}) {
+  const normalizedRemoteId = typeof remoteVectorStoreId === "string"
+    ? remoteVectorStoreId.trim()
+    : "";
+  if (!normalizedRemoteId) {
+    throw new Error("A remote vector store id is required for reconciliation");
+  }
+  const { error } = await sb.rpc("mark_file_capacity_reconciliation_required", {
+    p_organization_id: organizationId,
+    p_reservation_key: reservationKey,
+    p_remote_vector_store_id: normalizedRemoteId,
+    p_error_message: errorMessage?.slice(0, 1000) ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function listFileCapacityReconciliations(limit = 20) {
+  const safeLimit = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
+  const { data, error } = await sb
+    .from("file_capacity_reservation")
+    .select("id, organization_id, reservation_key, remote_vector_store_id, status")
+    .eq("status", "reconciliation_required")
+    .not("remote_vector_store_id", "is", null)
+    .order("updated_at", { ascending: true })
+    .limit(safeLimit);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function completeFileCapacityReconciliation({
+  organizationId,
+  reservationKey,
+  remoteVectorStoreId,
+  remoteCleanupConfirmed,
+}) {
+  const { data, error } = await sb.rpc("complete_file_capacity_reconciliation", {
+    p_organization_id: organizationId,
+    p_reservation_key: reservationKey,
+    p_remote_vector_store_id: remoteVectorStoreId,
+    p_remote_cleanup_confirmed: remoteCleanupConfirmed,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
 }
 
 /** Get one file by id */
-export async function getFileById(id) {
+export async function getFileById(id, organizationId) {
   const { data, error } = await sb
     .from("file")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", organizationId)
     .single();
   if (error) throw error;
   return data;
@@ -77,13 +162,6 @@ export async function getFilesByVectorStoreId(vectorStoreId) {
     .eq("vector_store_id", vectorStoreId);
   if (error) throw error;
   return data ?? [];
-}
-
-/** Delete a single file row (Legacy hard delete, avoid using) */
-export async function deleteFileById(id) {
-  const { error } = await sb.from("file").delete().eq("id", id);
-  if (error) throw error;
-  return true;
 }
 
 /** Soft delete a single file by setting pending_delete */
@@ -113,10 +191,14 @@ export async function transitionFileLifecycle({
 }) {
   const fromStates = Array.isArray(from) ? from : [from];
 
+  if ("size_bytes" in metadata || "reserved_bytes" in metadata || "capacity_reservation_id" in metadata) {
+    throw new Error("Capacity fields must be changed through the capacity RPCs");
+  }
+
   const payload = {
+    ...metadata,
     status: to,
     updated_at: new Date().toISOString(),
-    ...metadata
   };
 
   const { data, error } = await sb
@@ -136,18 +218,6 @@ export async function transitionFileLifecycle({
   }
 
   return data;
-}
-
-/**
- * Delete all files of a vector store (Legacy hard delete, avoid using)
- */
-export async function deleteFilesByVectorStoreId(vectorStoreId) {
-  const { error } = await sb
-    .from("file")
-    .delete()
-    .eq("vector_store_id", vectorStoreId);
-  if (error) throw error;
-  return true;
 }
 
 /**

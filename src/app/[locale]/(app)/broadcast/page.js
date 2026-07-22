@@ -909,6 +909,7 @@ export default function BroadcastPage() {
 
   const supabaseUpload = async (pickedFiles) => {
     const uploaded = [];
+    const reservationKey = crypto.randomUUID();
 
     const fileMetadata = pickedFiles.map(f => ({
       name: f.name,
@@ -920,7 +921,7 @@ export default function BroadcastPage() {
     const intentRes = await fetch(`/api/broadcast/images/intent`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId: params.orgId, files: fileMetadata }),
+      body: JSON.stringify({ orgId: params.orgId, reservationKey, files: fileMetadata }),
     });
 
     const intentData = await intentRes.json().catch(() => ({}));
@@ -950,7 +951,11 @@ export default function BroadcastPage() {
       const finalRes = await fetch(`/api/broadcast/images/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId: params.orgId, fileId: intentFile.fileId })
+        body: JSON.stringify({
+          orgId: params.orgId,
+          fileId: intentFile.fileId,
+          reservationKey: intentData.reservationKey
+        })
       });
 
       const finalData = await finalRes.json().catch(() => ({}));

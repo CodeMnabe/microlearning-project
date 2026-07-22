@@ -1,36 +1,51 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { requireOwnedOrg, handleApiError } from "@/lib/auth/guards";
-import { getFileById } from "@/lib/repos/files.repo";
+import {
+  adjustFileReservedCapacity,
+  getFileCapacityReservation,
+  getFileById,
+  markFilePendingDelete,
+  transitionFileLifecycle,
+} from "@/lib/repos/files.repo";
 import { downloadWithLimit } from "@/lib/security/streamReader";
 import { validateMagicBytes } from "@/lib/security/magicBytes";
 import sharp from "sharp";
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } }
 );
-import { transitionFileLifecycle } from "@/lib/repos/files.repo";
 
 export async function POST(req) {
   try {
-    const { orgId, fileId } = await req.json();
+    const { orgId, fileId, reservationKey } = await req.json();
 
-    if (!orgId || !fileId) {
-      return NextResponse.json({ error: "Missing orgId or fileId" }, { status: 400 });
+    if (!orgId || !fileId || typeof reservationKey !== "string" || !UUID_PATTERN.test(reservationKey)) {
+      return NextResponse.json({ error: "Missing orgId, fileId or valid reservationKey" }, { status: 400 });
     }
 
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
 
-    const dbFile = await getFileById(fileId).catch(() => null);
+    const dbFile = await getFileById(fileId, orgAuth.orgId).catch(() => null);
     if (!dbFile) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    if (dbFile.organization_id !== orgAuth.orgId) {
-      return NextResponse.json({ error: "File does not belong to this organization" }, { status: 403 });
+    const reservation = await getFileCapacityReservation(orgAuth.orgId, reservationKey).catch(() => null);
+    const expectedPathPrefix = `broadcasts/${orgAuth.orgId}/${reservationKey}-`;
+    if (!reservation
+      || reservation.upload_flow !== "broadcast_intent"
+      || reservation.assistant_id !== null
+      || Number(dbFile.capacity_reservation_id) !== Number(reservation.id)
+      || dbFile.upload_flow !== "broadcast_intent"
+      || dbFile.bucket !== "quarantine_images"
+      || !dbFile.object_path?.startsWith(expectedPathPrefix)) {
+      return NextResponse.json({ error: "File does not belong to this broadcast reservation" }, { status: 403 });
     }
 
     if (dbFile.status !== "pending_upload" && dbFile.status !== "uploaded") {
@@ -103,6 +118,17 @@ export async function POST(req) {
     }
 
     const publicBucket = "images";
+    const finalSize = processedBuffer.length;
+
+    try {
+      await adjustFileReservedCapacity(orgAuth.orgId, dbFile.id, finalSize);
+    } catch (capacityError) {
+      await markFilePendingDelete(dbFile.id, orgAuth.orgId, "final_size_capacity_rejected");
+      if (/LIMIT_EXCEEDED|NOT_CONFIGURED/i.test(capacityError?.message || "")) {
+        return NextResponse.json({ error: capacityError.message }, { status: 409 });
+      }
+      throw capacityError;
+    }
 
     // Save reference before upload to compensate if upload succeeds but DB update fails later
     await transitionFileLifecycle({
@@ -135,7 +161,6 @@ export async function POST(req) {
       throw new Error(`Failed to publish image: ${uploadErr.message}`);
     }
 
-    const finalSize = processedBuffer.length;
     const sha256 = require("crypto").createHash("sha256").update(processedBuffer).digest("hex");
 
     try {
@@ -146,7 +171,6 @@ export async function POST(req) {
         to: "validated",
         metadata: {
           bucket: publicBucket,
-          size_bytes: finalSize,
           checksum_sha256: sha256,
           validation_completed_at: new Date().toISOString()
         }

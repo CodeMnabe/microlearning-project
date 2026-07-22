@@ -197,6 +197,7 @@ export default function AssistantsHub() {
     startLoading();
     try {
       // 1. Ask for upload intent
+      const reservationKey = crypto.randomUUID();
       const fileMetadata = vsFiles.map(f => ({
         name: f.name,
         type: f.type,
@@ -206,7 +207,7 @@ export default function AssistantsHub() {
       const intentRes = await fetch(`/api/assistants/${selected.id}/files/intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: fileMetadata }),
+        body: JSON.stringify({ reservationKey, files: fileMetadata }),
       });
 
       const intentData = await intentRes.json().catch(() => ({}));
@@ -241,7 +242,11 @@ export default function AssistantsHub() {
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeName: vsName, fileIds }),
+        body: JSON.stringify({
+          storeName: vsName,
+          reservationKey: intentData.reservationKey,
+          fileIds,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

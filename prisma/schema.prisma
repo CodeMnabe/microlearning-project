@@ -15,13 +15,32 @@ datasource db {
 }
 
 model organization {
-  id            Int         @id @default(autoincrement())
-  channel_id    String      @unique
-  name          String
-  owner_user_id String // UUID of the owner user
-  users         user[]
-  assistants    assistant[]
-  created_at    DateTime    @default(now())
+  id                           Int                         @id @default(autoincrement())
+  channel_id                   String                      @unique
+  name                         String
+  owner_user_id                String // UUID of the owner user
+  plan                         plan?                       @relation(fields: [plan_id], references: [id])
+  plan_id                      Int?
+  max_files_override           Int?
+  max_storage_bytes_override   BigInt?
+  max_pending_uploads_override Int?
+  max_vector_stores_override   Int?
+  users                        user[]
+  assistants                   assistant[]
+  files                        file[]
+  vector_stores                vector_store[]
+  file_capacity_reservations   file_capacity_reservation[]
+  created_at                   DateTime                    @default(now())
+}
+
+model plan {
+  id                  Int            @id @default(autoincrement())
+  max_users           Int?
+  max_files           Int?
+  max_storage_bytes   BigInt?
+  max_pending_uploads Int?
+  max_vector_stores   Int?
+  organizations       organization[]
 }
 
 model user {
@@ -35,47 +54,65 @@ model user {
 }
 
 model assistant {
-  id              Int           @id @default(autoincrement())
-  organization    organization  @relation(fields: [organization_id], references: [id])
-  organization_id Int
-  open_ai_id      String        @unique
-  name            String
-  description     String?
-  instructions    String?
-  model           String?
-  top_p           Float?
-  temperature     Float?
-  vector_store    vector_store? @relation(fields: [vector_store_id], references: [id])
-  vector_store_id Int?
-  created_at      DateTime      @default(now())
-  threads         thread[]
+  id                    Int                         @id @default(autoincrement())
+  organization          organization                @relation(fields: [organization_id], references: [id])
+  organization_id       Int
+  open_ai_id            String                      @unique
+  name                  String
+  description           String?
+  instructions          String?
+  model                 String?
+  top_p                 Float?
+  temperature           Float?
+  vector_store          vector_store?               @relation(fields: [vector_store_id], references: [id])
+  vector_store_id       Int?
+  created_at            DateTime                    @default(now())
+  threads               thread[]
+  capacity_reservations file_capacity_reservation[]
+
+  @@unique([id, organization_id])
 }
 
 model vector_store {
-  id         Int         @id @default(autoincrement())
-  store_name String
-  created_at DateTime    @default(now())
-  assistants assistant[]
-  files      file[]
+  id                      Int                        @id @default(autoincrement())
+  store_name              String
+  open_ai_id              String?
+  organization            organization               @relation(fields: [organization_id], references: [id])
+  organization_id         Int
+  capacity_reservation    file_capacity_reservation? @relation(fields: [capacity_reservation_id, organization_id], references: [id, organization_id])
+  capacity_reservation_id BigInt?
+  status                  String                     @default("active")
+  deleted_at              DateTime?
+  last_error_message      String?
+  created_at              DateTime                   @default(now())
+  assistants              assistant[]
+  files                   file[]
+
+  @@unique([id, organization_id])
+  @@unique([capacity_reservation_id, organization_id])
 }
 
 model file {
-  id                            Int                     @id @default(autoincrement())
-  open_ai_id                    String?                 @unique
+  id                            Int                        @id @default(autoincrement())
+  open_ai_id                    String?                    @unique
   name                          String
   size                          Int?
-  vector_store                  vector_store?           @relation(fields: [vector_store_id], references: [id])
+  vector_store                  vector_store?              @relation(fields: [vector_store_id], references: [id])
   vector_store_id               Int?
+  organization                  organization?              @relation(fields: [organization_id], references: [id])
   organization_id               Int?
   assistant_id                  Int?
+  capacity_reservation          file_capacity_reservation? @relation(fields: [capacity_reservation_id, organization_id], references: [id, organization_id])
+  capacity_reservation_id       BigInt?
   bucket                        String?
   object_path                   String?
   original_name                 String?
   safe_extension                String?
   mime_type                     String?
   size_bytes                    BigInt?
+  reserved_bytes                BigInt                     @default(0)
   checksum_sha256               String?
-  status                        String                  @default("pending_upload")
+  status                        String                     @default("pending_upload")
   storage_uploaded_at           DateTime?
   validation_completed_at       DateTime?
   last_error_code               String?
@@ -87,7 +124,7 @@ model file {
   openai_deleted_at             DateTime?
   public_object_deleted_at      DateTime?
   last_error_message            String?
-  retry_count                   Int                     @default(0)
+  retry_count                   Int                        @default(0)
   next_retry_at                 DateTime?
   last_attempt_at               DateTime?
   claimed_at                    DateTime?
@@ -95,10 +132,36 @@ model file {
   cleanup_reason                String?
   remote_outcome                String?
   original_status_before_delete String?
-  created_at                    DateTime                @default(now())
-  updated_at                    DateTime                @default(now()) @updatedAt
+  created_at                    DateTime                   @default(now())
+  updated_at                    DateTime                   @default(now()) @updatedAt
   operations                    file_remote_operation[]
 
+  @@unique([id, organization_id])
+}
+
+model file_capacity_reservation {
+  id                           BigInt        @id @default(autoincrement())
+  organization                 organization  @relation(fields: [organization_id], references: [id])
+  organization_id              Int
+  assistant                    assistant?    @relation(fields: [assistant_id, organization_id], references: [id, organization_id])
+  assistant_id                 Int?
+  reservation_key              String        @db.Uuid
+  upload_flow                  String
+  requested_file_count         Int
+  requested_bytes              BigInt
+  reserved_bytes               BigInt
+  requested_vector_store_count Int           @default(0)
+  request_payload              Json
+  status                       String        @default("active")
+  expires_at                   DateTime
+  remote_vector_store_id       String?
+  last_error_message           String?
+  created_at                   DateTime      @default(now())
+  updated_at                   DateTime      @default(now()) @updatedAt
+  files                        file[]
+  vector_store                 vector_store?
+
+  @@unique([organization_id, reservation_key])
   @@unique([id, organization_id])
 }
 

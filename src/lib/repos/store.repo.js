@@ -15,50 +15,55 @@ const sb = createServiceClient(
  *   id (int4), vector_store_id (int4 FK), open_ai_id (text), name (text), size (int4)
  */
 
-export async function createDBStore(store, fileRows = []) {
-  // 1) Create vector_store (persist OpenAI id too)
-  const { data: vs, error: vsErr } = await sb
+export async function materializeVectorStoreCapacity({
+  organizationId,
+  assistantId,
+  reservationKey,
+  storeName,
+  remoteId,
+}) {
+  const { data, error } = await sb.rpc("materialize_vector_store_capacity", {
+    p_organization_id: organizationId,
+    p_assistant_id: assistantId,
+    p_reservation_key: reservationKey,
+    p_store_name: storeName,
+    p_remote_id: remoteId,
+  });
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export async function getStoreByCapacityReservation(organizationId, reservationId) {
+  const { data, error } = await sb
     .from("vector_store")
-    .insert([{ store_name: store.name, open_ai_id: store.open_ai_id || null }])
-    .select()
-    .single();
-  if (vsErr) throw vsErr;
-
-  // 2) Attach files (if any)
-  if (fileRows.length) {
-    const toInsert = fileRows.map((f) => ({
-      vector_store_id: vs.id,
-      open_ai_id: f.open_ai_id,
-      name: f.name,
-      size: f.size,
-    }));
-    const { error: filesErr } = await sb.from("file").insert(toInsert);
-    if (filesErr) throw filesErr;
-  }
-
-  // 3) Return the store *with* its files (id, name, size)
-  const { data: full, error: fullErr } = await sb
-    .from("vector_store")
-    .select("id, store_name, open_ai_id, file:file(id, name, size, open_ai_id)")
-    .eq("id", vs.id)
-    .single();
-  if (fullErr) throw fullErr;
-
-  return full;
+    .select("id, store_name, open_ai_id, status, file:file(id, name, size, open_ai_id)")
+    .eq("organization_id", organizationId)
+    .eq("capacity_reservation_id", reservationId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
 }
 
 export async function getStoreById(storeId) {
   const { data, error } = await sb
     .from("vector_store")
-    .select("id, store_name, open_ai_id, file:file(id, name, size, open_ai_id)")
+    .select("id, store_name, open_ai_id, organization_id, capacity_reservation_id, status, file:file(id, name, size, open_ai_id)")
     .eq("id", storeId)
     .maybeSingle();
   if (error) throw error;
   return data ?? null;
 }
 
-export async function deleteStoreById(storeId) {
-  const { error } = await sb.from("vector_store").delete().eq("id", storeId);
+export async function transitionVectorStoreLifecycle(storeId, organizationId, from, to, metadata = {}) {
+  const fromStates = Array.isArray(from) ? from : [from];
+  const { data, error } = await sb
+    .from("vector_store")
+    .update({ ...metadata, status: to })
+    .eq("id", storeId)
+    .eq("organization_id", organizationId)
+    .in("status", fromStates)
+    .select()
+    .single();
   if (error) throw error;
-  return true;
+  return data;
 }

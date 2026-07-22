@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
-import { createDBFiles } from "@/lib/repos/files.repo";
-import { randomUUID } from "crypto";
+import {
+  markFilePendingDelete,
+  reserveFileCapacity,
+} from "@/lib/repos/files.repo";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -13,6 +15,7 @@ const sb = createServiceClient(
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 const MAX_FILES = 10;
 const DOCUMENT_STORAGE_BUCKET = "documents";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ALLOWED_MIME = [
   "application/pdf",
@@ -41,13 +44,18 @@ export async function POST(req, ctx) {
 
     const body = await req.json();
     const files = body.files;
+    const reservationKey = body.reservationKey;
+
+    if (typeof reservationKey !== "string" || !UUID_PATTERN.test(reservationKey)) {
+      return NextResponse.json({ error: "A valid reservationKey is required." }, { status: 400 });
+    }
 
     if (!Array.isArray(files) || files.length === 0 || files.length > MAX_FILES) {
       return NextResponse.json({ error: `Must provide between 1 and ${MAX_FILES} files.` }, { status: 400 });
     }
 
     const toInsert = [];
-    for (const f of files) {
+    for (const [index, f] of files.entries()) {
       const size = Number(f.size);
       if (isNaN(size) || size <= 0 || size > MAX_SIZE) {
         return NextResponse.json({ error: `File size must be > 0 and <= 20MB for ${f.name}` }, { status: 400 });
@@ -59,8 +67,7 @@ export async function POST(req, ctx) {
       }
 
       const safeExt = getSafeExtension(f.name);
-      const fileUuid = randomUUID();
-      const objectPath = `${orgAuth.orgId}/${assistantId}/${fileUuid}.${safeExt}`;
+      const objectPath = `${orgAuth.orgId}/${assistantId}/${reservationKey}-${index}.${safeExt}`;
 
       toInsert.push({
         organization_id: orgAuth.orgId,
@@ -71,6 +78,7 @@ export async function POST(req, ctx) {
         safe_extension: safeExt,
         mime_type: mimeType,
         size_bytes: size,
+        reserved_bytes: MAX_SIZE,
         status: "pending_upload",
         upload_flow: "document_intent",
         // file.repo expects name and size for compatibility
@@ -79,31 +87,51 @@ export async function POST(req, ctx) {
       });
     }
 
-    const insertedRows = await createDBFiles(toInsert, null);
+    const insertedRows = await reserveFileCapacity({
+      organizationId: orgAuth.orgId,
+      assistantId: Number(assistantId),
+      reservationKey,
+      uploadFlow: "document_intent",
+      files: toInsert,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      requestedVectorStoreCount: 1,
+    });
 
     const result = [];
-    for (const row of insertedRows) {
-      // Generate Signed Upload URL
-      const { data, error: signErr } = await sb.storage
-        .from(DOCUMENT_STORAGE_BUCKET)
-        .createSignedUploadUrl(row.object_path, { upsert: false });
+    try {
+      for (const row of insertedRows) {
+        const { data, error: signErr } = await sb.storage
+          .from(DOCUMENT_STORAGE_BUCKET)
+          .createSignedUploadUrl(row.object_path, { upsert: false });
 
-      if (signErr) {
-        throw new Error(`Failed to create signed upload url: ${signErr.message}`);
+        if (signErr) {
+          throw new Error(`Failed to create signed upload url: ${signErr.message}`);
+        }
+
+        result.push({
+          fileId: row.id,
+          uploadUrl: data.signedUrl,
+          name: row.original_name,
+          size: row.size_bytes,
+          type: row.mime_type
+        });
       }
-
-      result.push({
-        fileId: row.id,
-        uploadUrl: data.signedUrl,
-        name: row.original_name,
-        size: row.size_bytes,
-        type: row.mime_type
-      });
+    } catch (error) {
+      await Promise.allSettled(insertedRows.map((row) =>
+        markFilePendingDelete(row.id, orgAuth.orgId, "signed_upload_url_failed")
+      ));
+      throw error;
     }
 
-    return NextResponse.json({ files: result }, { status: 200 });
+    return NextResponse.json({ reservationKey, files: result }, { status: 200 });
 
   } catch (err) {
+    if (/LIMIT_EXCEEDED|reservation key conflicts/i.test(err?.message || "")) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    if (/FILE_CAPACITY_NOT_CONFIGURED/i.test(err?.message || "")) {
+      return NextResponse.json({ error: "File capacity is not configured for this organization." }, { status: 503 });
+    }
     return handleApiError(err, "Failed to create upload intent");
   }
 }
