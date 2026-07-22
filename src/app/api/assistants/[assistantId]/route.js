@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/observability/logger";
 import { updateAssistant, deleteAssistant } from "@/lib/repos/assistants.repo";
 import {
   updateOAiAssistant,
@@ -68,7 +69,10 @@ export async function PATCH(req, { params }) {
 
       if (error) throw error;
 
-      if (!vectorStore || Number(vectorStore.organization_id) !== Number(orgAuth.orgId)) {
+      if (
+        !vectorStore ||
+        Number(vectorStore.organization_id) !== Number(orgAuth.orgId)
+      ) {
         return NextResponse.json(
           { error: "Vector store does not belong to this organization" },
           { status: 403 },
@@ -91,7 +95,17 @@ export async function PATCH(req, { params }) {
         open_ai_id: orgAuth.assistant.open_ai_id,
       });
     } catch (error) {
-      console.error("[assistant PATCH] OpenAI sync failed", error);
+      logger.error(
+        "openai_operation_failed",
+        {
+          provider: "openai",
+          operation: "assistant_update",
+          outcome: "failed",
+          assistantId: orgAuth.assistantId,
+          organizationId: orgAuth.orgId,
+        },
+        error,
+      );
     }
 
     const updated = await updateAssistant(orgAuth.assistantId, patch);
@@ -118,12 +132,28 @@ export async function DELETE(_req, { params }) {
     try {
       await deleteOAiAssistant(orgAuth.assistant.open_ai_id);
     } catch (error) {
-      console.error("[assistant DELETE] OpenAI delete failed", error);
+      logger.error(
+        "openai_operation_failed",
+        {
+          provider: "openai",
+          operation: "assistant_delete",
+          outcome: "failed",
+          assistantId: orgAuth.assistantId,
+          organizationId: orgAuth.orgId,
+        },
+        error,
+      );
       // We catch the error so we can still clean up locally
     }
 
-    const { markAssistantFilesPendingDeleteAndDetach } = require("@/lib/repos/files.repo");
-    await markAssistantFilesPendingDeleteAndDetach(orgAuth.assistantId, orgAuth.orgId, "assistant_delete");
+    const {
+      markAssistantFilesPendingDeleteAndDetach,
+    } = require("@/lib/repos/files.repo");
+    await markAssistantFilesPendingDeleteAndDetach(
+      orgAuth.assistantId,
+      orgAuth.orgId,
+      "assistant_delete",
+    );
 
     await deleteAssistant(orgAuth.assistantId);
     return new NextResponse(null, { status: 204 });

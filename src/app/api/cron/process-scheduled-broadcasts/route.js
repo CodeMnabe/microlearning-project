@@ -10,6 +10,7 @@ import {
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { startLeaseHeartbeat } from "@/lib/webhooks/leaseHeartbeat";
+import { logger } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,9 @@ function isAuthorized(req) {
   const bearer = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
     : "";
-  return bearer === cronSecret || req.headers.get("x-cron-secret") === cronSecret;
+  return (
+    bearer === cronSecret || req.headers.get("x-cron-secret") === cronSecret
+  );
 }
 
 function normalizeError(error) {
@@ -102,7 +105,12 @@ async function processOneBroadcast(broadcast) {
     await heartbeat.renewNow();
     const started = await markScheduledBroadcastSendStarted(context);
     if (!started) {
-      return { id: broadcast.id, ok: false, skipped: true, error: "Claim lost before send" };
+      return {
+        id: broadcast.id,
+        ok: false,
+        skipped: true,
+        error: "Claim lost before send",
+      };
     }
     sendStarted = true;
     heartbeat.assertOwned();
@@ -138,9 +146,34 @@ async function processOneBroadcast(broadcast) {
     if (!finished) {
       throw new Error("Scheduled broadcast claim was lost before finalization");
     }
-    return { id: broadcast.id, ok: outcome !== "unknown_outcome", status: outcome };
+    logger.info("scheduled_broadcast_processed", {
+      provider: broadcast.channel === "whatsapp" ? "bird" : "teams",
+      operation: "scheduled_broadcast_send",
+      outcome,
+      broadcastId: broadcast.id,
+      organizationId: broadcast.organization_id,
+      succeeded: providerResult.ok,
+      failed: providerResult.failed,
+    });
+    return {
+      id: broadcast.id,
+      ok: outcome !== "unknown_outcome",
+      status: outcome,
+    };
   } catch (error) {
     const message = normalizeError(error);
+    logger.error(
+      "scheduled_broadcast_delivery_failed",
+      {
+        provider: broadcast.channel === "whatsapp" ? "bird" : "teams",
+        operation: "scheduled_broadcast_send",
+        outcome: sendStarted ? "unknown_outcome" : "retryable_failed",
+        broadcastId: broadcast.id,
+        organizationId: broadcast.organization_id,
+        externalRequestStarted: sendStarted,
+      },
+      error,
+    );
     try {
       await completeScheduledBroadcast({
         ...context,
@@ -149,10 +182,17 @@ async function processOneBroadcast(broadcast) {
         maxAttempts: MAX_ATTEMPTS,
       });
     } catch (finalizationError) {
-      console.error("[Schedule Broadcast] terminal outcome persistence failed", {
-        broadcastId: broadcast.id,
-        message: normalizeError(finalizationError),
-      });
+      logger.error(
+        "scheduled_broadcast_finalization_failed",
+        {
+          provider: "supabase",
+          operation: "scheduled_broadcast_finalization",
+          outcome: "failed",
+          broadcastId: broadcast.id,
+          organizationId: broadcast.organization_id,
+        },
+        finalizationError,
+      );
     }
     return {
       id: broadcast.id,
@@ -172,8 +212,10 @@ async function handler(req) {
     }
     let limit = 100;
     try {
-      const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-      const rawLimit = body?.limit ?? new URL(req.url).searchParams.get("limit");
+      const body =
+        req.method === "POST" ? await req.json().catch(() => ({})) : {};
+      const rawLimit =
+        body?.limit ?? new URL(req.url).searchParams.get("limit");
       if (rawLimit) limit = Math.min(500, Math.max(1, Number(rawLimit) || 100));
     } catch {}
 
@@ -189,7 +231,23 @@ async function handler(req) {
       maxAttempts: MAX_ATTEMPTS,
     });
     const results = [];
-    for (const broadcast of claimed) results.push(await processOneBroadcast(broadcast));
+    for (const broadcast of claimed)
+      results.push(await processOneBroadcast(broadcast));
+
+    logger.info("scheduled_broadcast_batch_completed", {
+      provider: "internal",
+      operation: "scheduled_broadcast_batch",
+      outcome: "completed",
+      claimed: claimed.length,
+      sent: results.filter((item) => item.status === "sent").length,
+      partial: results.filter((item) => item.status === "partial").length,
+      retryableFailed: results.filter(
+        (item) => item.status === "retryable_failed",
+      ).length,
+      unknownOutcome: results.filter(
+        (item) => item.status === "unknown_outcome",
+      ).length,
+    });
 
     return NextResponse.json({
       ok: true,
@@ -197,12 +255,24 @@ async function handler(req) {
       claimed: claimed.length,
       sent: results.filter((item) => item.status === "sent").length,
       partial: results.filter((item) => item.status === "partial").length,
-      retryableFailed: results.filter((item) => item.status === "retryable_failed").length,
-      unknownOutcome: results.filter((item) => item.status === "unknown_outcome").length,
+      retryableFailed: results.filter(
+        (item) => item.status === "retryable_failed",
+      ).length,
+      unknownOutcome: results.filter(
+        (item) => item.status === "unknown_outcome",
+      ).length,
       results,
     });
   } catch (error) {
-    console.error("[Schedule Broadcast] Cron error", error);
+    logger.error(
+      "scheduled_broadcast_processing_failed",
+      {
+        provider: "internal",
+        operation: "scheduled_broadcast_batch",
+        outcome: "failed",
+      },
+      error,
+    );
     return NextResponse.json({ error: normalizeError(error) }, { status: 500 });
   }
 }

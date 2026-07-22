@@ -12,6 +12,7 @@ import {
 } from "@/lib/repos/messageChain.repo";
 
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
+import { logger } from "@/lib/observability/logger";
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -178,7 +179,15 @@ export async function POST(req) {
   try {
     return await processDueReadChains(req);
   } catch (error) {
-    console.error("[cron/read-chains] failed:", error);
+    logger.error(
+      "read_chain_processing_failed",
+      {
+        provider: "internal",
+        operation: "read_chains_batch",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       {

@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
+import { logger } from "@/lib/observability/logger";
 
 const dbPath = path.resolve(process.cwd(), "db.json");
 
@@ -8,7 +9,15 @@ export async function readDb() {
     const data = await readFile(dbPath, "utf8");
     return JSON.parse(data);
   } catch (err) {
-    console.error("Failed to read db.json", err);
+    logger.error(
+      "local_persistence_read_failed",
+      {
+        provider: "filesystem",
+        operation: "local_database_read",
+        outcome: "failed",
+      },
+      err,
+    );
     throw err;
   }
 }

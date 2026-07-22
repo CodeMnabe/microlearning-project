@@ -5,6 +5,7 @@ import {
   createTrackedLinkEvent,
 } from "@/lib/repos/trackedLinks.repo";
 import { validateTrackedLinkDestination } from "@/lib/services/broadcast/trackedLinkUrl";
+import { logger } from "@/lib/observability/logger";
 
 function getClientIp(req) {
   const forwarded = req.headers.get("x-forwarded-for");
@@ -74,7 +75,15 @@ export async function GET(req, { params }) {
       linkLabel: trackedLink.link_label,
     });
   } catch (err) {
-    console.error("Tracked link resolve error:", err);
+    logger.error(
+      "tracked_link_resolution_failed",
+      {
+        provider: "internal",
+        operation: "tracked_link_resolve",
+        outcome: "failed",
+      },
+      err,
+    );
     return NextResponse.json(
       { error: err.message || String(err) },
       { status: 500 },

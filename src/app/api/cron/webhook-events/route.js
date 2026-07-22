@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processWebhookEventBatch } from "@/lib/webhooks/eventWorker";
+import { logger } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,15 @@ async function handler(req) {
     const result = await processWebhookEventBatch({ limit });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error("Webhook event worker failed", error);
+    logger.error(
+      "webhook_processing_failed",
+      {
+        provider: "internal",
+        operation: "webhook_event_batch",
+        outcome: "failed",
+      },
+      error,
+    );
     return NextResponse.json(
       { ok: false, error: "Webhook event worker failed" },
       { status: 500 },

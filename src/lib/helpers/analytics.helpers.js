@@ -1,3 +1,5 @@
+import { logger } from "@/lib/observability/logger";
+
 /**
  * Lista de períodos aceites pela dashboard de Analytics.
  *
@@ -167,7 +169,7 @@ export function buildDailySeries(startDate, rows, dateColumn, valueKey) {
    * Cria todos os dias do período com valor inicial 0.
    */
   const countsByDay = Object.fromEntries(
-    getDayRange(startDate).map((day) => [day, 0])
+    getDayRange(startDate).map((day) => [day, 0]),
   );
 
   /**
@@ -224,7 +226,15 @@ export async function withMetricFallback(label, promise, fallback) {
   try {
     return await promise;
   } catch (err) {
-    console.warn(`[analytics] ${label} failed:`, err);
+    logger.warn(
+      "analytics_query_failed",
+      {
+        provider: "supabase",
+        operation: "metric_fallback",
+        outcome: "fallback",
+      },
+      err,
+    );
 
     return fallback;
   }

@@ -24,6 +24,7 @@ import {
 import { validateTrackedLinks } from "./trackedLinkUrl";
 import { runWithConcurrency } from "./immediateBroadcast";
 import { WHATSAPP_BROADCAST_CONCURRENCY } from "@/lib/limits/costControls";
+import { logger } from "@/lib/observability/logger";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -528,17 +529,13 @@ export async function sendWhatsappBroadcast(input = {}) {
         imageUrls: onlyImageUrls,
       });
 
-      console.log("[WA freeform result]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        ok: r.ok,
-        status: r.status,
-        providerMessageId: r.providerMessageId,
-        data: r.data,
+      logger.info("broadcast_delivery_completed", {
+        provider: "bird",
+        operation: "freeform_send",
+        outcome: r.ok ? "succeeded" : "failed",
+        statusCode: r.status,
+        broadcastId: scheduledBroadcastId,
+        userId: user?.id || recipient.userId || null,
       });
 
       return {
@@ -581,18 +578,12 @@ export async function sendWhatsappBroadcast(input = {}) {
         urlVar: trackedUrlForTemplate,
       });
 
-      console.log("[WA template final]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        orderedKeys,
-        baseValues,
-        trackedUrlForTemplate,
-        kvPairs,
-        resolvedTemplate,
+      logger.info("broadcast_delivery_attempted", {
+        provider: "bird",
+        operation: "template_send",
+        outcome: "prepared",
+        broadcastId: scheduledBroadcastId,
+        userId: user?.id || recipient.userId || null,
       });
 
       const needsPendingOutreach = Boolean(user && hasResolvedFreeformContent);
@@ -678,17 +669,14 @@ export async function sendWhatsappBroadcast(input = {}) {
         });
         reservationHeartbeat?.assertOwned();
 
-        console.log("[WA template result]", {
-          sendGroupId,
-          recipient: label,
-          to,
-          whatsappBsuid,
-          birdContactId,
-          contact,
-          ok: r.ok,
-          status: r.status,
-          providerMessageId: r.providerMessageId,
-          data: r.data,
+        logger.info("broadcast_delivery_completed", {
+          provider: "bird",
+          operation: "template_send",
+          outcome: r.ok ? "succeeded" : "failed",
+          statusCode: r.status,
+          broadcastId: scheduledBroadcastId,
+          userId: user?.id || recipient.userId || null,
+          reservationId: pendingReservation?.id || null,
         });
 
         if (pendingReservation) {
@@ -731,12 +719,15 @@ export async function sendWhatsappBroadcast(input = {}) {
               lastError: error?.message || String(error),
             });
           } catch (reservationError) {
-            console.error(
-              "Could not persist pending outreach template failure",
+            logger.error(
+              "pending_outreach_failure_persistence_failed",
               {
+                provider: "bird",
+                operation: "template_reservation_failure",
+                outcome: "failed",
                 pendingOutreachId: pendingReservation.id,
-                error: reservationError?.message || String(reservationError),
               },
+              reservationError,
             );
           }
         }
@@ -781,6 +772,16 @@ export async function sendWhatsappBroadcast(input = {}) {
       try {
         return { status: "fulfilled", value: await handleOne(recipient) };
       } catch (reason) {
+        logger.error(
+          "broadcast_delivery_failed",
+          {
+            provider: "bird",
+            operation: "broadcast_send",
+            outcome: "failed",
+            broadcastId: scheduledBroadcastId,
+          },
+          reason,
+        );
         return { status: "rejected", reason };
       }
     },

@@ -5,6 +5,7 @@ import {
   markAutomationRunFailed,
 } from "@/lib/repos/automationRuns.repo";
 import { getUserById } from "@/lib/repos/user.repo";
+import { logger } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,10 +55,16 @@ async function recordQueuedFailure(run, message, publicMessage = message) {
       error: publicMessage,
     };
   } catch (failureError) {
-    console.error("[materializeOne] failed to record queued failure", {
-      runId: run.id,
-      message: failureError?.message || String(failureError),
-    });
+    logger.error(
+      "automation_run_failure_persistence_failed",
+      {
+        provider: "supabase",
+        operation: "automation_run_failure_update",
+        outcome: "failed",
+        runId: run.id,
+      },
+      failureError,
+    );
 
     return {
       id: run.id,
@@ -71,21 +78,7 @@ async function recordQueuedFailure(run, message, publicMessage = message) {
 
 async function materializeOne(run) {
   try {
-    console.log("[materializeOne] start", {
-      runId: run.id,
-      userId: run.user_id,
-      channel: run.channel,
-      scheduledFor: run.scheduled_for,
-    });
-
     const user = await getUserById(run.user_id);
-
-    console.log("[materializeOne] user", {
-      found: Boolean(user),
-      userId: user?.id,
-      phone: user?.phone_number,
-      assistantId: user?.assistant_id,
-    });
 
     if (!user) {
       return recordQueuedFailure(
@@ -112,10 +105,6 @@ async function materializeOne(run) {
     if (run.channel === "whatsapp") {
       const recipient = { userId: user.id };
 
-      console.log("[materializeOne] whatsapp recipient", {
-        recipient,
-      });
-
       payload.recipients = [recipient];
     } else if (run.channel === "teams") {
       payload.userIds = [user.id];
@@ -127,15 +116,6 @@ async function materializeOne(run) {
       );
     }
 
-    console.log("[materializeOne] materializing atomically", {
-      runId: run.id,
-      organization_id: run.organization_id,
-      channel: run.channel,
-      scheduled_for: run.scheduled_for,
-      recipient_count: 1,
-      payload,
-    });
-
     const result = await materializeAutomationRun({
       id: run.id,
       organizationId: run.organization_id,
@@ -146,13 +126,26 @@ async function materializeOne(run) {
     });
 
     if (result.outcome !== "materialized") {
-      console.log("[materializeOne] skipped", {
+      logger.info("automation_materialization_skipped", {
+        provider: "supabase",
+        operation: "automation_materialization",
         runId: run.id,
         outcome: result.outcome,
         broadcastId: result.scheduledBroadcastId,
       });
       return skippedResult(run, result.outcome, result.scheduledBroadcastId);
     }
+
+    logger.info("automation_materialization_completed", {
+      provider: "supabase",
+      operation: "automation_materialization",
+      outcome: "materialized",
+      runId: run.id,
+      broadcastId: result.scheduledBroadcastId,
+      organizationId: run.organization_id,
+      userId: run.user_id,
+      channel: run.channel,
+    });
 
     return {
       id: run.id,
@@ -161,11 +154,19 @@ async function materializeOne(run) {
       scheduledBroadcastId: result.scheduledBroadcastId,
     };
   } catch (error) {
-    console.error("[materializeOne] failed", {
-      runId: run.id,
-      message: error?.message || String(error),
+    logger.error(
+      "automation_materialization_failed",
+      {
+        provider: "supabase",
+        operation: "automation_materialization",
+        outcome: "failed",
+        runId: run.id,
+        organizationId: run.organization_id,
+        userId: run.user_id,
+        channel: run.channel,
+      },
       error,
-    });
+    );
 
     return recordQueuedFailure(run, error?.message || String(error));
   }
@@ -190,16 +191,14 @@ async function handler(req) {
       }
     } catch {}
 
-    console.log("[materialize] now:", new Date().toISOString());
     const dueRuns = await getDueAutomationRuns(limit);
-    console.log(
-      "[materialize] dueRuns:",
-      dueRuns.map((r) => ({
-        id: r.id,
-        status: r.status,
-        scheduled_for: r.scheduled_for,
-      })),
-    );
+    logger.info("automation_materialization_batch_started", {
+      provider: "supabase",
+      operation: "automation_materialization_batch",
+      outcome: "started",
+      count: dueRuns.length,
+      batchSize: limit,
+    });
 
     if (!dueRuns.length) {
       return NextResponse.json({
@@ -217,7 +216,6 @@ async function handler(req) {
     const results = [];
 
     for (const run of dueRuns) {
-      console.log("[materialize] loop run", run.id);
       results.push(await materializeOne(run));
     }
 
@@ -231,7 +229,15 @@ async function handler(req) {
       results,
     });
   } catch (error) {
-    console.error("[Automations][Materialize]", error);
+    logger.error(
+      "automation_materialization_batch_failed",
+      {
+        provider: "supabase",
+        operation: "automation_materialization_batch",
+        outcome: "failed",
+      },
+      error,
+    );
     return NextResponse.json(
       { error: error?.message || String(error) },
       { status: 500 },

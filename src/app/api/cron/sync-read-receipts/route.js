@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/observability/logger";
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -27,13 +28,8 @@ function getInternalBaseUrl() {
     throw new Error("NEXT_PUBLIC_APP_URL must use HTTP or HTTPS");
   }
 
-  if (
-    process.env.NODE_ENV === "production" &&
-    url.protocol !== "https:"
-  ) {
-    throw new Error(
-      "NEXT_PUBLIC_APP_URL must use HTTPS in production",
-    );
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error("NEXT_PUBLIC_APP_URL must use HTTPS in production");
   }
 
   return url.origin;
@@ -47,21 +43,18 @@ export async function GET(req) {
 
     const baseUrl = getInternalBaseUrl();
 
-    const res = await fetch(
-      `${baseUrl}/api/messagebird/sync-read-receipts`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cron-secret": process.env.CRON_SECRET,
-        },
-        body: JSON.stringify({
-          limit: 100,
-          maxAgeHours: 168,
-        }),
-        cache: "no-store",
+    const res = await fetch(`${baseUrl}/api/messagebird/sync-read-receipts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": process.env.CRON_SECRET,
       },
-    );
+      body: JSON.stringify({
+        limit: 100,
+        maxAgeHours: 168,
+      }),
+      cache: "no-store",
+    });
 
     const result = await res.json().catch(() => null);
 
@@ -76,7 +69,15 @@ export async function GET(req) {
       },
     );
   } catch (error) {
-    console.error("[cron/sync-read-receipts] failed:", error);
+    logger.error(
+      "read_receipt_sync_failed",
+      {
+        provider: "internal",
+        operation: "read_receipt_sync_batch",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       {

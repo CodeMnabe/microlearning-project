@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { logger } from "@/lib/observability/logger";
 
 import {
   getUserByNumber,
@@ -259,16 +260,20 @@ function extractReadInteraction(evt) {
 
 async function handleReadInteraction(readInteraction, webhookContext = null) {
   if (!readInteraction.messageId) {
-    console.warn("Read interaction missing messageId", {
-      channelId: readInteraction.channelId,
+    logger.warn("read_interaction_invalid", {
+      provider: "bird",
+      operation: "read_interaction",
+      outcome: "missing_message_id",
     });
 
     return;
   }
 
   if (!readInteraction.channelId) {
-    console.warn("Read interaction missing channelId", {
-      messageId: readInteraction.messageId,
+    logger.warn("read_interaction_invalid", {
+      provider: "bird",
+      operation: "read_interaction",
+      outcome: "missing_channel_id",
     });
 
     return;
@@ -279,19 +284,24 @@ async function handleReadInteraction(readInteraction, webhookContext = null) {
   try {
     organization = await getOrganizationByChannelId(readInteraction.channelId);
   } catch (err) {
-    console.error("Could not resolve read interaction organization", {
-      channelId: readInteraction.channelId,
-      messageId: readInteraction.messageId,
-      message: err?.message || String(err),
-    });
+    logger.error(
+      "organization_resolution_failed",
+      {
+        provider: "supabase",
+        operation: "read_interaction_organization_lookup",
+        outcome: "failed",
+      },
+      err,
+    );
 
     throw new Error("Could not resolve read receipt organization");
   }
 
   if (!organization) {
-    console.warn("Read interaction channel has no organization", {
-      channelId: readInteraction.channelId,
-      messageId: readInteraction.messageId,
+    logger.warn("organization_not_found", {
+      provider: "supabase",
+      operation: "read_interaction_organization_lookup",
+      outcome: "not_found",
     });
 
     return;
@@ -315,11 +325,11 @@ async function handleReadInteraction(readInteraction, webhookContext = null) {
   });
 
   if (!updated) {
-    console.warn("Read interaction message not found locally", {
-      messageId: readInteraction.messageId,
-      channelId: readInteraction.channelId,
+    logger.warn("read_interaction_unmatched", {
+      provider: "supabase",
+      operation: "read_receipt_update",
+      outcome: "not_found",
       organizationId: organization.id,
-      readAt: readInteraction.readAt,
     });
 
     return;
@@ -361,21 +371,25 @@ async function handleReadInteraction(readInteraction, webhookContext = null) {
           : { status: "succeeded" },
     });
 
-    console.log("Read chain processed after read interaction", {
-      messageId: readInteraction.messageId,
-      messageDbId: updated.id,
+    logger.info("read_chain_processed", {
+      provider: "internal",
+      operation: "read_interaction_chain_advance",
+      outcome: "completed",
       chainId: updated.message_chain_id,
       stepIndex: updated.message_chain_step_index,
-      result: chainResult,
     });
   } catch (err) {
-    console.error("Failed to process read chain after read interaction", {
-      messageId: readInteraction.messageId,
-      messageDbId: updated.id,
-      chainId: updated.message_chain_id,
-      stepIndex: updated.message_chain_step_index,
-      error: err?.message || String(err),
-    });
+    logger.error(
+      "read_chain_processing_failed",
+      {
+        provider: "internal",
+        operation: "read_interaction_chain_advance",
+        outcome: "failed",
+        chainId: updated.message_chain_id,
+        stepIndex: updated.message_chain_step_index,
+      },
+      err,
+    );
 
     throw err;
   }
@@ -571,8 +585,10 @@ function isSupportedMessageBirdEvent(event) {
 
 function registrationResponse(registration) {
   if (registration.outcome === "payload_conflict") {
-    console.error("MessageBird webhook identity conflict", {
-      eventId: registration.eventId,
+    logger.error("webhook_identity_conflict", {
+      provider: "bird",
+      operation: "webhook_registration",
+      outcome: "payload_conflict",
       status: registration.status,
     });
     return NextResponse.json(
@@ -625,7 +641,11 @@ export async function POST(req) {
   const tsHeader = req.headers.get("messagebird-request-timestamp") ?? "";
 
   if (!isFreshTimestamp(tsHeader)) {
-    console.warn("Expired or invalid MessageBird timestamp");
+    logger.warn("webhook_validation_failed", {
+      provider: "bird",
+      operation: "timestamp_validation",
+      outcome: "rejected",
+    });
 
     return new NextResponse("invalid timestamp", {
       status: 401,
@@ -637,7 +657,11 @@ export async function POST(req) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
 
   if (!host) {
-    console.warn("MessageBird webhook missing host");
+    logger.warn("webhook_validation_failed", {
+      provider: "bird",
+      operation: "host_validation",
+      outcome: "rejected",
+    });
 
     return new NextResponse("invalid webhook URL", {
       status: 401,
@@ -649,7 +673,11 @@ export async function POST(req) {
   const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
 
   if (!ok) {
-    console.warn("Invalid signature");
+    logger.warn("webhook_validation_failed", {
+      provider: "bird",
+      operation: "signature_validation",
+      outcome: "rejected",
+    });
 
     return new NextResponse("invalid signature", {
       status: 401,
@@ -695,12 +723,16 @@ export async function POST(req) {
     const registration = await registerWebhookEvent(identity);
     return registrationResponse(registration);
   } catch (err) {
-    console.error("MessageBird webhook failed", {
-      message: err?.message,
-      status: err?.status,
-      type: err?.type,
-      request_id: err?.request_id,
-    });
+    logger.error(
+      "webhook_processing_failed",
+      {
+        provider: "bird",
+        operation: "webhook_registration",
+        outcome: "failed",
+        statusCode: err?.status,
+      },
+      err,
+    );
 
     return NextResponse.json(
       { ok: false, error: "Webhook event was not accepted durably" },
@@ -757,18 +789,20 @@ async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
     normalizeId(evt.payload?.body?.id);
 
   if (!sentChannelId) {
-    console.warn("Inbound WhatsApp event missing channelId", {
-      inboundMsgId,
-      identity,
+    logger.warn("inbound_identity_missing", {
+      provider: "bird",
+      operation: "inbound_message",
+      outcome: "missing_channel_id",
     });
 
     return;
   }
 
   if (!identity.phoneNumber && !identity.whatsappBsuid && !contactId) {
-    console.warn("Inbound WhatsApp event missing usable identity", {
-      identity,
-      sentChannelId,
+    logger.warn("inbound_identity_missing", {
+      provider: "bird",
+      operation: "inbound_message",
+      outcome: "missing_user_identity",
     });
 
     return;
@@ -779,17 +813,24 @@ async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
   try {
     channelOrganization = await getOrganizationByChannelId(sentChannelId);
   } catch (err) {
-    console.error("Could not resolve organization by channel_id", {
-      sentChannelId,
-      message: err?.message || String(err),
-    });
+    logger.error(
+      "organization_resolution_failed",
+      {
+        provider: "supabase",
+        operation: "webhook_organization_lookup",
+        outcome: "failed",
+      },
+      err,
+    );
 
     throw new Error("Could not resolve webhook organization");
   }
 
   if (!channelOrganization) {
-    console.warn("Inbound WhatsApp channel has no organization", {
-      sentChannelId,
+    logger.warn("organization_not_found", {
+      provider: "supabase",
+      operation: "webhook_organization_lookup",
+      outcome: "not_found",
     });
 
     return;
@@ -856,7 +897,12 @@ async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
   const organization = await getOrganization(user.organization_id);
 
   if (!organization) {
-    console.warn("Organization not found for user", user.id);
+    logger.warn("organization_not_found", {
+      provider: "supabase",
+      operation: "inbound_user_organization_lookup",
+      outcome: "not_found",
+      userId: user.id,
+    });
     return;
   }
 
@@ -869,7 +915,12 @@ async function processMessageBirdWebhookEventCore(evt, webhookContext = null) {
   const assistantRow = await getAssistantFromUser(user, organization);
 
   if (!assistantRow) {
-    console.warn("No assistants found for organization", organization.id);
+    logger.warn("assistant_not_found", {
+      provider: "supabase",
+      operation: "inbound_assistant_lookup",
+      outcome: "not_found",
+      organizationId: organization.id,
+    });
 
     return;
   }
@@ -1007,7 +1058,13 @@ async function handlePendingMessages({
   const organization = await getOrganization(user.organization_id);
 
   if (!organization) {
-    console.warn("Organization not found while sending pending outreach");
+    logger.warn("organization_not_found", {
+      provider: "supabase",
+      operation: "pending_outreach_organization_lookup",
+      outcome: "not_found",
+      userId: user.id,
+      organizationId: user.organization_id,
+    });
     return;
   }
 
@@ -1039,7 +1096,10 @@ async function handlePendingMessages({
       const hasText = Boolean(String(p.message || "").trim());
 
       if (!hasImages && !hasText) {
-        console.warn("Skipping empty pending outreach", {
+        logger.warn("pending_outreach_skipped", {
+          provider: "internal",
+          operation: "pending_outreach_send",
+          outcome: "empty",
           pendingOutreachId: row.id,
           userId: user.id,
         });
@@ -1187,21 +1247,27 @@ async function handlePendingMessages({
             status: "active",
           });
 
-          console.log("Pending outreach chain step sent", {
+          logger.info("pending_outreach_chain_state_updated", {
+            provider: "supabase",
+            operation: "pending_outreach_chain_update",
+            outcome: "succeeded",
             pendingOutreachId: row.id,
             chainId: row.message_chain_id,
-            chainStepId: row.message_chain_step_id,
-            chainRecipientId: row.message_chain_recipient_id,
             stepIndex: row.message_chain_step_index,
-            providerMessageId: outboundId,
           });
         } catch (err) {
-          console.error("Failed to update chain state for pending outreach", {
-            pendingOutreachId: row.id,
-            chainId: row.message_chain_id,
-            stepIndex: row.message_chain_step_index,
-            error: err?.message || String(err),
-          });
+          logger.error(
+            "pending_outreach_chain_state_failed",
+            {
+              provider: "supabase",
+              operation: "pending_outreach_chain_update",
+              outcome: "failed",
+              pendingOutreachId: row.id,
+              chainId: row.message_chain_id,
+              stepIndex: row.message_chain_step_index,
+            },
+            err,
+          );
         }
       }
 

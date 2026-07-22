@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createContact } from "@/lib/repos/contact.repo";
+import { logger } from "@/lib/observability/logger";
 
 function isValidEmail(email = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -39,7 +40,15 @@ export async function POST(request) {
 
     return NextResponse.json({ ok: true, contactId: contact.id });
   } catch (error) {
-    console.error("[contact-form] error:", error);
+    logger.error(
+      "contact_submission_failed",
+      {
+        provider: "supabase",
+        operation: "contact_create",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       { error: "Something went wrong while sending the form." },

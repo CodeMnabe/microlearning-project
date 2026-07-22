@@ -6,6 +6,7 @@ import {
   handleApiError,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { logger } from "@/lib/observability/logger";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -126,9 +127,7 @@ async function getAllowedProviderTemplateIds(admin, orgId) {
 
   if (error) throw error;
 
-  return new Set(
-    (data || []).map((row) => String(row.provider_template_id)),
-  );
+  return new Set((data || []).map((row) => String(row.provider_template_id)));
 }
 
 async function requireAuthorizedBirdTemplate({
@@ -186,9 +185,7 @@ async function requireAuthorizedBirdTemplate({
 
     const authorizedTemplate = (data?.results || []).find((template) => {
       const locale =
-        template.defaultLocale ||
-        template.platformContent?.[0]?.locale ||
-        null;
+        template.defaultLocale || template.platformContent?.[0]?.locale || null;
 
       return (
         allowedIds.has(String(template.id)) &&
@@ -229,7 +226,10 @@ export async function POST(req) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "userId is required" },
+        { status: 400 },
+      );
     }
 
     const orgAuth = await requireOwnedOrg(orgId);
@@ -306,7 +306,13 @@ export async function POST(req) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      console.error("Bird 4xx/5xx:", res.status, JSON.stringify(data, null, 2));
+      logger.error("provider_request_failed", {
+        provider: "bird",
+        operation: "template_send",
+        outcome: "failed",
+        statusCode: res.status,
+        organizationId: orgAuth.orgId,
+      });
     }
 
     return NextResponse.json(

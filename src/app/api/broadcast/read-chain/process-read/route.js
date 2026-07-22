@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { getMessageById } from "@/lib/repos/messages.repo";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
+import { logger } from "@/lib/observability/logger";
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -64,7 +65,15 @@ export async function POST(req) {
       result,
     });
   } catch (error) {
-    console.error("[read-chain/process-read] failed:", error);
+    logger.error(
+      "read_chain_processing_failed",
+      {
+        provider: "internal",
+        operation: "read_chain_process_read",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       {

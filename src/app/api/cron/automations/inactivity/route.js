@@ -3,6 +3,7 @@ import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
 import { getUsersInOrg } from "@/lib/repos/user.repo";
 import { getLastInboundForUserAssistant } from "@/lib/repos/messages.repo";
 import { queueAutomationRunForRule } from "@/lib/services/automations/automationEngine";
+import { logger } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -212,7 +213,15 @@ async function handler(req) {
       results,
     });
   } catch (error) {
-    console.error("[Automations][Inactivity]", error);
+    logger.error(
+      "automation_inactivity_processing_failed",
+      {
+        provider: "internal",
+        operation: "automation_inactivity_batch",
+        outcome: "failed",
+      },
+      error,
+    );
     return NextResponse.json(
       { error: error?.message || String(error) },
       { status: 500 },

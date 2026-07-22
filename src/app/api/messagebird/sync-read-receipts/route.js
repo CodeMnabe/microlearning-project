@@ -8,6 +8,7 @@ import {
 import { getOrganizationBirdConfig } from "@/lib/repos/organizations.repo";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 import { parsePositiveInt } from "@/lib/auth/guards";
+import { logger } from "@/lib/observability/logger";
 
 const BIRD = "https://api.bird.com";
 
@@ -88,12 +89,11 @@ async function fetchBirdMessageInteractions({
   }
 
   if (!res.ok) {
-    console.error("[sync-read-receipts] Bird request failed", {
-      status: res.status,
-      workspaceId,
-      channelId,
-      messageId,
-      response: json,
+    logger.error("provider_request_failed", {
+      provider: "bird",
+      operation: "read_interactions_list",
+      outcome: "failed",
+      statusCode: res.status,
     });
 
     const error = new Error("Bird interactions request failed");
@@ -109,8 +109,7 @@ function findReadInteraction(payload) {
 
   return (
     results.find(
-      (interaction) =>
-        String(interaction?.type || "").toLowerCase() === "read",
+      (interaction) => String(interaction?.type || "").toLowerCase() === "read",
     ) || null
   );
 }
@@ -118,10 +117,7 @@ function findReadInteraction(payload) {
 export async function POST(req) {
   try {
     if (!isAuthorized(req)) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -145,8 +141,7 @@ export async function POST(req) {
         : parsePositiveInt(rawThreadId);
 
     const scheduledBroadcastId =
-      rawScheduledBroadcastId == null ||
-      rawScheduledBroadcastId === ""
+      rawScheduledBroadcastId == null || rawScheduledBroadcastId === ""
         ? null
         : parseUuid(rawScheduledBroadcastId);
 
@@ -164,15 +159,8 @@ export async function POST(req) {
       );
     }
 
-    if (
-      rawThreadId != null &&
-      rawThreadId !== "" &&
-      !threadId
-    ) {
-      return NextResponse.json(
-        { error: "Invalid thread id" },
-        { status: 400 },
-      );
+    if (rawThreadId != null && rawThreadId !== "" && !threadId) {
+      return NextResponse.json({ error: "Invalid thread id" }, { status: 400 });
     }
 
     if (
@@ -187,10 +175,7 @@ export async function POST(req) {
     }
 
     if (!limit || limit > 500) {
-      return NextResponse.json(
-        { error: "Invalid limit" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid limit" }, { status: 400 });
     }
 
     if (!maxAgeHours || maxAgeHours > 8760) {
@@ -202,14 +187,13 @@ export async function POST(req) {
 
     const { apiKey, workspaceId } = getBirdBaseConfig();
 
-    const messages =
-      await getPendingWhatsappMessagesForReadReceiptSync({
-        organizationId,
-        threadId,
-        scheduledBroadcastId,
-        limit,
-        maxAgeHours,
-      });
+    const messages = await getPendingWhatsappMessagesForReadReceiptSync({
+      organizationId,
+      threadId,
+      scheduledBroadcastId,
+      limit,
+      maxAgeHours,
+    });
 
     const organizationConfigCache = new Map();
 
@@ -264,29 +248,19 @@ export async function POST(req) {
           throw new Error("Pending message is missing its Bird message id");
         }
 
-        const messageOrganizationId = parsePositiveInt(
-          message.organization_id,
-        );
+        const messageOrganizationId = parsePositiveInt(message.organization_id);
 
         if (!messageOrganizationId) {
-          throw new Error(
-            "Pending message is missing a valid organization_id",
-          );
+          throw new Error("Pending message is missing a valid organization_id");
         }
 
-        if (
-          organizationId &&
-          messageOrganizationId !== organizationId
-        ) {
+        if (organizationId && messageOrganizationId !== organizationId) {
           throw new Error(
             "Pending message does not match the requested organization",
           );
         }
 
-        if (
-          threadId &&
-          Number(message.thread_id) !== Number(threadId)
-        ) {
+        if (threadId && Number(message.thread_id) !== Number(threadId)) {
           throw new Error(
             "Pending message does not match the requested thread",
           );
@@ -302,8 +276,9 @@ export async function POST(req) {
           );
         }
 
-        const organizationConfig =
-          await getCachedOrganizationConfig(messageOrganizationId);
+        const organizationConfig = await getCachedOrganizationConfig(
+          messageOrganizationId,
+        );
 
         const interactions = await fetchBirdMessageInteractions({
           apiKey,
@@ -324,19 +299,13 @@ export async function POST(req) {
           readInteraction.updatedAt ||
           new Date().toISOString();
 
-        const updatedMessage = await markMessageRead(
-          message.id,
-          readAt,
-        );
+        const updatedMessage = await markMessageRead(message.id, readAt);
 
         if (!updatedMessage) {
           throw new Error("Failed to update message as read");
         }
 
-        if (
-          Number(updatedMessage.organization_id) !==
-          messageOrganizationId
-        ) {
+        if (Number(updatedMessage.organization_id) !== messageOrganizationId) {
           throw new Error(
             "Updated message organization does not match the source message",
           );
@@ -348,8 +317,7 @@ export async function POST(req) {
           summary.chainReadsDetected += 1;
 
           try {
-            const chainResult =
-              await processReadChainAfterRead(updatedMessage);
+            const chainResult = await processReadChainAfterRead(updatedMessage);
 
             if (chainResult?.completed) {
               summary.chainCompleted += 1;
@@ -372,9 +340,7 @@ export async function POST(req) {
             summary.chainErrors.push({
               messageDbId: updatedMessage.id,
               chainId: updatedMessage.message_chain_id,
-              error:
-                chainError?.message ||
-                "Failed to process read chain",
+              error: chainError?.message || "Failed to process read chain",
             });
           }
         }
@@ -385,9 +351,7 @@ export async function POST(req) {
           messageDbId: message?.id || null,
           birdMessageId: message?.message_id || null,
           organizationId: message?.organization_id || null,
-          error:
-            error?.message ||
-            "Failed to process pending message",
+          error: error?.message || "Failed to process pending message",
         });
       }
     }
@@ -397,7 +361,15 @@ export async function POST(req) {
       ...summary,
     });
   } catch (error) {
-    console.error("[sync-read-receipts] failed:", error);
+    logger.error(
+      "read_receipt_sync_failed",
+      {
+        provider: "bird",
+        operation: "read_receipt_sync",
+        outcome: "failed",
+      },
+      error,
+    );
 
     const status =
       Number.isInteger(error?.status) &&
@@ -409,10 +381,7 @@ export async function POST(req) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          status >= 500
-            ? "Failed to sync read receipts"
-            : error.message,
+        error: status >= 500 ? "Failed to sync read receipts" : error.message,
       },
       { status },
     );

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import createSupabaseServerClient from "@/utils/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
+import { logger } from "@/lib/observability/logger";
 
 export function jsonError(message, status = 400, extra = {}) {
   return NextResponse.json({ error: message, ...extra }, { status });
@@ -33,7 +34,16 @@ export function handleApiError(error, fallbackMessage = "Request failed") {
     status >= 500 ? fallbackMessage : error?.message || fallbackMessage;
 
   if (status >= 500) {
-    console.error("[API]", error);
+    logger.error(
+      "api_request_failed",
+      {
+        provider: "internal",
+        operation: "api_handler",
+        outcome: "failed",
+        statusCode: status,
+      },
+      error,
+    );
   }
 
   return jsonError(message, status);
@@ -78,7 +88,16 @@ async function authorizeOwnedOrg(auth, orgId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] organization lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "organization_lookup",
+        outcome: "failed",
+        organizationId: parsedOrgId,
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -110,7 +129,16 @@ export async function requireOrgForUser(userId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] user lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "user_lookup",
+        outcome: "failed",
+        userId: parsedUserId,
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -138,7 +166,16 @@ export async function requireOrgForAssistant(assistantId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] assistant lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "assistant_lookup",
+        outcome: "failed",
+        assistantId: parsedAssistantId,
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -164,7 +201,15 @@ export async function requireOrgForTag(tagId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] tag lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "tag_lookup",
+        outcome: "failed",
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -177,8 +222,7 @@ export async function requireOrgForTag(tagId) {
 }
 
 export async function requireOrgForScheduledBroadcast(id) {
-  const broadcastId =
-    typeof id === "string" ? id.trim() : "";
+  const broadcastId = typeof id === "string" ? id.trim() : "";
 
   const isValidUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -187,10 +231,7 @@ export async function requireOrgForScheduledBroadcast(id) {
 
   if (!isValidUuid) {
     return {
-      error: jsonError(
-        "Invalid scheduled broadcast id",
-        400,
-      ),
+      error: jsonError("Invalid scheduled broadcast id", 400),
     };
   }
 
@@ -206,32 +247,29 @@ export async function requireOrgForScheduledBroadcast(id) {
     .maybeSingle();
 
   if (error) {
-    console.error(
-      "[Auth] scheduled broadcast lookup failed",
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "scheduled_broadcast_lookup",
+        outcome: "failed",
+        broadcastId,
+      },
       error,
     );
 
     return {
-      error: jsonError(
-        "Authorization check failed",
-        500,
-      ),
+      error: jsonError("Authorization check failed", 500),
     };
   }
 
   if (!broadcast) {
     return {
-      error: jsonError(
-        "Scheduled broadcast not found",
-        404,
-      ),
+      error: jsonError("Scheduled broadcast not found", 404),
     };
   }
 
-  const orgAuth = await requireOwnedOrg(
-    broadcast.organization_id,
-    auth,
-  );
+  const orgAuth = await requireOwnedOrg(broadcast.organization_id, auth);
 
   if (orgAuth.error) return orgAuth;
 
@@ -256,7 +294,15 @@ export async function requireOrgForThread(threadId) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] thread lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "thread_lookup",
+        outcome: "failed",
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -272,7 +318,15 @@ export async function requireOrgForThread(threadId) {
       .maybeSingle();
 
     if (userError) {
-      console.error("[Auth] thread user lookup failed", userError);
+      logger.error(
+        "authorization_lookup_failed",
+        {
+          provider: "supabase",
+          operation: "thread_user_lookup",
+          outcome: "failed",
+        },
+        userError,
+      );
       return { error: jsonError("Authorization check failed", 500) };
     }
 
@@ -287,7 +341,15 @@ export async function requireOrgForThread(threadId) {
       .maybeSingle();
 
     if (assistantError) {
-      console.error("[Auth] thread assistant lookup failed", assistantError);
+      logger.error(
+        "authorization_lookup_failed",
+        {
+          provider: "supabase",
+          operation: "thread_assistant_lookup",
+          outcome: "failed",
+        },
+        assistantError,
+      );
       return { error: jsonError("Authorization check failed", 500) };
     }
 
@@ -317,7 +379,15 @@ export async function requireOrgForAutomationRule(id) {
     .maybeSingle();
 
   if (error) {
-    console.error("[Auth] automation rule lookup failed", error);
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "automation_rule_lookup",
+        outcome: "failed",
+      },
+      error,
+    );
     return { error: jsonError("Authorization check failed", 500) };
   }
 
@@ -396,8 +466,12 @@ export async function assertAssistantBelongsToOrg(admin, orgId, assistantId) {
 }
 
 function isUuid(value) {
-  return typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
 }
 
 export async function assertWhatsappTemplateBelongsToOrg(
@@ -546,7 +620,15 @@ export async function requireValidTeamsRequest(req, activity) {
 
     return { ok: true, payload };
   } catch (error) {
-    console.warn("[Teams Auth] invalid request", error?.message || error);
+    logger.warn(
+      "webhook_validation_failed",
+      {
+        provider: "teams",
+        operation: "request_authentication",
+        outcome: "rejected",
+      },
+      error,
+    );
     return { error: jsonError("Unauthorized", 401) };
   }
 }

@@ -4,6 +4,7 @@ import {
   requireOwnedOrg,
   throwHttpError,
 } from "@/lib/auth/guards";
+import { logger } from "@/lib/observability/logger";
 
 const BIRD = "https://api.bird.com";
 const { BIRD_API_KEY, WORKSPACE_ID } = process.env;
@@ -32,10 +33,11 @@ async function fetchAll(path) {
     const json = await res.json().catch(() => null);
 
     if (!res.ok) {
-      console.error("[Bird] API request failed", {
-        path,
-        status: res.status,
-        body: json,
+      logger.error("provider_request_failed", {
+        provider: "bird",
+        operation: "projects_list",
+        outcome: "failed",
+        statusCode: res.status,
       });
 
       throwHttpError("Messaging provider request failed", 502);
@@ -56,8 +58,14 @@ async function getAllowedTemplateIds(admin, orgId) {
     .not("provider_template_id", "is", null);
 
   if (error) {
-    console.error(
-      "[MessageBird projects] template authorization lookup failed",
+    logger.error(
+      "authorization_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "template_authorization_lookup",
+        outcome: "failed",
+        organizationId: orgId,
+      },
       error,
     );
 
@@ -114,10 +122,7 @@ export async function GET(req) {
     const requestedProjectId = url.searchParams.get("projectId")?.trim();
 
     if (!orgId) {
-      return NextResponse.json(
-        { error: "Missing orgId" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
     }
 
     const orgAuth = await requireOwnedOrg(orgId);
@@ -144,9 +149,7 @@ export async function GET(req) {
     if (requestedProjectId) {
       projectIds = [requestedProjectId];
     } else {
-      const projects = await fetchAll(
-        `/workspaces/${WORKSPACE_ID}/projects`,
-      );
+      const projects = await fetchAll(`/workspaces/${WORKSPACE_ID}/projects`);
 
       projectIds = projects
         .filter((project) => project.type === "channelTemplate")
@@ -169,18 +172,12 @@ export async function GET(req) {
         }
 
         const name =
-          pickDeploymentValue(
-            template.deployments,
-            "whatsappTemplateName",
-          ) ||
+          pickDeploymentValue(template.deployments, "whatsappTemplateName") ||
           template.description ||
           template.id;
 
         const category =
-          pickDeploymentValue(
-            template.deployments,
-            "whatsappCategory",
-          ) || "";
+          pickDeploymentValue(template.deployments, "whatsappCategory") || "";
 
         const language =
           template.defaultLocale ||
@@ -217,9 +214,6 @@ export async function GET(req) {
 
     return NextResponse.json({ items });
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to load WhatsApp templates",
-    );
+    return handleApiError(error, "Failed to load WhatsApp templates");
   }
 }

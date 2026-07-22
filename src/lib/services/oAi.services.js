@@ -1,5 +1,6 @@
 import fs from "fs";
 import { stripOpenAICitations } from "./removeOAiCitations";
+import { logger } from "@/lib/observability/logger";
 require("dotenv").config();
 const OpenAI = require("openai");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -18,7 +19,15 @@ export async function createOAiAssistant(body) {
 
     return createdAssistant;
   } catch (err) {
-    console.error(err);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "assistant_create",
+        outcome: "failed",
+      },
+      err,
+    );
   }
 }
 
@@ -27,7 +36,15 @@ export async function getOAiAssistantById(id) {
     const assistant = await client.beta.assistants.retrieve(`${id}`);
     return assistant;
   } catch (err) {
-    console.error(err.message);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "assistant_retrieve",
+        outcome: "failed",
+      },
+      err,
+    );
   }
 }
 
@@ -47,7 +64,15 @@ export async function updateOAiAssistant(updates) {
 
     return myUpdatedAssistant;
   } catch (error) {
-    console.error(error);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "assistant_update",
+        outcome: "failed",
+      },
+      error,
+    );
   }
 }
 
@@ -56,12 +81,28 @@ export async function deleteOAiAssistant(id) {
     const wasDeleted = await client.beta.assistants.del(`${id}`);
 
     if (wasDeleted.deleted) {
-      console.log("Assistant Deleted with success");
+      logger.info("openai_operation_completed", {
+        provider: "openai",
+        operation: "assistant_delete",
+        outcome: "succeeded",
+      });
     } else {
-      console.log("Assistant was not deleted");
+      logger.warn("openai_operation_completed", {
+        provider: "openai",
+        operation: "assistant_delete",
+        outcome: "not_deleted",
+      });
     }
   } catch (error) {
-    console.error(error);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "assistant_delete",
+        outcome: "failed",
+      },
+      error,
+    );
   }
 }
 
@@ -74,18 +115,36 @@ export async function createOAiFile(file) {
 
     return uploadedFile;
   } catch (err) {
-    return console.error(err.message);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "file_upload",
+        outcome: "failed",
+      },
+      err,
+    );
+    return undefined;
   }
 }
 
 export async function createOAiVectorStore(storeName, uploadedFiles) {
   try {
     if (storeName.trim() === "" || !storeName) {
-      return console.alert("Name cannot be empty");
+      logger.warn("openai_operation_rejected", {
+        provider: "openai",
+        operation: "vector_store_create",
+        outcome: "invalid_input",
+      });
+      return undefined;
     }
 
     if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
-      console.error("At least one file path must be supplied.");
+      logger.warn("openai_operation_rejected", {
+        provider: "openai",
+        operation: "vector_store_create",
+        outcome: "invalid_input",
+      });
       return null;
     }
 
@@ -98,9 +157,23 @@ export async function createOAiVectorStore(storeName, uploadedFiles) {
       name: storeName,
       file_ids: fileIds,
     });
+    logger.info("openai_operation_completed", {
+      provider: "openai",
+      operation: "vector_store_create",
+      outcome: "succeeded",
+      count: fileIds.length,
+    });
     return vectorStore;
   } catch (err) {
-    console.error(err);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "vector_store_create",
+        outcome: "failed",
+      },
+      err,
+    );
   }
 }
 
@@ -111,12 +184,25 @@ export async function associateStoreToAssistant(assistantId, store) {
     });
 
     if (!updatedAssistant) {
-      return console.error("Assistant wasn't updated");
+      logger.warn("openai_operation_completed", {
+        provider: "openai",
+        operation: "vector_store_association",
+        outcome: "not_updated",
+      });
+      return undefined;
     }
 
     return updatedAssistant;
   } catch (err) {
-    console.error(err.message);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "vector_store_association",
+        outcome: "failed",
+      },
+      err,
+    );
   }
 }
 
@@ -170,7 +256,15 @@ export async function sendMessageToAi(assistantId, input, threadId) {
       aiResponse,
     };
   } catch (err) {
-    console.error("[sendMessageToAi] error:", err);
+    logger.error(
+      "openai_operation_failed",
+      {
+        provider: "openai",
+        operation: "message_run",
+        outcome: "failed",
+      },
+      err,
+    );
     // ⛔ Do NOT swallow errors; rethrow so caller sees them
     throw err;
   }

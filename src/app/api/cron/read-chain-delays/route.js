@@ -11,6 +11,7 @@ import {
   getMessageChainStep,
 } from "@/lib/repos/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
+import { logger } from "@/lib/observability/logger";
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -169,10 +170,17 @@ async function processDueDelayedSteps(req) {
         error: sendResult.error || null,
       });
     } catch (error) {
-      console.error("[cron/read-chain-delays] delivery failed:", {
-        deliveryId: delivery.id,
+      logger.error(
+        "read_chain_delivery_failed",
+        {
+          provider: "internal",
+          operation: "delayed_step_delivery",
+          outcome: "failed",
+          deliveryId: delivery.id,
+          chainId: delivery.message_chain_id,
+        },
         error,
-      });
+      );
 
       await markDeliveryFailed({
         delivery,
@@ -210,7 +218,15 @@ export async function POST(req) {
   try {
     return await processDueDelayedSteps(req);
   } catch (error) {
-    console.error("[cron/read-chain-delays] failed:", error);
+    logger.error(
+      "read_chain_processing_failed",
+      {
+        provider: "internal",
+        operation: "delayed_steps_batch",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       {

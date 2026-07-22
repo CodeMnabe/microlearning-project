@@ -1,9 +1,18 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [tsconfigPaths({ projects: ["./jsconfig.json"] }), react()],
+
+  resolve: {
+    alias: {
+      "server-only": fileURLToPath(
+        new URL("./src/__tests__/utils/serverOnlyStub.js", import.meta.url),
+      ),
+    },
+  },
 
   esbuild: {
     jsx: "automatic", // ✅ this is the important part

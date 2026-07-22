@@ -34,6 +34,7 @@ import {
 } from "@/lib/webhooks/eventIdentity";
 import { runWebhookEffect } from "@/lib/webhooks/effectRunner";
 import { getOrCreateReservedThread } from "@/lib/webhooks/conversationReservation";
+import { logger } from "@/lib/observability/logger";
 
 function userBelongsToOrganization(user, organizationId) {
   if (!user || !organizationId) return false;
@@ -60,10 +61,11 @@ async function getTeamsUserForOrganization({ aadObjectId, organizationId }) {
   if (!user) return null;
 
   if (!userBelongsToOrganization(user, organizationId)) {
-    console.warn("[TEAMS] AAD user organization mismatch", {
-      aadObjectId,
-      expectedOrganizationId: organizationId,
-      actualOrganizationId: user.organization_id,
+    logger.warn("teams_organization_mismatch", {
+      provider: "teams",
+      operation: "user_organization_check",
+      outcome: "rejected",
+      organizationId,
       userId: user.id,
     });
 
@@ -137,8 +139,14 @@ async function sendReply(activity, text, opts = {}) {
   }
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    console.error("[TEAMS] Failed to send reply", res.status, body);
+    await res.text().catch(() => "");
+    logger.error("provider_request_failed", {
+      provider: "teams",
+      operation: "reply_send",
+      outcome: "rejected",
+      statusCode: res.status,
+      retryable: res.status >= 500,
+    });
     const error = new Error(`Teams rejected reply with status ${res.status}`);
     error.webhookState = res.status >= 500 ? "retryable_failed" : "failed";
     throw error;
@@ -579,7 +587,11 @@ async function CheckForCommandMessage(activity) {
 
 async function CheckCommands(cmd, activity) {
   let text;
-  console.log(activity);
+  logger.info("teams_message_received", {
+    provider: "teams",
+    operation: "command_dispatch",
+    outcome: "command_detected",
+  });
   switch (cmd.command) {
     case "help":
       text = `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
@@ -780,12 +792,10 @@ async function handleUserInstallation(activity) {
     !serviceUrl ||
     !tenantId
   ) {
-    console.warn("[TEAMS install] Missing required fields", {
-      aadObjectId,
-      teamsUserId,
-      conversationId,
-      serviceUrl,
-      tenantId,
+    logger.warn("teams_installation_invalid", {
+      provider: "teams",
+      operation: "personal_installation",
+      outcome: "missing_required_fields",
     });
 
     await sendReply(
@@ -845,18 +855,22 @@ async function handleUserInstallation(activity) {
       });
     }
   } catch (error) {
-    console.error("[TEAMS] Failed to sync teamsFromId", {
-      userId: user.id,
-      teamsUserId,
+    logger.error(
+      "teams_user_sync_failed",
+      {
+        provider: "teams",
+        operation: "user_identity_sync",
+        outcome: "failed",
+        userId: user.id,
+      },
       error,
-    });
+    );
   }
 
   await sendReply(activity, "Conversation successfully connected.");
 }
 
 async function handleGroupInstallation(activity, webhookContext = null) {
-  // console.log(activity);
   const tenantId = GetTenantId(activity);
   const serviceUrl = activity?.serviceUrl || null;
   const conversationId = activity?.conversation?.id || null;
@@ -868,11 +882,10 @@ async function handleGroupInstallation(activity, webhookContext = null) {
   const channelId = activity?.channelData?.channel?.id || null;
 
   if (!tenantId || !serviceUrl || !conversationId) {
-    console.warn("[TEAMS group install] Missing fields:", {
-      tenantId,
-      serviceUrl,
-      conversationId,
-      conversationType,
+    logger.warn("teams_installation_invalid", {
+      provider: "teams",
+      operation: "group_installation",
+      outcome: "missing_required_fields",
     });
     return;
   }

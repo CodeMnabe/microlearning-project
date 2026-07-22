@@ -13,6 +13,7 @@ import {
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
 import { validateTrackedLinks } from "./trackedLinkUrl";
+import { logger } from "@/lib/observability/logger";
 
 export async function sendTeamsBroadcast(input = {}) {
   const {
@@ -131,11 +132,13 @@ export async function sendTeamsBroadcast(input = {}) {
 
       if (!text) text = " ";
 
-      console.log("[Teams final message]", {
-        sendGroupId,
+      logger.info("broadcast_delivery_attempted", {
+        provider: "teams",
+        operation: "broadcast_send",
+        outcome: "prepared",
+        broadcastId: scheduledBroadcastId,
         userId,
-        text,
-        resolvedTrackedLinks,
+        count: imageAttachments.length + videoCardAttachments.length,
       });
 
       const payload = {
@@ -164,6 +167,15 @@ export async function sendTeamsBroadcast(input = {}) {
         data = raw;
       }
 
+      logger.info("broadcast_delivery_completed", {
+        provider: "teams",
+        operation: "broadcast_send",
+        outcome: res.ok ? "succeeded" : "failed",
+        statusCode: res.status,
+        broadcastId: scheduledBroadcastId,
+        userId,
+      });
+
       results.push({
         userId,
         ok: res.ok,
@@ -171,6 +183,17 @@ export async function sendTeamsBroadcast(input = {}) {
         data,
       });
     } catch (err) {
+      logger.error(
+        "broadcast_delivery_failed",
+        {
+          provider: "teams",
+          operation: "broadcast_send",
+          outcome: "failed",
+          broadcastId: scheduledBroadcastId,
+          userId,
+        },
+        err,
+      );
       results.push({
         userId,
         ok: false,

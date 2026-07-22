@@ -1,5 +1,6 @@
 // src/lib/repos/user.repo.js
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { logger } from "@/lib/observability/logger";
 
 const supabase = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -418,14 +419,12 @@ async function getSingleUserByIdentity({ column, value, organizationId }) {
   if (!data?.length) return null;
 
   if (!organizationId && data.length > 1) {
-    console.warn(
-      `Multiple users match ${column}; pass organizationId to disambiguate`,
-      {
-        column,
-        value: cleaned,
-        count: data.length,
-      },
-    );
+    logger.warn("user_identity_lookup_ambiguous", {
+      provider: "supabase",
+      operation: "user_identity_lookup",
+      outcome: "ambiguous",
+      count: data.length,
+    });
 
     return null;
   }
@@ -455,10 +454,7 @@ export async function getUserByBirdContactId(
   });
 }
 
-export async function getUserByNumber(
-  phoneNumber,
-  organizationId,
-) {
+export async function getUserByNumber(phoneNumber, organizationId) {
   const digits = cleanMsisdn(phoneNumber);
 
   if (!digits || !organizationId) {
@@ -500,13 +496,10 @@ export async function getUserByNumber(
 
   if (alt.error) throw alt.error;
 
-  return alt.data
-    ? await getUserById(alt.data.id)
-    : null;
+  return alt.data ? await getUserById(alt.data.id) : null;
 }
 
 export async function getUserByEmail(email, tenant) {
-  console.log("It got here");
   const _email = String(email || "")
     .trim()
     .toLowerCase();
@@ -532,8 +525,6 @@ export async function getUserByEmail(email, tenant) {
     err.code = "AMBIGUOUS_EMAIL_TENANT";
     throw err;
   }
-
-  console.log("User was found");
 
   return matches[0].id;
 }

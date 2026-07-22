@@ -1,3 +1,5 @@
+import { logger } from "@/lib/observability/logger";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -19,7 +21,15 @@ export async function getBotToken() {
       return await fetchTokenAuthority(authority);
     } catch (err) {
       lastErr = err;
-      console.warn(`[TOKEN FAIL via ${authority}]`, err.message);
+      logger.warn(
+        "provider_authentication_failed",
+        {
+          provider: "teams",
+          operation: "bot_token_acquisition",
+          outcome: "failed",
+        },
+        err,
+      );
     }
   }
   throw lastErr || new Error("Unable to get bot token");

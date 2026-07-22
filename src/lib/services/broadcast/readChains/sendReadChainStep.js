@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { logger } from "@/lib/observability/logger";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { createMessage } from "@/lib/repos/messages.repo";
 import {
@@ -77,10 +78,16 @@ async function markUnknownSafely({
       providerMessageId,
     });
   } catch (markError) {
-    console.error("Could not mark message chain delivery unknown", {
-      deliveryId,
-      error: markError?.message || String(markError),
-    });
+    logger.error(
+      "message_chain_delivery_state_failed",
+      {
+        provider: "supabase",
+        operation: "delivery_unknown_outcome_update",
+        outcome: "failed",
+        deliveryId,
+      },
+      markError,
+    );
     return null;
   }
 }

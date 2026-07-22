@@ -1,4 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/observability/logger";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,16 +8,35 @@ const sb = createServiceClient(
 );
 
 export async function upsertTeamsInstallation(row) {
-  console.log("It reached here");
   const { data, error } = await sb
     .from("teams_installation")
     .upsert(row, { onConflict: "tenant_id,conversation_id" })
     .select()
     .single();
 
-  console.log(data);
-
-  if (error) throw error;
+  if (error) {
+    logger.error(
+      "teams_installation_persistence_failed",
+      {
+        provider: "supabase",
+        operation: "teams_installation_upsert",
+        outcome: "failed",
+        organizationId: row?.organization_id,
+        assistantId: row?.assistant_id,
+        userId: row?.user_id,
+      },
+      error,
+    );
+    throw error;
+  }
+  logger.info("teams_installation_persisted", {
+    provider: "supabase",
+    operation: "teams_installation_upsert",
+    outcome: "succeeded",
+    organizationId: data?.organization_id,
+    assistantId: data?.assistant_id,
+    userId: data?.user_id,
+  });
   return data;
 }
 

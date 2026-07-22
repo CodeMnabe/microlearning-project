@@ -8,6 +8,7 @@ import {
 import { queueAutomationRunForRule } from "@/lib/services/automations/automationEngine";
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
+import { logger } from "@/lib/observability/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -353,7 +354,15 @@ async function handler(req) {
       results,
     });
   } catch (error) {
-    console.error("[Automations][MessageUnread]", error);
+    logger.error(
+      "automation_unread_processing_failed",
+      {
+        provider: "internal",
+        operation: "automation_unread_batch",
+        outcome: "failed",
+      },
+      error,
+    );
 
     return NextResponse.json(
       { error: error?.message || String(error) },

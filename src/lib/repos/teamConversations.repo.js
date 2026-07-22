@@ -1,4 +1,5 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/observability/logger";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -62,7 +63,6 @@ export async function getUserTeamsConversation(
   userId,
   conversationType = "personal",
 ) {
-  console.log(`[TEAMS REPO]: ${userId}`);
   const { data, error } = await sb
     .from("user_teams_conversation")
     .select("*")
@@ -70,9 +70,26 @@ export async function getUserTeamsConversation(
     .eq("conversation_type", conversationType)
     .maybeSingle();
 
-  console.log(JSON.parse(data));
-
-  if (error) throw error;
+  if (error) {
+    logger.error(
+      "teams_conversation_lookup_failed",
+      {
+        provider: "supabase",
+        operation: "teams_conversation_lookup",
+        outcome: "failed",
+        userId,
+      },
+      error,
+    );
+    throw error;
+  }
+  logger.info("teams_conversation_lookup_completed", {
+    provider: "supabase",
+    operation: "teams_conversation_lookup",
+    outcome: data ? "found" : "not_found",
+    userId,
+    found: Boolean(data),
+  });
   return data;
 }
 
