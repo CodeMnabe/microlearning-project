@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
+import { getActiveAutomationRulesGlobally } from "@/lib/repos/automationRules.repo";
 import { getUsersInOrg } from "@/lib/repos/user.repo";
 import {
   getInboundAfterForUserAssistant,

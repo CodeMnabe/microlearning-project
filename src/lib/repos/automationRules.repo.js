@@ -39,19 +39,32 @@ export async function getOrgAutomationRules(organizationId) {
   return data || [];
 }
 
-export async function getActiveAutomationRules({
-  organizationId = null,
-  triggerType = null,
-}) {
+export async function getActiveAutomationRulesForOrganization(organizationId, triggerType = null) {
+  if (!organizationId) throw new Error("organizationId is required");
+
+  let query = sb
+    .from("automation_rule")
+    .select("*")
+    .eq("is_active", true)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: true });
+
+  if (triggerType) {
+    query = query.eq("trigger_type", triggerType);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getActiveAutomationRulesGlobally(triggerType = null) {
   let query = sb
     .from("automation_rule")
     .select("*")
     .eq("is_active", true)
     .order("created_at", { ascending: true });
-
-  if (organizationId != null) {
-    query = query.eq("organization_id", organizationId);
-  }
 
   if (triggerType) {
     query = query.eq("trigger_type", triggerType);

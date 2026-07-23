@@ -184,6 +184,7 @@ export default function AutomationsPage() {
 
   const [readChainsEnabled, setReadChainsEnabled] = useState(false);
   const [readChainsSaving, setReadChainsSaving] = useState(false);
+  const [runningCronPath, setRunningCronPath] = useState(null);
 
   const orgId = org?.id;
 
@@ -610,29 +611,44 @@ export default function AutomationsPage() {
   }
 
   async function runCron(path) {
+    if (runningCronPath || !orgId) return;
+
+    setRunningCronPath(path);
     try {
       const res = await fetch(path, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(process.env.NEXT_PUBLIC_CRON_SECRET
-            ? {
-                Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
-              }
-            : {}),
-        },
-        body: JSON.stringify({ limit: 100 }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: orgId }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data?.error || "Cron failed");
+        if (res.status === 401) {
+           throw new Error(translation("alerts.unauthorized") || "Unauthorized. Please login again.");
+        }
+        if (res.status === 403) {
+           throw new Error(translation("alerts.forbidden") || "Forbidden. You don't have permission.");
+        }
+        if (res.status === 429) {
+           const retryAfter = res.headers.get("Retry-After");
+           throw new Error(`Too many requests. Please wait ${retryAfter || 30} seconds.`);
+        }
+        throw new Error(data?.error || "Action failed");
       }
 
       await refreshAll();
     } catch (err) {
-      console.warn("[Automations] cron error:", err);
+      console.warn("[Automations] manual action error:", err);
+      if (typeof showAlertRef.current === "function") {
+        await showAlertRef.current({
+          title: translation("alerts.actionFailed.title") || "Action failed",
+          message: err.message,
+          tone: "danger",
+        });
+      }
+    } finally {
+      setRunningCronPath(null);
     }
   }
 
@@ -674,7 +690,8 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/inactivity")}
+            onClick={() => runCron("/api/automations/manual-inactivity")}
+            disabled={runningCronPath !== null}
           >
             <Clock3 size={16} />
             <span>{translation("runInactivity")}</span>
@@ -683,7 +700,8 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/materialize")}
+            onClick={() => runCron("/api/automations/manual-materialize")}
+            disabled={runningCronPath !== null}
           >
             <PlayCircle size={16} />
             <span>{translation("materialize")}</span>

@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   completeScheduledBroadcast: vi.fn(),
   sendTeamsBroadcast: vi.fn(),
   sendWhatsappBroadcast: vi.fn(),
-  getDueAutomationRuns: vi.fn(),
+  getDueAutomationRunsGlobally: vi.fn(),
+  getAutomationRunForScheduledBroadcast: vi.fn(),
   materializeAutomationRun: vi.fn(),
   markAutomationRunFailed: vi.fn(),
   getUserById: vi.fn(),
@@ -41,7 +42,9 @@ vi.mock("@/lib/services/broadcast/sendWhatsappBroadcast", () => ({
   sendWhatsappBroadcast: mocks.sendWhatsappBroadcast,
 }));
 vi.mock("@/lib/repos/automationRuns.repo", () => ({
-  getDueAutomationRuns: mocks.getDueAutomationRuns,
+  getDueAutomationRunsGlobally: mocks.getDueAutomationRunsGlobally,
+  getAutomationRunForScheduledBroadcast:
+    mocks.getAutomationRunForScheduledBroadcast,
   materializeAutomationRun: mocks.materializeAutomationRun,
   markAutomationRunFailed: mocks.markAutomationRunFailed,
 }));
@@ -135,7 +138,7 @@ describe("scheduled and automation worker logging", () => {
         },
       ],
     });
-    mocks.getDueAutomationRuns.mockResolvedValue([{ ...automationRun }]);
+    mocks.getDueAutomationRunsGlobally.mockResolvedValue([{ ...automationRun }]);
     mocks.getUserById.mockResolvedValue({
       id: 11,
       organization_id: 7,

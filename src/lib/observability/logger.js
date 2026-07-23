@@ -300,6 +300,31 @@ export const EVENT_SCHEMAS = Object.freeze({
     fields: ["deliveryId"],
     error: true,
   }),
+  manual_automation_run_requested: defineEvent({
+    providers: ["internal"],
+    operations: ["manual_automation_run"],
+    outcomes: ["requested"],
+    fields: ["organizationId", "userId"],
+  }),
+  manual_automation_run_completed: defineEvent({
+    providers: ["internal"],
+    operations: ["manual_automation_run"],
+    outcomes: ["completed"],
+    fields: ["organizationId", "userId", "processed", "skipped", "failed"],
+  }),
+  manual_automation_run_rejected: defineEvent({
+    providers: ["internal"],
+    operations: ["manual_automation_run"],
+    outcomes: ["rejected"],
+    fields: ["organizationId", "userId", "statusCode"],
+  }),
+  manual_automation_run_failed: defineEvent({
+    providers: ["internal"],
+    operations: ["manual_automation_run"],
+    outcomes: ["failed"],
+    fields: ["organizationId", "userId", "statusCode"],
+    error: true,
+  }),
   openai_operation_completed: defineEvent({
     providers: ["openai"],
     operations: [

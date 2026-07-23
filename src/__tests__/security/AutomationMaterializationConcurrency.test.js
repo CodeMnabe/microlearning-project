@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getDueAutomationRuns: vi.fn(),
+  getDueAutomationRunsGlobally: vi.fn(),
   materializeAutomationRun: vi.fn(),
   markAutomationRunFailed: vi.fn(),
   getUserById: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/automationRuns.repo", () => ({
-  getDueAutomationRuns: mocks.getDueAutomationRuns,
+  getDueAutomationRunsGlobally: mocks.getDueAutomationRunsGlobally,
   materializeAutomationRun: mocks.materializeAutomationRun,
   markAutomationRunFailed: mocks.markAutomationRunFailed,
 }));
@@ -110,7 +110,7 @@ describe("Atomic automation materialization route", () => {
     originalCronSecret = process.env.CRON_SECRET;
     process.env.CRON_SECRET = "automation-materialization-test-secret";
     vi.clearAllMocks();
-    mocks.getDueAutomationRuns.mockResolvedValue([{ ...run }]);
+    mocks.getDueAutomationRunsGlobally.mockResolvedValue([{ ...run }]);
     mocks.getUserById.mockResolvedValue({
       id: run.user_id,
       organization_id: run.organization_id,

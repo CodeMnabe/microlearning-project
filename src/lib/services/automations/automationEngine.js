@@ -1,5 +1,5 @@
 import { getUserById } from "@/lib/repos/user.repo";
-import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
+import { getActiveAutomationRulesGlobally } from "@/lib/repos/automationRules.repo";
 import { createAutomationRunIfMissing } from "@/lib/repos/automationRuns.repo";
 
 function addMinutes(baseTime, minutes) {

@@ -419,8 +419,8 @@ describe("safe application logger", () => {
     expect(fields).toEqual(before);
   });
 
-  it("publishes exactly 60 finite event schemas without generic containers", () => {
-    expect(Object.keys(EVENT_SCHEMAS)).toHaveLength(60);
+  it("publishes exactly 64 finite event schemas without generic containers", () => {
+    expect(Object.keys(EVENT_SCHEMAS)).toHaveLength(64);
     expect(ALLOWED_LOG_FIELDS).not.toContain("statusList");
     expect(ALLOWED_LOG_FIELDS).not.toContain("counts");
 
