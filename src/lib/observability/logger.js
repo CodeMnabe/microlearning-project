@@ -251,6 +251,18 @@ export const EVENT_SCHEMAS = Object.freeze({
     outcomes: ["failed"],
     error: true,
   }),
+  public_abuse_cleanup_completed: defineEvent({
+    providers: ["supabase"],
+    operations: ["public_abuse_cleanup"],
+    outcomes: ["completed"],
+    fields: ["processed"],
+  }),
+  public_abuse_cleanup_failed: defineEvent({
+    providers: ["supabase"],
+    operations: ["public_abuse_cleanup"],
+    outcomes: ["failed"],
+    error: true,
+  }),
   file_cleanup_compensation_failed: defineEvent({
     providers: ["supabase"],
     operations: ["public_image_delete"],
@@ -508,7 +520,7 @@ export const EVENT_SCHEMAS = Object.freeze({
   }),
   tracked_link_resolution_failed: defineEvent({
     providers: ["internal"],
-    operations: ["tracked_link_resolve"],
+    operations: ["tracked_link_resolve", "tracked_link_interaction"],
     outcomes: ["failed"],
     error: true,
   }),

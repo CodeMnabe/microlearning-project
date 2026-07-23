@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { validateTrackedLinkDestination } from "@/lib/services/broadcast/trackedLinkUrl";
+import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -45,7 +46,9 @@ export async function createTrackedLink(row) {
 export async function getTrackedLinkByToken(token) {
   const { data, error } = await supabaseAdmin
     .from("tracked_link")
-    .select("*")
+    .select(
+      "id, org_id, recipient_user_id, destination_url, link_label, expires_at, revoked_at",
+    )
     .eq("token", token)
     .single();
 
@@ -57,15 +60,69 @@ export async function getTrackedLinkByToken(token) {
   return data;
 }
 
-export async function createTrackedLinkEvent(row) {
+export async function getTrackedLinkById(trackedLinkId) {
   const { data, error } = await supabaseAdmin
-    .from("tracked_link_event")
-    .insert(row)
-    .select()
-    .single();
-
+    .from("tracked_link")
+    .select("id, org_id, recipient_user_id, expires_at, revoked_at")
+    .eq("id", trackedLinkId)
+    .maybeSingle();
   if (error) throw error;
-  return data;
+  return data || null;
+}
+
+export async function recordTrackedLinkInteraction({
+  trackedLinkId,
+  visitorHash,
+  tokenHash,
+  recipientUserId,
+  clientClassification,
+  refererOrigin,
+  dedupeWindowSeconds,
+  globalLimit,
+  tokenLimit,
+  visitorLimit,
+}) {
+  const { data, error } = await getSupabaseAdminClient().rpc(
+    "record_tracked_link_interaction",
+    {
+      p_tracked_link_id: trackedLinkId,
+      p_visitor_hash: visitorHash,
+      p_token_hash: tokenHash,
+      p_recipient_user_id: recipientUserId,
+      p_client_classification: clientClassification,
+      p_referer_origin: refererOrigin,
+      p_dedupe_window_seconds: dedupeWindowSeconds,
+      p_global_window_seconds: globalLimit.windowSeconds,
+      p_global_maximum_requests: globalLimit.maximumRequests,
+      p_token_window_seconds: tokenLimit.windowSeconds,
+      p_token_maximum_requests: tokenLimit.maximumRequests,
+      p_visitor_window_seconds: visitorLimit.windowSeconds,
+      p_visitor_maximum_requests: visitorLimit.maximumRequests,
+    },
+  );
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    outcome: String(row?.outcome || "rate_limited"),
+    retryAfterSeconds: Math.max(0, Number(row?.retry_after_seconds) || 0),
+  };
+}
+
+export async function cleanupPublicAbuseData({
+  batchSize,
+  eventRetentionDays,
+  expiredLinkGraceDays,
+}) {
+  const { data, error } = await getSupabaseAdminClient().rpc(
+    "cleanup_public_abuse_data",
+    {
+      p_batch_size: batchSize,
+      p_event_retention_days: eventRetentionDays,
+      p_expired_link_grace_days: expiredLinkGraceDays,
+    },
+  );
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function getTrackedLinkReportsByOrg(orgId) {

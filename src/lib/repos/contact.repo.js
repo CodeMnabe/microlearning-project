@@ -1,4 +1,5 @@
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 const supabase = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -36,6 +37,33 @@ export async function createContact({
 
   if (error) throw error;
   return data;
+}
+
+export async function createDeduplicatedContact({
+  name,
+  email,
+  company = null,
+  message,
+  fingerprint,
+  windowSeconds,
+}) {
+  const { data, error } = await getSupabaseAdminClient().rpc(
+    "create_deduplicated_contact",
+    {
+      p_name: name,
+      p_email: email,
+      p_company: company,
+      p_message: message,
+      p_fingerprint: fingerprint,
+      p_window_seconds: windowSeconds,
+    },
+  );
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row.accepted !== "boolean") {
+    throw new Error("Contact creation response is invalid");
+  }
+  return { accepted: row.accepted, contactId: row.contact_id ?? null };
 }
 
 export async function getContactById(contactId) {

@@ -248,9 +248,9 @@ describe("server logging policy", () => {
     );
     expect(results.flatMap((result) => result.violations)).toEqual([]);
     expect(results.reduce((total, result) => total + result.calls, 0)).toBe(
-      105,
+      108,
     );
-    expect(new Set(results.flatMap((result) => result.events)).size).toBe(58);
+    expect(new Set(results.flatMap((result) => result.events)).size).toBe(60);
   });
 
   it.each([

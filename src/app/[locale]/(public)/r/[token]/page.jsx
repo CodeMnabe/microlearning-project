@@ -26,12 +26,6 @@ export default function TrackedRedirectPage({ params }) {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          console.error("Tracked link API failed", {
-            status: res.status,
-            data,
-            token,
-          });
-
           throw new Error(
             data?.error ||
               `Could not resolve tracked link (status ${res.status}).`,
@@ -49,7 +43,20 @@ export default function TrackedRedirectPage({ params }) {
         setDestinationUrl(url);
         setStatus("redirecting");
 
-        window.location.replace(url);
+        if (document.visibilityState === "visible" && data?.interactionContext) {
+          const controller = new AbortController();
+          const timeout = window.setTimeout(() => controller.abort(), 800);
+          await fetch(`/api/tracked-links/${token}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ interactionContext: data.interactionContext }),
+            cache: "no-store",
+            keepalive: true,
+            signal: controller.signal,
+          }).catch(() => undefined);
+          window.clearTimeout(timeout);
+        }
+        if (!cancelled) window.location.replace(url);
       } catch (err) {
         if (cancelled) return;
         setError(err.message || "Could not open link.");

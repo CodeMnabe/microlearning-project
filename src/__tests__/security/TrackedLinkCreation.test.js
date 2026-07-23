@@ -15,6 +15,7 @@ describe("Tracked-link creation guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
+    process.env.TRACKED_LINK_TTL_SECONDS = "86400";
     repoMocks.createTrackedLink.mockResolvedValue({ id: 1 });
   });
 
@@ -43,6 +44,7 @@ describe("Tracked-link creation guards", () => {
     expect(repoMocks.createTrackedLink).toHaveBeenCalledWith(
       expect.objectContaining({
         destination_url: "https://example.com/course?q=1#top",
+        expires_at: expect.any(String),
       }),
     );
     expect(result.row).toEqual({ id: 1 });

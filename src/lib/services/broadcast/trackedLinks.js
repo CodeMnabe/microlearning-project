@@ -4,6 +4,7 @@ import {
   validateTrackedLinkDestination,
   validateTrackedLinks,
 } from "./trackedLinkUrl";
+import { TRACKED_LINK_HARD_MAX_TTL_SECONDS } from "@/lib/limits/publicAbuse";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -22,6 +23,18 @@ function getAppBaseUrl() {
   }
 
   return String(base).replace(/\/$/, "");
+}
+
+function getTrackedLinkExpiry() {
+  const ttlSeconds = Number(process.env.TRACKED_LINK_TTL_SECONDS);
+  if (
+    !Number.isSafeInteger(ttlSeconds) ||
+    ttlSeconds < 60 ||
+    ttlSeconds > TRACKED_LINK_HARD_MAX_TTL_SECONDS
+  ) {
+    throw new Error("TRACKED_LINK_TTL_SECONDS is missing or invalid");
+  }
+  return new Date(Date.now() + ttlSeconds * 1000).toISOString();
 }
 
 export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
@@ -63,6 +76,7 @@ export async function createTrackedLinkForRecipient({
     source_type: "broadcast",
     created_by_user_id: createdByUserId,
     immediate_broadcast_delivery_id: immediateBroadcastDeliveryId,
+    expires_at: getTrackedLinkExpiry(),
   });
 
   return {
