@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import ManageTagsModal from "@/app/[locale]/(app)/users/ManageTagsModal/ManageTagsModal";
+import ManageTagsModal from "@/app/[locale]/(app)/users/components/ManageTagsModal/ManageTagsModal";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),

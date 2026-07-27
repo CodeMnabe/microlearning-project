@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-import styles from "./users.module.css";
+import styles from "../users.module.css";
 import { useTranslations } from "next-intl";
 
 export default function FilterMenu({

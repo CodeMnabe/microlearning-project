@@ -4,7 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import Papa from "papaparse";
 import styles from "./import.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
-import mapCsvRow from "./helpers";
+import { mapCsvRow } from "../../lib/usersImport.helpers";
+import { importUsers } from "../../lib/users.api";
 import { Download } from "lucide-react";
 
 const PREVIEW_LIMIT = 10;
@@ -190,27 +191,13 @@ export default function ImportUsersModal({
         assistantId: assistantId || row.assistantId || null,
       }));
 
-      const res = await fetch("/api/users/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId: orgId,
-          users: payload,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Import failed.");
-        return;
-      }
+      const data = await importUsers({ orgId, users: payload });
 
       setSummary(data);
       await onImported?.();
     } catch (err) {
       console.error(err);
-      setError("Import failed.");
+      setError(err?.message || "Import failed.");
     } finally {
       setIsSubmitting(false);
     }

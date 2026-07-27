@@ -549,3 +549,41 @@ export async function getUserByAadObjectId(aadObjectId) {
   if (error) throw error;
   return data;
 }
+
+/*
+ * As funções abaixo recebem o cliente Supabase como primeiro argumento,
+ * seguindo a convenção de `tag.repo.js`.
+ *
+ * Ao contrário das funções acima, que usam sempre a service role deste
+ * módulo, aqui é quem chama que decide o cliente. Isto permite manter
+ * operações que devem correr com a sessão do utilizador.
+ */
+
+/**
+ * Atualiza campos de um utilizador, limitando sempre à organização.
+ *
+ * Os campos com valor `undefined` são ignorados. Quando não sobra nenhum
+ * campo para atualizar, devolve apenas o identificador, sem ir à base
+ * de dados.
+ */
+export async function updateUserFields(sb, { userId, orgId, patch = {} }) {
+  const fieldsToUpdate = Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  );
+
+  if (!Object.keys(fieldsToUpdate).length) {
+    return { id: userId };
+  }
+
+  const { data, error } = await sb
+    .from("user")
+    .update(fieldsToUpdate)
+    .eq("id", userId)
+    .eq("organization_id", orgId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}

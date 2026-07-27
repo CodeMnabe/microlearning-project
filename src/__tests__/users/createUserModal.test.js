@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import CreateUserModal from "@/app/[locale]/(app)/users/CreateUser";
+import CreateUserModal from "@/app/[locale]/(app)/users/components/CreateUserModal";
 
 vi.mock("../../messages/phoneCountryCodes.json", () => ({
   default: [
@@ -37,6 +37,11 @@ vi.mock("@/app/components/PillSelect/PillSelect", () => ({
 const mocks = vi.hoisted(() => ({
   onClose: vi.fn(),
   onCreateUser: vi.fn(),
+  alert: vi.fn(),
+}));
+
+vi.mock("@/app/components/Alert/AlertProvider", () => ({
+  useAlert: () => mocks.alert,
 }));
 
 const ASSISTANTS = [
@@ -79,7 +84,7 @@ describe("CreateUserModal", () => {
 
   it("submits and calls onCreateUser with the correct payload, then closes and clears when ok=true", async () => {
     const user = userEvent.setup();
-    mocks.onCreateUser.mockResolvedValueOnce(true);
+    mocks.onCreateUser.mockResolvedValueOnce({ ok: true });
 
     renderModal();
 

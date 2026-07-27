@@ -1,3 +1,5 @@
+import { DEFAULT_PHONE_COUNTRY_CODE } from "./users.constants";
+
 function cleanValue(value) {
   if (value == null) return "";
   return String(value).trim();
@@ -111,9 +113,9 @@ function splitPhone({
   };
 }
 
-export default function mapCsvRow(
+export function mapCsvRow(
   row,
-  defaultPhoneCode = "+351",
+  defaultPhoneCode = DEFAULT_PHONE_COUNTRY_CODE,
   forcedAssistantId = null,
 ) {
   const normalized = normalizeHeaders(row);

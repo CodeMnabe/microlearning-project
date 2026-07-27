@@ -1,85 +1,114 @@
 import { NextResponse } from "next/server";
+
 import {
   createUser,
-  getUsersInOrg,
-  updateUser,
   deleteUser,
-} from "@/lib/repos/user.repo";
-import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+  listUsers,
+  updateUser,
+} from "@/lib/services/users";
+import {
+  assertAssistantBelongsToOrg,
+  assertTagsBelongToOrg,
+  parsePositiveInt,
+  parsePositiveIntArray,
+  requireOrgForUser,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
+
+/**
+ * Rota dos utilizadores.
+ *
+ * Responsável apenas por:
+ * - ler e validar os parâmetros do pedido;
+ * - chamar o serviço de utilizadores;
+ * - converter o resultado e os erros em respostas HTTP.
+ *
+ * As regras de negócio ficam em `@/lib/services/users`.
+ */
+
+const MAX_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 100;
+
+function parsePageParam(value, fallback, maximum = Number.POSITIVE_INFINITY) {
+  if (value == null || value === "") return fallback;
+
+  const parsed = parsePositiveInt(value);
+  return parsed == null ? null : Math.min(parsed, maximum);
+}
+
+function errorResponse(error, fallbackMessage) {
+  const status = Number.isInteger(error?.status) ? error.status : 500;
+
+  if (status >= 500) console.error(error);
+
+  return NextResponse.json(
+    { error: status >= 500 ? fallbackMessage : error.message },
+    { status },
+  );
+}
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const orgId = Number(searchParams.get("orgId"));
-    const page = Math.max(1, Number(searchParams.get("page") || 1));
-    const pageSize = Math.min(
-      200,
-      Math.max(1, Number(searchParams.get("pageSize") || 100)),
+    const auth = await requireOwnedOrg(searchParams.get("orgId"));
+    if (auth.error) return auth.error;
+
+    const page = parsePageParam(searchParams.get("page"), 1);
+    const pageSize = parsePageParam(
+      searchParams.get("pageSize"),
+      DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE,
     );
 
-    if (!orgId) {
-      return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+    if (page == null || pageSize == null) {
+      return NextResponse.json(
+        { error: "Invalid pagination parameters" },
+        { status: 400 },
+      );
     }
 
-    const result = await getUsersInOrg(orgId, { page, pageSize });
+    const result = await listUsers({ orgId: auth.orgId, page, pageSize });
+
     return NextResponse.json(result);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return errorResponse(err, "Failed to list users.");
   }
 }
 
 export async function POST(req) {
   try {
-    const {
-      name,
-      phoneNumber,
-      phoneCountryCode,
-      phoneNational,
-      organizationId,
-      assistantId,
-      email,
-      teamsAadObjectId,
-      teamsFromId,
-    } = await req.json();
+    const body = await req.json();
 
-    if (!name || !organizationId) {
+    if (typeof body?.name !== "string" || !body.name.trim()) {
       return NextResponse.json(
-        { error: "Missing required fields: name, organizationId" },
+        { error: "Missing required field: name" },
         { status: 400 },
       );
     }
 
-    const normalizedNational =
-      typeof phoneNational === "string"
-        ? phoneNational.replace(/\s+/g, "")
-        : "";
+    const auth = await requireOwnedOrg(body.organizationId);
+    if (auth.error) return auth.error;
 
-    const normalizedCode =
-      typeof phoneCountryCode === "string" && phoneCountryCode.trim()
-        ? phoneCountryCode.trim()
-        : null;
+    const assistantId = await assertAssistantBelongsToOrg(
+      auth.admin,
+      auth.orgId,
+      body.assistantId,
+    );
 
-    const fullPhone =
-      phoneNumber ??
-      (normalizedCode && normalizedNational
-        ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
-        : null);
-
-    const _newUser = await createUserWithAutomations({
-      organizationId,
-      name,
-      email,
-      assistantId: assistantId ?? null,
-      phoneNumber: fullPhone,
-      phoneCountryCode: normalizedCode,
-      phoneNational: normalizedNational,
-      teamsAadObjectId: teamsAadObjectId ?? null,
-      teamsFromId: teamsFromId ?? null,
+    const newUser = await createUser({
+      organizationId: auth.orgId,
+      name: body.name.trim(),
+      email: body.email,
+      assistantId,
+      phoneNumber: body.phoneNumber,
+      phoneCountryCode: body.phoneCountryCode,
+      phoneNational: body.phoneNational,
+      teamsAadObjectId: body.teamsAadObjectId,
+      teamsFromId: body.teamsFromId,
     });
 
-    return NextResponse.json(_newUser, { status: 201 });
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     if (error.code === "USER_LIMIT_REACHED") {
       return NextResponse.json(
@@ -87,99 +116,77 @@ export async function POST(req) {
         { status: 409 },
       );
     }
+
     if (error.code === "23505") {
       return NextResponse.json(
         { error: "User already exists (duplicate key)." },
         { status: 409 },
       );
     }
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to create User: " + error.message },
-      { status: 500 },
-    );
+
+    return errorResponse(error, "Failed to create user.");
   }
 }
 
-// src/app/api/users/route.js  (PATCH)
 export async function PATCH(req) {
   try {
-    const {
-      id,
-      name,
-      phoneNumber, // optional full number
-      phoneCountryCode, // "+351"
-      phoneNational, // "912345678"
-      email,
-      teamsAadObjectId,
-      teamsFromId,
-      assistantId,
-      tagIds,
-    } = await req.json();
+    const body = await req.json();
 
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing required field: id" },
-        { status: 400 },
+    const auth = await requireOrgForUser(body?.id);
+    if (auth.error) return auth.error;
+
+    let assistantId = body.assistantId;
+    if (assistantId !== undefined) {
+      assistantId = await assertAssistantBelongsToOrg(
+        auth.admin,
+        auth.orgId,
+        assistantId,
       );
     }
 
-    const normalizedNational =
-      typeof phoneNational === "string"
-        ? phoneNational.replace(/\s+/g, "")
-        : undefined; // undefined means "don't touch" in updateUser
+    let tagIds = body.tagIds;
+    if (tagIds !== undefined) {
+      tagIds = parsePositiveIntArray(tagIds);
 
-    const normalizedCode =
-      typeof phoneCountryCode === "string" && phoneCountryCode.trim()
-        ? phoneCountryCode.trim()
-        : typeof phoneCountryCode === "string"
-          ? "" // allow clearing
-          : undefined;
+      if (tagIds == null) {
+        return NextResponse.json(
+          { error: "Invalid tagIds" },
+          { status: 400 },
+        );
+      }
 
-    const fullPhone =
-      typeof phoneNumber === "string" && phoneNumber.trim()
-        ? phoneNumber.trim()
-        : normalizedCode && normalizedNational
-          ? `${normalizedCode}${normalizedNational.replace(/\D/g, "")}`
-          : undefined;
+      tagIds = await assertTagsBelongToOrg(auth.admin, auth.orgId, tagIds);
+    }
 
-    const updatedUser = await updateUser(id, {
-      name,
-      email,
+    const updatedUser = await updateUser({
+      id: auth.userId,
+      name: body.name,
+      email: body.email,
       assistantId,
       tagIds,
-      phoneNumber: fullPhone,
-      phoneCountryCode: normalizedCode,
-      phoneNational: normalizedNational,
-      teamsAadObjectId,
-      teamsFromId,
+      phoneNumber: body.phoneNumber,
+      phoneCountryCode: body.phoneCountryCode,
+      phoneNational: body.phoneNational,
+      teamsAadObjectId: body.teamsAadObjectId,
+      teamsFromId: body.teamsFromId,
     });
 
     return NextResponse.json(updatedUser);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return errorResponse(err, "Failed to update user.");
   }
 }
 
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = Number(searchParams.get("id"));
-    if (!userId) {
-      return NextResponse.json(
-        {
-          error: "Missing UserId",
-        },
-        { status: 400 },
-      );
-    }
+    const auth = await requireOrgForUser(searchParams.get("id"));
+    if (auth.error) return auth.error;
 
-    await deleteUser(userId);
+    await deleteUser(auth.userId);
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return errorResponse(err, "Failed to delete user.");
   }
 }
