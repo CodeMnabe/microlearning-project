@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import QuickActionsBar from "@/app/[locale]/(app)/users/QuickActions/QuickActions";
+import QuickActionsBar from "@/app/[locale]/(app)/users/components/QuickActions/QuickActions";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) =>
@@ -29,7 +29,7 @@ function makeResponse(data, ok = true) {
     status: ok ? 200 : 500,
     json: () => Promise.resolve(data),
     text: () =>
-      Promise.resolve(typeof data === "string") ? data : JSON.stringify(data),
+      Promise.resolve(typeof data === "string" ? data : JSON.stringify(data)),
   });
 }
 
@@ -49,7 +49,7 @@ const TAGS = [
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.confirm.mockResolvedValueOnce(true);
-  mocks.fetch.mockResolvedValue(makeResponse());
+  mocks.fetch.mockResolvedValue(makeResponse({}));
   mocks.onDone.mockResolvedValue();
 
   vi.stubGlobal("fetch", mocks.fetch);

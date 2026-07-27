@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   useOrganization: vi.fn(),
 
   confirm: vi.fn(),
+  showAlert: vi.fn(),
 
   fetch: vi.fn(),
 }));
@@ -36,7 +37,11 @@ vi.mock("@/app/components/Confirm/ConfirmProvider", () => ({
   useConfirm: () => mocks.confirm,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/CreateUser", () => ({
+vi.mock("@/app/components/Alert/AlertProvider", () => ({
+  useAlert: () => mocks.showAlert,
+}));
+
+vi.mock("@/app/[locale]/(app)/users/components/CreateUserModal", () => ({
   default: (props) =>
     props?.isOpen
       ? React.createElement(
@@ -47,7 +52,7 @@ vi.mock("@/app/[locale]/(app)/users/CreateUser", () => ({
       : null,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/ManageTagsModal/ManageTagsModal", () => ({
+vi.mock("@/app/[locale]/(app)/users/components/ManageTagsModal/ManageTagsModal", () => ({
   default: (props) =>
     props?.isOpen
       ? React.createElement(
@@ -58,7 +63,7 @@ vi.mock("@/app/[locale]/(app)/users/ManageTagsModal/ManageTagsModal", () => ({
       : null,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/EditUserModal", () => ({
+vi.mock("@/app/[locale]/(app)/users/components/EditUserModal", () => ({
   default: (props) =>
     props?.open
       ? React.createElement(
@@ -69,7 +74,7 @@ vi.mock("@/app/[locale]/(app)/users/EditUserModal", () => ({
       : null,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/ViewUserModal", () => ({
+vi.mock("@/app/[locale]/(app)/users/components/ViewUserModal", () => ({
   default: (props) =>
     props?.open
       ? React.createElement(
@@ -80,7 +85,7 @@ vi.mock("@/app/[locale]/(app)/users/ViewUserModal", () => ({
       : null,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/FilterMenu", () => ({
+vi.mock("@/app/[locale]/(app)/users/components/FilterMenu", () => ({
   default: (props) =>
     props?.open
       ? React.createElement(
@@ -91,7 +96,7 @@ vi.mock("@/app/[locale]/(app)/users/FilterMenu", () => ({
       : null,
 }));
 
-vi.mock("@/app/[locale]/(app)/users/QuickActions/QuickActions", () => ({
+vi.mock("@/app/[locale]/(app)/users/components/QuickActions/QuickActions", () => ({
   default: (props) =>
     props?.count > 0
       ? React.createElement(
@@ -197,8 +202,8 @@ beforeEach(() => {
     const url = typeof input === "string" ? input : input.url;
     const method = (init?.method || "GET").toUpperCase();
 
-    if (url === `/api/users?orgId=${ORG_ID}` && method === "GET") {
-      return makeResponse(usersDb);
+    if (url.startsWith(`/api/users?orgId=${ORG_ID}`) && method === "GET") {
+      return makeResponse({ items: usersDb, total: usersDb.length });
     }
 
     if (url === `/api/assistants?orgId=${ORG_ID}` && method === "GET") {
@@ -221,9 +226,12 @@ beforeEach(() => {
   vi.stubGlobal("fetch", mocks.fetch);
 });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
+// O `fetch` não é reposto no fim de cada teste de propósito.
+//
+// Depois de a página ser desmontada ainda podem existir efeitos assíncronos
+// a caminho. Se o `fetch` simulado fosse reposto aqui, esses pedidos caíam no
+// `fetch` real e produziam avisos intermitentes. O `beforeEach` volta a
+// instalar o mock antes de cada teste.
 
 describe("UsersPage", () => {
   it("loads users/assistants/tags on mount and renders user rows", async () => {
@@ -235,7 +243,9 @@ describe("UsersPage", () => {
     expect(screen.getByText("Bob")).toBeInTheDocument();
     expect(screen.getByText("bob@example.com")).toBeInTheDocument();
 
-    expect(mocks.fetch).toHaveBeenCalledWith(`/api/users?orgId=${ORG_ID}`);
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/api/users?orgId=${ORG_ID}`),
+    );
     expect(mocks.fetch).toHaveBeenCalledWith(`/api/assistants?orgId=${ORG_ID}`);
     expect(mocks.fetch).toHaveBeenCalledWith(`/api/tags?orgId=${ORG_ID}`);
 
@@ -310,12 +320,19 @@ describe("UsersPage", () => {
 
     await screen.findByText("Alice");
 
+    // O botão principal abre o menu; o item do menu abre o modal.
     fireEvent.click(
       screen.getByRole("button", {
         name: "Users.newUser",
       }),
     );
 
-    expect(screen.getByTestId("create-user-modal")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("menuitem", {
+        name: "Users.newUser",
+      }),
+    );
+
+    expect(await screen.findByTestId("create-user-modal")).toBeInTheDocument();
   });
 });

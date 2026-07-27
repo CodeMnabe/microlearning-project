@@ -1,22 +1,20 @@
 // app/[locale]/(app)/users/EditUserModal.jsx
 "use client";
 import { useEffect, useState } from "react";
-import styles from "./users.module.css";
+import styles from "../users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { useTranslations } from "next-intl";
-import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
+import {
+  DEFAULT_PHONE_COUNTRY_CODE,
+  PHONE_CODE_OPTIONS,
+} from "../lib/users.constants";
 
-function stripPrefixFromPhone(full, code) {
-  if (!full) return "";
-  if (code && full.startsWith(code)) return full.slice(code.length);
-  return full.replace(/^\+/, "");
-}
+import {
+  stripPhoneCountryCode,
+} from "../lib/users.helpers";
 
-const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
-  value: c.code,
-  label: `${c.code} (${c.iso2})`,
-}));
+import { fetchTags, updateUser } from "../lib/users.api";
 
 export default function EditUserModal({
   open,
@@ -26,7 +24,7 @@ export default function EditUserModal({
   assistants = [],
   onDelete,
   onSaved,
-  defaultPhoneCode = "+351",
+  defaultPhoneCode = DEFAULT_PHONE_COUNTRY_CODE,
 }) {
   const translation = useTranslations();
   const confirm = useConfirm();
@@ -74,7 +72,7 @@ export default function EditUserModal({
     setPhoneNational(
       user.phoneNational ||
         user.phone_national ||
-        stripPrefixFromPhone(full, code),
+        stripPhoneCountryCode(full, code)
     );
 
     setEmail(user.email || "");
@@ -96,8 +94,7 @@ export default function EditUserModal({
     if (!open || !orgId) return;
     (async () => {
       try {
-        const res = await fetch(`/api/tags?orgId=${orgId}`);
-        const data = await res.json();
+        const data = await fetchTags(orgId);
         setAllTags(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
@@ -130,29 +127,23 @@ export default function EditUserModal({
           ? `${phoneCode}${phoneNational.replace(/\D/g, "")}`
           : user.phone || user.phone_number || null;
 
-      const res = await fetch("/api/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: user.id,
-          name,
-          email,
-          assistantId,
-          tagIds: selectedTagIds,
-          phoneCountryCode: phoneCode,
-          phoneNational,
-          phoneNumber: fullPhone,
-          teamsAadObjectId,
-          teamsFromId,
-        }),
+      const updated = await updateUser({
+        id: user.id,
+        name,
+        email,
+        assistantId,
+        tagIds: selectedTagIds,
+        phoneCountryCode: phoneCode,
+        phoneNational,
+        phoneNumber: fullPhone,
+        teamsAadObjectId,
+        teamsFromId,
       });
-      if (!res.ok) {
-        console.error(await res.text());
-        return;
-      }
-      const updated = await res.json();
+
       onSaved?.(updated);
       onClose?.();
+    } catch (err) {
+      console.error("[EditUser] save error:", err);
     } finally {
       setIsSaving(false);
     }
@@ -378,7 +369,7 @@ export default function EditUserModal({
                   <div className={styles.formGroup}>
                     <label>Teams Aad Object ID</label>
                     <input
-                      value={teamsAadObjectId ?? null}
+                      value={teamsAadObjectId ?? ""}
                       onChange={(e) => setTeamsAadObjectId(e.target.value)}
                       placeholder="00000000-0000-0000-0000-000000000000"
                     />

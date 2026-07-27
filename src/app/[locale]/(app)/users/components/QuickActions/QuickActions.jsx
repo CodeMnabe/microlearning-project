@@ -3,9 +3,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import bar from "./quickActions.module.css";
-import u from "../users.module.css"; // reuse your filter popover styles
+import u from "../../users.module.css"; // reuse your filter popover styles
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { useTranslations } from "next-intl";
+import {
+  bulkDeleteUsers,
+  bulkModifyTags as bulkModifyTagsRequest,
+  bulkSetAssistant as bulkSetAssistantRequest,
+} from "../../lib/users.api";
 
 function usePopover(anchorRef, minWidth = 280) {
   const [open, setOpen] = useState(false);
@@ -103,12 +108,13 @@ export default function QuickActionsBar({
 
   async function bulkSetAssistant() {
     if (!assistantId || !canAct) return;
-    const res = await fetch("/api/users/bulk", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds, assistantId, orgId }),
-    });
-    if (!res.ok) console.error(await res.text());
+
+    try {
+      await bulkSetAssistantRequest({ ids: selectedIds, assistantId, orgId });
+    } catch (err) {
+      console.error("[QuickActions] bulk set assistant error:", err);
+    }
+
     await onDone?.();
     setAssistantId(null);
     aPop.setOpen(false);
@@ -116,12 +122,13 @@ export default function QuickActionsBar({
 
   async function bulkModifyTags(op) {
     if (!canAct || tagIds.length === 0) return;
-    const res = await fetch("/api/users/bulk-tags", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds, tagIds, op, orgId }),
-    });
-    if (!res.ok) console.error(await res.text());
+
+    try {
+      await bulkModifyTagsRequest({ ids: selectedIds, tagIds, op, orgId });
+    } catch (err) {
+      console.error("[QuickActions] bulk modify tags error:", err);
+    }
+
     await onDone?.();
     setTagIds([]);
     tagPop.setOpen(false);
@@ -142,20 +149,16 @@ export default function QuickActionsBar({
 
     if (!ok) return;
 
-    const res = await fetch("/api/users/bulk", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds, orgId }),
-    });
+    let data;
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error(data.error || data);
+    try {
+      data = await bulkDeleteUsers({ ids: selectedIds, orgId });
+    } catch (err) {
+      console.error("[QuickActions] bulk delete error:", err);
       return;
     }
 
-    if (data.failedCount > 0) {
+    if (data?.failedCount > 0) {
       console.error("Some users failed to delete:", data.failed);
     }
 

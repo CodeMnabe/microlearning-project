@@ -16,11 +16,32 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
+// Além do useRouter usado pela página, o next-intl e o LoaderLink também
+// precisam dos restantes exports deste módulo.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  usePathname: () => "/pt/login",
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({ locale: "pt" }),
+  redirect: vi.fn(),
+  permanentRedirect: vi.fn(),
+  notFound: vi.fn(),
+}));
+
+// O LoaderLink usa o Link do next-intl, que exige contexto de intl e resolve
+// módulos internos do next-intl. Aqui basta um <a> simples.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) =>
+    React.createElement("a", { href, ...rest }, children),
+  useRouter: () => ({
+    push: mocks.push,
+    replace: mocks.replace,
+  }),
+  usePathname: () => "/pt/login",
+  redirect: vi.fn(),
 }));
 
 // No JSX here either

@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import styles from "./users.module.css";
+import styles from "../users.module.css";
 import {
   Pencil,
   X,
@@ -13,9 +13,8 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-function initial(name = "") {
-  return (name.trim()[0] || "?").toUpperCase();
-}
+import { fetchThreadMessages, fetchUserThreads } from "../lib/users.api";
+import { getUserInitial } from "../lib/users.helpers";
 
 function formatPhoneDisplay(user) {
   const code = user.phoneCountryCode || user.phone_country_code || "";
@@ -95,10 +94,7 @@ export default function ViewUserModal({
       setThreadsLoading(true);
       setThreadsError("");
 
-      const res = await fetch(`/api/threads?userId=${userId}`);
-      if (!res.ok) throw new Error(await safeText(res));
-
-      const data = await res.json();
+      const data = await fetchUserThreads(userId);
       const list = Array.isArray(data?.threads) ? data.threads : [];
 
       const normalized = list.map((t) => ({
@@ -137,17 +133,7 @@ export default function ViewUserModal({
       setMessagesLoading(true);
       setMessagesError("");
 
-      let res = await fetch(`/api/messages?threadId=${threadId}`);
-
-      if (!res.ok) {
-        res = await fetch(`/api/threads/${threadId}/messages`);
-      }
-
-      if (!res.ok) {
-        throw new Error(await safeText(res));
-      }
-
-      const data = await res.json();
+      const data = await fetchThreadMessages(threadId);
 
       const arr = Array.isArray(data?.messages)
         ? data.messages
@@ -210,7 +196,7 @@ export default function ViewUserModal({
       >
         <div className={styles.viewHead}>
           <div className={styles.viewHeadLeft}>
-            <div className={styles.avatarLg}>{initial(user.name || "")}</div>
+            <div className={styles.avatarLg}>{getUserInitial(user.name || "")}</div>
 
             <div className={styles.viewTitleBlock}>
               <div className={styles.viewTitle}>{user.name || "—"}</div>
@@ -365,14 +351,6 @@ function extractText(m) {
   }
 
   return "(sem texto)";
-}
-
-async function safeText(res) {
-  try {
-    return await res.text();
-  } catch {
-    return "Erro";
-  }
 }
 
 function shortId(id) {

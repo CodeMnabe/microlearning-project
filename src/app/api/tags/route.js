@@ -9,6 +9,7 @@ import {
   updateTag,
   deleteTag,
 } from "@/lib/repos/tag.repo.js";
+import { requireOrgForTag, requireOwnedOrg } from "@/lib/auth/guards";
 
 // ✅ admin client (bypasses RLS)
 const admin = createServiceClient(
@@ -20,11 +21,10 @@ const admin = createServiceClient(
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const orgId = Number(searchParams.get("orgId"));
-    if (!Number.isFinite(orgId)) {
-      return NextResponse.json({ error: "Invalid orgId" }, { status: 400 });
-    }
-    const data = await getTagsInOrg(admin, orgId);
+    const auth = await requireOwnedOrg(searchParams.get("orgId"));
+    if (auth.error) return auth.error;
+
+    const data = await getTagsInOrg(admin, auth.orgId);
     return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (e) {
     console.error(e);
@@ -35,13 +35,21 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const { orgId, name, color } = await req.json();
-    if (!orgId || !name) {
+    if (typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
-        { error: "Missing orgId or name" },
-        { status: 400 }
+        { error: "Missing name" },
+        { status: 400 },
       );
     }
-    const tag = await createTag(admin, { orgId, name, color });
+
+    const auth = await requireOwnedOrg(orgId);
+    if (auth.error) return auth.error;
+
+    const tag = await createTag(admin, {
+      orgId: auth.orgId,
+      name: name.trim(),
+      color,
+    });
     return NextResponse.json(tag, { status: 201 });
   } catch (e) {
     console.error(e);
@@ -51,9 +59,19 @@ export async function POST(req) {
 
 export async function PATCH(req) {
   try {
-    const { id, ...fields } = await req.json();
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    const updated = await updateTag(admin, id, fields);
+    const { id, name, color } = await req.json();
+    const auth = await requireOrgForTag(id);
+    if (auth.error) return auth.error;
+
+    if (name !== undefined && (typeof name !== "string" || !name.trim())) {
+      return NextResponse.json({ error: "Invalid name" }, { status: 400 });
+    }
+
+    const fields = {};
+    if (name !== undefined) fields.name = name.trim();
+    if (color !== undefined) fields.color = color;
+
+    const updated = await updateTag(admin, auth.tagId, fields);
     return NextResponse.json(updated);
   } catch (e) {
     console.error(e);
@@ -64,9 +82,10 @@ export async function PATCH(req) {
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = Number(searchParams.get("id"));
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    await deleteTag(admin, id);
+    const auth = await requireOrgForTag(searchParams.get("id"));
+    if (auth.error) return auth.error;
+
+    await deleteTag(admin, auth.tagId);
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error(e);

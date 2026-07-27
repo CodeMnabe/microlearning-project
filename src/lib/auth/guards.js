@@ -11,6 +11,15 @@ export function parsePositiveInt(value) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+export function parsePositiveIntArray(values) {
+  if (!Array.isArray(values)) return null;
+
+  const parsed = values.map(parsePositiveInt);
+  if (parsed.some((value) => value == null)) return null;
+
+  return [...new Set(parsed)];
+}
+
 export async function requireUser() {
   const supabase = await createSupabaseServerClient();
 

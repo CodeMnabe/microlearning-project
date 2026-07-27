@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "./manageTagsModal.module.css";
 import { useTranslations } from "next-intl";
+import {
+  createTag as createTagRequest,
+  deleteTag as deleteTagRequest,
+  renameTag as renameTagRequest,
+} from "../../lib/users.api";
 
 export default function ManageTagsModal({
   isOpen,
@@ -54,36 +59,43 @@ export default function ManageTagsModal({
 
   async function createTag() {
     const base = (nameInput || "").trim() || `Grupo ${tags.length + 1}`;
-    const res = await fetch("/api/tags", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, name: base }),
-    });
-    if (!res.ok) return;
-    const t = await res.json();
-    setTags?.((prev) => [t, ...(prev || [])]);
-    setSelectedId(t.id);
-    setNameInput(t.name || "");
+
+    try {
+      const t = await createTagRequest({ orgId, name: base });
+
+      setTags?.((prev) => [t, ...(prev || [])]);
+      setSelectedId(t.id);
+      setNameInput(t.name || "");
+    } catch (err) {
+      console.error("[ManageTags] create tag error:", err);
+    }
   }
 
   async function saveRename() {
     if (!selectedTag) return;
     const next = (nameInput || "").trim();
     if (!next || next === selectedTag.name) return;
-    await fetch("/api/tags", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: selectedTag.id, name: next }),
-    });
+
+    try {
+      await renameTagRequest({ id: selectedTag.id, name: next });
+    } catch (err) {
+      console.error("[ManageTags] rename tag error:", err);
+    }
+
     setTags?.((prev) =>
       (prev || []).map((t) =>
-        t.id === selectedTag.id ? { ...t, name: next } : t
-      )
+        t.id === selectedTag.id ? { ...t, name: next } : t,
+      ),
     );
   }
 
   async function removeTag(id) {
-    await fetch(`/api/tags?id=${id}`, { method: "DELETE" });
+    try {
+      await deleteTagRequest(id);
+    } catch (err) {
+      console.error("[ManageTags] delete tag error:", err);
+    }
+
     setTags?.((prev) => (prev || []).filter((t) => t.id !== id));
     if (id === selectedId) {
       const next = (tags || []).find((t) => t.id !== id);

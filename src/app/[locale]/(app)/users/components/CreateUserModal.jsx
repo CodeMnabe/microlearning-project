@@ -1,23 +1,22 @@
 // components/CreateUserModal.jsx
 "use client";
 import { useState, useEffect } from "react";
-import styles from "./users.module.css";
+import styles from "../users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import { useTranslations } from "next-intl";
-import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
+import {
+  DEFAULT_PHONE_COUNTRY_CODE,
+  PHONE_CODE_OPTIONS,
+} from "../lib/users.constants";
 
-const PHONE_CODE_OPTIONS = phoneCountryCodes.map((c) => ({
-  value: c.code,
-  label: `${c.code} (${c.iso2})`,
-}));
 
 export default function CreateUserModal({
   isOpen,
   onClose,
   onCreateUser,
   assistants = [],
-  defaultPhoneCode = "+351",
+  defaultPhoneCode = DEFAULT_PHONE_COUNTRY_CODE,
 }) {
   const translation = useTranslations();
   const alert = useAlert();
@@ -41,7 +40,7 @@ export default function CreateUserModal({
   useEffect(() => {
     if (isOpen) {
       setRender(true);
-      setPhoneCode(defaultPhoneCode || "+351");
+      setPhoneCode(defaultPhoneCode || DEFAULT_PHONE_COUNTRY_CODE);
     }
   }, [isOpen, defaultPhoneCode]);
 
@@ -92,7 +91,7 @@ export default function CreateUserModal({
       if (result.ok) {
         // only clear if the API call succeeded
         setUserName("");
-        setPhoneCode(defaultPhoneCode || "+351");
+        setPhoneCode(defaultPhoneCode || DEFAULT_PHONE_COUNTRY_CODE);
         setPhoneNational("");
         setEmail("");
         setAssistantId(null);

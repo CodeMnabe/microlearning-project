@@ -1,6 +1,6 @@
 import { Filter } from "lucide-react";
 
-import FilterMenu from "@/app/[locale]/(app)/users/FilterMenu";
+import FilterMenu from "@/app/[locale]/(app)/users/components/FilterMenu";
 
 import styles from "../../broadcast.module.css";
 import ActiveFilters from "./ActiveFilters";
