@@ -2,7 +2,7 @@ import {
   buildDailySeries,
   getAnalyticsPeriodRange,
   withMetricFallback,
-} from "@/lib/helpers/analytics.helpers";
+} from "./analytics.helpers";
 
 import {
   getUserMetrics,

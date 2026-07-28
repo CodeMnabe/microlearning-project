@@ -3,7 +3,7 @@ import styles from "../broadcast.module.css";
 import {
   formatDelayLabel,
   MAX_CHAIN_DELAY_HOURS,
-} from "../lib/broadcast.helpers";
+} from "../lib";
 
 /**
  * Ferramentas de atraso entre mensagens de uma read chain.

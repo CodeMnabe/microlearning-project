@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
 
 import styles from "../../broadcast.module.css";
-import { sanitizeTrackedKey } from "../../lib/broadcast.helpers";
+import { sanitizeTrackedKey } from "../../lib";
 
 export default function TrackedLinksPanel({
   channel,

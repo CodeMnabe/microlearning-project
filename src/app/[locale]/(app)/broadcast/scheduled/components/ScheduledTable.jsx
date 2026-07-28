@@ -1,7 +1,7 @@
 import { CalendarClock, Pencil, Plus, Eye, Trash2 } from "lucide-react";
 import styles from "../scheduled.module.css";
 import { Link } from "@/i18n/navigation";
-import { formatDateTime, previewText } from "../helpers/scheduled.helpers";
+import { formatDateTime, previewText } from "../lib/scheduled.helpers";
 
 
 /**

@@ -154,16 +154,3 @@ export function normalizeTemplateStatusKey(status) {
     .replace(/[\s-]+/g, "_");
 }
 
-// Apenas estes estados têm uma tradução explícita em messages/*.
-export const TRANSLATED_TEMPLATE_STATUS_KEYS = new Set([
-  "new",
-  "active",
-  "approved",
-  "pending",
-  "rejected",
-  "paused",
-  "disabled",
-  "in_appeal",
-  "pending_deletion",
-  "unknown",
-]);

@@ -1,7 +1,5 @@
-import {
-  normalizeTemplateStatusKey,
-  TRANSLATED_TEMPLATE_STATUS_KEYS,
-} from "../helpers/templates.helpers";
+import { normalizeTemplateStatusKey } from "../lib/templates.helpers";
+import { TRANSLATED_TEMPLATE_STATUS_KEYS } from "../lib/templates.constants";
 import styles from "../templates.module.css";
 
 export default function TemplateStatusPill({ status, translation }) {

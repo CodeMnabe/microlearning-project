@@ -1,4 +1,4 @@
-import { hasValue } from "@/lib/helpers/analytics.helpers";
+import { hasValue } from "./analytics.helpers";
 import { fetchRows } from "./analyticsBase.repo";
 
 /**

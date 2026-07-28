@@ -19,7 +19,7 @@ import {
   getRecipientKey,
   getRecipientKind,
   mapRecipientsToEntries,
-} from "../helpers/recipient.helpers";
+} from "../lib/recipient.helpers";
 
 
 

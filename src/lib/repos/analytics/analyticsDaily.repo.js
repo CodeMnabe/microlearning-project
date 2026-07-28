@@ -1,4 +1,4 @@
-import { applyPeriod } from "@/lib/helpers/analytics.helpers";
+import { applyPeriod } from "./analytics.helpers";
 import { fetchRows } from "./analyticsBase.repo";
 import { getTrackedLinkClickRows } from "./analyticsTrackedLinks.repo";
 

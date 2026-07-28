@@ -1,4 +1,4 @@
-import { formatTrackedLinkDate } from "../../helpers/tracked-links.helpers";
+import { formatTrackedLinkDate } from "../../lib/tracked-links.helpers";
 import styles from "../detail.module.css";
 
 export default function TrackedLinkSummary({ translation, summary }) {

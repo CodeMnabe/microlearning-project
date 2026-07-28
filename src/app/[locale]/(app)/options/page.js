@@ -1,44 +1,44 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
-import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 
+/**
+ * Página de opções.
+ *
+ * Ainda não tem funcionalidade: apresenta apenas o nome da organização
+ * ativa e o tenant de Teams. Enquanto se mantiver assim, não justifica
+ * a estrutura de componentes, hooks e lib usada nas restantes camadas.
+ */
 export default function OptionsPage() {
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
-  const translation = useTranslations();
-  const supabase = createClient();
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { stopLoading } = useGlobalLoader();
 
   const [name, setName] = useState("");
   const [teamsTenantId, setTeamsTenantId] = useState("");
 
   useEffect(() => {
-    // No user -> nothing to load
+    // Sem utilizador não há nada para carregar.
     if (!user) {
       stopLoading();
       setName("");
       return;
     }
 
-    // While org is loading -> keep global loader on
+    // Enquanto a organização carrega, o loader global fica ativo.
     if (orgLoading) {
       return;
     }
 
-    // Done loading -> stop loader and set name (org may still be null if not found)
+    // A organização pode continuar a ser nula se não for encontrada.
     stopLoading();
     setName(org?.name ?? "");
     setTeamsTenantId(org?.teams_tenant_id);
-  }, [user, orgLoading, org, startLoading, stopLoading]);
-
-  useEffect(() => {
-    console.log("name:", name);
-  }, [name]);
+  }, [user, orgLoading, org, stopLoading]);
 
   return (
     <>

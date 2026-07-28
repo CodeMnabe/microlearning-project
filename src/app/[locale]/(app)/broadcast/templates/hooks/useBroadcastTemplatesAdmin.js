@@ -14,7 +14,7 @@ import {
   getTemplatePreset,
   parseTemplateComponents,
   readJsonResponse,
-} from "../helpers/templates.helpers";
+} from "../lib/templates.helpers";
 
 /**
  * Hook principal da subcamada Broadcast Templates.

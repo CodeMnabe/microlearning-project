@@ -1,4 +1,4 @@
-import { applyPeriod } from "@/lib/helpers/analytics.helpers";
+import { applyPeriod } from "./analytics.helpers";
 import { countRows } from "./analyticsBase.repo";
 
 /**
