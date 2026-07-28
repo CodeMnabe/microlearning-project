@@ -1,52 +1,18 @@
-
-
-
 /**
  * Helpers da página de broadcasts agendados.
  *
  * Este ficheiro contém funções puras para:
- * - mapear campos vindos da API;
  * - formatar datas e horas;
  * - preparar valores para inputs de data/hora;
  * - normalizar broadcasts agendados para a UI;
  * - validar se um item pode ser editado ou eliminado.
  *
+ * As constantes ficam em `scheduled.constants`.
+ *
  * Não colocar aqui fetches, estado React, JSX ou chamadas a providers.
  */
 
-/**
- * Mapa entre nomes usados no frontend e colunas vindas da base de dados.
- */
-export const FIELD_MAP = {
-  id: "id",
-  organizationId: "organization_id",
-  payload: "payload",
-  channel: "channel",
-  scheduledFor: "scheduled_for",
-  timezone: "timezone",
-  status: "status",
-  createdAt: "created_at",
-  updatedAt: "updated_at",
-  createdBy: "created_by_user_id",
-  recipientCount: "recipient_count",
-};
-
-/**
- * Estados disponíveis para filtragem na página Scheduled.
- */
-export const STATUS_OPTIONS = [
-  "all",
-  "scheduled",
-  "sending",
-  "sent",
-  "failed",
-  "cancelled",
-];
-
-/**
- * Canais disponíveis para filtragem.
- */
-export const CHANNEL_OPTIONS = ["all", "teams", "whatsapp"];
+import { FIELD_MAP } from "./scheduled.constants";
 
 /**
  * Encurta texto longo para apresentar em tabelas.
@@ -175,4 +141,48 @@ export function canEditItem(item) {
  */
 export function canDeleteItem(item) {
   return !["sending", "sent"].includes(item.status);
+}
+
+/**
+ * Constrói o payload de um broadcast agendado a partir do formulário de edição.
+ *
+ * O payload anterior é preservado e só os campos editados são substituídos,
+ * para não perder informação que a interface não mostra.
+ *
+ * Os destinatários são guardados de forma diferente por canal:
+ * - no WhatsApp o envio usa `recipients`, e `userIds` é removido;
+ * - no Teams o envio usa `userIds`, mas `recipients` é mantido porque o
+ *   modal de detalhe precisa dele para apresentar a lista.
+ */
+export function buildScheduledEditPayload({
+  previousPayload,
+  formData,
+  recipients,
+}) {
+  const basePayload = previousPayload || {};
+  const nextFiles = Array.isArray(formData.files) ? formData.files : [];
+
+  const nextPayload = {
+    ...basePayload,
+    message: formData.message.trim(),
+    files: nextFiles,
+    imageUrls: nextFiles
+      .filter((file) => file?.contentType?.startsWith("image/"))
+      .map((file) => file.url),
+  };
+
+  if (formData.channel === "whatsapp") {
+    nextPayload.recipients = recipients;
+    delete nextPayload.userIds;
+
+    return nextPayload;
+  }
+
+  nextPayload.userIds = recipients
+    .map((recipient) => recipient.userId)
+    .filter(Boolean);
+
+  nextPayload.recipients = recipients;
+
+  return nextPayload;
 }

@@ -1,7 +1,7 @@
 import {
   applyPeriod,
   sortAndLimit,
-} from "@/lib/helpers/analytics.helpers";
+} from "./analytics.helpers";
 
 import {
   countRows,

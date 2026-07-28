@@ -1,7 +1,7 @@
 import {
   formatTrackedLinkDate,
   getRecipientDisplayName,
-} from "../../helpers/tracked-links.helpers";
+} from "../../lib/tracked-links.helpers";
 import styles from "../detail.module.css";
 
 export default function TrackedLinkRecipients({ translation, recipients, clicked }) {

@@ -1,7 +1,7 @@
 import {
   applyPeriod,
   sumNumbers,
-} from "@/lib/helpers/analytics.helpers";
+} from "./analytics.helpers";
 
 import { fetchRows } from "./analyticsBase.repo";
 

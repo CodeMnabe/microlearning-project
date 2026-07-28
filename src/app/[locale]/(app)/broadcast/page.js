@@ -39,7 +39,7 @@ import {
   useBroadcastActions,
   useTrackedPlaceholderInsertion,
   useBroadcastUiState,
-} from "./hooks/broadcast.hooks";
+} from "./hooks";
 
 /**
  * Página principal da feature Broadcast.

@@ -10,7 +10,7 @@ import {
   filterTrackedLinkReports,
   normalizeTrackedLinkReport,
   safeArray,
-} from "../helpers/tracked-links.helpers";
+} from "../lib/tracked-links.helpers";
 
 /**
  * Hook principal da listagem de links rastreados.

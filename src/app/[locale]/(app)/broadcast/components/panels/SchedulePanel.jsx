@@ -1,7 +1,7 @@
 import DatePicker from "react-datepicker";
 
 import styles from "../../broadcast.module.css";
-import { formatHour, formatMinute } from "../../lib/broadcast.helpers";
+import { formatHour, formatMinute } from "../../lib";
 
 export default function SchedulePanel({
   deliveryMode,

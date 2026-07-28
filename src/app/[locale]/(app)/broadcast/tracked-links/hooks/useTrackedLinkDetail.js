@@ -7,7 +7,7 @@ import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
-import { normalizeTrackedLinkDetail } from "../helpers/tracked-links.helpers";
+import { normalizeTrackedLinkDetail } from "../lib/tracked-links.helpers";
 
 /**
  * Hook do detalhe de um relatório de link rastreado.

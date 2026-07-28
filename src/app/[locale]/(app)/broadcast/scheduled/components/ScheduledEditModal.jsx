@@ -6,138 +6,23 @@ import { Users, X } from "lucide-react";
 import styles from "../scheduled.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import RecipientPicker from "./RecipientPicker";
-import { toDateInputValue, toTimeParts } from "../helpers/scheduled.helpers";
+import { toDateInputValue, toTimeParts } from "../lib/scheduled.helpers";
+import { getRecipientKey, uniqueRecipients } from "../lib/recipient.helpers";
 import {
-  cleanText,
-  getRecipientForChannel,
-  getRecipientKey,
-  getRecipientKind,
-  getRecipientSecondary,
-  normalizeRecipientForChannel,
-  uniqueRecipients,
-} from "../helpers/recipient.helpers";
+  buildCandidate,
+  buildEntry,
+  kindLabel,
+} from "../lib/scheduledEdit.helpers";
 
 /**
  * Modal de edição de broadcast agendado.
  *
  * Permite alterar mensagem, canal, recipients, data/hora,
  * timezone, estado e anexos antes do envio.
+ *
+ * A preparação dos candidatos e das entradas de destinatário fica em
+ * `lib/scheduledEdit.helpers`.
  */
-
-function normalizeDisplayText(value, fallback = "") {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  if (!value || typeof value !== "object") return fallback;
-
-  return (
-    value.name ||
-    value.phoneNumber ||
-    value.whatsappUsername ||
-    value.whatsappBsuid ||
-    value.birdContactId ||
-    value.userId ||
-    value.email ||
-    fallback
-  );
-}
-
-function getInitials(value) {
-  const text = cleanText(value);
-  if (!text) return "?";
-
-  const parts = text.split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] || "?";
-  const second = parts.length > 1 ? parts[1]?.[0] : "";
-
-  return `${first}${second}`.toUpperCase();
-}
-
-function kindLabel(kind) {
-  if (kind === "phone") return "Phone";
-  if (kind === "bsuid") return "BSUID fallback";
-  if (kind === "bird") return "Bird fallback";
-  if (kind === "teams") return "Teams";
-
-  return "Recipient";
-}
-
-function buildCandidate(orgUser, channel) {
-  const payloadRecipient = getRecipientForChannel(orgUser, channel);
-
-  if (!payloadRecipient) return null;
-
-  const key = getRecipientKey(payloadRecipient, channel);
-
-  if (!key) return null;
-
-  const secondary = normalizeDisplayText(
-    getRecipientSecondary(orgUser, channel),
-    key,
-  );
-
-  const name =
-    cleanText(orgUser?.name) ||
-    cleanText(orgUser?.user) ||
-    cleanText(orgUser?.nome) ||
-    cleanText(orgUser?.email) ||
-    key;
-
-  return {
-    ...orgUser,
-    key,
-    payloadRecipient,
-    recipient: payloadRecipient,
-    name,
-    secondary,
-    kind: getRecipientKind(payloadRecipient, channel),
-    initials: getInitials(name),
-  };
-}
-
-function buildEntry(recipient, candidates, channel) {
-  const normalized = normalizeRecipientForChannel(recipient, channel);
-  const key = getRecipientKey(normalized, channel);
-
-  if (!normalized || !key) return null;
-
-  const found = candidates.find((candidate) => candidate.key === key);
-
-  if (found) return found;
-
-  const name =
-    cleanText(normalized.name) ||
-    cleanText(normalized.phoneNumber) ||
-    cleanText(normalized.whatsappUsername) ||
-    cleanText(normalized.whatsappBsuid) ||
-    cleanText(normalized.birdContactId) ||
-    cleanText(normalized.email) ||
-    cleanText(normalized.userId) ||
-    "Unknown recipient";
-
-  const kind = getRecipientKind(normalized, channel);
-
-  const secondary =
-    normalized.phoneNumber ||
-    normalized.email ||
-    normalized.whatsappUsername ||
-    normalized.whatsappBsuid ||
-    normalized.birdContactId ||
-    normalized.userId ||
-    "Sem utilizador associado";
-
-  return {
-    key,
-    payloadRecipient: normalized,
-    recipient: normalized,
-    name,
-    secondary,
-    kind,
-    initials: getInitials(name),
-    unresolved: true,
-  };
-}
-
 export default function ScheduledEditModal({
   item,
   orgUsers = [],

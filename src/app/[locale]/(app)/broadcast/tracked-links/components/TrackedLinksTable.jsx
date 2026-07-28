@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   formatTrackedLinkDate,
   getTrackedLinkRateTone,
-} from "../helpers/tracked-links.helpers";
+} from "../lib/tracked-links.helpers";
 import styles from "../tracked-links.module.css";
 
 function getRateClassName(rate) {
