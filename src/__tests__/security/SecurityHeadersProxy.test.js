@@ -40,6 +40,7 @@ describe("Proxy Middleware Security Controls", () => {
     expect(res.headers.has("Content-Security-Policy")).toBe(true);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("Cache-Control")).toContain("no-store");
+    expect(res.headers.get("Cache-Control")).toContain("private");
   });
 
   it("applies no-store to sensitive HTML routes", async () => {
@@ -49,6 +50,12 @@ describe("Proxy Middleware Security Controls", () => {
     const res = await proxy(req);
 
     expect(res.headers.get("Cache-Control")).toContain("no-store");
+    expect(res.headers.get("Cache-Control")).toContain("private");
+    expect(res.headers.get("Cache-Control")).not.toContain("public");
+    expect(res.headers.get("Cache-Control")).not.toContain("s-maxage");
+    expect(res.headers.get("Cache-Control")).not.toContain(
+      "stale-while-revalidate",
+    );
   });
 
   it("request interno contém x-nonce e CSP, e response não expõe x-nonce", async () => {
@@ -58,9 +65,13 @@ describe("Proxy Middleware Security Controls", () => {
     const res = await proxy(req);
 
     expect(lastRequestPassedToSession.headers.has("x-nonce")).toBe(true);
-    expect(lastRequestPassedToSession.headers.has("Content-Security-Policy")).toBe(true);
+    expect(
+      lastRequestPassedToSession.headers.has("Content-Security-Policy"),
+    ).toBe(true);
 
-    const cspInRequest = lastRequestPassedToSession.headers.get("Content-Security-Policy");
+    const cspInRequest = lastRequestPassedToSession.headers.get(
+      "Content-Security-Policy",
+    );
     expect(res.headers.get("Content-Security-Policy")).toBe(cspInRequest);
     expect(res.headers.has("x-nonce")).toBe(false);
   });

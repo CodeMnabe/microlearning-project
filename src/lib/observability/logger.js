@@ -124,6 +124,67 @@ function defineEvent({
 }
 
 export const EVENT_SCHEMAS = Object.freeze({
+  auth_login_rate_limited: defineEvent({
+    providers: ["supabase"],
+    operations: ["login"],
+    outcomes: ["rate_limited"],
+    error: true,
+  }),
+  auth_login_rejected: defineEvent({
+    providers: ["supabase"],
+    operations: ["login"],
+    outcomes: ["rejected"],
+    error: true,
+  }),
+  auth_login_succeeded: defineEvent({
+    providers: ["supabase"],
+    operations: ["login"],
+    outcomes: ["succeeded"],
+    error: false,
+  }),
+  auth_mfa_enrollment_started: defineEvent({
+    providers: ["supabase"],
+    operations: ["mfa_enroll"],
+    outcomes: ["started"],
+    error: false,
+  }),
+  auth_mfa_verified: defineEvent({
+    providers: ["supabase"],
+    operations: ["mfa_verify"],
+    outcomes: ["verified"],
+    error: false,
+  }),
+  auth_mfa_rejected: defineEvent({
+    providers: ["supabase"],
+    operations: ["mfa_verify"],
+    outcomes: ["rejected"],
+    error: true,
+  }),
+  auth_password_reset_rate_limited: defineEvent({
+    providers: ["supabase"],
+    operations: ["reset_password"],
+    outcomes: ["rate_limited"],
+    error: true,
+  }),
+  auth_password_reset_requested: defineEvent({
+    providers: ["supabase"],
+    operations: ["reset_password"],
+    outcomes: ["requested"],
+    error: false,
+  }),
+  auth_password_changed: defineEvent({
+    providers: ["supabase"],
+    operations: ["change_password"],
+    outcomes: ["changed"],
+    error: false,
+  }),
+
+  auth_callback_rejected: defineEvent({
+    providers: ["supabase"],
+    operations: ["auth_callback"],
+    outcomes: ["rejected"],
+    error: true,
+  }),
   analytics_query_failed: defineEvent({
     providers: ["supabase"],
     operations: ["metric_fallback"],
@@ -160,6 +221,18 @@ export const EVENT_SCHEMAS = Object.freeze({
     outcomes: ["failed"],
     fields: ["organizationId", "userId", "assistantId", "broadcastId"],
     error: true,
+  }),
+  authorization_resource_hidden: defineEvent({
+    providers: ["supabase"],
+    operations: [
+      "user_lookup",
+      "assistant_lookup",
+      "tag_lookup",
+      "scheduled_broadcast_lookup",
+      "thread_lookup",
+      "automation_rule_lookup",
+    ],
+    outcomes: ["not_found", "cross_tenant"],
   }),
   automation_event_emit_failed: defineEvent({
     providers: ["internal"],

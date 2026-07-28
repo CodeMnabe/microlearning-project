@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { applySensitiveCacheControl } from "@/lib/security/cacheControl";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -46,6 +47,5 @@ export async function POST() {
     });
   }
 
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return applySensitiveCacheControl(res);
 }

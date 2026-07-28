@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import LoaderLink from "../../(marketing)/components/TopLoader/LoaderLink";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -7,6 +7,8 @@ import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import TurnstileWidget from "@/app/components/TurnstileWidget/TurnstileWidget";
+import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -34,25 +36,47 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
   const [errorMsg, setErrorMsg] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaReset, setCaptchaReset] = useState(0);
+
+  const handleCaptchaVerify = useCallback((token) => {
+    setCaptchaToken(token);
+  }, []);
+
+  const handleCaptchaExpire = useCallback(() => {
+    setCaptchaToken("");
+  }, []);
 
   async function handleAuth(e) {
     e.preventDefault();
+    if (!captchaToken) return;
+
     setErrorMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const result = await loginAction({
       email,
       password,
+      captchaToken,
     });
 
-    if (error) {
+    // Reset CAPTCHA after every attempt
+    setCaptchaToken("");
+    setCaptchaReset((prev) => prev + 1);
+
+    if (result.error) {
       setStatus("idle");
-      setErrorMsg(error.message);
+      if (result.error === "auth_rate_limited") {
+        setErrorMsg(t("Auth.login.rateLimited"));
+      } else if (result.error === "auth_captcha_required") {
+        setErrorMsg(t("Auth.login.captchaRequired"));
+      } else {
+        setErrorMsg(t("Auth.login.invalidCredentials"));
+      }
       return;
     }
 
     setStatus("success");
-    // give the tick a brief moment, then navigate
     setTimeout(() => {
       startLoading?.();
       router.push(`/${locale}/users`);
@@ -106,11 +130,18 @@ export default function LoginPage() {
           disabled={disabled}
         />
 
+        <TurnstileWidget
+          onVerify={handleCaptchaVerify}
+          onExpire={handleCaptchaExpire}
+          onError={handleCaptchaExpire}
+          resetTrigger={captchaReset}
+        />
+
         <button
           type="submit"
           className={styles.btnPrimary}
           data-state={status}
-          disabled={disabled}
+          disabled={disabled || !captchaToken}
           aria-live="polite"
         >
           <span className={styles.btnLabel}>{t("Auth.login.login")}</span>

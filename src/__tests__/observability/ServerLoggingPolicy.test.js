@@ -18,9 +18,17 @@ function walk(directory) {
 }
 
 function serverJavaScriptFiles() {
-  return SERVER_ROOTS.flatMap(walk).filter(
+  const baseFiles = SERVER_ROOTS.flatMap(walk).filter(
     (path) => /\.[cm]?[jt]sx?$/.test(path) && !path.includes("__tests__"),
   );
+
+  // Find actions in src/app
+  const appRoot = resolve(ROOT, "src/app");
+  const actionFiles = walk(appRoot).filter((path) =>
+    path.match(/actions\.(js|jsx)$/),
+  );
+
+  return [...baseFiles, ...actionFiles];
 }
 
 function visit(node, callback) {
@@ -248,9 +256,9 @@ describe("server logging policy", () => {
     );
     expect(results.flatMap((result) => result.violations)).toEqual([]);
     expect(results.reduce((total, result) => total + result.calls, 0)).toBe(
-      116,
+      131,
     );
-    expect(new Set(results.flatMap((result) => result.events)).size).toBe(64);
+    expect(new Set(results.flatMap((result) => result.events)).size).toBe(75);
   });
 
   it.each([

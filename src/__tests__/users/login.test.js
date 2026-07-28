@@ -10,11 +10,27 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   startLoading: vi.fn(),
   stopLoading: vi.fn(),
+  loginAction: vi.fn(),
   auth: {
     getSession: vi.fn(),
     signInWithPassword: vi.fn(),
   },
 }));
+
+vi.mock("@/app/[locale]/(auth)/login/actions", () => ({
+  loginAction: (...args) => mocks.loginAction(...args),
+}));
+
+vi.mock("@/app/components/TurnstileWidget/TurnstileWidget", () => {
+  function MockTurnstile({ onVerify }) {
+    React.useEffect(() => {
+      onVerify("mock-token");
+    }, [onVerify]);
+    return null;
+  }
+
+  return { default: MockTurnstile };
+});
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -64,7 +80,7 @@ beforeEach(() => {
 
 describe("LoginPage", () => {
   it("redirects to /pt/users if session exists", async () => {
-    mocks.auth.getSession.mockResolvedValueOnce({
+    mocks.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: "123" } } },
     });
 
@@ -79,7 +95,7 @@ describe("LoginPage", () => {
   });
 
   it("stops loading if no session", async () => {
-    mocks.auth.getSession.mockResolvedValueOnce({
+    mocks.auth.getSession.mockResolvedValue({
       data: { session: null },
     });
 
@@ -93,9 +109,9 @@ describe("LoginPage", () => {
   });
 
   it("shows error message when login fails", async () => {
-    mocks.auth.getSession.mockResolvedValueOnce({ data: { session: null } });
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({
-      error: { message: "Invalid login credentials" },
+    mocks.auth.getSession.mockResolvedValue({ data: { session: null } });
+    mocks.loginAction.mockResolvedValueOnce({
+      error: "auth_invalid_credentials",
     });
 
     const user = userEvent.setup();
@@ -107,7 +123,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Auth.login.login" }));
 
     expect(
-      await screen.findByText("Invalid login credentials"),
+      await screen.findByText("Auth.login.invalidCredentials"),
     ).toBeInTheDocument();
 
     expect(mocks.push).not.toHaveBeenCalled();
@@ -128,7 +144,7 @@ describe("LoginPage", () => {
         return realSetTimeout(cb, ms, ...args);
       });
 
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({ error: null });
+    mocks.loginAction.mockResolvedValueOnce({ success: true });
 
     const user = userEvent.setup();
     render(React.createElement(LoginPage));

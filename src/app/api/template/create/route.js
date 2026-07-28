@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   handleApiError,
   requireOwnedOrg,
-  requireUser,
+  requirePrivilegedUser,
 } from "@/lib/auth/guards";
 
 async function getOrgById(admin, orgId) {
@@ -18,7 +18,7 @@ async function getOrgById(admin, orgId) {
 
 export async function POST(req) {
   try {
-    const auth = await requireUser();
+    const auth = await requirePrivilegedUser();
     if (auth.error) return auth.error;
 
     const body = await req.json();
@@ -102,10 +102,7 @@ export async function POST(req) {
 
     if (error) throw error;
 
-    return NextResponse.json(
-      { ok: true, template },
-      { status: 201 },
-    );
+    return NextResponse.json({ ok: true, template }, { status: 201 });
   } catch (err) {
     return handleApiError(err, "Failed to create WhatsApp template");
   }

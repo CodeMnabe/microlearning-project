@@ -2024,6 +2024,16 @@
   "Auth": {
     "brand": "MyDigitalBot",
     "example": "exemplo@exemplo.pt",
+    "mfa": {
+      "enrollmentTitle": "Configurar Autenticação Multi-Fator",
+      "scanQrCode": "Digitalize este código QR com a sua aplicação de autenticação:",
+      "enterCode": "Insira o código de 6 dígitos",
+      "verify": "Verificar",
+      "verified": "Verificado!",
+      "logout": "Sair",
+      "preparing": "A preparar configuração...",
+      "invalidCode": "Código inválido. Tente novamente."
+    },
     "login": {
       "title": "Entrar",
       "email": "E-mail",
@@ -2044,12 +2054,16 @@
     "resetConfirm": {
       "title": "Definir nova palavra-passe",
       "newPassword": "Nova palavra-passe",
+      "confirmPassword": "Confirmar palavra-passe",
       "confirm": "Confirmar",
       "back": "Voltar ao login",
       "preparing": "A preparar sessão…",
       "invalid": "Link inválido ou expirado",
       "updating": "A atualizar…",
-      "updated": "Password atualizada! Redirecionando…"
+      "updated": "Password atualizada! Redirecionando…",
+      "passwordWeak": "A palavra-passe é demasiado curta ou fraca. Mínimo de 12 caracteres, com maiúsculas, minúsculas, números e símbolos.",
+      "requirements": "Use entre 12 caracteres e 128 bytes, incluindo maiúsculas, minúsculas, números e símbolos.",
+      "genericError": "Não foi possível atualizar a palavra-passe. O link pode ter expirado; peça um novo link e tente novamente."
     }
   },
   "Alert": {

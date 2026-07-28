@@ -425,20 +425,12 @@
       "setup": {
         "title": "Setup and rollout",
         "description": "Use these rows to explain onboarding, implementation, and configuration differences.",
-        "rows": [
-          "Initial setup",
-          "Custom branding",
-          "Migration help"
-        ]
+        "rows": ["Initial setup", "Custom branding", "Migration help"]
       },
       "automation": {
         "title": "Automation and AI",
         "description": "Use this area to show what becomes more powerful as plans grow.",
-        "rows": [
-          "Automated flows",
-          "Usage reporting",
-          "Advanced logic"
-        ]
+        "rows": ["Automated flows", "Usage reporting", "Advanced logic"]
       },
       "governance": {
         "title": "Governance and control",
@@ -2033,6 +2025,16 @@
   "Auth": {
     "brand": "MyDigitalBot",
     "example": "example@example.com",
+    "mfa": {
+      "enrollmentTitle": "Set up Multi-Factor Authentication",
+      "scanQrCode": "Scan this QR code with your authenticator app:",
+      "enterCode": "Enter the 6-digit code",
+      "verify": "Verify",
+      "verified": "Verified!",
+      "logout": "Logout",
+      "preparing": "Preparing enrollment...",
+      "invalidCode": "Invalid code. Please try again."
+    },
     "login": {
       "title": "Sign in",
       "email": "E-mail",
@@ -2053,12 +2055,16 @@
     "resetConfirm": {
       "title": "Set a new password",
       "newPassword": "New password",
+      "confirmPassword": "Confirm password",
       "confirm": "Confirm",
       "back": "Back to login",
       "preparing": "Preparing session…",
       "invalid": "Invalid or expired link",
       "updating": "Updating…",
-      "updated": "Password updated! Redirecting…"
+      "updated": "Password updated! Redirecting…",
+      "passwordWeak": "Password is too short or weak. Minimum 12 characters, including uppercase, lowercase, numbers, and symbols.",
+      "requirements": "Use between 12 characters and 128 bytes, including uppercase, lowercase, numbers, and symbols.",
+      "genericError": "The password could not be updated. The link may have expired; request a new link and try again."
     }
   },
   "Alert": {

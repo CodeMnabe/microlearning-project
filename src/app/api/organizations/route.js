@@ -3,7 +3,7 @@ import { updateOrganizationProfile } from "@/lib/repos/organizations.repo";
 import {
   handleApiError,
   requireOwnedOrg,
-  requireUser,
+  requirePrivilegedUser,
 } from "@/lib/auth/guards";
 
 const PROFILE_FIELDS = new Set([
@@ -13,10 +13,7 @@ const PROFILE_FIELDS = new Set([
   "default_phone_country_code",
 ]);
 
-const PROFILE_REQUEST_FIELDS = new Set([
-  "organizationId",
-  ...PROFILE_FIELDS,
-]);
+const PROFILE_REQUEST_FIELDS = new Set(["organizationId", ...PROFILE_FIELDS]);
 
 const HEX_COLOR = /^#(?:[A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/;
 
@@ -33,7 +30,7 @@ function invalidField(field, message) {
 
 export async function POST(request) {
   try {
-    const auth = await requireUser();
+    const auth = await requirePrivilegedUser();
     if (auth.error) return auth.error;
 
     let body;
@@ -72,10 +69,7 @@ export async function POST(request) {
       { status: 403 },
     );
   } catch (err) {
-    return handleApiError(
-      err,
-      "Internal error. Check Server Logs",
-    );
+    return handleApiError(err, "Internal error. Check Server Logs");
   }
 }
 
@@ -189,8 +183,7 @@ export async function PATCH(request) {
         );
       }
 
-      patch.default_phone_country_code =
-        body.default_phone_country_code.trim();
+      patch.default_phone_country_code = body.default_phone_country_code.trim();
     }
 
     const org = await updateOrganizationProfile(orgAuth.orgId, patch);

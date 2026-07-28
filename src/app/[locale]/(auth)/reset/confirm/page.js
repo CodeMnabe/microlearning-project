@@ -1,101 +1,103 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+
+import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import styles from "../../login/login.module.css";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { changePassword } from "./actions";
+import styles from "../../login/login.module.css";
 
 export default function ResetConfirmPage() {
-  const supabase = createClient();
   const router = useRouter();
-  const t = useTranslations();
   const locale = useLocale();
+  const t = useTranslations();
+  const submittingRef = useRef(false);
 
-  const [newPw, setNewPw] = useState("");
-  const [msg, setMsg] = useState("");
-  const [ready, setReady] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [status, setStatus] = useState("idle");
 
-  useEffect(() => {
-    let unsub = () => {};
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (submittingRef.current) return;
 
-    (async () => {
-      // Supabase parses #access_token when detectSessionInUrl: true
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setReady(true);
+    submittingRef.current = true;
+    setMessage("");
+    setStatus("loading");
+
+    try {
+      const result = await changePassword({ password, confirmPassword });
+
+      setPassword("");
+      setConfirmPassword("");
+
+      if (!result?.success) {
+        setMessage(t("Auth.resetConfirm.genericError"));
+        setStatus("idle");
         return;
       }
 
-      // Fallback: wait for auth event in case parsing is async
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_evt, sess) => {
-        if (sess) setReady(true);
-      });
-      unsub = () => subscription.unsubscribe();
-    })();
-
-    return () => unsub();
-  }, [supabase]);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setMsg("");
-    setStatus("loading");
-
-    const { error } = await supabase.auth.updateUser({ password: newPw });
-    if (error) {
+      setStatus("done");
+      router.replace(`/${locale}/login`);
+    } catch {
+      setPassword("");
+      setConfirmPassword("");
+      setMessage(t("Auth.resetConfirm.genericError"));
       setStatus("idle");
-      setMsg(error.message);
-      return;
+    } finally {
+      submittingRef.current = false;
     }
-
-    setStatus("done");
-    setTimeout(() => router.push(`/${locale}/login`), 800);
   }
 
-  if (!ready) {
-    return (
-      <main className={styles.page}>
-        <h1 className={styles.brand}>MyDigitalBot</h1>
-        <p className={styles.message} style={{ textAlign: "center" }}>
-          {msg || t("Auth.resetConfirm.preparing")}
-        </p>
-      </main>
-    );
-  }
-
-  const disabled = status === "loading";
+  const disabled = status === "loading" || status === "done";
 
   return (
     <main className={styles.page}>
       <h1 className={styles.brand}>MyDigitalBot</h1>
       <form onSubmit={handleSubmit} className={styles.card}>
         <h1 className={styles.title}>{t("Auth.resetConfirm.title")}</h1>
-        <label className={styles.label}>
+
+        <p className={styles.message}>{t("Auth.resetConfirm.requirements")}</p>
+
+        <label className={styles.label} htmlFor="password">
           {t("Auth.resetConfirm.newPassword")}
         </label>
         <input
+          id="password"
           className={styles.input}
           type="password"
-          placeholder="••••••••"
-          value={newPw}
-          onChange={(e) => setNewPw(e.target.value)}
-          minLength={6}
+          autoComplete="new-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          minLength={12}
+          maxLength={128}
           required
           disabled={disabled}
         />
+
+        <label className={styles.label} htmlFor="confirmPassword">
+          {t("Auth.resetConfirm.confirmPassword")}
+        </label>
+        <input
+          id="confirmPassword"
+          className={styles.input}
+          type="password"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          minLength={12}
+          maxLength={128}
+          required
+          disabled={disabled}
+        />
+
         <button
           type="submit"
           className={styles.btnPrimary}
           data-state={status}
           disabled={disabled}
           aria-busy={status === "loading"}
-          aria-live="polite"
         >
           <span className={styles.btnLabel}>
             {status === "done"
@@ -110,10 +112,16 @@ export default function ResetConfirmPage() {
             />
           )}
         </button>
+
         <Link href={`/${locale}/login`} className={styles.link}>
           {t("Auth.resetConfirm.back")}
         </Link>
-        {msg && <p className={styles.message}>{msg}</p>}
+
+        {message && (
+          <p className={styles.message} role="alert">
+            {message}
+          </p>
+        )}
       </form>
     </main>
   );

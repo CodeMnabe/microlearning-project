@@ -7,8 +7,15 @@ import {
   generateNonce,
 } from "./lib/security/contentSecurityPolicy";
 import { getSecurityHeaders } from "./lib/security/securityHeaders";
+import { getMfaStatus } from "./lib/auth/mfa";
+import { getSafeRedirectPath } from "./lib/auth/redirectValidation";
+import { applySensitiveCacheControl } from "./lib/security/cacheControl";
 
 const intl = createMiddleware(routing);
+const intlWithExplicitLocale = createMiddleware({
+  ...routing,
+  localePrefix: "always",
+});
 
 const PRIVATE_ROUTE_ROOTS = new Set([
   "admin",
@@ -32,15 +39,27 @@ function getRouteContext(pathname) {
     : (segments[0] ?? "");
 
   const isApi = segments[0] === "api";
+  const isAuthCallback =
+    isApi && segments[1] === "auth" && segments[2] === "callback";
   const isAuth = rootSegment === "login" || rootSegment === "reset";
+  const isMfaEnrollment =
+    rootSegment === "mfa" && segments[isLocalePrefix ? 2 : 1] === "enrollment";
+  const isMfaChallenge =
+    rootSegment === "mfa" && segments[isLocalePrefix ? 2 : 1] === "challenge";
+  const isMfa = isMfaEnrollment || isMfaChallenge;
   const isTrackedLink = rootSegment === "r";
   const isPrivate = PRIVATE_ROUTE_ROOTS.has(rootSegment);
 
   return {
     locale: requestedLocale,
+    hasLocalePrefix: isLocalePrefix,
     root: rootSegment,
     isApi,
+    isAuthCallback,
     isAuth,
+    isMfa,
+    isMfaEnrollment,
+    isMfaChallenge,
     isTrackedLink,
     isPrivate,
   };
@@ -49,6 +68,31 @@ function getRouteContext(pathname) {
 function copyResponseCookies(source, target) {
   source.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
   return target;
+}
+
+function getLocalizedPath(ctx, path) {
+  if (ctx.hasLocalePrefix || ctx.locale !== routing.defaultLocale) {
+    return `/${ctx.locale}${path}`;
+  }
+
+  return path;
+}
+
+function createAuthRedirect(request, sessionResponse, ctx, pathname, nextPath) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = getLocalizedPath(ctx, pathname);
+  redirectUrl.search = "";
+  redirectUrl.hash = "";
+
+  if (nextPath) {
+    const safeNext = getSafeRedirectPath(nextPath, null);
+    if (safeNext) redirectUrl.searchParams.set("next", safeNext);
+  }
+
+  return copyResponseCookies(
+    sessionResponse,
+    NextResponse.redirect(redirectUrl),
+  );
 }
 
 export async function proxy(request) {
@@ -73,49 +117,94 @@ export async function proxy(request) {
 
   const ctx = getRouteContext(request.nextUrl.pathname);
 
-  const { response: sessionResponse, user } =
-    await updateSession(reqForPipeline);
+  let sessionResponse;
+  let user = null;
+  let supabase = null;
+
+  if (ctx.isAuthCallback) {
+    sessionResponse = NextResponse.next({
+      request: {
+        headers: reqForPipeline.headers,
+      },
+    });
+  } else {
+    ({
+      response: sessionResponse,
+      user,
+      supabase,
+    } = await updateSession(reqForPipeline));
+  }
 
   let finalResponse;
 
   if (ctx.isApi) {
     finalResponse = sessionResponse;
-    finalResponse.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
   } else {
     if (!user && ctx.isPrivate) {
-      const loginUrl = reqForPipeline.nextUrl.clone();
-      loginUrl.pathname =
-        ctx.locale === routing.defaultLocale
-          ? "/login"
-          : `/${ctx.locale}/login`;
-      loginUrl.search = "";
-      finalResponse = copyResponseCookies(
+      finalResponse = createAuthRedirect(
+        reqForPipeline,
         sessionResponse,
-        NextResponse.redirect(loginUrl),
+        ctx,
+        "/login",
+        reqForPipeline.nextUrl.pathname,
       );
-    } else {
-      // next-intl resolves the response
-      finalResponse = copyResponseCookies(
-        sessionResponse,
-        intl(reqForPipeline),
-      );
+    } else if (user && ctx.isPrivate) {
+      try {
+        const mfaStatus = await getMfaStatus(supabase, user.id);
+
+        if (mfaStatus.requiresEnrollment) {
+          finalResponse = createAuthRedirect(
+            reqForPipeline,
+            sessionResponse,
+            ctx,
+            "/mfa/enrollment",
+            reqForPipeline.nextUrl.pathname,
+          );
+        } else if (mfaStatus.requiresChallenge) {
+          finalResponse = createAuthRedirect(
+            reqForPipeline,
+            sessionResponse,
+            ctx,
+            "/mfa/challenge",
+            reqForPipeline.nextUrl.pathname,
+          );
+        }
+      } catch {
+        finalResponse = createAuthRedirect(
+          reqForPipeline,
+          sessionResponse,
+          ctx,
+          "/login",
+          reqForPipeline.nextUrl.pathname,
+        );
+      }
     }
 
-    // Set No-Store cache control where applicable
-    if (ctx.isPrivate || ctx.isAuth || ctx.isTrackedLink) {
-      // Except static marketing pages, all these are sensitive
-      finalResponse.headers.set(
-        "Cache-Control",
-        "no-store, no-cache, must-revalidate",
+    if (!finalResponse) {
+      const localeMiddleware =
+        ctx.hasLocalePrefix && (ctx.isPrivate || ctx.isAuth || ctx.isMfa)
+          ? intlWithExplicitLocale
+          : intl;
+      finalResponse = copyResponseCookies(
+        sessionResponse,
+        localeMiddleware(reqForPipeline),
       );
     }
 
     if (ctx.isTrackedLink) {
       finalResponse.headers.set("Referrer-Policy", "no-referrer");
     }
+  }
+
+  if (
+    ctx.isApi ||
+    ctx.isPrivate ||
+    ctx.isAuth ||
+    ctx.isMfa ||
+    ctx.isTrackedLink ||
+    finalResponse.headers.has("Set-Cookie")
+  ) {
+    applySensitiveCacheControl(finalResponse);
   }
 
   // 6. Define a mesma CSP na response

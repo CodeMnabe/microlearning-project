@@ -1,38 +1,60 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import styles from "../login/login.module.css"; // reuse spinner/check/btn styles
+import TurnstileWidget from "@/app/components/TurnstileWidget/TurnstileWidget";
+import { requestPasswordReset } from "./actions";
 
 export default function ResetRequestPage() {
-  const supabase = createClient();
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+  const turnstileRef = useRef(null);
 
   const [email, setEmail] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'done'
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (status === "loading") return; // block double-submit
+
     setErrorMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/${locale}/reset/confirm`,
-      flowType: "implicit",
+    const response = await requestPasswordReset({
+      email,
+      captchaToken,
+      locale,
     });
 
-    if (error) {
+    setCaptchaToken(""); // Clean token after attempt
+
+    if (response?.error) {
+      turnstileRef.current?.reset(); // reset on failure
       setStatus("idle");
-      setErrorMsg(error.message);
+      if (response.error === "auth_rate_limited") {
+        setErrorMsg(
+          t("Auth.rateLimited", {
+            default: "Muitas tentativas. Tente novamente mais tarde.",
+          }),
+        );
+      } else {
+        // generic public response
+        setErrorMsg(
+          t("Auth.reset.genericError", {
+            default: "Ocorreu um erro ao processar o pedido.",
+          }),
+        );
+      }
       return;
     }
 
-    setStatus("done"); // label changes to “E-mail enviado”
+    turnstileRef.current?.reset(); // reset on success
+    setStatus("done");
     setEmail("");
   }
 
@@ -56,11 +78,18 @@ export default function ResetRequestPage() {
           disabled={disabled}
         />
 
+        <div style={{ margin: "1rem 0" }}>
+          <TurnstileWidget
+            onVerify={(token) => setCaptchaToken(token)}
+            ref={turnstileRef}
+          />
+        </div>
+
         <button
           type="submit"
           className={styles.btnPrimary}
           data-state={status}
-          disabled={disabled}
+          disabled={disabled || !captchaToken}
           aria-busy={status === "loading"}
           aria-live="polite"
         >

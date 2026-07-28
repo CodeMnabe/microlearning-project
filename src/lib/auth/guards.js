@@ -3,6 +3,10 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import createSupabaseServerClient from "@/utils/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
 import { logger } from "@/lib/observability/logger";
+import { getAssuranceLevel } from "@/lib/auth/mfa";
+
+const AAL_VALIDATED = Symbol("AAL_VALIDATED");
+const RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
 
 export function jsonError(message, status = 400, extra = {}) {
   return NextResponse.json({ error: message, ...extra }, { status });
@@ -74,7 +78,53 @@ export async function requireUser() {
   };
 }
 
-async function authorizeOwnedOrg(auth, orgId) {
+export async function requirePrivilegedUser(existingAuth = null) {
+  const auth = existingAuth || (await requireUser());
+  if (auth.error) return auth;
+
+  if (auth[AAL_VALIDATED]) return auth;
+
+  if (
+    !auth.supabase ||
+    typeof auth.supabase.auth?.mfa?.getAuthenticatorAssuranceLevel !==
+      "function"
+  ) {
+    return { error: jsonError("Invalid auth context", 500) };
+  }
+
+  try {
+    const data = await getAssuranceLevel(auth.supabase);
+
+    if (data.currentLevel !== "aal2" || data.nextLevel !== "aal2") {
+      return { error: jsonError("MFA required", 403) };
+    }
+
+    return {
+      ...auth,
+      [AAL_VALIDATED]: true,
+      aal: data.currentLevel,
+      nextAal: data.nextLevel,
+    };
+  } catch {
+    return { error: jsonError("Failed to determine assurance level", 500) };
+  }
+}
+
+function hiddenResourceError(operation, outcome) {
+  logger.info("authorization_resource_hidden", {
+    provider: "supabase",
+    operation,
+    outcome,
+  });
+
+  return { error: jsonError(RESOURCE_NOT_FOUND_MESSAGE, 404) };
+}
+
+async function authorizeOwnedOrg(
+  auth,
+  orgId,
+  { hideResourceExistence = false, operation = null } = {},
+) {
   const parsedOrgId = parsePositiveInt(orgId);
 
   if (!parsedOrgId) {
@@ -102,6 +152,10 @@ async function authorizeOwnedOrg(auth, orgId) {
   }
 
   if (!org || org.owner_user_id !== auth.user.id) {
+    if (hideResourceExistence && operation) {
+      return hiddenResourceError(operation, org ? "cross_tenant" : "not_found");
+    }
+
     return { error: jsonError("Forbidden", 403) };
   }
 
@@ -109,7 +163,7 @@ async function authorizeOwnedOrg(auth, orgId) {
 }
 
 export async function requireOwnedOrg(orgId, existingAuth = null) {
-  const auth = existingAuth || (await requireUser());
+  const auth = await requirePrivilegedUser(existingAuth);
   if (auth.error) return auth;
 
   return authorizeOwnedOrg(auth, orgId);
@@ -119,7 +173,7 @@ export async function requireOrgForUser(userId) {
   const parsedUserId = parsePositiveInt(userId);
   if (!parsedUserId) return { error: jsonError("Invalid user id", 400) };
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: row, error } = await auth.admin
@@ -142,9 +196,12 @@ export async function requireOrgForUser(userId) {
     return { error: jsonError("Authorization check failed", 500) };
   }
 
-  if (!row) return { error: jsonError("User not found", 404) };
+  if (!row) return hiddenResourceError("user_lookup", "not_found");
 
-  const orgAuth = await requireOwnedOrg(row.organization_id, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, row.organization_id, {
+    hideResourceExistence: true,
+    operation: "user_lookup",
+  });
   if (orgAuth.error) return orgAuth;
 
   return { ...orgAuth, targetUser: row, userId: parsedUserId };
@@ -156,7 +213,7 @@ export async function requireOrgForAssistant(assistantId) {
     return { error: jsonError("Invalid assistant id", 400) };
   }
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: assistant, error } = await auth.admin
@@ -179,9 +236,14 @@ export async function requireOrgForAssistant(assistantId) {
     return { error: jsonError("Authorization check failed", 500) };
   }
 
-  if (!assistant) return { error: jsonError("Assistant not found", 404) };
+  if (!assistant) {
+    return hiddenResourceError("assistant_lookup", "not_found");
+  }
 
-  const orgAuth = await requireOwnedOrg(assistant.organization_id, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, assistant.organization_id, {
+    hideResourceExistence: true,
+    operation: "assistant_lookup",
+  });
   if (orgAuth.error) return orgAuth;
 
   return { ...orgAuth, assistant, assistantId: parsedAssistantId };
@@ -191,7 +253,7 @@ export async function requireOrgForTag(tagId) {
   const parsedTagId = parsePositiveInt(tagId);
   if (!parsedTagId) return { error: jsonError("Invalid tag id", 400) };
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: tag, error } = await auth.admin
@@ -213,9 +275,12 @@ export async function requireOrgForTag(tagId) {
     return { error: jsonError("Authorization check failed", 500) };
   }
 
-  if (!tag) return { error: jsonError("Tag not found", 404) };
+  if (!tag) return hiddenResourceError("tag_lookup", "not_found");
 
-  const orgAuth = await requireOwnedOrg(tag.org_id, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, tag.org_id, {
+    hideResourceExistence: true,
+    operation: "tag_lookup",
+  });
   if (orgAuth.error) return orgAuth;
 
   return { ...orgAuth, tag, tagId: parsedTagId };
@@ -235,7 +300,7 @@ export async function requireOrgForScheduledBroadcast(id) {
     };
   }
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: broadcast, error } = await auth.admin
@@ -264,12 +329,13 @@ export async function requireOrgForScheduledBroadcast(id) {
   }
 
   if (!broadcast) {
-    return {
-      error: jsonError("Scheduled broadcast not found", 404),
-    };
+    return hiddenResourceError("scheduled_broadcast_lookup", "not_found");
   }
 
-  const orgAuth = await requireOwnedOrg(broadcast.organization_id, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, broadcast.organization_id, {
+    hideResourceExistence: true,
+    operation: "scheduled_broadcast_lookup",
+  });
 
   if (orgAuth.error) return orgAuth;
 
@@ -284,12 +350,12 @@ export async function requireOrgForThread(threadId) {
   const parsedThreadId = parsePositiveInt(threadId);
   if (!parsedThreadId) return { error: jsonError("Invalid thread id", 400) };
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: thread, error } = await auth.admin
     .from("thread")
-    .select("id, user_id, assistant_id, ai_thread_id")
+    .select("*")
     .eq("id", parsedThreadId)
     .maybeSingle();
 
@@ -306,9 +372,9 @@ export async function requireOrgForThread(threadId) {
     return { error: jsonError("Authorization check failed", 500) };
   }
 
-  if (!thread) return { error: jsonError("Thread not found", 404) };
+  if (!thread) return hiddenResourceError("thread_lookup", "not_found");
 
-  let orgId = null;
+  let orgId = thread.organization_id ?? null;
 
   if (thread.user_id) {
     const { data: userRow, error: userError } = await auth.admin
@@ -356,26 +422,31 @@ export async function requireOrgForThread(threadId) {
     orgId = assistant?.organization_id ?? null;
   }
 
-  if (!orgId) return { error: jsonError("Thread has no organization", 403) };
+  if (!orgId) return hiddenResourceError("thread_lookup", "not_found");
 
-  const orgAuth = await requireOwnedOrg(orgId, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, orgId, {
+    hideResourceExistence: true,
+    operation: "thread_lookup",
+  });
   if (orgAuth.error) return orgAuth;
 
   return { ...orgAuth, thread, threadId: parsedThreadId };
 }
 
 export async function requireOrgForAutomationRule(id) {
-  if (!id || typeof id !== "string") {
+  const ruleId = typeof id === "string" ? id.trim() : "";
+
+  if (!isUuid(ruleId)) {
     return { error: jsonError("Invalid automation rule id", 400) };
   }
 
-  const auth = await requireUser();
+  const auth = await requirePrivilegedUser();
   if (auth.error) return auth;
 
   const { data: rule, error } = await auth.admin
     .from("automation_rule")
     .select("id, organization_id, assistant_id")
-    .eq("id", id)
+    .eq("id", ruleId)
     .maybeSingle();
 
   if (error) {
@@ -391,12 +462,17 @@ export async function requireOrgForAutomationRule(id) {
     return { error: jsonError("Authorization check failed", 500) };
   }
 
-  if (!rule) return { error: jsonError("Automation rule not found", 404) };
+  if (!rule) {
+    return hiddenResourceError("automation_rule_lookup", "not_found");
+  }
 
-  const orgAuth = await requireOwnedOrg(rule.organization_id, auth);
+  const orgAuth = await authorizeOwnedOrg(auth, rule.organization_id, {
+    hideResourceExistence: true,
+    operation: "automation_rule_lookup",
+  });
   if (orgAuth.error) return orgAuth;
 
-  return { ...orgAuth, rule, ruleId: id };
+  return { ...orgAuth, rule, ruleId };
 }
 
 export async function assertUsersBelongToOrg(admin, orgId, userIds) {

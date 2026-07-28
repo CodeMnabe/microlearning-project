@@ -5,7 +5,7 @@ import { getOrganizationBirdConfig } from "@/lib/repos/organizations.repo";
 import {
   handleApiError,
   requireOwnedOrg,
-  requireUser,
+  requirePrivilegedUser,
 } from "@/lib/auth/guards";
 
 const BIRD = "https://api.bird.com";
@@ -106,7 +106,7 @@ function uniqueByWhatsappTemplateId(items) {
 
 export async function GET(req) {
   try {
-    const auth = await requireUser();
+    const auth = await requirePrivilegedUser();
     if (auth.error) return auth.error;
 
     const url = new URL(req.url);
@@ -116,10 +116,7 @@ export async function GET(req) {
     if (orgAuth.error) return orgAuth.error;
 
     if (!BIRD_API_KEY || !WORKSPACE_ID) {
-      return NextResponse.json(
-        { error: "Missing BIRD envs" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Missing BIRD envs" }, { status: 500 });
     }
 
     const config = await getOrganizationBirdConfig(orgAuth.orgId);
@@ -127,9 +124,7 @@ export async function GET(req) {
 
     const { data: allowedRows, error: dbErr } = await orgAuth.admin
       .from("whatsapp_templates")
-      .select(
-        "id, org_id, name, language, provider_template_id, components",
-      )
+      .select("id, org_id, name, language, provider_template_id, components")
       .or(`org_id.eq.${orgAuth.orgId},org_id.is.null`)
       .eq("status", "ACTIVE");
 
@@ -155,9 +150,7 @@ export async function GET(req) {
     if (projectId) {
       projectIds = [projectId];
     } else {
-      const projects = await fetchAll(
-        `/workspaces/${WORKSPACE_ID}/projects`,
-      );
+      const projects = await fetchAll(`/workspaces/${WORKSPACE_ID}/projects`);
 
       projectIds = projects
         .filter((project) => project.type === "channelTemplate")
@@ -179,18 +172,12 @@ export async function GET(req) {
         }
 
         const name =
-          pickDeploymentValue(
-            template.deployments,
-            "whatsappTemplateName",
-          ) ||
+          pickDeploymentValue(template.deployments, "whatsappTemplateName") ||
           template.description ||
           template.id;
 
         const category =
-          pickDeploymentValue(
-            template.deployments,
-            "whatsappCategory",
-          ) || "";
+          pickDeploymentValue(template.deployments, "whatsappCategory") || "";
 
         const language =
           template.defaultLocale ||

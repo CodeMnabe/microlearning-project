@@ -20,7 +20,11 @@ export function getSupabaseOrigin(isProduction) {
       throw new Error("Supabase URL cannot contain credentials");
     }
 
-    if (isProduction && url.protocol !== "https:") {
+    if (
+      isProduction &&
+      url.protocol !== "https:" &&
+      !["localhost", "127.0.0.1"].includes(url.hostname)
+    ) {
       throw new Error("Supabase URL must use HTTPS in production");
     }
 
