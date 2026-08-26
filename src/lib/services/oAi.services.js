@@ -69,7 +69,7 @@ export async function createOAiFile(file) {
   try {
     const uploadedFile = await client.files.create({
       file, // File → ReadableStream
-      purpose: "assistants", // correct purpose for retrieval
+      purpose: "user_data", // correct purpose for retrieval
     });
 
     return uploadedFile;

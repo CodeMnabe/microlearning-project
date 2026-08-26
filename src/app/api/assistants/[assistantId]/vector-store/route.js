@@ -1,130 +1,215 @@
-// src/app/api/assistants/[assistantId]/vector-store/route.js
 import { NextResponse } from "next/server";
+
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { toFile } from "openai/uploads"; // works with 4.89.1
+
+import { toFile } from "openai/uploads";
 
 import {
-  createOAiVectorStore,
-  associateStoreToAssistant,
-  createOAiFile,
-} from "@/lib/services/oAi.services";
-import {
-  associateVectorStoreToDbAssistant,
-  getAssistantById,
-} from "@/lib/repos/assistants.repo";
+  createOpenAiVectorStore,
+  createOpenAiFile,
+} from "@/lib/services/openaiFiles.service";
+
+import { associateVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
+
 import { createDBStore } from "@/lib/repos/store.repo";
+
+import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
+
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
+
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 );
 
 export async function POST(req, ctx) {
   try {
-    const { assistantId } = await ctx.params; // ⬅️ await params
-    const { storeName, files } = await req.json(); // ⬅️ JSON, not formData()
+    const { assistantId } = await ctx.params;
 
-    if (!storeName || !Array.isArray(files) || files.length === 0) {
+    /*
+     * Security check:
+     *
+     * - assistant exists
+     * - logged-in user owns its organization
+     */
+    const auth = await requireOrgForAssistant(assistantId);
+
+    if (auth.error) {
+      return auth.error;
+    }
+
+    const { storeName, files } = await req.json();
+
+    if (typeof storeName !== "string" || !storeName.trim()) {
       return NextResponse.json(
-        { error: "Missing storeName/files" },
-        { status: 400 }
+        {
+          error: "Vector store name is required",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!Array.isArray(files) || files.length === 0) {
+      return NextResponse.json(
+        {
+          error: "At least one file is required",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
     const uploadedOpenAiIds = [];
+
     const fileRowsForDb = [];
 
-    // Download each file from Supabase and upload to OpenAI
+    /*
+     * The browser has already uploaded each file
+     * to Supabase Storage.
+     *
+     * Now the server downloads them from Storage
+     * and uploads them to OpenAI.
+     */
     for (const f of files) {
       const { bucket, path, name, type, size } = f || {};
+
       if (!bucket || !path) {
         return NextResponse.json(
-          { error: "Each file needs bucket and path" },
-          { status: 400 }
+          {
+            error: "Each file requires bucket and path",
+          },
+          {
+            status: 400,
+          },
         );
       }
 
-      // 1) Get a short-lived signed URL
+      /*
+       * Create temporary URL for our Supabase file.
+       */
       const { data: signed, error: signErr } = await sb.storage
         .from(bucket)
-        .createSignedUrl(path, 60); // seconds
-      if (signErr) throw signErr;
+        .createSignedUrl(path, 60);
 
-      // 2) Fetch the file bytes as a stream
-      const resp = await fetch(signed.signedUrl);
-      if (!resp.ok) {
+      if (signErr) {
+        throw signErr;
+      }
+
+      if (!signed?.signedUrl) {
+        throw new Error(`Could not create signed URL for ${path}`);
+      }
+
+      /*
+       * Download file from Supabase.
+       */
+      const response = await fetch(signed.signedUrl);
+
+      if (!response.ok) {
         throw new Error(
-          `Failed to fetch ${path} from storage: ${resp.status} ${resp.statusText}`
+          `Failed to fetch ${path} from Supabase Storage: ${response.status} ${response.statusText}`,
         );
       }
 
-      // 3) Convert to a File-like for the OpenAI SDK
-      //    Prefer streaming body; fallback to blob if body isn't present.
+      /*
+       * Convert response into the format expected
+       * by the OpenAI SDK.
+       */
       const fileLike = await toFile(
-        resp.body ?? (await resp.blob()),
+        response.body ?? (await response.blob()),
+
         name || "upload.bin",
+
         {
           type:
             type ||
-            resp.headers.get("content-type") ||
+            response.headers.get("content-type") ||
             "application/octet-stream",
-        }
+        },
       );
 
-      // 4) Upload to OpenAI
-      const uploaded = await createOAiFile(fileLike); // your helper
+      /*
+       * Create actual OpenAI File.
+       */
+      const uploaded = await createOpenAiFile(fileLike);
+
       if (!uploaded?.id) {
-        return NextResponse.json(
-          { error: "Failed to upload a file to OpenAI" },
-          { status: 500 }
-        );
+        throw new Error(`OpenAI did not return a file ID for ${name || path}`);
       }
 
       uploadedOpenAiIds.push(uploaded.id);
+
+      /*
+       * Prepare local DB file row.
+       */
       fileRowsForDb.push({
         open_ai_id: uploaded.id,
+
         name: name || "file",
-        size: Number(size) || null,
+
+        size: Number.isFinite(Number(size)) ? Number(size) : null,
       });
     }
 
-    // 5) Create OpenAI Vector Store from file IDs
-    const oaiStore = await createOAiVectorStore(storeName, uploadedOpenAiIds);
-    if (!oaiStore?.id) {
-      return NextResponse.json(
-        { error: "Failed to create OpenAI vector store" },
-        { status: 500 }
-      );
-    }
-
-    // 6) Create DB store + files
-    const dbStore = await createDBStore(
-      { name: oaiStore.name, open_ai_id: oaiStore.id },
-      fileRowsForDb
+    /*
+     * Create the actual OpenAI Vector Store.
+     */
+    const oaiStore = await createOpenAiVectorStore(
+      storeName.trim(),
+      uploadedOpenAiIds,
     );
 
-    // 7) Associate to assistant in OpenAI
-    const dbAssistant = await getAssistantById(Number(assistantId));
-    await associateStoreToAssistant(dbAssistant.open_ai_id, oaiStore);
+    if (!oaiStore?.id) {
+      throw new Error("OpenAI did not return a vector store ID");
+    }
 
-    // 8) Link on our assistant row
-    await associateVectorStoreToDbAssistant(Number(assistantId), dbStore.id);
+    /*
+     * Save our representation of the vector store
+     * and files into Supabase.
+     */
+    const dbStore = await createDBStore(
+      {
+        name: oaiStore.name || storeName.trim(),
 
-    // 9) UI payload
+        open_ai_id: oaiStore.id,
+      },
+
+      fileRowsForDb,
+    );
+
+    /*
+     * IMPORTANT:
+     *
+     * Associate the Vector Store with OUR DB Assistant.
+     *
+     * We DO NOT attach the store to an OpenAI Assistant.
+     */
+    await associateVectorStoreToDbAssistant(auth.assistantId, dbStore.id);
+
     return NextResponse.json(
       {
         id: dbStore.id,
+
         storeName: dbStore.store_name,
+
         files: (dbStore.file || []).map(({ id, name, size }) => ({
           id,
           name,
           size,
         })),
       },
-      { status: 200 }
+      {
+        status: 201,
+      },
     );
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to create vector store");
   }
 }

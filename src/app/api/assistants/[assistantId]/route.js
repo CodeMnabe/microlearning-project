@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
+
 import { updateAssistant, deleteAssistant } from "@/lib/repos/assistants.repo";
+
 import {
-  updateOAiAssistant,
-  deleteOAiAssistant,
-} from "@/lib/services/oAi.services";
-import {
-  assertAssistantBelongsToOrg,
   cleanPatch,
   handleApiError,
   requireOrgForAssistant,
@@ -26,7 +23,10 @@ export async function GET(_req, { params }) {
     const { assistantId } = await params;
 
     const orgAuth = await requireOrgForAssistant(assistantId);
-    if (orgAuth.error) return orgAuth.error;
+
+    if (orgAuth.error) {
+      return orgAuth.error;
+    }
 
     return NextResponse.json(
       {
@@ -46,34 +46,28 @@ export async function PATCH(req, { params }) {
     const updates = await req.json();
 
     const orgAuth = await requireOrgForAssistant(assistantId);
-    if (orgAuth.error) return orgAuth.error;
+
+    if (orgAuth.error) {
+      return orgAuth.error;
+    }
 
     const patch = cleanPatch(updates, ALLOWED_ASSISTANT_PATCH_FIELDS);
 
-    if (patch.vector_store_id !== undefined && patch.vector_store_id !== null) {
-      await assertAssistantBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        orgAuth.assistantId,
-      );
-    }
-
     if (!Object.keys(patch).length) {
       return NextResponse.json(
-        { error: "No valid fields provided to update." },
+        {
+          error: "No valid fields provided to update.",
+        },
         { status: 400 },
       );
     }
 
-    try {
-      await updateOAiAssistant({
-        ...patch,
-        open_ai_id: orgAuth.assistant.open_ai_id,
-      });
-    } catch (error) {
-      console.error("[assistant PATCH] OpenAI sync failed", error);
-    }
-
+    /*
+     * Only Supabase is updated now.
+     *
+     * The next Responses API request will automatically
+     * use the new values.
+     */
     const updated = await updateAssistant(orgAuth.assistantId, patch);
 
     return NextResponse.json(
@@ -93,15 +87,17 @@ export async function DELETE(_req, { params }) {
     const { assistantId } = await params;
 
     const orgAuth = await requireOrgForAssistant(assistantId);
-    if (orgAuth.error) return orgAuth.error;
 
-    try {
-      await deleteOAiAssistant(orgAuth.assistant.open_ai_id);
-    } catch (error) {
-      console.error("[assistant DELETE] OpenAI delete failed", error);
+    if (orgAuth.error) {
+      return orgAuth.error;
     }
 
+    /*
+     * There is no OpenAI Assistant object to delete
+     * for new assistants.
+     */
     await deleteAssistant(orgAuth.assistantId);
+
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     return handleApiError(err, "Failed to delete assistant");

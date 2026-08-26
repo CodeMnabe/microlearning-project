@@ -16,11 +16,20 @@ export default function CreateAssistantModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [model, setModel] = useState("gpt-4.1");
+  const [model, setModel] = useState("gpt-5.6-luna");
   const modelOptions = [
-    { value: "gpt-4.1", label: "gpt-4.1" },
-    // { value: "gpt-5.2", label: "gpt-5.2" },
-    // { value: "gpt-4o", label: "gpt-4o" },
+    {
+      value: "gpt-5.6-luna",
+      label: "Económico",
+    },
+    {
+      value: "gpt-5.6-terra",
+      label: "Equilibrado",
+    },
+    {
+      value: "gpt-5.6-sol",
+      label: "Avançado",
+    },
   ];
   const [topP, setTopP] = useState(0.5);
   const [temperature, setTemperature] = useState(1.0);

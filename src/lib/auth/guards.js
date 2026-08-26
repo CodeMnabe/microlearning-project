@@ -205,27 +205,59 @@ export async function requireOrgForScheduledBroadcast(id) {
 
 export async function requireOrgForThread(threadId) {
   const parsedThreadId = parsePositiveInt(threadId);
-  if (!parsedThreadId) return { error: jsonError("Invalid thread id", 400) };
+
+  if (!parsedThreadId) {
+    return {
+      error: jsonError("Invalid thread id", 400),
+    };
+  }
 
   const auth = await requireUser();
-  if (auth.error) return auth;
 
+  if (auth.error) {
+    return auth;
+  }
+
+  /*
+   * IMPORTANT:
+   *
+   * thread does NOT have organization_id.
+   *
+   * We determine the organization through:
+   *
+   * user.organization_id
+   * or
+   * assistant.organization_id
+   */
   const { data: thread, error } = await auth.admin
     .from("thread")
-    .select("id, user_id, assistant_id, organization_id")
+    .select("id, user_id, assistant_id")
     .eq("id", parsedThreadId)
     .maybeSingle();
 
   if (error) {
     console.error("[Auth] thread lookup failed", error);
-    return { error: jsonError("Authorization check failed", 500) };
+
+    return {
+      error: jsonError("Authorization check failed", 500),
+    };
   }
 
-  if (!thread) return { error: jsonError("Thread not found", 404) };
+  if (!thread) {
+    return {
+      error: jsonError("Thread not found", 404),
+    };
+  }
 
-  let orgId = thread.organization_id ?? null;
+  let orgId = null;
 
-  if (!orgId && thread.user_id) {
+  /*
+   * Normal personal thread:
+   *
+   * WhatsApp
+   * Teams personal chat
+   */
+  if (thread.user_id) {
     const { data: userRow, error: userError } = await auth.admin
       .from("user")
       .select("organization_id")
@@ -234,12 +266,21 @@ export async function requireOrgForThread(threadId) {
 
     if (userError) {
       console.error("[Auth] thread user lookup failed", userError);
-      return { error: jsonError("Authorization check failed", 500) };
+
+      return {
+        error: jsonError("Authorization check failed", 500),
+      };
     }
 
     orgId = userRow?.organization_id ?? null;
   }
 
+  /*
+   * Group threads may have no user_id.
+   *
+   * In that case get the organization
+   * from the assistant.
+   */
   if (!orgId && thread.assistant_id) {
     const { data: assistant, error: assistantError } = await auth.admin
       .from("assistant")
@@ -249,18 +290,32 @@ export async function requireOrgForThread(threadId) {
 
     if (assistantError) {
       console.error("[Auth] thread assistant lookup failed", assistantError);
-      return { error: jsonError("Authorization check failed", 500) };
+
+      return {
+        error: jsonError("Authorization check failed", 500),
+      };
     }
 
     orgId = assistant?.organization_id ?? null;
   }
 
-  if (!orgId) return { error: jsonError("Thread has no organization", 403) };
+  if (!orgId) {
+    return {
+      error: jsonError("Thread has no organization", 403),
+    };
+  }
 
   const orgAuth = await requireOwnedOrg(orgId, auth);
-  if (orgAuth.error) return orgAuth;
 
-  return { ...orgAuth, thread, threadId: parsedThreadId };
+  if (orgAuth.error) {
+    return orgAuth;
+  }
+
+  return {
+    ...orgAuth,
+    thread,
+    threadId: parsedThreadId,
+  };
 }
 
 export async function requireOrgForAutomationRule(id) {

@@ -103,8 +103,10 @@ export default function ViewUserModal({
 
       const normalized = list.map((t) => ({
         id: t.id,
-        aiThreadId: t.ai_thread_id || "",
+        conversationId: t.openai_conversation_id || null,
+        legacyThreadId: t.ai_thread_id || null,
         assistantId: t.assistant_id ?? null,
+        channel: t.channel ?? null,
         createdAt: t.created_at ?? null,
       }));
 
@@ -137,11 +139,7 @@ export default function ViewUserModal({
       setMessagesLoading(true);
       setMessagesError("");
 
-      let res = await fetch(`/api/messages?threadId=${threadId}`);
-
-      if (!res.ok) {
-        res = await fetch(`/api/threads/${threadId}/messages`);
-      }
+      const res = await fetch(`/api/threads/${threadId}/messages`);
 
       if (!res.ok) {
         throw new Error(await safeText(res));
@@ -157,26 +155,38 @@ export default function ViewUserModal({
 
       const normalized = arr.map((m) => ({
         id: m.id,
+
         role: m.role || "assistant",
+
         createdAt: m.created_at ?? m.createdAt ?? null,
+
         text: extractText(m),
 
-        // WhatsApp/Bird delivery receipt fields
         channel: m.channel ?? null,
+
         messageId: m.message_id ?? m.messageId ?? null,
+
         deliveryStatus: m.delivery_status ?? m.deliveryStatus ?? null,
+
         deliveredAt: m.delivered_at ?? m.deliveredAt ?? null,
+
         readAt: m.read_at ?? m.readAt ?? null,
+
         failedAt: m.failed_at ?? m.failedAt ?? null,
       }));
 
-      if (reqId !== messagesReqId.current) return;
+      if (reqId !== messagesReqId.current) {
+        return;
+      }
 
       setMessages(normalized);
     } catch (err) {
-      if (reqId !== messagesReqId.current) return;
+      if (reqId !== messagesReqId.current) {
+        return;
+      }
 
       setMessagesError(err?.message || "Erro ao carregar mensagens.");
+
       setMessages([]);
     } finally {
       if (reqId === messagesReqId.current) {
@@ -292,7 +302,11 @@ export default function ViewUserModal({
                             active ? styles.threadItemActive : ""
                           }`}
                           onClick={() => setSelectedThreadId(t.id)}
-                          title={t.aiThreadId}
+                          title={
+                            t.conversationId ||
+                            t.legacyThreadId ||
+                            `DB Thread ${t.id}`
+                          }
                         >
                           <div className={styles.threadTitle}>
                             {getAssistantName(t.assistantId)}
@@ -303,7 +317,11 @@ export default function ViewUserModal({
                           </div>
 
                           <div className={styles.threadIdMono}>
-                            {shortId(t.aiThreadId)}
+                            {shortId(
+                              t.conversationId ||
+                                t.legacyThreadId ||
+                                `#${t.id}`,
+                            )}
                           </div>
                         </button>
                       );

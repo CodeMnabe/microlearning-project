@@ -1,78 +1,72 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { handleApiError, requireOrgForAssistant } from "@/lib/auth/guards";
-
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import {
+  createConversation,
+  generateAssistantResponse,
+} from "@/lib/services/openaiResponses.service";
 
 export async function POST(req, { params }) {
   try {
     const { assistantId } = await params;
-    const { message, threadId: incomingAiThreadId } = await req.json();
 
-    const orgAuth = await requireOrgForAssistant(assistantId);
-    if (orgAuth.error) return orgAuth.error;
+    const auth = await requireOrgForAssistant(assistantId);
 
-    if (!message?.trim()) {
+    if (auth.error) {
+      return auth.error;
+    }
+
+    const { assistant, orgId } = auth;
+
+    const body = await req.json();
+
+    const message =
+      typeof body?.message === "string" ? body.message.trim() : "";
+
+    if (!message) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 });
     }
 
-    const openAiAssistantId = orgAuth.assistant.open_ai_id;
+    //During migration we support both names: conversationId, threadId
+    const incomingConversationId =
+      body?.conversationId ?? body?.threadId ?? null;
 
-    let aiThreadId = incomingAiThreadId;
-    if (!aiThreadId) {
-      const thread = await client.beta.threads.create();
-      aiThreadId = thread.id;
+    let conversationId =
+      typeof incomingConversationId === "string" &&
+      incomingConversationId.startsWith("conv_")
+        ? incomingConversationId
+        : null;
+
+    if (!conversationId) {
+      const conversation = await createConversation({
+        assistantId: assistant.id,
+        organizationId: orgId,
+        channel: "web",
+        scope: "sandbox",
+      });
+
+      conversationId = conversation.id;
     }
 
-    await client.beta.threads.messages.create(aiThreadId, {
-      role: "user",
-      content: message,
+    const result = await generateAssistantResponse({
+      assistant,
+      conversationId,
+      message,
     });
 
-    const run = await client.beta.threads.runs.create(aiThreadId, {
-      assistant_id: openAiAssistantId,
+    return NextResponse.json({
+      reply: result.aiResponse,
+      conversationId: result.conversationId,
+      threadId: result.conversationId,
+      responseId: result.responseId,
     });
-
-    let status = run.status;
-    const start = Date.now();
-    while (
-      ![
-        "completed",
-        "failed",
-        "requires_action",
-        "cancelled",
-        "expired",
-      ].includes(status)
-    ) {
-      if (Date.now() - start > 30000) {
-        return NextResponse.json(
-          { error: "Run timed out", threadId: aiThreadId },
-          { status: 504 },
-        );
-      }
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      const fresh = await client.beta.threads.runs.retrieve(aiThreadId, run.id);
-      status = fresh.status;
-    }
-
-    if (status !== "completed") {
-      return NextResponse.json(
-        { error: `Run ${status}`, threadId: aiThreadId },
-        { status: 500 },
-      );
-    }
-
-    const msgs = await client.beta.threads.messages.list(aiThreadId, {
-      limit: 10,
-    });
-    const assistantMsg = msgs.data.find((m) => m.role === "assistant");
-    const reply =
-      assistantMsg?.content?.[0]?.type === "text"
-        ? assistantMsg.content[0].text.value
-        : "";
-
-    return NextResponse.json({ reply, threadId: aiThreadId });
   } catch (err) {
-    return handleApiError(err, "Failed to send assistant message");
+    console.error("[Assistant Messages] POST failed:", err);
+
+    return NextResponse.json(
+      {
+        error: err?.message || "Failed to send the message",
+      },
+      { status: err?.status || 500 },
+    );
   }
 }

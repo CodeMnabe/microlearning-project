@@ -4,7 +4,7 @@ import {
   assertUsersBelongToOrg,
   jsonError,
 } from "@/lib/auth/guards";
-import sendTeamsBroadcast from "@/lib/services/broadcast/sendTeamsBroadcast";
+import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 
 function getRecipientUserIds(recipients = []) {
   return recipients
