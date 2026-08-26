@@ -17,7 +17,7 @@ export async function POST(req) {
     const body = await req.json();
 
     const orgAuth = await requireOwnedOrg(body?.orgId);
-    if (orgAuth) return orgAuth.error;
+    if (orgAuth.error) return orgAuth.error;
 
     const userIds = getRecipientUserIds(body?.recipients);
 
@@ -28,15 +28,22 @@ export async function POST(req) {
     await assertUsersBelongToOrg(orgAuth.admin, orgAuth.orgId, userIds);
 
     const result = await sendTeamsBroadcast({
-      ...body,
       orgId: orgAuth.orgId,
-      organizationId: orgAuth.orgId,
-      recipientUserIds: userIds,
+      userIds,
+      message: body?.message || "",
+      files: Array.isArray(body?.files) ? body.files : [],
+      imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
+      trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+      scheduledBroadcastId: null,
+      createdByUserId: null,
     });
 
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (error) {
     console.error("[Teams Broadcast] failed", error);
-    return jsonError(error.message || "Failed to send Teams broadcast", 500);
+    return jsonError(
+      error.message || "Failed to send Teams broadcast",
+      error.status || 500,
+    );
   }
 }

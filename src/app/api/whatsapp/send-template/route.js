@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { toE164 } from "@/lib/whatsapp/E164";
+import {
+  assertUsersBelongToOrg,
+  handleApiError,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,6 +21,7 @@ async function getOrgById(orgId) {
     )
     .eq("id", orgId)
     .single();
+
   if (error) throw new Error(error.message);
   return data;
 }
@@ -56,16 +62,10 @@ function getUserPhone(user) {
   return null;
 }
 
-async function buildWhatsappContact({
-  to,
-  whatsappBsuid,
-  birdContactId,
-  userId,
-  defaultCountryCode,
-}) {
+async function buildWhatsappContact({ userId, defaultCountryCode }) {
   const user = await getUserById(userId);
 
-  const rawPhone = cleanText(to) || getUserPhone(user);
+  const rawPhone = getUserPhone(user);
 
   if (rawPhone) {
     return {
@@ -74,7 +74,7 @@ async function buildWhatsappContact({
     };
   }
 
-  const bsuid = cleanText(whatsappBsuid) || cleanText(user?.whatsapp_bsuid);
+  const bsuid = cleanText(user?.whatsapp_bsuid);
   if (bsuid) {
     return {
       identifierKey: "whatsappbsuid",
@@ -82,8 +82,8 @@ async function buildWhatsappContact({
     };
   }
 
-  const contactId =
-    cleanText(birdContactId) || cleanText(user?.bird_contact_id);
+  const contactId = cleanText(user?.bird_contact_id);
+
   if (contactId) {
     return { id: contactId };
   }
@@ -93,57 +93,165 @@ async function buildWhatsappContact({
 
 function parseKeyValueParams(values = [], urlVar) {
   const out = [];
+
   for (const raw of values) {
     const s = String(raw).trim();
     if (!s) continue;
+
     const eq = s.indexOf("=");
     if (eq === -1) continue;
+
     const key = s.slice(0, eq).trim();
     const value = s.slice(eq + 1).trim();
+
     if (!key || !value) continue;
+
     out.push({ type: "string", key, value });
   }
+
   if (urlVar && !out.some((p) => p.key === "url")) {
     out.push({ type: "string", key: "url", value: String(urlVar) });
   }
+
   return out;
+}
+
+async function getAllowedProviderTemplateIds(admin, orgId) {
+  const { data, error } = await admin
+    .from("whatsapp_templates")
+    .select("provider_template_id")
+    .or(`org_id.eq.${orgId},org_id.is.null`)
+    .eq("status", "ACTIVE")
+    .not("provider_template_id", "is", null);
+
+  if (error) throw error;
+
+  return new Set(
+    (data || []).map((row) => String(row.provider_template_id)),
+  );
+}
+
+async function requireAuthorizedBirdTemplate({
+  admin,
+  orgId,
+  projectId,
+  languageCode,
+}) {
+  const allowedIds = await getAllowedProviderTemplateIds(admin, orgId);
+
+  if (allowedIds.size === 0) {
+    const error = new Error("Template not found or not authorized");
+    error.status = 404;
+    throw error;
+  }
+
+  const url = new URL(
+    `https://api.bird.com/workspaces/${encodeURIComponent(
+      process.env.WORKSPACE_ID,
+    )}/projects/${encodeURIComponent(projectId)}/channel-templates`,
+  );
+
+  url.searchParams.set("limit", "100");
+
+  let nextPageToken = null;
+
+  do {
+    if (nextPageToken) {
+      url.searchParams.set("pageToken", nextPageToken);
+    } else {
+      url.searchParams.delete("pageToken");
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `AccessKey ${process.env.BIRD_API_KEY}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        const error = new Error("Template not found or not authorized");
+        error.status = 404;
+        throw error;
+      }
+
+      const error = new Error("Messaging provider request failed");
+      error.status = 502;
+      throw error;
+    }
+
+    const authorizedTemplate = (data?.results || []).find((template) => {
+      const locale =
+        template.defaultLocale ||
+        template.platformContent?.[0]?.locale ||
+        null;
+
+      return (
+        allowedIds.has(String(template.id)) &&
+        String(locale || "").toLowerCase() === languageCode.toLowerCase()
+      );
+    });
+
+    if (authorizedTemplate) {
+      return authorizedTemplate;
+    }
+
+    nextPageToken = data?.nextPageToken || null;
+  } while (nextPageToken);
+
+  const error = new Error("Template not found or not authorized");
+  error.status = 404;
+  throw error;
 }
 
 export async function POST(req) {
   try {
     const body = await req.json();
+
     const {
       orgId,
-      to,
-      whatsappBsuid,
-      birdContactId,
       userId,
       projectId,
-      // templateId, // <-- not used in Channels API
-      templateName,
       languageCode = "pt-PT",
       params = [],
       urlVar,
     } = body;
 
-    if (!orgId || !to || !projectId) {
+    if (!orgId || !projectId) {
       return NextResponse.json(
-        { error: "orgId, to, projectId are required" },
+        { error: "orgId and projectId are required" },
         { status: 400 },
       );
     }
 
-    if (!to && !whatsappBsuid && !birdContactId && !userId) {
-      return NextResponse.json(
-        {
-          error:
-            "Missing recipient. Provide to, whatsappBsuid, birdContactId, or userId",
-        },
-        { status: 400 },
-      );
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    const org = await getOrgById(orgId);
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const safeUserIds = await assertUsersBelongToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      [userId],
+    );
+
+    const authorizedTemplate = await requireAuthorizedBirdTemplate({
+      admin: orgAuth.admin,
+      orgId: orgAuth.orgId,
+      projectId: String(projectId).trim(),
+      languageCode: String(languageCode).trim(),
+    });
+
+    const safeUserId = safeUserIds[0];
+
+    const org = await getOrgById(orgAuth.orgId);
+
     if (!org?.channel_id) {
       return NextResponse.json(
         { error: "Missing org.channel_id" },
@@ -154,10 +262,7 @@ export async function POST(req) {
     const kvParameters = parseKeyValueParams(params, urlVar);
 
     const contact = await buildWhatsappContact({
-      to,
-      whatsappBsuid,
-      birdContactId,
-      userId,
+      userId: safeUserId,
       defaultCountryCode:
         org.default_phone_country_code ||
         process.env.DEFAULT_COUNTRY_CODE ||
@@ -182,9 +287,9 @@ export async function POST(req) {
         contacts: [contact],
       },
       template: {
-        projectId,
-        version: "latest",
-        locale: languageCode,
+        projectId: String(projectId).trim(),
+        version: String(authorizedTemplate.id),
+        locale: String(languageCode).trim(),
         parameters: kvParameters,
       },
     };
@@ -199,6 +304,7 @@ export async function POST(req) {
     });
 
     const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
       console.error("Bird 4xx/5xx:", res.status, JSON.stringify(data, null, 2));
     }
@@ -207,8 +313,7 @@ export async function POST(req) {
       { ok: res.ok, status: res.status, data },
       { status: res.status },
     );
-  } catch (e) {
-    console.error("send-template error:", e);
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+  } catch (err) {
+    return handleApiError(err, "WhatsApp template send failed");
   }
 }

@@ -12,6 +12,10 @@ import {
 import { associateVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 
 import { createDBStore } from "@/lib/repos/store.repo";
+import {
+  handleApiError,
+  requireOrgForAssistant,
+} from "@/lib/auth/guards";
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
 

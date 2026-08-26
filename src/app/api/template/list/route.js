@@ -1,16 +1,15 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getOrganizationBirdConfig } from "@/lib/repos/organizations.repo";
+import {
+  handleApiError,
+  requireOwnedOrg,
+  requireUser,
+} from "@/lib/auth/guards";
 
 const BIRD = "https://api.bird.com";
 const { BIRD_API_KEY, WORKSPACE_ID } = process.env;
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } },
-);
 
 async function fetchAll(path) {
   let next;
@@ -42,16 +41,6 @@ async function fetchAll(path) {
 
 function pickDeploymentValue(deployments, key) {
   return deployments?.find((d) => d.key === key)?.value || null;
-}
-
-function norm(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function nameLangKey(name, language) {
-  return `${norm(name)}__${norm(language)}`;
 }
 
 const STATUS_RANK = {
@@ -117,68 +106,58 @@ function uniqueByWhatsappTemplateId(items) {
 
 export async function GET(req) {
   try {
-    const url = new URL(req.url);
-    const orgIdStr = url.searchParams.get("orgId");
-    const projectId = url.searchParams.get("projectId");
-    const orgId = Number(orgIdStr);
+    const auth = await requireUser();
+    if (auth.error) return auth.error;
 
-    if (!orgIdStr || Number.isNaN(orgId)) {
+    const url = new URL(req.url);
+    const orgId = url.searchParams.get("orgId");
+
+    const orgAuth = await requireOwnedOrg(orgId, auth);
+    if (orgAuth.error) return orgAuth.error;
+
+    if (!BIRD_API_KEY || !WORKSPACE_ID) {
       return NextResponse.json(
-        { error: "Missing or invalid orgId" },
-        { status: 400 },
+        { error: "Missing BIRD envs" },
+        { status: 500 },
       );
     }
 
-    if (!BIRD_API_KEY || !WORKSPACE_ID) {
-      return NextResponse.json({ error: "Missing BIRD envs" }, { status: 500 });
-    }
+    const config = await getOrganizationBirdConfig(orgAuth.orgId);
+    const projectId = config?.projectId || null;
 
-    const { data: allowedRows, error: dbErr } = await supabaseAdmin
+    const { data: allowedRows, error: dbErr } = await orgAuth.admin
       .from("whatsapp_templates")
-      .select("id, org_id, name, language, provider_template_id, components")
-      .or(`org_id.eq.${orgId},org_id.is.null`)
+      .select(
+        "id, org_id, name, language, provider_template_id, components",
+      )
+      .or(`org_id.eq.${orgAuth.orgId},org_id.is.null`)
       .eq("status", "ACTIVE");
 
-    if (dbErr) throw new Error(dbErr.message);
-
-    const allowedIds = new Set(
-      (allowedRows ?? [])
-        .map((row) => row.provider_template_id)
-        .filter(Boolean)
-        .map((id) => String(id)),
-    );
-
-    const allowedNameLangKeys = new Set(
-      (allowedRows ?? []).map((row) => nameLangKey(row.name, row.language)),
-    );
+    if (dbErr) throw dbErr;
 
     const dbByProviderId = new Map();
-    const dbByNameLang = new Map();
 
     for (const row of allowedRows ?? []) {
-      if (row.provider_template_id) {
-        const providerId = String(row.provider_template_id);
-        const current = dbByProviderId.get(providerId);
+      if (!row.provider_template_id) continue;
 
-        if (isPreferredDbRow(row, current)) {
-          dbByProviderId.set(providerId, row);
-        }
-      }
-
-      const key = nameLangKey(row.name, row.language);
-      const current = dbByNameLang.get(key);
+      const providerId = String(row.provider_template_id);
+      const current = dbByProviderId.get(providerId);
 
       if (isPreferredDbRow(row, current)) {
-        dbByNameLang.set(key, row);
+        dbByProviderId.set(providerId, row);
       }
     }
+
+    const allowedIds = new Set(dbByProviderId.keys());
 
     let projectIds = [];
 
     if (projectId) {
       projectIds = [projectId];
     } else {
-      const projects = await fetchAll(`/workspaces/${WORKSPACE_ID}/projects`);
+      const projects = await fetchAll(
+        `/workspaces/${WORKSPACE_ID}/projects`,
+      );
 
       projectIds = projects
         .filter((project) => project.type === "channelTemplate")
@@ -193,13 +172,25 @@ export async function GET(req) {
       );
 
       for (const template of templates) {
+        const providerId = String(template.id || "");
+
+        if (!providerId || !allowedIds.has(providerId)) {
+          continue;
+        }
+
         const name =
-          pickDeploymentValue(template.deployments, "whatsappTemplateName") ||
+          pickDeploymentValue(
+            template.deployments,
+            "whatsappTemplateName",
+          ) ||
           template.description ||
           template.id;
 
         const category =
-          pickDeploymentValue(template.deployments, "whatsappCategory") || "";
+          pickDeploymentValue(
+            template.deployments,
+            "whatsappCategory",
+          ) || "";
 
         const language =
           template.defaultLocale ||
@@ -225,71 +216,40 @@ export async function GET(req) {
         }
 
         raw.push({
-          provider_template_id: template.id,
+          provider_template_id: providerId,
           projectId: pid,
           name,
           language,
           category,
           status,
           waba_id: wabaId,
-          defaultLocale: template.defaultLocale || null,
-          variables: template.variables || [],
-          platformContent: template.platformContent || [],
-          genericContent: template.genericContent || [],
-          deployments: template.deployments || [],
           createdAt: template.createdAt,
           updatedAt: template.updatedAt,
         });
       }
     }
 
-    // Keep only the best Bird template per normalized name + language.
-    // This prevents duplicate Bird versions with slightly different casing/spaces
-    // from mapping to the same Supabase template row.
-    const bestByNameLang = new Map();
+    const bestByProviderId = new Map();
 
     for (const template of raw) {
-      const key = nameLangKey(template.name, template.language);
-      const current = bestByNameLang.get(key);
+      const providerId = String(template.provider_template_id);
+      const current = bestByProviderId.get(providerId);
 
       if (isBetterBirdTemplate(template, current)) {
-        bestByNameLang.set(key, template);
+        bestByProviderId.set(providerId, template);
       }
     }
 
-    const bestTemplates = Array.from(bestByNameLang.values());
-
-    // Only allow templates that match the DB either by provider_template_id
-    // or by exact normalized name + language.
-    // Important: no name-only fallback, because that creates false matches.
-    const allowedTemplates = bestTemplates.filter((template) => {
-      const providerId = String(template.provider_template_id);
-      const key = nameLangKey(template.name, template.language);
-
-      return allowedIds.has(providerId) || allowedNameLangKeys.has(key);
-    });
-
-    const items = allowedTemplates
+    const items = Array.from(bestByProviderId.values())
       .map((template) => {
         const providerId = String(template.provider_template_id);
-        const key = nameLangKey(template.name, template.language);
+        const dbRow = dbByProviderId.get(providerId);
 
-        const dbRow =
-          dbByProviderId.get(providerId) || dbByNameLang.get(key) || null;
-
-        // Automations need the Supabase UUID, so do not return templates
-        // that cannot map back to whatsapp_templates.
         if (!dbRow) return null;
 
         return {
-          // Bird/provider template id.
-          // Useful for broadcast sending.
-          id: template.provider_template_id,
-
-          // Supabase UUID.
-          // Useful for automations FK.
+          id: providerId,
           whatsappTemplateId: dbRow.id,
-
           components: dbRow.components ?? null,
           projectId: template.projectId,
           name: template.name,
@@ -306,9 +266,6 @@ export async function GET(req) {
       items: uniqueByWhatsappTemplateId(items),
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: e.message || "Failed to list templates" },
-      { status: 500 },
-    );
+    return handleApiError(e, "Failed to list templates");
   }
 }

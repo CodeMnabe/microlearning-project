@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import {
+  handleApiError,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +14,7 @@ const sb = createServiceClient(
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
+
     const orgId = Number(searchParams.get("orgId"));
     const limit = Math.min(
       500,
@@ -19,6 +24,9 @@ export async function GET(req) {
     if (!orgId) {
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
     }
+
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
 
     const { data, error } = await sb
       .from("automation_run")
@@ -31,7 +39,7 @@ export async function GET(req) {
         )
       `,
       )
-      .eq("organization_id", orgId)
+      .eq("organization_id", orgAuth.orgId)
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -39,9 +47,6 @@ export async function GET(req) {
 
     return NextResponse.json({ items: data || [] });
   } catch (error) {
-    return NextResponse.json(
-      { error: error?.message || String(error) },
-      { status: 500 },
-    );
+    return handleApiError(error, "Failed to load automation runs");
   }
 }

@@ -406,36 +406,54 @@ export async function getUserByBirdContactId(
   });
 }
 
-export async function getUserByNumber(phoneNumber) {
+export async function getUserByNumber(
+  phoneNumber,
+  organizationId,
+) {
   const digits = cleanMsisdn(phoneNumber);
-  if (!digits) return null;
+
+  if (!digits || !organizationId) {
+    return null;
+  }
 
   let { data, error } = await supabase
     .from("user")
     .select("id")
+    .eq("organization_id", organizationId)
     .eq("phone_national", digits)
     .maybeSingle();
 
   if (error) throw error;
-  if (data) return await getUserById(data.id);
+
+  if (data) {
+    return await getUserById(data.id);
+  }
 
   const legacy = await supabase
     .from("user")
     .select("id")
+    .eq("organization_id", organizationId)
     .eq("phone_number", digits)
     .maybeSingle();
 
   if (legacy.error) throw legacy.error;
-  if (legacy.data) return await getUserById(legacy.data.id);
+
+  if (legacy.data) {
+    return await getUserById(legacy.data.id);
+  }
 
   const alt = await supabase
     .from("user")
     .select("id")
+    .eq("organization_id", organizationId)
     .ilike("phone_number", `%${digits}`)
     .maybeSingle();
 
   if (alt.error) throw alt.error;
-  return alt.data ? await getUserById(alt.data.id) : null;
+
+  return alt.data
+    ? await getUserById(alt.data.id)
+    : null;
 }
 
 export async function getUserByEmail(email, tenant) {

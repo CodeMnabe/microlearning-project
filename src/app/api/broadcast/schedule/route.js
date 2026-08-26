@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
 import {
   assertUsersBelongToOrg,
-  extractRecipientUserIds,
+  assertWhatsappProviderTemplateBelongsToOrg,
+  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
@@ -14,12 +15,10 @@ export async function POST(req) {
 
     const {
       orgId,
-      createdByUserId = null,
       channel,
       scheduledFor,
       timezone,
       payload,
-      recipientCount = 0,
     } = body;
 
     if (!orgId || !channel || !scheduledFor || !payload) {
@@ -51,44 +50,80 @@ export async function POST(req) {
       );
     }
 
-    const payloadRecipients = Array.isArray(payload?.recipients)
-      ? payload.recipients
-      : [];
+    const rawRecipients =
+      channel === "teams"
+        ? (Array.isArray(payload?.userIds) ? payload.userIds : []).map(
+            (userId) => ({ userId }),
+          )
+        : Array.isArray(payload?.recipients)
+          ? payload.recipients
+          : [];
 
-    const recipientUserIds =
-      requireAllRecipientsToBeKnownUsers(payloadRecipients);
+    const recipientUserIds = requireAllRecipientsToBeKnownUsers(rawRecipients);
     await assertUsersBelongToOrg(
       orgAuth.admin,
       orgAuth.orgId,
       recipientUserIds,
     );
 
-    let safeCreatedByUserId = null;
-    if (createdByUserId) {
-      const [verifiedUserId] = await assertUsersBelongToOrg(
+    let safeWhatsappTemplateId = null;
+    let safeTemplate = null;
+
+    if (channel === "whatsapp") {
+      safeWhatsappTemplateId = await assertWhatsappTemplateBelongsToOrg(
         orgAuth.admin,
         orgAuth.orgId,
-        [createdByUserId],
+        payload?.whatsappTemplateId,
       );
-      safeCreatedByUserId = verifiedUserId ?? null;
+
+      if (!safeWhatsappTemplateId && payload?.template?.projectId) {
+        const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
+          orgAuth.admin,
+          orgAuth.orgId,
+          payload.template.projectId,
+        );
+
+        safeTemplate = {
+          projectId: templateRow.provider_template_id,
+          languageCode: payload.template.languageCode,
+          varKeys: Array.isArray(payload.template.varKeys)
+            ? payload.template.varKeys
+            : [],
+          params: Array.isArray(payload.template.params)
+            ? payload.template.params
+            : [],
+          manualParams: payload.template.manualParams || "",
+          trackedUrlKey: payload.template.trackedUrlKey || null,
+        };
+      }
     }
 
     const cleanPayload = {
-      ...payload,
-      recipients: payloadRecipients,
+      orgId: orgAuth.orgId,
+      message: payload?.message || "",
+      files: Array.isArray(payload?.files) ? payload.files : [],
+      imageUrls: Array.isArray(payload?.imageUrls) ? payload.imageUrls : [],
+      trackedLinks: Array.isArray(payload?.trackedLinks)
+        ? payload.trackedLinks
+        : [],
+      ...(channel === "teams"
+        ? { userIds: recipientUserIds }
+        : {
+            recipients: recipientUserIds.map((userId) => ({ userId })),
+            template: safeTemplate,
+            whatsappTemplateId: safeWhatsappTemplateId,
+          }),
     };
 
     const row = await createScheduledBroadcast({
       organization_id: orgAuth.orgId,
-      created_by_user_id: safeCreatedByUserId,
+      created_by_user_id: orgAuth.user.id,
       channel,
       status: "queued",
       scheduled_for: when.toISOString(),
       timezone: timezone || null,
       payload: cleanPayload,
-      recipient_count: Number(
-        recipientCount || extractRecipientUserIds(payloadRecipients).length,
-      ),
+      recipient_count: recipientUserIds.length,
     });
 
     return NextResponse.json({ ok: true, item: row });

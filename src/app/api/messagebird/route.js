@@ -49,12 +49,15 @@ import {
 
 import {
   createMessageChainDelivery,
+  getValidatedMessageChainContext,
   updateMessageChainRecipientProgress,
 } from "@/lib/repos/messageChain.repo";
 
 import { splitE164 } from "@/lib/whatsapp/E164";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
+import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
+import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
@@ -289,11 +292,10 @@ async function handleReadInteraction(readInteraction) {
     return;
   }
 
-  if (readInteraction.channelId) {
-    try {
-      const organization = await getOrganizationByChannelId(
-        readInteraction.channelId,
-      );
+  if (!readInteraction.channelId) {
+    console.warn("Read interaction missing channelId", {
+      messageId: readInteraction.messageId,
+    });
 
       if (!organization) {
         console.warn("Read interaction channel has no organization", {
@@ -315,6 +317,7 @@ async function handleReadInteraction(readInteraction) {
   const updated = await markMessageReadByProviderId(
     readInteraction.messageId,
     readInteraction.readAt,
+    organization.id,
   );
 
   if (!updated) {
@@ -327,6 +330,14 @@ async function handleReadInteraction(readInteraction) {
     });
 
     return;
+  }
+
+  if (
+    Number(updated.organization_id) !== Number(organization.id)
+  ) {
+    throw new Error(
+      "Read receipt message does not belong to channel organization",
+    );
   }
 
   if (!updated.message_chain_id) {
@@ -374,17 +385,22 @@ async function findUserFromPhone(rawPhone) {
   let user = null;
 
   if (nationalNumber) {
-    user = await getUserByNumber(nationalNumber);
+    user = await getUserByNumber(nationalNumber, organizationId);
   }
 
   if (!user && digits) {
-    user = await getUserByNumber(digits);
+    user = await getUserByNumber(digits, organizationId);
   }
 
   return user;
 }
 
-async function findUserFromWhatsappIdentity(identity, organizationId = null) {
+
+async function findUserFromWhatsappIdentity(identity, organizationId) {
+  if (!organizationId) {
+    return null;
+  }
+
   if (identity.whatsappBsuid) {
     const user = await getUserByWhatsappBsuid(
       identity.whatsappBsuid,
@@ -408,7 +424,10 @@ async function findUserFromWhatsappIdentity(identity, organizationId = null) {
   }
 
   if (identity.phoneNumber) {
-    return await findUserFromPhone(identity.phoneNumber);
+    return await findUserFromPhone(
+      identity.phoneNumber,
+      organizationId,
+    );
   }
 
   return null;
@@ -580,6 +599,7 @@ export async function GET() {
   });
 }
 
+
 export async function POST(req) {
   const rawBody = await req.text();
 
@@ -594,7 +614,38 @@ export async function POST(req) {
   const fullUrl =
     `${proto}://${host}` + `${req.nextUrl.pathname}` + `${req.nextUrl.search}`;
 
-  const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
+  if (!isFreshTimestamp(tsHeader)) {
+    console.warn("Expired or invalid MessageBird timestamp");
+
+    return new NextResponse("invalid timestamp", {
+      status: 401,
+    });
+  }
+
+  const proto =
+    req.headers.get("x-forwarded-proto") || "https";
+
+  const host =
+    req.headers.get("x-forwarded-host") ||
+    req.headers.get("host");
+
+  if (!host) {
+    console.warn("MessageBird webhook missing host");
+
+    return new NextResponse("invalid webhook URL", {
+      status: 401,
+    });
+  }
+
+  const fullUrl =
+    `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
+
+  const ok = isValid(
+    sigHeader,
+    tsHeader,
+    fullUrl,
+    rawBody,
+  );
 
   if (!ok) {
     console.warn("Invalid signature");
@@ -685,15 +736,29 @@ async function handleEvent(rawJSON) {
   const text = evt.payload?.body?.text?.text || "";
 
   const sentChannelId =
-    evt.payload?.channelId ||
-    evt.payload?.channel?.id ||
-    evt.payload?.receiver?.channel?.id ||
-    null;
+    normalizeId(evt.payload?.channelId) ||
+    normalizeId(evt.payload?.channel?.id) ||
+    normalizeId(evt.payload?.receiver?.channel?.id);
 
   const inboundMsgId =
-    evt.payload?.id || evt.payload?.messageId || evt.payload?.body?.id || null;
+    normalizeId(evt.payload?.id) ||
+    normalizeId(evt.payload?.messageId) ||
+    normalizeId(evt.payload?.body?.id);
 
-  if (!identity.phoneNumber && !identity.whatsappBsuid && !contactId) {
+  if (!sentChannelId) {
+    console.warn("Inbound WhatsApp event missing channelId", {
+      inboundMsgId,
+      identity,
+    });
+
+    return;
+  }
+
+  if (
+    !identity.phoneNumber &&
+    !identity.whatsappBsuid &&
+    !contactId
+  ) {
     console.warn("Inbound WhatsApp event missing usable identity", {
       identity,
       sentChannelId,
@@ -726,11 +791,24 @@ async function handleEvent(rawJSON) {
 
   let user = await findUserFromWhatsappIdentity(
     identity,
-    channelOrganization?.id || null,
+    channelOrganization.id,
   );
 
+  if (
+    user &&
+    Number(user.organization_id) !==
+      Number(channelOrganization.id)
+  ) {
+    throw new Error(
+      "Webhook user does not belong to channel organization",
+    );
+  }
+
   if (user) {
-    user = await updateUserWhatsappIdentity(user.id, identity);
+    user = await updateUserWhatsappIdentity(
+      user.id,
+      identity,
+    );
   }
 
   /* ---------------------------------------------------------
@@ -738,7 +816,7 @@ async function handleEvent(rawJSON) {
      --------------------------------------------------------- */
 
   if (!user) {
-    const r = await sendBirdMessage({
+    const response = await sendBirdMessage({
       channelId: sentChannelId,
 
       contactId,
@@ -756,8 +834,11 @@ async function handleEvent(rawJSON) {
       },
     });
 
-    if (!r.ok) {
-      console.error("Failed to send unregistered message:", r.data);
+    if (!response.ok) {
+      console.error(
+        "Failed to send unregistered message:",
+        response.data,
+      );
     }
 
     return;
@@ -771,7 +852,10 @@ async function handleEvent(rawJSON) {
 
   const pendingMessages = await getAllPendingOutreachByUser(user.id);
 
-  if (Array.isArray(pendingMessages) && pendingMessages.length > 0) {
+  if (
+    Array.isArray(pendingMessages) &&
+    pendingMessages.length > 0
+  ) {
     await handlePendingMessages({
       user,
       inboundMsgId,
@@ -1041,7 +1125,8 @@ async function handleEvent(rawJSON) {
   let outboundId = null;
 
   const outgoingChannelId =
-    normalizeId(organization.channel_id) || normalizeId(sentChannelId);
+    normalizeId(organization.channel_id) ||
+    sentChannelId;
 
   const sendRes = await sendBirdMessage({
     channelId: outgoingChannelId,
@@ -1062,7 +1147,10 @@ async function handleEvent(rawJSON) {
   });
 
   if (!sendRes.ok) {
-    console.error("Failed to send assistant message:", sendRes.data);
+    console.error(
+      "Failed to send assistant message:",
+      sendRes.data,
+    );
   } else {
     outboundId = sendRes.providerMessageId;
   }
@@ -1213,6 +1301,17 @@ async function handlePendingMessages({
       row.message_chain_recipient_id &&
       row.message_chain_step_index;
 
+    const chainContext = hasChainMetadata
+      ? await getValidatedMessageChainContext({
+          chainId: row.message_chain_id,
+          chainStepId: row.message_chain_step_id,
+          chainRecipientId: row.message_chain_recipient_id,
+          stepIndex: Number(row.message_chain_step_index),
+          userId: user.id,
+          organizationId: user.organization_id,
+        })
+      : null;
+
     await createMessage({
       threadId: null,
 
@@ -1243,7 +1342,7 @@ async function handlePendingMessages({
       messageChainStepIndex: row.message_chain_step_index || null,
     });
 
-    if (hasChainMetadata) {
+    if (chainContext) {
       try {
         await createMessageChainDelivery({
           chainId: row.message_chain_id,
@@ -1309,6 +1408,12 @@ async function getAssistantFromUser(user, organization) {
    * to this user.
    */
   if (user.assistant_id) {
+    await assertAssistantBelongsToOrg(
+      admin,
+      organization.id,
+      user.assistant_id,
+    );
+
     const assistant = await getAssistantById(user.assistant_id);
 
     if (assistant) {

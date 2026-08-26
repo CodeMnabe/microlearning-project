@@ -5,6 +5,10 @@ import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
 import { deleteFileById } from "@/lib/repos/files.repo";
 
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
+import {
+  handleApiError,
+  requireOrgForAssistant,
+} from "@/lib/auth/guards";
 
 import { deleteOpenAiVectorStoreAndFiles } from "@/lib/services/openaiFiles.service";
 
