@@ -1,0 +1,44 @@
+/* Single source of truth for the persistent marketing header.
+   Every page that renders <MarketingNavbar> goes through <PersistentHeader>,
+   so the fixed behaviour can never drift between pages. */
+
+/* The bar is `fixed` rather than `sticky` because it has to follow the whole
+   document, not just the first section it happens to live in. It is safe on
+   every marketing page: none of the ancestors carries a transform / filter /
+   perspective / contain that would turn it into a containing block, and the
+   `overflow: hidden` / `overflow: clip` wrappers do not clip it because its
+   containing block is the viewport. It is also kept out of every GSAP
+   timeline — the animations never touch it.
+
+   z-index 50 clears every scene (scenes top out at 10) while the navbar's own
+   internal layers (navbar 20 / mobile panel 30 / language menu 60) stay
+   scoped inside this element's stacking context. */
+.bar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  padding: 20px clamp(18px, 4vw, 64px) 0;
+  /* The bar spans the full viewport width but only the pill itself should
+     capture pointer events, so the transparent gutter never swallows clicks
+     on the content scrolling underneath. */
+  pointer-events: none;
+}
+
+.bar nav {
+  pointer-events: auto;
+}
+
+/* Reserves the row the header used to occupy while it was still in the normal
+   flow, so taking it out of flow moves no page content at all. Pages whose
+   header was already out of flow (the landing page) simply omit it.
+   The default mirrors `.navbar { min-height: 66px }` in navbar.module.css;
+   pages whose in-flow header box was taller set --marketing-header-space. */
+.spacer {
+  min-height: var(--marketing-header-space, 66px);
+}
+
+@media (max-width: 760px) {
+  .bar {
+    padding: 14px 12px 0;
+  }
+}

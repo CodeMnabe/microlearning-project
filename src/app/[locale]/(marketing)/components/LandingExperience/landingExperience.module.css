@@ -3,7 +3,6 @@
   --navy: #101b33;
   --brand: #30a9e0;
   --sky: #7cc2ff;
-  --mint: #34d7b6;
   --violet: #7c5cfc;
   --coral: #ff6b7a;
   --cloud: #f7fbff;
@@ -17,7 +16,7 @@
 
 .experience a:focus-visible,
 .experience button:focus-visible {
-  outline: 3px solid var(--mint);
+  outline: 3px solid var(--brand-accent);
   outline-offset: 4px;
 }
 
@@ -53,13 +52,6 @@
   overflow: hidden;
 }
 
-.navRow {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 50;
-  padding: 20px clamp(18px, 4vw, 64px) 0;
-}
-
 .heroScene {
   min-height: 100vh;
   min-height: 100svh;
@@ -77,7 +69,7 @@
   background:
     radial-gradient(
       circle at 50% 34%,
-      rgba(48, 169, 224, 0.5),
+      rgba(31, 69, 116, 0.5),
       transparent 28%
     ),
     radial-gradient(
@@ -87,7 +79,7 @@
     ),
     radial-gradient(
       circle at 82% 70%,
-      rgba(52, 215, 182, 0.18),
+      rgba(var(--brand-accent-rgb), 0.18),
       transparent 24%
     ),
     linear-gradient(145deg, #081426 10%, #101b33 58%, #07101f 100%);
@@ -110,6 +102,73 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
   background-size: 72px 72px;
   mask-image: radial-gradient(circle at center, #000 0, transparent 70%);
+}
+
+.heroBrandBackdrop {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.heroBrandDefinitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.heroBrandShape {
+  position: absolute;
+  display: block;
+  overflow: visible;
+  fill: none;
+  stroke: rgba(124, 194, 255, 0.3);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 7px rgba(124, 194, 255, 1));
+  vector-effect: non-scaling-stroke;
+}
+
+.heroBrandShape use {
+  vector-effect: non-scaling-stroke;
+}
+
+.heroBrandComposition {
+  position: absolute;
+  top: 16.2%;
+  right: 2.5%;
+  width: clamp(580px, 39vw, 790px);
+  aspect-ratio: 745 / 536;
+}
+
+.heroBrandMain {
+  top: 10%;
+  left: 0;
+  width: 110%;
+  height: 80%;
+  stroke-width: 0.55;
+  transform: rotate(15deg);
+  transform-origin: center;
+}
+
+.heroBrandEyeOne,
+.heroBrandEyeTwo {
+  width: 21%;
+  aspect-ratio: 79 / 68;
+  stroke-width: 0.7;
+}
+
+.heroBrandEyeOne {
+  top: 0;
+  left: 29.5%;
+}
+
+.heroBrandEyeTwo {
+  top: 13%;
+  left: 68.8%;
 }
 
 .heroInner {
@@ -137,7 +196,7 @@
   color: var(--sky);
   font-size: 12px;
   font-weight: 750;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
 }
 
@@ -148,7 +207,7 @@
   font-size: clamp(3rem, 6rem, 6.8rem);
   font-weight: 780;
   line-height: 0.92;
-  letter-spacing: 0em;
+  letter-spacing: var(--marketing-tracking-display);
   text-wrap: balance;
   user-select: none;
 }
@@ -206,12 +265,16 @@
 
 .primaryButton {
   color: var(--night);
-  background: var(--mint);
-  box-shadow: 0 18px 50px rgba(52, 215, 182, 0.22);
+  background: var(--brand-accent);
+  box-shadow: 0 18px 50px rgba(var(--brand-accent-rgb), 0.22);
 }
 
 .primaryButton:hover {
-  background: var(--cloud);
+  background: var(--brand-accent-hover);
+}
+
+.primaryButton:active {
+  background: var(--brand-accent-active);
 }
 
 .secondaryButton {
@@ -225,22 +288,30 @@
 }
 
 .scrollCue {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  width: 100%;
   margin-top: 34px;
-  color: rgba(247, 251, 255, 0.5);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
 }
 
-.scrollCue::before {
-  content: "";
-  width: 34px;
-  height: 1px;
-  background: var(--sky);
+.scrollCueIcon {
+  display: inline-flex;
+  color: var(--sky);
+  animation: scrollCueBounce 2.4s ease-in-out infinite;
+}
+
+@keyframes scrollCueBounce {
+  0%,
+  100% {
+    transform: translateY(-2px);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translateY(4px);
+    opacity: 0.45;
+  }
 }
 
 .transformScene {
@@ -254,7 +325,7 @@
     ),
     radial-gradient(
       circle at 84% 54%,
-      rgba(52, 215, 182, 0.12),
+      rgba(var(--brand-accent-rgb), 0.12),
       transparent 34%
     ),
     linear-gradient(135deg, #0b1324 0%, #081426 56%, #071b26 100%);
@@ -264,7 +335,7 @@
   color: var(--cloud);
   background:
     radial-gradient(circle at 18% 50%, rgba(124, 92, 252, 0.13), transparent 34%),
-    radial-gradient(circle at 84% 44%, rgba(52, 215, 182, 0.13), transparent 34%),
+    radial-gradient(circle at 84% 44%, rgba(var(--brand-accent-rgb), 0.13), transparent 34%),
     linear-gradient(135deg, #0b1324 0%, #081426 56%, #071b26 100%);
 }
 
@@ -356,7 +427,7 @@
   font-size: clamp(2.8rem, 6vw, 6.2rem);
   font-weight: 860;
   line-height: 0.9;
-  letter-spacing: 0em;
+  letter-spacing: var(--marketing-tracking-section);
   text-wrap: balance;
 }
 
@@ -390,7 +461,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(52, 215, 182, 0.25),
+    rgba(var(--brand-accent-rgb), 0.25),
     rgba(48, 169, 224, 0.11) 42%,
     transparent 72%
   );
@@ -433,8 +504,8 @@
   height: 6px;
   margin: 0 10px 1px 0;
   border-radius: 50%;
-  background: var(--mint);
-  box-shadow: 0 0 14px rgba(52, 215, 182, 0.9);
+  background: var(--brand-accent);
+  box-shadow: 0 0 14px rgba(var(--brand-accent-rgb), 0.9);
 }
 
 .storyStatus span {
@@ -506,8 +577,8 @@
   position: absolute;
   display: block;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(52, 215, 182, 0.7));
-  box-shadow: 0 0 14px rgba(52, 215, 182, 0.24);
+  background: linear-gradient(90deg, transparent, rgba(var(--brand-accent-rgb), 0.7));
+  box-shadow: 0 0 14px rgba(var(--brand-accent-rgb), 0.24);
 }
 
 .flowLines i:nth-child(1) {
@@ -545,7 +616,7 @@
   background: #f7fbff;
   box-shadow:
     0 32px 84px rgba(0, 0, 0, 0.42),
-    0 0 70px rgba(52, 215, 182, 0.08);
+    0 0 70px rgba(var(--brand-accent-rgb), 0.08);
   transform: translateX(-50%);
   transform-origin: center;
   will-change: transform, opacity, filter;
@@ -659,9 +730,10 @@
 .lessonPanel h3 {
   max-width: 15ch;
   margin: 22px 0 12px;
+  color: var(--marketing-heading-color);
   font-size: clamp(1.45rem, 2.2vw, 2.25rem);
   line-height: 1.03;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--marketing-tracking-card);
 }
 
 .lessonPanel p {
@@ -702,7 +774,7 @@
   padding: 24px;
   border: 1px solid rgba(8, 20, 38, 0.07);
   border-radius: 16px;
-  background: linear-gradient(160deg, #f2f7fb, #e8f8f4);
+  background: linear-gradient(160deg, #f2f7fb, #ecf4ff);
 }
 
 .impactLabel {
@@ -738,7 +810,7 @@
 .impactBars i {
   width: 100%;
   border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, #34d7b6, #30a9e0);
+  background: linear-gradient(180deg, var(--brand-accent), #30a9e0);
 }
 
 .impactBars i:nth-child(1) {
@@ -782,7 +854,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--coral), var(--sky), var(--mint));
+  background: linear-gradient(90deg, var(--coral), var(--sky), var(--brand-accent));
   transform: scaleX(1);
 }
 
@@ -874,7 +946,7 @@
   max-width: 9ch;
   font-size: clamp(2.35rem, 3.8vw, 4.25rem);
   line-height: 0.92;
-  letter-spacing: -0.055em;
+  letter-spacing: var(--marketing-tracking-display);
   text-wrap: balance;
 }
 
@@ -963,6 +1035,7 @@
 
 .pricingHeader .sectionTitle {
   max-width: 700px;
+  color: var(--marketing-heading-color);
 }
 
 .pricingGrid {
@@ -996,7 +1069,7 @@
   place-items: center;
   border-radius: 50%;
   color: var(--night);
-  background: var(--mint);
+  background: var(--brand-accent);
   font-weight: 800;
 }
 
@@ -1055,8 +1128,13 @@
 
 .planName {
   margin: 25px 0 0;
+  color: var(--marketing-heading-color);
   font-size: 24px;
-  letter-spacing: -0.035em;
+  letter-spacing: var(--marketing-tracking-card);
+}
+
+.planCardPopular .planName {
+  color: var(--cloud);
 }
 
 .planPrice {
@@ -1114,57 +1192,50 @@
 }
 
 .finalBackdrop {
-  background:
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(48, 169, 224, 0.36),
-      transparent 26%
-    ),
-    radial-gradient(
-      circle at 26% 55%,
-      rgba(124, 92, 252, 0.23),
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 74% 55%,
-      rgba(52, 215, 182, 0.2),
-      transparent 28%
-    ),
-    var(--night);
+  background: linear-gradient(145deg, #081426 0%, #0c1930 52%, #07101f 100%);
 }
 
-.finalLines,
-.finalLines::before,
-.finalLines::after {
+.finalBrandPattern {
   position: absolute;
-  width: 72vw;
-  height: 72vw;
-  max-width: 900px;
-  max-height: 900px;
-  border: 1px solid rgba(124, 194, 255, 0.18);
-  border-radius: 50%;
-}
-
-.finalLines {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.finalLines::before,
-.finalLines::after {
-  content: "";
+  z-index: 1;
   inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.finalLines::before {
-  transform: scale(0.74);
-  border-color: rgba(52, 215, 182, 0.2);
+.finalBrandPattern svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
-.finalLines::after {
-  transform: scale(0.48);
-  border-color: rgba(124, 92, 252, 0.22);
+.finalBrandMark {
+  fill: none;
+  stroke: rgba(124, 194, 255, 0.28);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.15;
+  filter: drop-shadow(0 0 0px rgba(124, 194, 255, 0.9));
+  pointer-events: none;
+}
+
+.finalBrandEye {
+  fill: none;
+  stroke: rgba(124, 194, 255, 5);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.finalBrandMarkSoft {
+  stroke: rgba(124, 194, 255, 0.18);
+  filter: drop-shadow(0 0 3px rgba(124, 194, 255, 0.16));
+}
+
+.finalBrandTablet,
+.finalBrandMobile {
+  display: none;
 }
 
 .finalContent {
@@ -1179,7 +1250,9 @@
   font-size: clamp(3.4rem, 6vw, 8rem);
   font-weight: 780;
   line-height: 0.88;
-  letter-spacing: 0em;
+  letter-spacing: var(--marketing-tracking-display);
+  hyphens: auto;
+  overflow-wrap: break-word;
   text-wrap: balance;
 }
 
@@ -1248,6 +1321,24 @@
 }
 
 @media (max-width: 1023px) {
+  .finalBrandDesktop {
+    display: none;
+  }
+
+  .finalBrandTablet {
+    display: inline;
+    opacity: 0.86;
+  }
+
+  .heroBrandMain {
+    stroke-width: 0.65;
+  }
+
+  .heroBrandEyeOne,
+  .heroBrandEyeTwo {
+    stroke: rgba(124, 194, 255, 0.24);
+  }
+
   .transformScene,
   .productScene,
   .pricingScene,
@@ -1346,13 +1437,43 @@
 }
 
 @media (max-width: 760px) {
+  .finalBrandTablet {
+    display: none;
+  }
+
+  .finalBrandMobile {
+    display: inline;
+    opacity: 0.58;
+  }
+
+  .finalBrandMark {
+    stroke-width: 1;
+  }
+
+  .heroBrandComposition {
+    inset: 0;
+    width: auto;
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .heroBrandMain {
+    top: 84%;
+    left: 65%;
+    width: 620px;
+    height: 330px;
+    stroke: rgba(124, 194, 255, 0.15);
+    stroke-width: 0.7;
+  }
+
+  .heroBrandEyeOne,
+  .heroBrandEyeTwo {
+    display: none;
+  }
+
   .lang {
     top: 8px;
     right: 12px;
-  }
-
-  .navRow {
-    padding: 14px 12px 0;
   }
 
   .heroInner {
@@ -1487,6 +1608,12 @@
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
+  }
+
+  .scrollCueIcon {
+    animation: none !important;
+    transform: none !important;
+    opacity: 0.9 !important;
   }
 
   .signalField,

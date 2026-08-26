@@ -1,10 +1,9 @@
 import { useTranslations } from "next-intl";
-import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
-import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
+import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import ProductExplorer from "./ProductExplorer.jsx";
 import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
-import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
+import ProductHeroBackdrop from "./ProductHeroBackdrop.jsx";
 import styles from "./productPage.module.css";
 
 export default function ProductPage() {
@@ -14,15 +13,9 @@ export default function ProductPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
-        <InteractiveAmbientBackground
-          variant="mist"
-          intensity="subtle"
-          interactive
-        />
+        <ProductHeroBackdrop />
 
-        <div className={styles.navRow}>
-          <MarketingNavbar trailing={<LanguageSwitch />} />
-        </div>
+        <PersistentHeader reserveSpace />
 
         <div className={styles.container}>
           <header className={styles.header}>

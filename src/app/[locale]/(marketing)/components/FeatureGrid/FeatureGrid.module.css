@@ -1,5 +1,5 @@
 .wrap {
-  --feature-ink: var(--night, #081426);
+  --feature-ink: var(--marketing-heading-color);
   --feature-muted: rgba(8, 20, 38, 0.66);
   --feature-cloud: #f7fbff;
   position: relative;
@@ -8,7 +8,7 @@
   color: var(--feature-ink);
   background:
     radial-gradient(circle at 10% 14%, rgba(124, 194, 255, 0.16), transparent 25%),
-    radial-gradient(circle at 90% 70%, rgba(52, 215, 182, 0.12), transparent 26%),
+    radial-gradient(circle at 90% 70%, rgba(var(--brand-accent-rgb), 0.12), transparent 26%),
     var(--feature-cloud);
 }
 
@@ -28,7 +28,7 @@
   color: #30a9e0;
   font-size: 12px;
   font-weight: 760;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
 }
 
@@ -38,7 +38,7 @@
   font-size: clamp(2.5rem, 5vw, 4.8rem);
   font-weight: 820;
   line-height: 0.98;
-  letter-spacing: -0.055em;
+  letter-spacing: var(--marketing-tracking-section);
   text-wrap: balance;
 }
 
@@ -304,7 +304,7 @@
   font-size: clamp(2.1rem, 3.4vw, 3.4rem);
   font-weight: 770;
   line-height: 1.04;
-  letter-spacing: -0.05em;
+  letter-spacing: var(--marketing-tracking-card);
   text-wrap: balance;
 }
 

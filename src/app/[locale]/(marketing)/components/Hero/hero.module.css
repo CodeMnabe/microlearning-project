@@ -38,6 +38,7 @@
   margin-top: 15px;
   font-size: clamp(38px, 4vw, 65px);
   line-height: 0.95;
+  letter-spacing: var(--marketing-tracking-display);
 }
 
 .subhead {

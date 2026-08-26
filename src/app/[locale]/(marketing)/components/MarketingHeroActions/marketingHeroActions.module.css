@@ -22,8 +22,8 @@
 
 .primary {
   color: #081426;
-  background: #34d7b6;
-  box-shadow: 0 18px 44px rgba(52, 215, 182, 0.18);
+  background: var(--brand-accent);
+  box-shadow: 0 18px 44px rgba(var(--brand-accent-rgb), 0.18);
 }
 
 .secondary {
@@ -38,7 +38,11 @@
 }
 
 .primary:hover {
-  background: #f7fbff;
+  background: var(--brand-accent-hover);
+}
+
+.primary:active {
+  background: var(--brand-accent-active);
 }
 
 .secondary:hover {

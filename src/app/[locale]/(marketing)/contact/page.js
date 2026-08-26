@@ -1,8 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import LoaderLink from "../components/TopLoader/LoaderLink";
-import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
-import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
+import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import ContactForm from "./ContactForm.jsx";
 import styles from "./contact.module.css";
@@ -19,13 +18,7 @@ export default function ContactPage() {
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
 
-        <div className={styles.lang}>
-          <LanguageSwitch />
-        </div>
-
-        <div className={styles.navRow}>
-          <MarketingNavbar />
-        </div>
+        <PersistentHeader reserveSpace />
         <div className={styles.container}>
           <header className={styles.header}>
             <p className={styles.eyebrow}>{t("eyebrow")}</p>

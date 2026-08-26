@@ -1,34 +1,13 @@
 .main {
+  /* The header used to sit in-flow here as an 84px box (18px padding + the
+     66px navbar); reserve the same height now that it is fixed. */
+  --marketing-header-space: 84px;
   --legal-night: #081426;
   --legal-navy: #101b33;
   --legal-cloud: #f7fbff;
   min-height: 100vh;
   color: var(--legal-cloud);
   background: var(--legal-night);
-}
-
-.publicNav {
-  padding-top: 18px;
-}
-
-.navLanguage {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-}
-
-.navLanguage :global(div) {
-  border-color: rgba(247, 251, 255, 0.18) !important;
-  background: transparent !important;
-}
-
-.navLanguage :global(a) {
-  color: rgba(247, 251, 255, 0.72) !important;
-}
-
-.navLanguage :global(a[aria-current="true"]) {
-  color: var(--legal-night) !important;
 }
 
 .legalShell {
@@ -101,7 +80,7 @@
   font-size: clamp(2.15rem, 4vw, 3.65rem);
   font-weight: 820;
   line-height: 1.05;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--marketing-tracking-display);
   text-wrap: balance;
 }
 
@@ -145,7 +124,7 @@
   font-size: clamp(1.2rem, 2vw, 1.55rem);
   font-weight: 760;
   line-height: 1.25;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--marketing-tracking-section);
 }
 
 .paragraph {

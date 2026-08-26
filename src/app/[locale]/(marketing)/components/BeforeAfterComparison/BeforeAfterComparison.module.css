@@ -4,7 +4,7 @@
 }
 
 .frame {
-  --comparison-position: 92%;
+  --comparison-position: 50%;
   position: relative;
   aspect-ratio: 2.32 / 1;
   overflow: hidden;
@@ -14,7 +14,7 @@
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.26);
   opacity: 0;
   transform: translateY(18px);
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
   cursor: ew-resize;
   transition:
@@ -28,7 +28,7 @@
 }
 
 .image,
-.afterLayer {
+.beforeLayer {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -41,17 +41,8 @@
   pointer-events: none;
 }
 
-.afterLayer {
-  clip-path: inset(
-    0 0 0 calc(100% - var(--comparison-position))
-  );
-}
-
-.animating .afterLayer,
-.animating .divider {
-  transition:
-    clip-path 1250ms cubic-bezier(0.22, 1, 0.36, 1),
-    left 1250ms cubic-bezier(0.22, 1, 0.36, 1);
+.beforeLayer {
+  clip-path: inset(0 calc(100% - var(--comparison-position)) 0 0);
 }
 
 .label {
@@ -90,7 +81,7 @@
   transform: translateX(-50%);
   background: transparent;
   cursor: ew-resize;
-  touch-action: none;
+  touch-action: pan-y;
 }
 
 .divider::before {
@@ -109,21 +100,29 @@
   top: 50%;
   left: 50%;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 50%;
-  color: #081426;
-  background: #b5f4e6;
-  box-shadow: 0 8px 22px rgba(8, 20, 38, 0.25);
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  box-shadow: 0 8px 22px rgba(8, 20, 38, 0.3);
   transform: translate(-50%, -50%);
 }
 
-.divider:hover .handle,
-.divider:focus-visible .handle {
-  background: #f7fbff;
+.divider:hover .handle {
   transform: translate(-50%, -50%) scale(1.06);
+}
+
+.divider:focus-visible {
+  outline: none;
+}
+
+.divider:focus-visible .handle {
+  box-shadow:
+    0 0 0 4px rgba(74, 176, 255, 0.45),
+    0 8px 22px rgba(8, 20, 38, 0.3);
 }
 
 .details {
@@ -154,11 +153,9 @@
 }
 
 /*
- * Mesma geometria para todos os traços.
- * Dimensões pares e alinhamento em píxeis inteiros
- * para reduzir diferenças de rasterização.
+ * Traço simples para o estado "Antes" — linguagem neutra/negativa.
  */
-.list li::before {
+.beforeDetails li::before {
   content: "";
   display: block;
   flex: 0 0 16px;
@@ -170,11 +167,32 @@
 }
 
 /*
- * No lado “Agora” muda apenas a cor.
- * Tamanho, posição e forma são rigorosamente iguais.
+ * Checkmark desenhado para o estado "Agora" — reforça confirmação/benefício.
+ * Círculo subtil em azul de marca, sem verde e sem aparência de emoji.
  */
-.afterDetails li::before {
-  border-top-color: var(--mint);
+.checkIcon {
+  display: flex;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  border: 1px solid rgba(var(--brand-accent-rgb), 0.32);
+  border-radius: 50%;
+  color: var(--brand-accent);
+  background: rgba(var(--brand-accent-rgb), 0.12);
+  transform: scale(0.9);
+  transition: transform 360ms ease;
+}
+
+.afterActive .afterDetails .checkIcon {
+  transform: scale(1);
+}
+
+.checkIcon svg {
+  width: 12px;
+  height: 12px;
 }
 
 .beforeActive .beforeDetails,
@@ -205,6 +223,15 @@
     right: 14px;
   }
 
+  .divider {
+    width: 52px;
+  }
+
+  .handle {
+    width: 44px;
+    height: 44px;
+  }
+
   .details {
     gap: 18px;
     padding: 0 4px;
@@ -219,18 +246,25 @@
     gap: 12px;
   }
 
-  .list li::before {
+  .beforeDetails li::before {
     margin-top: 9px;
+  }
+
+  .checkIcon {
+    flex-basis: 18px;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+  }
+
+  .checkIcon svg {
+    width: 11px;
+    height: 11px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .frame {
-    transition: none;
-  }
-
-  .animating .afterLayer,
-  .animating .divider {
     transition: none;
   }
 }

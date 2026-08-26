@@ -4,18 +4,20 @@ import {
   BarChart3,
   Bell,
   Check,
+  ChevronDown,
   FileText,
   MessageCircle,
   Sparkles,
 } from "lucide-react";
-import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
-import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
+import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import LoaderLink from "./components/TopLoader/LoaderLink";
 import Footer from "./components/Footer/Footer";
 import LandingExperience from "./components/LandingExperience/LandingExperience";
 import InteractiveAmbientBackground from "./components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import BeforeAfterComparison from "./components/BeforeAfterComparison/BeforeAfterComparison";
 import FeatureGrid from "./components/FeatureGrid/FeatureGrid";
+import HeroBrandBackdrop from "./components/LandingExperience/HeroBrandBackdrop";
+import FinalBrandPattern from "./components/LandingExperience/FinalBrandPattern";
 import heroContent from "./components/Hero/hero.json";
 import pricingContent from "./components/Pricing/pricing.json";
 import styles from "./components/LandingExperience/landingExperience.module.css";
@@ -53,13 +55,18 @@ export default async function LocaleIndex() {
     name: tPricing(plan.nameKey),
     tagline: tPricing(plan.taglineKey),
     unit: tPricing(plan.unitKey),
-    color: ["#7cc2ff", "#34d7b6", "#7c5cfc"][index],
+    color: ["#7cc2ff", "#4ab0ff", "#7c5cfc"][index],
   }));
 
   const heroTitle = `${tHero(heroContent.titleLines[0])} ${tHero(heroContent.titleLines[1])}`;
 
   return (
     <main>
+      {/* Rendered outside <LandingExperience> so the persistent header is never
+          nested inside a sticky / overflow-hidden scroll scene. The hero already
+          reserves its own top padding, so no in-flow spacer is needed here. */}
+      <PersistentHeader />
+
       <LandingExperience>
         <section className={`${styles.scene} ${styles.heroScene}`}>
           <div className={styles.sceneSticky} data-scene-sticky>
@@ -69,10 +76,7 @@ export default async function LocaleIndex() {
               intensity="medium"
               interactive
             />
-            <div className={styles.navRow}>
-              <MarketingNavbar trailing={<LanguageSwitch />} />
-            </div>
-
+            <HeroBrandBackdrop />
             <div className={styles.heroInner}>
               <div className={styles.heroCopy}>
                 <p className={styles.eyebrow} data-hero-intro>
@@ -94,6 +98,7 @@ export default async function LocaleIndex() {
                     href={heroContent.primaryCta.href}
                     className={styles.primaryButton}
                     data-magnetic
+                    data-page-demo-cta
                   >
                     {tHero(heroContent.primaryCta.labelKey)}
                   </LoaderLink>
@@ -104,8 +109,16 @@ export default async function LocaleIndex() {
                     {tHero(heroContent.secondaryCta.labelKey)}
                   </LoaderLink>
                 </div>
-                <span className={styles.scrollCue} data-hero-intro>
-                  {tJourney("scroll")}
+                <span
+                  className={styles.scrollCue}
+                  data-hero-intro
+                  aria-hidden="true"
+                >
+                  <ChevronDown
+                    className={styles.scrollCueIcon}
+                    size={30}
+                    strokeWidth={1.5}
+                  />
                 </span>
               </div>
             </div>
@@ -428,7 +441,7 @@ export default async function LocaleIndex() {
             interactive={false}
             className={styles.finalAmbient}
           />
-          <div className={styles.finalLines} aria-hidden="true" />
+          <FinalBrandPattern />
           <div className={styles.finalContent} data-reveal>
             <p className={styles.eyebrow}>{tJourney("finalEyebrow")}</p>
             <h2 className={styles.finalTitle}>{tJourney("finalTitle")}</h2>

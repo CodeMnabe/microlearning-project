@@ -982,7 +982,9 @@
   "Lang": {
     "pt": "PT",
     "en": "EN",
-    "switchTo": "Mudar para {code}"
+    "switchTo": "Mudar para {code}",
+    "ariaLabel": "Selecionar idioma",
+    "triggerLabel": "Idioma atual: {language}. Abrir seletor de idioma."
   },
   "Confirm": {
     "title": "Tem a certeza?",

@@ -3,14 +3,10 @@
   background: var(--ink);
 }
 
-.lang {
-  position: fixed;
-  top: 10px;
-  right: var(--content-gutter, 24px);
-  z-index: 60;
-}
-
 .hero {
+  /* The header used to sit in-flow here as a 76px box (10px padding + the
+     66px navbar); reserve the same height now that it is fixed. */
+  --marketing-header-space: 76px;
   position: relative;
   overflow: hidden;
   margin: 0;
@@ -27,11 +23,6 @@
   margin: 0;
   border-radius: 0;
   background: linear-gradient(135deg, var(--ink), var(--brand-1));
-}
-
-.navRow {
-  position: relative;
-  padding: 10px 32px 0;
 }
 
 .container {
@@ -52,7 +43,7 @@
 .eyebrow {
   margin: 0 0 10px;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.72);
 }
@@ -61,7 +52,7 @@
   margin: 0;
   font-size: clamp(36px, 4vw, 58px);
   line-height: 0.98;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--marketing-tracking-display);
 }
 
 .subhead {
@@ -111,7 +102,7 @@
 .formEyebrow {
   margin: 0 0 8px;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
   color: rgba(var(--ink-rgb), 0.55);
 }
@@ -121,8 +112,8 @@
   margin: 0;
   font-size: clamp(24px, 3vw, 34px);
   line-height: 1.08;
-  letter-spacing: -0.03em;
-  color: rgba(var(--ink-rgb), 0.95);
+  letter-spacing: var(--marketing-tracking-card);
+  color: var(--marketing-heading-color);
 }
 
 .cardText,
@@ -302,9 +293,6 @@
 }
 
 @media (max-width: 960px) {
-  .navRow {
-    padding: 10px 16px 0;
-  }
 
   .grid {
     grid-template-columns: 1fr;
@@ -312,9 +300,6 @@
 }
 
 @media (max-width: 640px) {
-  .navRow {
-    padding: 8px 8px 0;
-  }
 
   .row {
     grid-template-columns: 1fr;
@@ -325,6 +310,4 @@
     padding: 22px;
   }
 }
-
-
 

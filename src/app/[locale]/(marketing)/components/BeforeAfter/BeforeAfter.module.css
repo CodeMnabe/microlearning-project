@@ -13,19 +13,18 @@
 .eyebrow {
   margin: 0 0 10px;
   font-size: 12px;
-  letter-spacing: 0.18rem;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
   color: rgba(var(--ink-rgb), 0.55);
-  letter-spacing: 0.18em;
 }
 
 .heading {
   margin: 0;
   font-size: clamp(28px, 4vw, 46px);
   line-height: 1.05;
-  letter-spacing: -0.03rem;
+  letter-spacing: var(--marketing-tracking-section);
   font-weight: 760;
-  color: rgba(var(--ink-rgb), 0.95);
+  color: var(--marketing-heading-color);
 }
 
 .subheading {

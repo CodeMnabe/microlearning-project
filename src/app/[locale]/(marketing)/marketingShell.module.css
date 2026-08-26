@@ -3,7 +3,6 @@
   --marketing-navy: #101b33;
   --marketing-blue: #30a9e0;
   --marketing-sky: #7cc2ff;
-  --marketing-mint: #34d7b6;
   --marketing-violet: #7c5cfc;
   --marketing-coral: #ff6b7a;
   --marketing-cloud: #f7fbff;
@@ -35,7 +34,7 @@
   inset: 0 !important;
   height: auto !important;
   margin: 0 !important;
-  border-radius: 0 0 38px 38px !important;
+  border-radius: 0 !important;
   background:
     radial-gradient(circle at 72% 20%, rgba(124, 194, 255, 0.38), transparent 25%),
     radial-gradient(circle at 20% 80%, rgba(124, 92, 252, 0.2), transparent 26%),
@@ -48,7 +47,7 @@
   font-size: clamp(3.25rem, 7vw, 7rem);
   font-weight: 870;
   line-height: 0.9;
-  letter-spacing: -0.065em;
+  letter-spacing: var(--marketing-tracking-display);
   text-wrap: balance;
   animation: marketingTitleIn 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }

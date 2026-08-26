@@ -1,6 +1,5 @@
 import { useTranslations } from "next-intl";
-import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
-import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
+import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import PricingExplorer from "./PricingExplorer.jsx";
 import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
@@ -20,9 +19,7 @@ export default function PricingPage() {
           quality="low"
         />
 
-        <div className={styles.navRow}>
-          <MarketingNavbar trailing={<LanguageSwitch />} />
-        </div>
+        <PersistentHeader reserveSpace />
 
         <div className={styles.container}>
           <header className={styles.header}>

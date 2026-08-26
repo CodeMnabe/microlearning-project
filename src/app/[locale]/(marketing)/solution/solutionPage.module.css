@@ -3,7 +3,6 @@
   --navy: #101b33;
   --brand: #30a9e0;
   --sky: #7cc2ff;
-  --mint: #34d7b6;
   --cloud: #f7fbff;
   min-height: 100vh;
   display: flex;
@@ -15,7 +14,7 @@
 
 .page a:focus-visible,
 .page button:focus-visible {
-  outline: 3px solid var(--mint);
+  outline: 3px solid var(--brand-accent);
   outline-offset: 4px;
 }
 
@@ -37,118 +36,167 @@
   overflow: hidden;
   margin: 10px;
   padding: 18px clamp(20px, 3.2vw, 56px) 54px;
-  border-radius: 30px;
+  border-radius: 30px 30px 0 0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   background: var(--night);
 }
 
-.background {
+.heroBackdrop {
   position: absolute;
   inset: 0;
+  z-index: 0;
+  overflow: hidden;
   background:
     radial-gradient(
-      circle at 88% 18%,
-      rgba(124, 194, 255, 0.32),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 22% 110%,
-      rgba(52, 215, 182, 0.16),
+      ellipse at 88% 12%,
+      rgba(63, 111, 225, 0.3),
       transparent 34%
     ),
-    linear-gradient(142deg, #071321 4%, var(--navy) 58%, #0c3655 100%);
+    radial-gradient(
+      ellipse at 12% 108%,
+      rgba(52, 91, 225, 0.22),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 80% 96%,
+      rgba(74, 91, 223, 0.17),
+      transparent 36%
+    ),
+    linear-gradient(138deg, #040b1b 0%, #07152b 48%, #0a1c3a 100%);
+  pointer-events: none;
 }
 
-.background::before {
+.heroBackdrop::before {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.28;
+  opacity: 0.24;
   background:
-    linear-gradient(
-      112deg,
-      transparent 0 67%,
-      rgba(124, 194, 255, 0.1) 67.1% 67.2%,
-      transparent 67.3%
+    radial-gradient(
+      circle at 18% 74%,
+      rgba(112, 146, 255, 0.22) 0 1px,
+      transparent 1.5px
     ),
-    linear-gradient(
-      24deg,
-      transparent 0 74%,
-      rgba(52, 215, 182, 0.08) 74.1% 74.2%,
-      transparent 74.3%
+    radial-gradient(
+      circle at 76% 24%,
+      rgba(105, 160, 255, 0.24) 0 1px,
+      transparent 1.5px
     );
-  mask-image: linear-gradient(90deg, transparent 18%, #000 72%);
+  background-size: 96px 96px, 132px 132px;
+  mask-image: linear-gradient(90deg, #000, transparent 44%, #000);
 }
 
-.heroSignal {
+.ambientGlow {
   position: absolute;
-  top: 9%;
-  right: -8%;
-  z-index: 0;
-  width: min(48vw, 650px);
-  aspect-ratio: 1;
-  opacity: 0.68;
-  pointer-events: none;
-  animation: signalIn 1.1s 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.heroSignal::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
+  display: block;
   border-radius: 50%;
-  background: var(--mint);
-  box-shadow:
-    0 0 0 10px rgba(52, 215, 182, 0.08),
-    0 0 42px rgba(52, 215, 182, 0.7);
-  transform: translate(-50%, -50%);
+  filter: blur(58px);
 }
 
-.heroSignal span {
+.ambientGlowRight {
+  top: -22%;
+  right: -9%;
+  width: min(58vw, 880px);
+  height: min(56vw, 780px);
+  opacity: 0.42;
+  background: radial-gradient(circle, rgba(54, 117, 255, 0.5), transparent 69%);
+}
+
+.ambientGlowBottom {
+  right: 13%;
+  bottom: -28%;
+  width: min(70vw, 1050px);
+  height: min(34vw, 470px);
+  opacity: 0.38;
+  background: radial-gradient(ellipse, rgba(69, 87, 231, 0.52), transparent 70%);
+}
+
+.particleField {
   position: absolute;
-  border: 1px solid rgba(124, 194, 255, 0.17);
-  border-radius: 50%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.heroSignal span::after {
-  content: "";
+.scatteredParticles {
+  fill: rgba(120, 170, 255, 0.42);
+}
+
+.brightParticle {
+  fill: rgba(157, 204, 255, 0.86);
+  filter: drop-shadow(0 0 5px rgba(86, 147, 255, 0.9));
+}
+
+.brandParticleMark {
   position: absolute;
-  top: 50%;
-  right: -3px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--sky);
-  box-shadow: 0 0 18px rgba(124, 194, 255, 0.7);
+  top: 3%;
+  right: -5%;
+  width: clamp(540px, 47vw, 820px);
+  overflow: visible;
+  opacity: 0.78;
+  transform: rotate(8deg);
+  transform-origin: center;
 }
 
-.heroSignal span:nth-child(1) {
-  inset: 8%;
+.markAura {
+  fill: none;
+  stroke: rgba(73, 135, 255, 0.3);
+  stroke-width: 8;
 }
 
-.heroSignal span:nth-child(2) {
-  inset: 23%;
-  transform: rotate(72deg);
+.markParticles {
+  fill: url("#solution-mark-dots");
+  opacity: 0.94;
 }
 
-.heroSignal span:nth-child(3) {
-  inset: 37%;
-  transform: rotate(154deg);
+.markContour {
+  fill: none;
+  stroke: url("#solution-mark-stroke");
+  stroke-width: 1.25;
+  opacity: 0.72;
+  filter: drop-shadow(0 0 7px rgba(79, 148, 255, 0.9));
 }
 
-.heroSignal span:nth-child(4) {
-  inset: 47%;
-  border-color: rgba(52, 215, 182, 0.3);
-  transform: rotate(228deg);
+.waveField {
+  position: absolute;
+  right: -2%;
+  bottom: -2%;
+  left: -2%;
+  width: 104%;
+  height: 48%;
+  overflow: visible;
 }
 
-.navRow {
-  position: relative;
-  z-index: 3;
+.meshThreads {
+  fill: none;
+  stroke: url("#solution-wave-gradient");
+  stroke-width: 0.75;
+  opacity: 0.46;
+  vector-effect: non-scaling-stroke;
+}
+
+.meshDots {
+  fill: none;
+  stroke: url("#solution-wave-gradient");
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 4.5;
+  opacity: 0.72;
+  vector-effect: non-scaling-stroke;
+}
+
+.heroReadabilityVeil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at 50% 48%,
+      rgba(4, 11, 27, 0.68) 0,
+      rgba(4, 11, 27, 0.38) 31%,
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(4, 11, 27, 0.18), transparent 22% 72%, rgba(4, 11, 27, 0.15));
 }
 
 .container {
@@ -174,7 +222,7 @@
   margin: 0 0 18px;
   font-size: 12px;
   font-weight: 750;
-  letter-spacing: 0.2em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
 }
 
@@ -193,7 +241,7 @@
   font-size: clamp(3rem, 5.5vw, 5.35rem);
   font-weight: 820;
   line-height: 0.97;
-  letter-spacing: 0em;
+  letter-spacing: var(--marketing-tracking-display);
   text-wrap: balance;
 }
 
@@ -219,7 +267,7 @@
     radial-gradient(circle at 2% 15%, rgba(48, 169, 224, 0.1), transparent 23%),
     radial-gradient(
       circle at 98% 64%,
-      rgba(52, 215, 182, 0.08),
+      rgba(var(--brand-accent-rgb), 0.08),
       transparent 22%
     ),
     var(--cloud);
@@ -260,11 +308,11 @@
 .sectionTitle {
   max-width: 15ch;
   margin: 0;
-  color: var(--night);
+  color: var(--marketing-heading-color);
   font-size: clamp(2.8rem, 5.3vw, 5.45rem);
   font-weight: 820;
   line-height: 0.94;
-  letter-spacing: 0em;
+  letter-spacing: var(--marketing-tracking-section);
   text-wrap: balance;
 }
 
@@ -330,7 +378,7 @@
 .chapterTraceFill {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--brand), var(--mint));
+  background: linear-gradient(180deg, var(--brand), var(--brand-accent));
   transform-origin: center top;
 }
 
@@ -352,7 +400,7 @@
       rgba(124, 194, 255, 0.45),
       transparent 45%
     ),
-    radial-gradient(circle at 28% 76%, rgba(52, 215, 182, 0.2), transparent 42%);
+    radial-gradient(circle at 28% 76%, rgba(var(--brand-accent-rgb), 0.2), transparent 42%);
   filter: blur(42px);
 }
 
@@ -407,11 +455,11 @@
 
 .solutionTitle {
   margin: 0;
-  color: rgba(8, 20, 38, 0.97);
+  color: var(--marketing-heading-color);
   font-size: clamp(2.25rem, 4vw, 4.4rem);
   font-weight: 810;
   line-height: 0.96;
-  letter-spacing: -0.055em;
+  letter-spacing: var(--marketing-tracking-card);
   text-wrap: balance;
 }
 
@@ -449,8 +497,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--mint);
-  box-shadow: 0 0 0 5px rgba(52, 215, 182, 0.11);
+  background: var(--brand-accent);
+  box-shadow: 0 0 0 5px rgba(var(--brand-accent-rgb), 0.11);
 }
 
 .footerWrap {
@@ -465,17 +513,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes signalIn {
-  from {
-    opacity: 0;
-    transform: translate3d(30px, -16px, 0) scale(0.94);
-  }
-  to {
-    opacity: 0.68;
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -496,11 +533,29 @@
 }
 
 @media (max-width: 900px) {
-  .heroSignal {
-    top: 10%;
-    right: -16%;
-    width: min(72vw, 560px);
-    opacity: 0.5;
+  .brandParticleMark {
+    top: 5%;
+    right: -18%;
+    width: min(72vw, 650px);
+    opacity: 0.58;
+  }
+
+  .waveField {
+    bottom: -1%;
+    height: 43%;
+  }
+
+  .meshThreads {
+    opacity: 0.38;
+  }
+
+  .meshDots {
+    opacity: 0.62;
+  }
+
+  .ambientGlowRight {
+    right: -20%;
+    opacity: 0.32;
   }
 
   .container {
@@ -551,13 +606,58 @@
   .hero {
     margin: 6px;
     padding: 14px 12px 44px;
-    border-radius: 24px;
+    border-radius: 24px 24px 0 0;
   }
 
-  .heroSignal {
-    top: 12%;
-    right: -30%;
-    width: 94vw;
+  .brandParticleMark {
+    top: 7%;
+    right: -32%;
+    width: 98vw;
+    opacity: 0.38;
+  }
+
+  .particleField {
+    opacity: 0.54;
+  }
+
+  .scatteredParticles circle:nth-child(n + 25) {
+    display: none;
+  }
+
+  .waveField {
+    right: -18%;
+    bottom: -2%;
+    left: -18%;
+    width: 136%;
+    height: 36%;
+  }
+
+  .meshThreads {
+    opacity: 0.28;
+  }
+
+  .meshDots {
+    stroke-width: 1.75;
+    opacity: 0.48;
+  }
+
+  .ambientGlowBottom {
+    right: -28%;
+    bottom: -16%;
+    width: 128vw;
+    height: 48vw;
+    opacity: 0.27;
+  }
+
+  .heroReadabilityVeil {
+    background:
+      radial-gradient(
+        ellipse at 50% 48%,
+        rgba(4, 11, 27, 0.78) 0,
+        rgba(4, 11, 27, 0.5) 38%,
+        transparent 72%
+      ),
+      linear-gradient(180deg, rgba(4, 11, 27, 0.2), transparent 20% 72%, rgba(4, 11, 27, 0.18));
   }
 
   .container {
@@ -663,11 +763,17 @@
   .page .hero .title {
     font-size: clamp(2.45rem, 12.4vw, 3.25rem);
   }
+
+  .brandParticleMark {
+    top: 10%;
+    right: -42%;
+    width: 112vw;
+    opacity: 0.3;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .header,
-  .heroSignal {
+  .header {
     animation: none;
   }
 

@@ -28,7 +28,7 @@
 .eyebrow {
   margin: 0 0 10px;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--marketing-tracking-label);
   text-transform: uppercase;
   color: rgba(var(--ink-rgb), 0.55);
 }
@@ -37,9 +37,9 @@
   margin: 0;
   font-size: clamp(28px, 4vw, 46px);
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--marketing-tracking-section);
   font-weight: 760;
-  color: rgba(var(--ink-rgb), 0.95);
+  color: var(--marketing-heading-color);
   
 }
 
@@ -222,8 +222,8 @@
   margin: 0;
   font-size: 18px;
   font-weight: 750;
-  color: rgba(var(--ink-rgb), 0.92);
-  letter-spacing: -0.02em;
+  color: var(--marketing-heading-color);
+  letter-spacing: var(--marketing-tracking-card);
 }
 
 .popTag {

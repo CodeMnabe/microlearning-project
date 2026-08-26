@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import LoaderLink from "@/app/[locale]/(marketing)/components/TopLoader/LoaderLink";
 import styles from "./navbar.module.css";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import createClient from "@/utils/supabase/client";
+import LanguageMenu from "./LanguageMenu";
+import ElasticBrandLogo from "./ElasticBrandLogo";
+import usePageDemoCtaVisibility from "./usePageDemoCtaVisibility";
+import { usePathname } from "@/i18n/navigation";
+
+// `usePathname` from `@/i18n/navigation` already strips the locale prefix
+// (e.g. both `/product` and `/en/product` resolve to `/product`), so it can
+// be compared directly against these locale-agnostic hrefs.
+function isNavItemActive(pathname, href) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 const NAV = [
   { href: "/solution", key: "solution" },
@@ -22,10 +32,16 @@ const NAV = [
 ];
 
 export default function MarketingNavbar({ trailing = null }) {
+  // `trailing` is kept as an escape hatch for extra header content, but the
+  // language switcher itself is now always rendered here (see LanguageMenu)
+  // so every marketing page gets it for free and consistently.
   const translation = useTranslations("LandingPage.Hero.Nav");
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(null);
   const supabase = useMemo(() => createClient(), []);
+  const headerRef = useRef(null);
+  const showDemoCta = usePageDemoCtaVisibility(headerRef);
+  const pathname = usePathname();
 
   useEffect(() => {
     let mounted = true;
@@ -58,25 +74,18 @@ export default function MarketingNavbar({ trailing = null }) {
   }
 
   return (
-    <header className={styles.navWrap}>
+    <header className={styles.navWrap} ref={headerRef}>
       <nav className={styles.navbar}>
         <div className={styles.topBar}>
           <LoaderLink href="/" className={styles.brand} onClick={closeMenu}>
-            <Image
-              src="/images/Logos/Logo cor e branco.png"
-              alt="MyDigitalBot logo"
-              width={2047}
-              height={276}
-              className={styles.logoMark}
-              priority
-              unoptimized
-            />
+            <ElasticBrandLogo />
             {/* <span className={styles.brandText}>MyDigitalBot</span> */}
           </LoaderLink>
 
-          {trailing ? (
-            <div className={styles.mobileTrailing}>{trailing}</div>
-          ) : null}
+          <div className={styles.mobileTrailing}>
+            <LanguageMenu />
+            {trailing}
+          </div>
 
           <button
             type="button"
@@ -95,16 +104,23 @@ export default function MarketingNavbar({ trailing = null }) {
           className={`${styles.navContent} ${isOpen ? styles.open : ""}`}
         >
           <div className={styles.navLinks}>
-            {NAV.map((item) => (
-              <LoaderLink
-                key={item.href}
-                href={item.href}
-                className={styles.navLink}
-                onClick={closeMenu}
-              >
-                {translation(item.key)}
-              </LoaderLink>
-            ))}
+            {NAV.map((item) => {
+              const isActive = isNavItemActive(pathname, item.href);
+
+              return (
+                <LoaderLink
+                  key={item.href}
+                  href={item.href}
+                  className={`${styles.navLink} ${
+                    isActive ? styles.navLinkActive : ""
+                  }`}
+                  onClick={closeMenu}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {translation(item.key)}
+                </LoaderLink>
+              );
+            })}
           </div>
 
           <div className={styles.navActions}>
@@ -129,13 +145,18 @@ export default function MarketingNavbar({ trailing = null }) {
                 </LoaderLink>
                 <LoaderLink
                   href="/contact"
-                  className={styles.signupBtn}
+                  className={`${styles.signupBtn} ${
+                    showDemoCta ? "" : styles.signupBtnHidden
+                  }`}
                   onClick={closeMenu}
+                  aria-hidden={!showDemoCta}
+                  tabIndex={showDemoCta ? undefined : -1}
                 >
                   {translation("book")}
                 </LoaderLink>
               </>
             )}
+            <LanguageMenu />
             {trailing}
           </div>
         </div>

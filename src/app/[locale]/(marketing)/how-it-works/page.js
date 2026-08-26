@@ -1,10 +1,9 @@
 import { useTranslations } from "next-intl";
-import MarketingNavbar from "@/app/components/Navbar/MarketingNavbar/Navbar";
-import LanguageSwitch from "@/app/components/TopBar/LanguageSwitch";
+import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import HowItWorksExplorer from "./howItWorksExplorer";
+import HowItWorksHeroLight from "./HowItWorksHeroLight";
 import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
-import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import styles from "./howItWorksPage.module.css";
 
 export default function HowItWorksPage() {
@@ -14,15 +13,9 @@ export default function HowItWorksPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.background} aria-hidden="true" />
-        <InteractiveAmbientBackground
-          variant="mist"
-          intensity="subtle"
-          interactive
-        />
+        <HowItWorksHeroLight />
 
-        <div className={styles.navRow}>
-          <MarketingNavbar trailing={<LanguageSwitch />} />
-        </div>
+        <PersistentHeader reserveSpace />
 
         <div className={styles.container}>
           <header className={styles.header}>

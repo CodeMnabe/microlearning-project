@@ -967,7 +967,9 @@
   "Lang": {
     "pt": "PT",
     "en": "EN",
-    "switchTo": "Switch to {code}"
+    "switchTo": "Switch to {code}",
+    "ariaLabel": "Select language",
+    "triggerLabel": "Current language: {language}. Open language selector."
   },
   "Confirm": {
     "title": "Are you sure?",

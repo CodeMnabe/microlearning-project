@@ -13,6 +13,23 @@
   --brand-2: #7cc2ff;
   /* gradient end */
   --brand-2-rgb: 124, 194, 255;
+  /* logo blue - accent de marca para CTAs (amostrado de
+     public/images/Logos/logo-24.svg e Logo cor e branco.png) */
+  --brand-accent: #4ab0ff;
+  --brand-accent-rgb: 74, 176, 255;
+  /* estados: reutilizam os azuis de marca ja existentes no projeto */
+  --brand-accent-hover: #7cc2ff;
+  /* = --brand-2 */
+  --brand-accent-active: #30a9e0;
+  /* = --brand-1 */
+  /* texto sobre fundos azuis claros (do gradiente do logotipo) */
+  --brand-accent-ink: #1f4574;
+  /* tipografia do site publico */
+  --marketing-heading-color: #051C46;
+  --marketing-tracking-display: -0.05em;
+  --marketing-tracking-section: -0.035em;
+  --marketing-tracking-card: -0.02em;
+  --marketing-tracking-label: 0.18em;
   --ink: #191e3b;
   /* navy text */
   --ink-rgb: 25, 30, 59;
