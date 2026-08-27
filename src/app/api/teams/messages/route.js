@@ -1,4 +1,5 @@
 // /src/app/api/teams/messages/route.js
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,6 @@ import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 import { createMessage, getMessagesInThread } from "@/lib/repos/messages.repo";
 
 import {
-  createUser,
   getUserByAadObjectId,
   getUserByEmail,
   getUserById,
@@ -40,6 +40,73 @@ import {
 
 import { getBotToken } from "@/lib/teams/auth";
 
+import { handleApiError, requireValidTeamsRequest } from "@/lib/auth/guards";
+
+/* =========================================================
+   ORGANIZATION SECURITY
+   ========================================================= */
+
+function userBelongsToOrganization(user, organizationId) {
+  if (!user || !organizationId) {
+    return false;
+  }
+
+  return Number(user.organization_id) === Number(organizationId);
+}
+
+function assistantBelongsToOrganization(assistant, organizationId) {
+  if (!assistant || !organizationId) {
+    return false;
+  }
+
+  const assistantOrganizationId =
+    assistant.organization_id ?? assistant.org_id ?? null;
+
+  return Number(assistantOrganizationId) === Number(organizationId);
+}
+
+async function getTeamsUserForOrganization({ aadObjectId, organizationId }) {
+  if (!aadObjectId || !organizationId) {
+    return null;
+  }
+
+  const user = await getUserByAadObjectId(aadObjectId);
+
+  if (!user) {
+    return null;
+  }
+
+  if (!userBelongsToOrganization(user, organizationId)) {
+    console.warn("[TEAMS] AAD user organization mismatch", {
+      aadObjectId,
+
+      expectedOrganizationId: organizationId,
+
+      actualOrganizationId: user.organization_id,
+
+      userId: user.id,
+    });
+
+    return null;
+  }
+
+  return user;
+}
+
+async function assertAssistantMatchesOrganization(assistant, organizationId) {
+  if (!assistantBelongsToOrganization(assistant, organizationId)) {
+    const error = new Error(
+      "Assistant does not belong to the Teams organization",
+    );
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  return assistant;
+}
+
 /* =========================================================
    SEND TEAMS REPLY
    ========================================================= */
@@ -47,7 +114,9 @@ import { getBotToken } from "@/lib/teams/auth";
 async function sendReply(activity, text, opts = {}) {
   const {
     replyToId = activity?.id,
+
     serviceUrl = activity?.serviceUrl,
+
     conversationId = activity?.conversation?.id,
   } = opts;
 
@@ -65,13 +134,15 @@ async function sendReply(activity, text, opts = {}) {
 
   const token = await getBotToken();
 
-  const base = serviceUrl.endsWith("/") ? serviceUrl : serviceUrl + "/";
+  const base = serviceUrl.endsWith("/") ? serviceUrl : `${serviceUrl}/`;
 
   const url = `${base}v3/conversations/${conversationId}/activities`;
 
   const payload = {
     type: "message",
+
     text: String(text ?? ""),
+
     ...(replyToId
       ? {
           replyToId,
@@ -84,6 +155,7 @@ async function sendReply(activity, text, opts = {}) {
 
     headers: {
       Authorization: `Bearer ${token}`,
+
       "Content-Type": "application/json",
     },
 
@@ -132,9 +204,9 @@ async function cmdConnect(activity) {
 
   const fromId = GetFromId(activity);
 
-  const conversationId = activity?.conversation?.id;
+  const conversationId = activity?.conversation?.id ?? null;
 
-  const serviceUrl = activity?.serviceUrl;
+  const serviceUrl = activity?.serviceUrl ?? null;
 
   const conversationType = GetConversationType(activity);
 
@@ -158,27 +230,43 @@ async function cmdConnect(activity) {
     ].join("<br>");
   }
 
-  const user = await getUserByAadObjectId(aadObjectId);
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+    organizationId: org.id,
+  });
 
   if (!user) {
     return [
-      "You're not linked to a MyDigitalBot user yet.",
-      "Send this to your admin so they can add you:",
+      "You're not linked to a MyDigitalBot user in this organization.",
+      "Send this to your admin so they can check the account:",
       `Tenant ID: ${tenantId}`,
       `AAD Object ID: ${aadObjectId}`,
     ].join("<br>");
   }
 
+  const assistant = await getAssistantById(user.assistant_id);
+
+  await assertAssistantMatchesOrganization(assistant, org.id);
+
   await upsertTeamsInstallation({
     organization_id: org.id,
-    assistant_id: user.assistant_id,
+
+    assistant_id: assistant.id,
+
     scope: "user",
+
     user_id: user.id,
+
     tenant_id: tenantId,
+
     service_url: serviceUrl,
+
     conversation_id: conversationId,
+
     conversation_type: conversationType,
+
     teams_user_id: fromId,
+
     last_seen_at: new Date().toISOString(),
   });
 
@@ -189,101 +277,6 @@ async function cmdConnect(activity) {
   return "Connected! You can now use the bot normally";
 }
 
-async function cmdReconnect(args, activity) {
-  const tenantId = GetTenantId(activity);
-
-  const aadObjectId = GetAadObjectId(activity);
-
-  const fromId = GetFromId(activity);
-
-  const conversationId = activity?.conversation?.id || null;
-
-  const serviceUrl = activity?.serviceUrl || null;
-
-  const conversationType = GetConversationType(activity);
-
-  const email = Array.isArray(args)
-    ? (args[0] || "").trim()
-    : String(args || "").trim();
-
-  if (!tenantId) {
-    return `Couldn't read the Tenant ID from this message.`;
-  }
-
-  if (!email) {
-    return `Usage: --reconnect email@example.com`;
-  }
-
-  if (!aadObjectId || !fromId) {
-    return `I don't have access to your Teams IDs right now.`;
-  }
-
-  if (!conversationId || !serviceUrl) {
-    return `Missing conversationId/serviceUrl. Try again in a 1:1 chat.`;
-  }
-
-  let userRef;
-
-  try {
-    userRef = await getUserByEmail(email, tenantId);
-  } catch (err) {
-    if (err.code === "AMBIGUOUS_EMAIL_TENANT") {
-      return `That email exists multiple times in this tenant. Ask your admin to fix duplicates.`;
-    }
-
-    throw err;
-  }
-
-  const userId = typeof userRef === "object" ? userRef?.id : userRef;
-
-  if (!userId) {
-    return `No user found for ${email} in this tenant.`;
-  }
-
-  const alreadyLinked = await getUserByAadObjectId(aadObjectId);
-
-  if (alreadyLinked && alreadyLinked.id !== userId) {
-    return `This Teams account is already linked to another user in MyDigitalBot. Ask your admin to fix it.`;
-  }
-
-  await updateUser(userId, {
-    teamsAadObjectId: aadObjectId,
-
-    teamsFromId: fromId,
-  });
-
-  const org = await getOrganizationByTeamsTenantId(tenantId);
-
-  if (!org) {
-    return `Your organization isn't registered in MyDigitalBot.com.`;
-  }
-
-  const fullUser = await getUserById(userId);
-
-  await upsertTeamsInstallation({
-    organization_id: org.id,
-    assistant_id: fullUser.assistant_id,
-
-    scope: "user",
-
-    user_id: userId,
-
-    tenant_id: tenantId,
-
-    service_url: serviceUrl,
-
-    conversation_id: conversationId,
-
-    conversation_type: conversationType,
-
-    teams_user_id: fromId,
-
-    last_seen_at: new Date().toISOString(),
-  });
-
-  return `Linked Teams to ${email} and connected this conversation ✅`;
-}
-
 async function cmdCreateUser(args, activity) {
   const tenantId = GetTenantId(activity);
 
@@ -291,9 +284,9 @@ async function cmdCreateUser(args, activity) {
 
   const fromId = GetFromId(activity);
 
-  const conversationId = activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id ?? null;
 
-  const serviceUrl = activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl ?? null;
 
   const conversationType = GetConversationType(activity);
 
@@ -302,37 +295,49 @@ async function cmdCreateUser(args, activity) {
     : String(args || "").trim();
 
   if (!tenantId) {
-    return `Couldn't read the Tenant ID from this message.`;
+    return "Couldn't read the Tenant ID from this message.";
   }
 
   if (!email) {
-    return `Usage: --register email@example.com`;
+    return "Usage: --register email@example.com";
   }
 
   if (!aadObjectId || !fromId) {
-    return `I don't have access to your Teams IDs right now.`;
+    return "I don't have access to your Teams IDs right now.";
   }
 
   if (!conversationId || !serviceUrl) {
-    return `Missing conversationId/serviceUrl. Try again in a 1:1 chat.`;
+    return "Missing conversationId/serviceUrl. Try again in a 1:1 chat.";
   }
 
   const org = await getOrganizationByTeamsTenantId(tenantId);
 
   if (!org) {
-    return `Your organization isn't registered in MyDigitalBot.com. Ask your admin.`;
+    return "Your organization isn't registered in MyDigitalBot.com. Ask your admin.";
   }
 
   /*
-   * Teams account already linked.
+   * Already linked Teams account.
    */
   const existingByAad = await getUserByAadObjectId(aadObjectId);
 
   if (existingByAad) {
+    if (!userBelongsToOrganization(existingByAad, org.id)) {
+      return (
+        "This Teams account is already linked " +
+        "to a user in another organization. " +
+        "Ask your administrator to correct the link."
+      );
+    }
+
+    const assistant = await getAssistantById(existingByAad.assistant_id);
+
+    await assertAssistantMatchesOrganization(assistant, org.id);
+
     await upsertTeamsInstallation({
       organization_id: org.id,
 
-      assistant_id: existingByAad.assistant_id,
+      assistant_id: assistant.id,
 
       scope: "user",
 
@@ -355,40 +360,74 @@ async function cmdCreateUser(args, activity) {
       teamsFromId: fromId,
     }).catch(() => {});
 
-    return `Obrigado por se registar na MyDigitalBot.<br>Agora poderás receber comunicações da Empresa e interagir com o teu Assistente Virtual.`;
+    return (
+      "Obrigado por se registar na MyDigitalBot.<br>" +
+      "Agora poderás receber comunicações da Empresa e " +
+      "interagir com o teu Assistente Virtual."
+    );
   }
 
   /*
-   * Existing email.
+   * Existing DB account.
    */
   let userRefByEmail = null;
 
   try {
     userRefByEmail = await getUserByEmail(email, tenantId);
-  } catch (err) {
-    if (err.code === "AMBIGUOUS_EMAIL_TENANT") {
-      return `Este email: ${email} já existe em duplicado na aplicação, por favor pede ao administrador para remover os duplicados.`;
+  } catch (error) {
+    if (error.code === "AMBIGUOUS_EMAIL_TENANT") {
+      return (
+        `Este email: ${email} já existe em duplicado ` +
+        "na aplicação, por favor pede ao administrador " +
+        "para remover os duplicados."
+      );
     }
 
-    throw err;
+    throw error;
   }
 
   const userIdByEmail =
     typeof userRefByEmail === "object" ? userRefByEmail?.id : userRefByEmail;
 
   if (userIdByEmail) {
+    const fullUser = await getUserById(userIdByEmail);
+
+    if (!userBelongsToOrganization(fullUser, org.id)) {
+      return (
+        "The email belongs to a user in another organization. " +
+        "Ask your administrator to correct the account."
+      );
+    }
+
+    const assistant = await getAssistantById(fullUser.assistant_id);
+
+    await assertAssistantMatchesOrganization(assistant, org.id);
+
+    /*
+     * Security:
+     *
+     * Don't allow somebody to claim another
+     * existing account just by knowing its email.
+     */
+    const alreadyLinked = await getUserByAadObjectId(aadObjectId);
+
+    if (!alreadyLinked || Number(alreadyLinked.id) !== Number(userIdByEmail)) {
+      return (
+        "For security, an existing account can only be connected after " +
+        "an administrator has linked this Teams identity to it."
+      );
+    }
+
     await updateUser(userIdByEmail, {
       teamsAadObjectId: aadObjectId,
 
       teamsFromId: fromId,
     });
 
-    const fullUser = await getUserById(userIdByEmail);
-
     await upsertTeamsInstallation({
       organization_id: org.id,
 
-      assistant_id: fullUser.assistant_id,
+      assistant_id: assistant.id,
 
       scope: "user",
 
@@ -407,33 +446,101 @@ async function cmdCreateUser(args, activity) {
       last_seen_at: new Date().toISOString(),
     });
 
-    return `Conta encontrada para ${email} ✅ Teams ligado e conversa conectada.`;
+    return (
+      `Conta encontrada para ${email}. ` + "Teams ligado e conversa conectada."
+    );
   }
 
   /*
-   * Brand new user.
+   * Do NOT create arbitrary users through
+   * the public Teams bot.
    */
-  const assistant = await getFirstAssistantInOrg(org.id);
+  return (
+    "No pre-provisioned account was found. Ask an administrator to " +
+    "create the account and link this Teams identity before registering."
+  );
+}
 
-  if (!assistant) {
-    return `A organização ainda não tem nenhum Assistente configurado.`;
+async function cmdReconnect(args, activity) {
+  const tenantId = GetTenantId(activity);
+
+  const aadObjectId = GetAadObjectId(activity);
+
+  const fromId = GetFromId(activity);
+
+  const conversationId = activity?.conversation?.id ?? null;
+
+  const serviceUrl = activity?.serviceUrl ?? null;
+
+  const conversationType = GetConversationType(activity);
+
+  const email = Array.isArray(args)
+    ? (args[0] || "").trim()
+    : String(args || "").trim();
+
+  if (!tenantId) {
+    return "Couldn't read the Tenant ID from this message.";
   }
 
-  const newUser = await createUser({
-    organizationId: org.id,
+  if (!email) {
+    return "Usage: --reconnect email@example.com";
+  }
 
-    phoneNumber: null,
+  if (!aadObjectId || !fromId) {
+    return "I don't have access to your Teams IDs right now.";
+  }
 
-    phoneCountryCode: null,
+  if (!conversationId || !serviceUrl) {
+    return "Missing conversationId/serviceUrl. Try again in a 1:1 chat.";
+  }
 
-    phoneNational: null,
+  const org = await getOrganizationByTeamsTenantId(tenantId);
 
-    name: activity?.from?.name,
+  if (!org) {
+    return "Your organization isn't registered in MyDigitalBot.com.";
+  }
 
-    email,
+  let userRef;
 
-    assistantId: assistant.id,
+  try {
+    userRef = await getUserByEmail(email, tenantId);
+  } catch (error) {
+    if (error.code === "AMBIGUOUS_EMAIL_TENANT") {
+      return "That email exists multiple times in this tenant. Ask your admin to fix duplicates.";
+    }
 
+    throw error;
+  }
+
+  const userId = typeof userRef === "object" ? userRef?.id : userRef;
+
+  if (!userId) {
+    return `No user found for ${email} in this tenant.`;
+  }
+
+  const fullUser = await getUserById(userId);
+
+  if (!userBelongsToOrganization(fullUser, org.id)) {
+    return (
+      "The selected user does not belong to this organization. " +
+      "Ask your administrator to correct the account."
+    );
+  }
+
+  const alreadyLinked = await getUserByAadObjectId(aadObjectId);
+
+  if (!alreadyLinked || String(alreadyLinked.id) !== String(userId)) {
+    return (
+      "For security, an administrator must link this Teams identity " +
+      "to the requested account before reconnecting it."
+    );
+  }
+
+  const assistant = await getAssistantById(fullUser.assistant_id);
+
+  await assertAssistantMatchesOrganization(assistant, org.id);
+
+  await updateUser(userId, {
     teamsAadObjectId: aadObjectId,
 
     teamsFromId: fromId,
@@ -442,11 +549,11 @@ async function cmdCreateUser(args, activity) {
   await upsertTeamsInstallation({
     organization_id: org.id,
 
-    assistant_id: newUser.assistant_id,
+    assistant_id: assistant.id,
 
     scope: "user",
 
-    user_id: newUser.id,
+    user_id: userId,
 
     tenant_id: tenantId,
 
@@ -461,11 +568,12 @@ async function cmdCreateUser(args, activity) {
     last_seen_at: new Date().toISOString(),
   });
 
-  return `Obrigado por se registar na MyDigitalBot.<br>Agora poderás receber comunicações da Empresa e interagir com o teu Assistente Virtual.`;
+  return `Linked Teams to ${email} and connected this conversation.`;
 }
 
 async function CheckForCommandMessage(activity) {
-  const message = String(activity?.text || "").trim();
+  const message =
+    typeof activity?.text === "string" ? activity.text.trim() : "";
 
   if (!message) {
     return {
@@ -491,8 +599,11 @@ async function CheckForCommandMessage(activity) {
 
   return {
     isCommand: true,
+
     command: name,
+
     argString,
+
     args,
   };
 }
@@ -511,11 +622,11 @@ async function CheckCommands(cmd, activity) {
     case "connect":
       return await cmdConnect(activity);
 
-    case "reconnect":
-      return await cmdReconnect(cmd.args, activity);
-
     case "register":
       return await cmdCreateUser(cmd.args, activity);
+
+    case "reconnect":
+      return await cmdReconnect(cmd.args, activity);
 
     case "send":
       return `Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br>Para mais opções, escreve --help`;
@@ -526,7 +637,7 @@ async function CheckCommands(cmd, activity) {
 }
 
 /* =========================================================
-   OPENAI CONVERSATION HELPERS
+   OPENAI CONVERSATIONS
    ========================================================= */
 
 function normalizeId(value) {
@@ -536,7 +647,7 @@ function normalizeId(value) {
 
   const str = String(value).trim();
 
-  return str.length > 0 ? str : null;
+  return str.length ? str : null;
 }
 
 function buildConversationHistoryItems(messages = []) {
@@ -559,21 +670,13 @@ function buildConversationHistoryItems(messages = []) {
     .slice(-20)
     .map((message) => ({
       type: "message",
+
       role: message.role,
+
       content: message.content.trim(),
     }));
 }
 
-/**
- * Makes sure our DB thread has a new
- * OpenAI Conversation.
- *
- * Handles:
- *
- * 1. New Teams thread
- * 2. Already migrated thread
- * 3. Legacy Assistants API thread
- */
 async function ensureTeamsConversation({
   thread,
   userId,
@@ -588,7 +691,9 @@ async function ensureTeamsConversation({
   let conversationId = normalizeId(currentThread?.openai_conversation_id);
 
   /*
-   * No DB thread yet.
+   * =========================================================
+   * BRAND NEW THREAD
+   * =========================================================
    */
   if (!currentThread) {
     const conversation = await createConversation({
@@ -616,8 +721,14 @@ async function ensureTeamsConversation({
 
       assistantId: assistant.id,
 
+      /*
+       * Legacy Assistants API field.
+       */
       aiThreadId: null,
 
+      /*
+       * New Responses/Conversations field.
+       */
       openAiConversationId: conversationId,
 
       channel,
@@ -635,7 +746,9 @@ async function ensureTeamsConversation({
   }
 
   /*
-   * Already migrated.
+   * =========================================================
+   * ALREADY MIGRATED
+   * =========================================================
    */
   if (conversationId) {
     return {
@@ -646,10 +759,12 @@ async function ensureTeamsConversation({
   }
 
   /*
-   * Legacy Assistants API thread.
+   * =========================================================
+   * LEGACY ASSISTANTS API THREAD
+   * =========================================================
    *
-   * Load our local history and use it to seed
-   * a new OpenAI Conversation.
+   * ai_thread_id = thread_...
+   * openai_conversation_id = NULL
    */
   const previousMessages = await getMessagesInThread(currentThread.id);
 
@@ -735,24 +850,34 @@ async function handleUserInteraction(activity) {
 
   const aadObjectId = GetAadObjectId(activity);
 
-  const teamsConversationId = activity?.conversation?.id || null;
+  const teamsConversationId = activity?.conversation?.id ?? null;
 
   const conversationType = GetConversationType(activity);
 
-  const message = String(activity?.text ?? "").trim();
+  const message =
+    typeof activity?.text === "string" ? activity.text.trim() : "";
 
-  const user = await getUserByAadObjectId(aadObjectId);
-
-  if (!user) {
-    await sendReply(
-      activity,
-      "De momento não estás inscrito na aplicação.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email. <br>Exemplo: --register nome@email.pt<br><br>Para mais opções, escreve: --help",
-    );
+  if (!aadObjectId || !teamsConversationId || !message) {
+    await sendReply(activity, "Invalid Teams message.");
 
     return;
   }
 
-  if (!message) {
+  /*
+   * Resolve the user ONLY inside the tenant's
+   * organization.
+   */
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+    organizationId: org.id,
+  });
+
+  if (!user) {
+    await sendReply(
+      activity,
+      "De momento não estás inscrito nesta organização.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br><br>Para mais opções, escreve: --help",
+    );
+
     return;
   }
 
@@ -761,31 +886,47 @@ async function handleUserInteraction(activity) {
   let assistantId = null;
 
   /*
-   * PERSONAL CHAT
+   * Personal conversation:
    *
-   * Use the Assistant assigned directly
-   * to the user.
+   * Assistant assigned to the user.
    */
   if (conversationType === "personal") {
     assistantId = user.assistant_id;
   } else {
-
-  /*
-   * GROUP / CHANNEL
-   *
-   * Use the Assistant associated with
-   * the Teams installation.
-   */
+    /*
+     * Group/channel:
+     *
+     * Use the Assistant stored on this Teams
+     * installation.
+     */
     const installation = await getTeamsInstallationByConversation({
       tenantId,
 
       conversationId: teamsConversationId,
+
+      organizationId: org.id,
     });
+
+    if (
+      installation &&
+      installation.organization_id != null &&
+      Number(installation.organization_id) !== Number(org.id)
+    ) {
+      const error = new Error(
+        "Teams installation does not belong to this organization",
+      );
+
+      error.status = 403;
+
+      throw error;
+    }
 
     assistantId = installation?.assistant_id ?? null;
 
     /*
-     * Safety fallback.
+     * Existing installations should have an
+     * Assistant. This fallback also keeps old
+     * installations working during migration.
      */
     if (!assistantId) {
       const fallbackAssistant = await getFirstAssistantInOrg(org.id);
@@ -799,36 +940,22 @@ async function handleUserInteraction(activity) {
   }
 
   /*
-   * IMPORTANT:
+   * Supabase Assistant row.
    *
-   * This is now our DB Assistant.
-   *
-   * There is NO OpenAI Assistant lookup.
+   * No OpenAI Assistant object exists anymore.
    */
   const assistant = await getAssistantById(assistantId);
 
-  if (!assistant) {
-    throw new Error(`Assistant ${assistantId} was not found`);
-  }
-
-  /*
-   * Security:
-   *
-   * Don't allow an Assistant belonging to
-   * another organization.
-   */
-  if (Number(assistant.organization_id) !== Number(org.id)) {
-    throw new Error(
-      `Assistant ${assistant.id} does not belong to organization ${org.id}`,
-    );
-  }
+  await assertAssistantMatchesOrganization(assistant, org.id);
 
   if (!assistant.model) {
     throw new Error(`Assistant ${assistant.id} has no model configured`);
   }
 
   /*
-   * Find our DB thread.
+   * =========================================================
+   * DB THREAD
+   * =========================================================
    */
   let thread = null;
 
@@ -857,7 +984,31 @@ async function handleUserInteraction(activity) {
   }
 
   /*
-   * Get or create a new OpenAI Conversation.
+   * Existing thread must belong to the same
+   * Assistant.
+   */
+  if (thread && Number(thread.assistant_id) !== Number(assistant.id)) {
+    const error = new Error("Thread does not belong to the selected assistant");
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (thread && scope === "group" && thread.scope && thread.scope !== "group") {
+    const error = new Error(
+      "Teams group conversation resolved to a non-group thread",
+    );
+
+    error.status = 409;
+
+    throw error;
+  }
+
+  /*
+   * =========================================================
+   * RESPONSES API CONVERSATION
+   * =========================================================
    */
   const ensured = await ensureTeamsConversation({
     thread,
@@ -886,7 +1037,29 @@ async function handleUserInteraction(activity) {
   }
 
   /*
-   * Save inbound Teams message locally.
+   * Validate again after a new thread may
+   * have been created.
+   */
+  if (Number(thread.assistant_id) !== Number(assistant.id)) {
+    const error = new Error("Thread does not belong to the selected assistant");
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (scope === "group" && thread.scope && thread.scope !== "group") {
+    const error = new Error(
+      "Teams group conversation resolved to a non-group thread",
+    );
+
+    error.status = 409;
+
+    throw error;
+  }
+
+  /*
+   * Save incoming Teams message locally.
    */
   await createMessage({
     threadId: thread.id,
@@ -909,18 +1082,18 @@ async function handleUserInteraction(activity) {
   });
 
   /*
-   * =======================================================
+   * =========================================================
    * RESPONSES API
+   * =========================================================
    *
-   * NO:
+   * No:
    *
-   * assistant.open_ai_id
    * createOAiThread()
    * sendMessageToAi()
-   * runs.create()
-   * runs.retrieve()
-   *
-   * =======================================================
+   * assistant.open_ai_id
+   * beta.threads
+   * runs
+   * polling
    */
   const aiResponse = await generateAssistantResponse({
     assistant,
@@ -937,7 +1110,7 @@ async function handleUserInteraction(activity) {
   }
 
   /*
-   * Save assistant message locally.
+   * Save Assistant response locally.
    */
   await createMessage({
     threadId: thread.id,
@@ -959,9 +1132,6 @@ async function handleUserInteraction(activity) {
     role: "assistant",
   });
 
-  /*
-   * Send response back through Teams.
-   */
   await sendReply(activity, text);
 }
 
@@ -994,19 +1164,17 @@ function GetConversationType(activity) {
    ========================================================= */
 
 async function handleUserInstallation(activity) {
-  const aadObjectId = activity?.from?.aadObjectId;
+  const aadObjectId = GetAadObjectId(activity);
 
-  const tenantId =
-    activity?.conversation?.tenantId || activity?.channelData?.tenant?.id;
+  const tenantId = GetTenantId(activity);
 
-  const teamsUserId = activity?.from?.id;
+  const teamsUserId = GetFromId(activity);
 
-  const conversationId = activity?.conversation?.id;
+  const conversationId = activity?.conversation?.id ?? null;
 
-  const serviceUrl = activity?.serviceUrl;
+  const serviceUrl = activity?.serviceUrl ?? null;
 
-  const conversationType =
-    activity?.conversation?.conversationType || "personal";
+  const conversationType = GetConversationType(activity);
 
   if (
     !aadObjectId ||
@@ -1015,7 +1183,7 @@ async function handleUserInstallation(activity) {
     !serviceUrl ||
     !tenantId
   ) {
-    console.warn("[TEAMS install] Missing required fields:", {
+    console.warn("[TEAMS install] Missing required fields", {
       aadObjectId,
       teamsUserId,
       conversationId,
@@ -1026,7 +1194,7 @@ async function handleUserInstallation(activity) {
     await sendReply(
       activity,
       "Something went wrong, please contact the developers of MyDigitalBot.",
-    ).catch((e) => console.error("sendReply error:", e));
+    );
 
     return;
   }
@@ -1042,23 +1210,29 @@ async function handleUserInstallation(activity) {
     return;
   }
 
-  const user = await getUserByAadObjectId(aadObjectId);
+  const user = await getTeamsUserForOrganization({
+    aadObjectId,
+
+    organizationId: org.id,
+  });
 
   if (!user) {
-    console.warn("[TEAMS install] No user found for AAD:", aadObjectId);
-
     await sendReply(
       activity,
-      `Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo:<br>--register nome@email.pt<br><br>Para mais opções, escreve:<br>--help`,
-    ).catch((e) => console.error("sendReply error:", e));
+      "Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo:<br>--register nome@email.pt<br><br>Para mais opções, escreve:<br>--help",
+    );
 
     return;
   }
 
+  const assistant = await getAssistantById(user.assistant_id);
+
+  await assertAssistantMatchesOrganization(assistant, org.id);
+
   const installation = await upsertTeamsInstallation({
     organization_id: org.id,
 
-    assistant_id: user.assistant_id,
+    assistant_id: assistant.id,
 
     scope: "user",
 
@@ -1083,34 +1257,19 @@ async function handleUserInstallation(activity) {
         teamsFromId: teamsUserId,
       });
     }
-  } catch (err) {
-    console.error(
-      "[TEAMS] Failed to sync teamsFromId after installation upsert",
-      {
-        userId: user.id,
+  } catch (error) {
+    console.error("[TEAMS] Failed to sync teamsFromId", {
+      userId: user.id,
 
-        teamsUserId,
+      teamsUserId,
 
-        installationId: installation?.id,
+      installationId: installation?.id,
 
-        err,
-      },
-    );
+      error,
+    });
   }
 
-  console.log("[TEAMS install] Conversation linked:", {
-    userId: user.id,
-
-    teamsUserId,
-
-    conversationId,
-
-    tenantId,
-  });
-
-  await sendReply(activity, "Conversation successfully connected.").catch((e) =>
-    console.error("sendReply error:", e),
-  );
+  await sendReply(activity, "Conversation successfully connected.");
 }
 
 /* =========================================================
@@ -1120,17 +1279,17 @@ async function handleUserInstallation(activity) {
 async function handleGroupInstallation(activity) {
   const tenantId = GetTenantId(activity);
 
-  const serviceUrl = activity?.serviceUrl || null;
+  const serviceUrl = activity?.serviceUrl ?? null;
 
-  const conversationId = activity?.conversation?.id || null;
+  const conversationId = activity?.conversation?.id ?? null;
 
   const conversationType = GetConversationType(activity);
 
-  const teamAadGroupId = activity?.channelData?.team?.aadGroupId || null;
+  const teamAadGroupId = activity?.channelData?.team?.aadGroupId ?? null;
 
-  const teamId = activity?.channelData?.team?.id || null;
+  const teamId = activity?.channelData?.team?.id ?? null;
 
-  const channelId = activity?.channelData?.channel?.id || null;
+  const channelId = activity?.channelData?.channel?.id ?? null;
 
   if (!tenantId || !serviceUrl || !conversationId) {
     console.warn("[TEAMS group install] Missing fields:", {
@@ -1157,13 +1316,10 @@ async function handleGroupInstallation(activity) {
   const defaultAssistant = await getFirstAssistantInOrg(org.id);
 
   if (!defaultAssistant) {
-    await sendReply(
-      activity,
-      "No assistant is configured for this organization.",
-    );
-
-    return;
+    throw new Error("Organization does not have an assistant");
   }
+
+  await assertAssistantMatchesOrganization(defaultAssistant, org.id);
 
   await upsertTeamsInstallation({
     organization_id: org.id,
@@ -1203,8 +1359,28 @@ async function handleGroupInstallation(activity) {
     externalConversationId: conversationId,
   });
 
+  if (thread && Number(thread.assistant_id) !== Number(defaultAssistant.id)) {
+    const error = new Error(
+      "Group thread does not belong to the selected assistant",
+    );
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (thread && thread.scope && thread.scope !== "group") {
+    const error = new Error(
+      "Teams group conversation resolved to a non-group thread",
+    );
+
+    error.status = 409;
+
+    throw error;
+  }
+
   /*
-   * Create/migrate the OpenAI Conversation.
+   * Create or migrate the OpenAI Conversation.
    */
   const ensured = await ensureTeamsConversation({
     thread,
@@ -1223,6 +1399,26 @@ async function handleGroupInstallation(activity) {
   });
 
   thread = ensured.thread;
+
+  if (Number(thread.assistant_id) !== Number(defaultAssistant.id)) {
+    const error = new Error(
+      "Group thread does not belong to the selected assistant",
+    );
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (thread.scope && thread.scope !== "group") {
+    const error = new Error(
+      "Teams group conversation resolved to a non-group thread",
+    );
+
+    error.status = 409;
+
+    throw error;
+  }
 
   console.log("[TEAMS group install] Conversation ready", {
     dbThreadId: thread.id,
@@ -1247,14 +1443,58 @@ async function handleGroupInstallation(activity) {
 
 export async function POST(req) {
   try {
-    const activity = await req.json();
+    let activity;
 
-    if (activity.type === "message" && activity.text) {
+    try {
+      activity = await req.json();
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Invalid JSON body",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!activity || typeof activity !== "object" || Array.isArray(activity)) {
+      return NextResponse.json(
+        {
+          error: "Invalid Teams activity",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    /*
+     * Validate that this really came from
+     * Microsoft Teams before processing it.
+     */
+    const teamsAuth = await requireValidTeamsRequest(req, activity);
+
+    if (teamsAuth.error) {
+      return teamsAuth.error;
+    }
+
+    if (
+      activity.type === "message" &&
+      typeof activity.text === "string" &&
+      activity.text.trim()
+    ) {
       await handleUserInteraction(activity);
     }
 
     if (activity.type === "installationUpdate" && activity.action === "add") {
-      if (activity?.conversation?.isGroup) {
+      const conversationType = GetConversationType(activity);
+
+      if (
+        conversationType === "channel" ||
+        conversationType === "groupChat" ||
+        activity?.conversation?.isGroup === true
+      ) {
         await handleGroupInstallation(activity);
       } else {
         await handleUserInstallation(activity);
@@ -1280,18 +1520,8 @@ export async function POST(req) {
         status: 200,
       },
     );
-  } catch (err) {
-    console.error("[TEAMS] messages route failed:", err);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: err?.message || "Teams message processing failed",
-      },
-      {
-        status: 500,
-      },
-    );
+  } catch (error) {
+    return handleApiError(error, "Failed to process Teams message");
   }
 }
 
@@ -1304,5 +1534,9 @@ export async function GET() {
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
+
+    headers: {
+      Allow: "GET, POST, OPTIONS",
+    },
   });
 }

@@ -19,13 +19,17 @@ export async function GET(req) {
 
     if (!orgId) {
       return NextResponse.json(
-        { error: "Invalid organization id" },
-        { status: 400 },
+        {
+          error: "Invalid organization id",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
     /*
-     * Make sure the logged-in user actually owns
+     * Ensure the logged-in user owns
      * this organization.
      */
     const orgAuth = await requireOwnedOrg(orgId);
@@ -34,20 +38,11 @@ export async function GET(req) {
       return orgAuth.error;
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * Pass orgAuth.orgId, NOT:
-     *
-     * orgAuth.organizationId
-     * orgAuth.id
-     * orgAuth.org.id accidentally renamed elsewhere
-     *
-     * requireOwnedOrg() returns `orgId`.
-     */
     const assistants = await getAssistantsInOrg(orgAuth.orgId);
 
-    return NextResponse.json(assistants, { status: 200 });
+    return NextResponse.json(assistants, {
+      status: 200,
+    });
   } catch (err) {
     return handleApiError(err, "Failed to load assistants");
   }
@@ -61,8 +56,12 @@ export async function POST(req) {
 
     if (!orgId) {
       return NextResponse.json(
-        { error: "Invalid organization id" },
-        { status: 400 },
+        {
+          error: "Invalid organization id",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -78,34 +77,55 @@ export async function POST(req) {
 
     if (!name) {
       return NextResponse.json(
-        { error: "Assistant name is required" },
-        { status: 400 },
+        {
+          error: "Assistant name is required",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
     if (!model) {
       return NextResponse.json(
-        { error: "Assistant model is required" },
-        { status: 400 },
+        {
+          error: "Assistant model is required",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
     /*
-     * No OpenAI Assistant is created here anymore.
+     * =========================================================
+     * DB-ONLY ASSISTANT
+     * =========================================================
      *
-     * Our Supabase row IS the assistant configuration.
+     * No OpenAI Assistant object is created.
+     *
+     * This Supabase row is now the Assistant
+     * configuration used by the Responses API.
      */
     const assistant = await createAssistant({
       organizationId: orgAuth.orgId,
+
       name,
+
       description: body.description ?? null,
+
       instructions: body.instructions ?? null,
+
       model,
+
       top_p: body.top_p ?? null,
+
       temperature: body.temperature ?? null,
     });
 
-    return NextResponse.json(assistant, { status: 201 });
+    return NextResponse.json(assistant, {
+      status: 201,
+    });
   } catch (err) {
     return handleApiError(err, "Failed to create assistant");
   }

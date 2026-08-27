@@ -15,29 +15,141 @@ import {
   requireOwnedOrg,
 } from "@/lib/auth/guards";
 
-const ALLOWED_TAG_PATCH_FIELDS = ["name", "color", "is_archived"];
+const ALLOWED_TAG_PATCH_FIELDS = [
+  "name",
+  "color",
+  "is_archived",
+];
+
+const MAX_TAG_NAME_LENGTH = 100;
+const MAX_COLOR_LENGTH = 50;
+
+function validateName(value, { required = false } = {}) {
+  if (value == null) {
+    return required
+      ? { error: "Tag name is required." }
+      : { value: undefined };
+  }
+
+  if (typeof value !== "string") {
+    return { error: "Tag name must be a string." };
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return { error: "Tag name cannot be empty." };
+  }
+
+  if (normalized.length > MAX_TAG_NAME_LENGTH) {
+    return {
+      error: `Tag name must not exceed ${MAX_TAG_NAME_LENGTH} characters.`,
+    };
+  }
+
+  return { value: normalized };
+}
+
+function validateColor(value) {
+  if (value == null || value === "") {
+    return { value: null };
+  }
+
+  if (typeof value !== "string") {
+    return { error: "Tag color must be a string." };
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length > MAX_COLOR_LENGTH) {
+    return {
+      error: `Tag color must not exceed ${MAX_COLOR_LENGTH} characters.`,
+    };
+  }
+
+  return { value: normalized || null };
+}
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const orgId = Number(searchParams.get("orgId"));
+    const rawOrgId = searchParams.get("orgId");
 
-    const orgAuth = await requireOwnedOrg(orgId);
+    if (rawOrgId == null || rawOrgId === "") {
+      return NextResponse.json(
+        { error: "Missing orgId" },
+        { status: 400 },
+      );
+    }
+
+    const orgAuth = await requireOwnedOrg(rawOrgId);
     if (orgAuth.error) return orgAuth.error;
 
-    const data = await getTagsInOrg(orgAuth.admin, orgAuth.orgId);
-    return NextResponse.json(Array.isArray(data) ? data : []);
-  } catch (e) {
-    return handleApiError(e, "Failed to load tags");
+    const data = await getTagsInOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+    );
+
+    return NextResponse.json(
+      Array.isArray(data) ? data : [],
+    );
+  } catch (error) {
+    return handleApiError(
+      error,
+      "Failed to load tags",
+    );
   }
 }
 
 export async function POST(req) {
   try {
-    const { orgId, name, color } = await req.json();
-    if (!orgId || !name) {
+    let body;
+
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: "Missing orgId or name" },
+        { error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+
+    const { orgId, name, color } = body;
+
+    if (orgId == null || orgId === "") {
+      return NextResponse.json(
+        { error: "Missing orgId" },
+        { status: 400 },
+      );
+    }
+
+    const nameResult = validateName(name, {
+      required: true,
+    });
+
+    if (nameResult.error) {
+      return NextResponse.json(
+        { error: nameResult.error },
+        { status: 400 },
+      );
+    }
+
+    const colorResult = validateColor(color);
+
+    if (colorResult.error) {
+      return NextResponse.json(
+        { error: colorResult.error },
         { status: 400 },
       );
     }
@@ -47,49 +159,160 @@ export async function POST(req) {
 
     const tag = await createTag(orgAuth.admin, {
       orgId: orgAuth.orgId,
-      name,
-      color,
+      name: nameResult.value,
+      color: colorResult.value,
     });
-    return NextResponse.json(tag, { status: 201 });
-  } catch (e) {
-    console.error(e);
-    return handleApiError(e, "Failed to create tag");
+
+    return NextResponse.json(
+      tag,
+      { status: 201 },
+    );
+  } catch (error) {
+    return handleApiError(
+      error,
+      "Failed to create tag",
+    );
   }
 }
 
 export async function PATCH(req) {
   try {
-    const { id, ...fields } = await req.json();
+    let body;
 
-    const orgAuth = await requireOrgForTag(id);
-    if (orgAuth.error) return orgAuth.error;
-
-    const patch = cleanPatch(fields, ALLOWED_TAG_PATCH_FIELDS);
-    if (!Object.keys(patch).length) {
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: "No valid fields provided to update." },
+        { error: "Invalid JSON body" },
         { status: 400 },
       );
     }
 
-    const updated = await updateTag(orgAuth.admin, orgAuth.tagId, patch);
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
+
+    const { id, ...fields } = body;
+
+    const orgAuth = await requireOrgForTag(id);
+    if (orgAuth.error) return orgAuth.error;
+
+    const patch = cleanPatch(
+      fields,
+      ALLOWED_TAG_PATCH_FIELDS,
+    );
+
+    if (!Object.keys(patch).length) {
+      return NextResponse.json(
+        {
+          error:
+            "No valid fields provided to update.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "name",
+      )
+    ) {
+      const nameResult = validateName(patch.name);
+
+      if (nameResult.error) {
+        return NextResponse.json(
+          { error: nameResult.error },
+          { status: 400 },
+        );
+      }
+
+      patch.name = nameResult.value;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "color",
+      )
+    ) {
+      const colorResult = validateColor(patch.color);
+
+      if (colorResult.error) {
+        return NextResponse.json(
+          { error: colorResult.error },
+          { status: 400 },
+        );
+      }
+
+      patch.color = colorResult.value;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        patch,
+        "is_archived",
+      ) &&
+      typeof patch.is_archived !== "boolean"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "is_archived must be a boolean.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const updated = await updateTag(
+      orgAuth.admin,
+      orgAuth.tagId,
+      patch,
+    );
+
     return NextResponse.json(updated);
-  } catch (e) {
-    return handleApiError(e, "Failed to update tag");
+  } catch (error) {
+    return handleApiError(
+      error,
+      "Failed to update tag",
+    );
   }
 }
 
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = Number(searchParams.get("id"));
+    const rawId = searchParams.get("id");
 
-    const orgAuth = await requireOrgForTag(id);
+    if (rawId == null || rawId === "") {
+      return NextResponse.json(
+        { error: "Missing tag id" },
+        { status: 400 },
+      );
+    }
+
+    const orgAuth = await requireOrgForTag(rawId);
     if (orgAuth.error) return orgAuth.error;
 
-    await deleteTag(orgAuth.admin, orgAuth.tagId);
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    return handleApiError(e, "Failed to delete tag");
+    await deleteTag(
+      orgAuth.admin,
+      orgAuth.tagId,
+    );
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error) {
+    return handleApiError(
+      error,
+      "Failed to delete tag",
+    );
   }
 }

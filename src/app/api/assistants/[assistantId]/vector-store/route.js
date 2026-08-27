@@ -17,9 +17,7 @@ import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
 
 const sb = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-
   {
     auth: {
       persistSession: false,
@@ -32,10 +30,14 @@ export async function POST(req, ctx) {
     const { assistantId } = await ctx.params;
 
     /*
-     * Security check:
+     * =========================================================
+     * AUTHORIZE ASSISTANT
+     * =========================================================
      *
-     * - assistant exists
-     * - logged-in user owns its organization
+     * Ensures:
+     *
+     * - Assistant exists
+     * - Logged-in user owns its organization
      */
     const auth = await requireOrgForAssistant(assistantId);
 
@@ -68,15 +70,20 @@ export async function POST(req, ctx) {
     }
 
     const uploadedOpenAiIds = [];
-
     const fileRowsForDb = [];
 
     /*
-     * The browser has already uploaded each file
-     * to Supabase Storage.
+     * =========================================================
+     * UPLOAD FILES TO OPENAI
+     * =========================================================
      *
-     * Now the server downloads them from Storage
-     * and uploads them to OpenAI.
+     * Files have already been uploaded to Supabase Storage.
+     *
+     * We:
+     *
+     * 1. Validate their organization path.
+     * 2. Download from Supabase.
+     * 3. Upload to OpenAI Files.
      */
     for (const f of files) {
       const { bucket, path, name, type, size } = f || {};
@@ -93,7 +100,25 @@ export async function POST(req, ctx) {
       }
 
       /*
-       * Create temporary URL for our Supabase file.
+       * Security from staging:
+       *
+       * Don't allow a user to reference a Storage
+       * object belonging to another organization.
+       */
+      if (!path.startsWith(`${auth.orgId}/`)) {
+        return NextResponse.json(
+          {
+            error: "File does not belong to this organization",
+          },
+          {
+            status: 403,
+          },
+        );
+      }
+
+      /*
+       * Create a temporary signed URL for the
+       * Supabase Storage object.
        */
       const { data: signed, error: signErr } = await sb.storage
         .from(bucket)
@@ -119,8 +144,8 @@ export async function POST(req, ctx) {
       }
 
       /*
-       * Convert response into the format expected
-       * by the OpenAI SDK.
+       * Convert response into a file-like object
+       * accepted by the OpenAI SDK.
        */
       const fileLike = await toFile(
         response.body ?? (await response.blob()),
@@ -136,7 +161,14 @@ export async function POST(req, ctx) {
       );
 
       /*
-       * Create actual OpenAI File.
+       * =========================================================
+       * OPENAI FILE
+       * =========================================================
+       *
+       * This is still a valid OpenAI resource.
+       *
+       * It has nothing to do with the deprecated
+       * Assistants API.
        */
       const uploaded = await createOpenAiFile(fileLike);
 
@@ -159,7 +191,12 @@ export async function POST(req, ctx) {
     }
 
     /*
-     * Create the actual OpenAI Vector Store.
+     * =========================================================
+     * OPENAI VECTOR STORE
+     * =========================================================
+     *
+     * Vector Stores still exist independently
+     * from OpenAI Assistants.
      */
     const oaiStore = await createOpenAiVectorStore(
       storeName.trim(),
@@ -171,8 +208,9 @@ export async function POST(req, ctx) {
     }
 
     /*
-     * Save our representation of the vector store
-     * and files into Supabase.
+     * =========================================================
+     * LOCAL DB VECTOR STORE
+     * =========================================================
      */
     const dbStore = await createDBStore(
       {
@@ -185,11 +223,26 @@ export async function POST(req, ctx) {
     );
 
     /*
+     * =========================================================
+     * ASSOCIATE WITH OUR DB ASSISTANT
+     * =========================================================
+     *
      * IMPORTANT:
      *
-     * Associate the Vector Store with OUR DB Assistant.
+     * There is no:
      *
-     * We DO NOT attach the store to an OpenAI Assistant.
+     * associateStoreToAssistant()
+     *
+     * because there is no OpenAI Assistant object anymore.
+     *
+     * The Responses API receives this Vector Store through:
+     *
+     * tools: [
+     *   {
+     *     type: "file_search",
+     *     vector_store_ids: [...]
+     *   }
+     * ]
      */
     await associateVectorStoreToDbAssistant(auth.assistantId, dbStore.id);
 

@@ -18,9 +18,6 @@ export async function GET(_req, { params }) {
   try {
     const { assistantId, storeId } = await params;
 
-    /*
-     * Verify Assistant ownership.
-     */
     const auth = await requireOrgForAssistant(assistantId);
 
     if (auth.error) {
@@ -41,8 +38,8 @@ export async function GET(_req, { params }) {
     }
 
     /*
-     * Make sure this store really belongs
-     * to this Assistant.
+     * Do not reveal whether some other
+     * Assistant's Vector Store exists.
      */
     if (Number(auth.assistant.vector_store_id) !== sId) {
       return NextResponse.json(
@@ -97,9 +94,6 @@ export async function DELETE(_req, { params }) {
   try {
     const { assistantId, storeId } = await params;
 
-    /*
-     * Verify Assistant ownership.
-     */
     const auth = await requireOrgForAssistant(assistantId);
 
     if (auth.error) {
@@ -120,8 +114,8 @@ export async function DELETE(_req, { params }) {
     }
 
     /*
-     * Don't allow another Assistant's store
-     * to be deleted by guessing its ID.
+     * Prevent deleting another Assistant's
+     * Vector Store by guessing the ID.
      */
     if (Number(auth.assistant.vector_store_id) !== sId) {
       return NextResponse.json(
@@ -148,12 +142,14 @@ export async function DELETE(_req, { params }) {
     }
 
     /*
-     * OpenAI IDs.
+     * These OpenAI IDs are still valid.
      *
-     * THESE IDs ARE STILL VALID/REQUIRED.
+     * They belong to:
      *
-     * file.open_ai_id
-     * vector_store.open_ai_id
+     * OpenAI Files
+     * OpenAI Vector Stores
+     *
+     * NOT OpenAI Assistants.
      */
     const openAiFileIds = (store.file ?? [])
       .map((file) => file.open_ai_id)
@@ -162,28 +158,23 @@ export async function DELETE(_req, { params }) {
     const openAiStoreId = store.open_ai_id;
 
     /*
-     * Break the local Assistant -> Vector Store
-     * relationship first.
+     * Disconnect the Vector Store from
+     * our DB Assistant first.
      */
     await nullifyVectorStoreToDbAssistant(auth.assistantId);
 
     /*
-     * Delete actual OpenAI resources.
+     * Delete the real OpenAI resources.
      *
-     * This is unrelated to the old Assistants API.
+     * If OpenAI cleanup fails, we still
+     * continue removing our local records
+     * so the Assistant is not left linked
+     * to a broken store.
      */
     try {
       await deleteOpenAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
     } catch (err) {
       console.error("[Vector Store DELETE] OpenAI cleanup failed:", err);
-
-      /*
-       * Continue cleaning our DB.
-       *
-       * Otherwise a failed OpenAI delete could leave
-       * our Assistant permanently pointing to a broken
-       * local store.
-       */
     }
 
     /*
@@ -194,7 +185,7 @@ export async function DELETE(_req, { params }) {
     }
 
     /*
-     * Delete local vector_store row.
+     * Delete local Vector Store row.
      */
     await deleteStoreById(sId);
 

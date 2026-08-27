@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import {
   assertUsersBelongToOrg,
+  assertWhatsappProviderTemplateBelongsToOrg,
+  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
@@ -23,9 +25,44 @@ export async function POST(req) {
       recipientUserIds,
     );
 
+    const safeWhatsappTemplateId = await assertWhatsappTemplateBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      body?.whatsappTemplateId,
+    );
+
+    let safeTemplate = null;
+    if (!safeWhatsappTemplateId && body?.template?.projectId) {
+      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        body.template.projectId,
+      );
+
+      safeTemplate = {
+        projectId: templateRow.provider_template_id,
+        languageCode: body.template.languageCode,
+        varKeys: Array.isArray(body.template.varKeys)
+          ? body.template.varKeys
+          : [],
+        params: Array.isArray(body.template.params) ? body.template.params : [],
+        manualParams: body.template.manualParams || "",
+        trackedUrlKey: body.template.trackedUrlKey || null,
+      };
+    }
+
     const result = await sendWhatsappBroadcast({
-      ...body,
       orgId: orgAuth.orgId,
+      message: body?.message || "",
+      files: Array.isArray(body?.files) ? body.files : [],
+      imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
+      trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
+      recipients: recipientUserIds.map((userId) => ({ userId })),
+      template: safeTemplate,
+      whatsappTemplateId: safeWhatsappTemplateId,
+      scheduledBroadcastId: null,
+      createdByUserId: null,
+      chainMetadata: null,
     });
 
     return NextResponse.json(result);

@@ -10,6 +10,8 @@ import {
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
 import {
   assertUsersBelongToOrg,
+  assertWhatsappProviderTemplateBelongsToOrg,
+  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
@@ -22,7 +24,6 @@ function normalizeRecipient(raw) {
   if (!userId) return null;
 
   return {
-    ...raw,
     userId,
   };
 }
@@ -97,7 +98,6 @@ export async function POST(req) {
 
     const {
       orgId,
-      createdByUserId = null,
       channel = "whatsapp",
       recipients: rawRecipients = [],
       steps: rawSteps = [],
@@ -173,11 +173,85 @@ export async function POST(req) {
         { status: 400 },
       );
     }
+    const safeFallbackWhatsappTemplateId =
+      await assertWhatsappTemplateBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        fallbackWhatsappTemplateId,
+      );
+
+    let safeFallbackTemplate = null;
+    if (!safeFallbackWhatsappTemplateId && fallbackTemplate?.projectId) {
+      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        fallbackTemplate.projectId,
+      );
+
+      safeFallbackTemplate = {
+        projectId: templateRow.provider_template_id,
+        languageCode: fallbackTemplate.languageCode,
+        varKeys: Array.isArray(fallbackTemplate.varKeys)
+          ? fallbackTemplate.varKeys
+          : [],
+        params: Array.isArray(fallbackTemplate.params)
+          ? fallbackTemplate.params
+          : [],
+        manualParams: fallbackTemplate.manualParams || "",
+        trackedUrlKey: fallbackTemplate.trackedUrlKey || null,
+      };
+    }
+
+    const safeStepWhatsappTemplateIds = new Map();
+    const safeStepTemplates = new Map();
+
+    for (const step of rawSteps) {
+      if (!step?.whatsappTemplateId) continue;
+
+      const safeTemplateId = await assertWhatsappTemplateBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        step.whatsappTemplateId,
+      );
+
+      safeStepWhatsappTemplateIds.set(step.whatsappTemplateId, safeTemplateId);
+    }
+
+    for (const [index, step] of rawSteps.entries()) {
+      if (step?.whatsappTemplateId || !step?.template?.projectId) continue;
+
+      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        step.template.projectId,
+      );
+
+      safeStepTemplates.set(index, {
+        projectId: templateRow.provider_template_id,
+        languageCode: step.template.languageCode,
+        varKeys: Array.isArray(step.template.varKeys) ? step.template.varKeys : [],
+        params: Array.isArray(step.template.params) ? step.template.params : [],
+        manualParams: step.template.manualParams || "",
+        trackedUrlKey: step.template.trackedUrlKey || null,
+      });
+    }
+
+    const safeSteps = rawSteps.map((step, index) => ({
+      message: step?.message || "",
+      files: Array.isArray(step?.files) ? step.files : [],
+      imageUrls: Array.isArray(step?.imageUrls) ? step.imageUrls : [],
+      trackedLinks: Array.isArray(step?.trackedLinks) ? step.trackedLinks : [],
+      delayAfterPreviousReadMinutes: step?.delayAfterPreviousReadMinutes,
+      template: safeStepTemplates.get(index) || null,
+      whatsappTemplateId: step?.whatsappTemplateId
+        ? safeStepWhatsappTemplateIds.get(step.whatsappTemplateId)
+        : null,
+    }));
 
     const steps = normalizeSteps(
-      rawSteps,
-      fallbackTemplate,
-      fallbackWhatsappTemplateId,
+      safeSteps,
+      safeFallbackTemplate,
+      safeFallbackWhatsappTemplateId,
     );
 
     if (steps.length < 2 || steps.length > 10) {
@@ -202,7 +276,7 @@ export async function POST(req) {
 
     const chain = await createMessageChain({
       organizationId: orgAuth.orgId,
-      createdByUserId,
+      createdByUserId: orgAuth.user.id,
       channel,
       status: isScheduled ? "scheduled" : "active",
       scheduledFor: scheduledForIso,

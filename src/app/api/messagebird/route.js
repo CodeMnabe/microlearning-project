@@ -1,7 +1,6 @@
 /* --------------------
 WhatsApp inbound webhook + read receipt webhook
 ----------------------*/
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -49,12 +48,17 @@ import {
 
 import {
   createMessageChainDelivery,
+  getValidatedMessageChainContext,
   updateMessageChainRecipientProgress,
 } from "@/lib/repos/messageChain.repo";
 
 import { splitE164 } from "@/lib/whatsapp/E164";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
+
+import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
+
+import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
 
@@ -122,16 +126,12 @@ function safePayload(value) {
   }
 }
 
-/**
- * Convert messages stored in our DB into initial
+/*
+ * Convert local DB message history into initial
  * OpenAI Conversation items.
  *
- * This is only used when migrating an EXISTING
- * Assistants API thread into a new Conversation.
- *
- * We use at most the latest 20 messages because
- * OpenAI Conversation creation accepts up to
- * 20 initial items.
+ * Used only when lazily migrating an existing
+ * Assistants API thread to Conversations.
  */
 function buildConversationHistoryItems(messages = []) {
   if (!Array.isArray(messages)) {
@@ -141,6 +141,7 @@ function buildConversationHistoryItems(messages = []) {
   return messages
     .filter((message) => {
       const role = message?.role;
+
       const content = message?.content;
 
       return (
@@ -160,6 +161,19 @@ function buildConversationHistoryItems(messages = []) {
 /* =========================================================
    MESSAGEBIRD SIGNATURE
    ========================================================= */
+
+function isFreshTimestamp(timestamp, toleranceSeconds = 300) {
+  const numericTimestamp = Number(timestamp);
+
+  if (!Number.isFinite(numericTimestamp)) {
+    return false;
+  }
+
+  const timestampMs =
+    numericTimestamp > 1e12 ? numericTimestamp : numericTimestamp * 1000;
+
+  return Math.abs(Date.now() - timestampMs) <= toleranceSeconds * 1000;
+}
 
 function isValid(sigB64, ts, fullUrl, raw) {
   if (!SIGNING_KEY || !sigB64 || !ts || !fullUrl) {
@@ -185,7 +199,7 @@ function isValid(sigB64, ts, fullUrl, raw) {
 }
 
 /* =========================================================
-   WHATSAPP IDENTITY HELPERS
+   WHATSAPP IDENTITY
    ========================================================= */
 
 function getIdentifier(contact, key) {
@@ -210,6 +224,7 @@ function getPortfolioScopedBsuid(contact) {
 
 function extractWhatsappIdentity(payload) {
   const sender = payload?.sender || {};
+
   const senderContact = sender?.contact || {};
 
   const extra = payload?.meta?.extraInformation || {};
@@ -289,32 +304,48 @@ async function handleReadInteraction(readInteraction) {
     return;
   }
 
-  if (readInteraction.channelId) {
-    try {
-      const organization = await getOrganizationByChannelId(
-        readInteraction.channelId,
-      );
+  /*
+   * Require channelId so we can scope this
+   * receipt to an organization.
+   */
+  if (!readInteraction.channelId) {
+    console.warn("Read interaction missing channelId", {
+      messageId: readInteraction.messageId,
+    });
 
-      if (!organization) {
-        console.warn("Read interaction channel has no organization", {
-          channelId: readInteraction.channelId,
-          messageId: readInteraction.messageId,
-        });
-      }
-    } catch (err) {
-      console.warn("Could not resolve read interaction organization", {
-        channelId: readInteraction.channelId,
+    return;
+  }
 
-        messageId: readInteraction.messageId,
+  let organization;
 
-        message: err?.message || String(err),
-      });
-    }
+  try {
+    organization = await getOrganizationByChannelId(readInteraction.channelId);
+  } catch (err) {
+    console.error("Could not resolve read interaction organization", {
+      channelId: readInteraction.channelId,
+
+      messageId: readInteraction.messageId,
+
+      message: err?.message || String(err),
+    });
+
+    throw new Error("Could not resolve read receipt organization");
+  }
+
+  if (!organization) {
+    console.warn("Read interaction channel has no organization", {
+      channelId: readInteraction.channelId,
+
+      messageId: readInteraction.messageId,
+    });
+
+    return;
   }
 
   const updated = await markMessageReadByProviderId(
     readInteraction.messageId,
     readInteraction.readAt,
+    organization.id,
   );
 
   if (!updated) {
@@ -323,10 +354,18 @@ async function handleReadInteraction(readInteraction) {
 
       channelId: readInteraction.channelId,
 
+      organizationId: organization.id,
+
       readAt: readInteraction.readAt,
     });
 
     return;
+  }
+
+  if (Number(updated.organization_id) !== Number(organization.id)) {
+    throw new Error(
+      "Read receipt message does not belong to channel organization",
+    );
   }
 
   if (!updated.message_chain_id) {
@@ -366,7 +405,11 @@ async function handleReadInteraction(readInteraction) {
    USER LOOKUP
    ========================================================= */
 
-async function findUserFromPhone(rawPhone) {
+async function findUserFromPhone(rawPhone, organizationId) {
+  if (!organizationId) {
+    return null;
+  }
+
   const digits = String(rawPhone || "").replace(/\D/g, "");
 
   const { nationalNumber } = splitE164(rawPhone || "");
@@ -374,17 +417,21 @@ async function findUserFromPhone(rawPhone) {
   let user = null;
 
   if (nationalNumber) {
-    user = await getUserByNumber(nationalNumber);
+    user = await getUserByNumber(nationalNumber, organizationId);
   }
 
   if (!user && digits) {
-    user = await getUserByNumber(digits);
+    user = await getUserByNumber(digits, organizationId);
   }
 
   return user;
 }
 
-async function findUserFromWhatsappIdentity(identity, organizationId = null) {
+async function findUserFromWhatsappIdentity(identity, organizationId) {
+  if (!organizationId) {
+    return null;
+  }
+
   if (identity.whatsappBsuid) {
     const user = await getUserByWhatsappBsuid(
       identity.whatsappBsuid,
@@ -408,14 +455,14 @@ async function findUserFromWhatsappIdentity(identity, organizationId = null) {
   }
 
   if (identity.phoneNumber) {
-    return await findUserFromPhone(identity.phoneNumber);
+    return await findUserFromPhone(identity.phoneNumber, organizationId);
   }
 
   return null;
 }
 
 /* =========================================================
-   BIRD OUTBOUND MESSAGE
+   BIRD OUTBOUND
    ========================================================= */
 
 function buildReceiverContact({ contactId, phoneNumber, whatsappBsuid }) {
@@ -428,6 +475,7 @@ function buildReceiverContact({ contactId, phoneNumber, whatsappBsuid }) {
   if (phoneNumber) {
     return {
       identifierKey: "phonenumber",
+
       identifierValue: phoneNumber,
     };
   }
@@ -463,6 +511,7 @@ async function sendBirdMessage({
   if (!cleanChannelId) {
     return {
       ok: false,
+
       status: 400,
 
       data: {
@@ -476,6 +525,7 @@ async function sendBirdMessage({
   if (!receiverContact) {
     return {
       ok: false,
+
       status: 400,
 
       data: {
@@ -489,6 +539,7 @@ async function sendBirdMessage({
   if (!process.env.WORKSPACE_ID) {
     return {
       ok: false,
+
       status: 500,
 
       data: {
@@ -502,6 +553,7 @@ async function sendBirdMessage({
   if (!process.env.BIRD_API_KEY) {
     return {
       ok: false,
+
       status: 500,
 
       data: {
@@ -538,6 +590,7 @@ async function sendBirdMessage({
   } catch (err) {
     return {
       ok: false,
+
       status: 500,
 
       data: {
@@ -562,7 +615,9 @@ async function sendBirdMessage({
 
   return {
     ok: res.ok,
+
     status: res.status,
+
     data,
 
     providerMessageId: extractBirdMessageId(data),
@@ -587,12 +642,31 @@ export async function POST(req) {
 
   const tsHeader = req.headers.get("messagebird-request-timestamp") ?? "";
 
+  /*
+   * Prevent replaying old signed webhook
+   * requests.
+   */
+  if (!isFreshTimestamp(tsHeader)) {
+    console.warn("Expired or invalid MessageBird timestamp");
+
+    return new NextResponse("invalid timestamp", {
+      status: 401,
+    });
+  }
+
   const proto = req.headers.get("x-forwarded-proto") || "https";
 
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
 
-  const fullUrl =
-    `${proto}://${host}` + `${req.nextUrl.pathname}` + `${req.nextUrl.search}`;
+  if (!host) {
+    console.warn("MessageBird webhook missing host");
+
+    return new NextResponse("invalid webhook URL", {
+      status: 401,
+    });
+  }
+
+  const fullUrl = `${proto}://${host}${req.nextUrl.pathname}${req.nextUrl.search}`;
 
   const ok = isValid(sigHeader, tsHeader, fullUrl, rawBody);
 
@@ -613,17 +687,18 @@ export async function POST(req) {
   } catch (err) {
     console.error("MessageBird webhook failed", {
       message: err?.message,
+
       status: err?.status,
+
       type: err?.type,
+
       request_id: err?.request_id,
     });
 
     /*
-     * We still return HTTP 200 to Bird.
-     *
-     * Otherwise Bird may keep retrying the
-     * same webhook and accidentally create
-     * duplicate AI responses/messages.
+     * Return 200 so Bird doesn't continually
+     * retry the same event and potentially
+     * produce duplicate AI messages.
      */
     return NextResponse.json(
       {
@@ -653,10 +728,9 @@ async function handleEvent(rawJSON) {
     return;
   }
 
-  /* ---------------------------------------------------------
-     READ RECEIPT
-     --------------------------------------------------------- */
-
+  /*
+   * Read receipt.
+   */
   const readInteraction = extractReadInteraction(evt);
 
   if (readInteraction) {
@@ -665,10 +739,9 @@ async function handleEvent(rawJSON) {
     return;
   }
 
-  /* ---------------------------------------------------------
-     INBOUND TEXT MESSAGE
-     --------------------------------------------------------- */
-
+  /*
+   * Inbound WhatsApp text.
+   */
   const isInboundText =
     evt.service === "channels" &&
     evt.event === "whatsapp.inbound" &&
@@ -685,13 +758,29 @@ async function handleEvent(rawJSON) {
   const text = evt.payload?.body?.text?.text || "";
 
   const sentChannelId =
-    evt.payload?.channelId ||
-    evt.payload?.channel?.id ||
-    evt.payload?.receiver?.channel?.id ||
-    null;
+    normalizeId(evt.payload?.channelId) ||
+    normalizeId(evt.payload?.channel?.id) ||
+    normalizeId(evt.payload?.receiver?.channel?.id);
 
   const inboundMsgId =
-    evt.payload?.id || evt.payload?.messageId || evt.payload?.body?.id || null;
+    normalizeId(evt.payload?.id) ||
+    normalizeId(evt.payload?.messageId) ||
+    normalizeId(evt.payload?.body?.id);
+
+  /*
+   * Security:
+   *
+   * We need the inbound channel to establish
+   * which organization this webhook belongs to.
+   */
+  if (!sentChannelId) {
+    console.warn("Inbound WhatsApp event missing channelId", {
+      inboundMsgId,
+      identity,
+    });
+
+    return;
+  }
 
   if (!identity.phoneNumber && !identity.whatsappBsuid && !contactId) {
     console.warn("Inbound WhatsApp event missing usable identity", {
@@ -702,43 +791,54 @@ async function handleEvent(rawJSON) {
     return;
   }
 
-  /* ---------------------------------------------------------
-     RESOLVE ORGANIZATION FROM CHANNEL
-     --------------------------------------------------------- */
+  /*
+   * Resolve the organization exclusively
+   * through the inbound Bird channel.
+   */
+  let channelOrganization;
 
-  let channelOrganization = null;
+  try {
+    channelOrganization = await getOrganizationByChannelId(sentChannelId);
+  } catch (err) {
+    console.error("Could not resolve organization by channel_id", {
+      sentChannelId,
 
-  if (sentChannelId) {
-    try {
-      channelOrganization = await getOrganizationByChannelId(sentChannelId);
-    } catch (err) {
-      console.warn("Could not resolve organization by channel_id", {
-        sentChannelId,
+      message: err?.message || String(err),
+    });
 
-        message: err?.message || String(err),
-      });
-    }
+    throw new Error("Could not resolve webhook organization");
   }
 
-  /* ---------------------------------------------------------
-     FIND USER
-     --------------------------------------------------------- */
+  if (!channelOrganization) {
+    console.warn("Inbound WhatsApp channel has no organization", {
+      sentChannelId,
+    });
 
+    return;
+  }
+
+  /*
+   * Find the WhatsApp user scoped to the
+   * channel organization.
+   */
   let user = await findUserFromWhatsappIdentity(
     identity,
-    channelOrganization?.id || null,
+    channelOrganization.id,
   );
+
+  if (user && Number(user.organization_id) !== Number(channelOrganization.id)) {
+    throw new Error("Webhook user does not belong to channel organization");
+  }
 
   if (user) {
     user = await updateUserWhatsappIdentity(user.id, identity);
   }
 
-  /* ---------------------------------------------------------
-     UNREGISTERED USER
-     --------------------------------------------------------- */
-
+  /*
+   * Unregistered user.
+   */
   if (!user) {
-    const r = await sendBirdMessage({
+    const response = await sendBirdMessage({
       channelId: sentChannelId,
 
       contactId,
@@ -756,39 +856,44 @@ async function handleEvent(rawJSON) {
       },
     });
 
-    if (!r.ok) {
-      console.error("Failed to send unregistered message:", r.data);
+    if (!response.ok) {
+      console.error("Failed to send unregistered message:", response.data);
     }
 
     return;
   }
 
-  /* ---------------------------------------------------------
-     PENDING OUTREACH
-
-     This stays before normal AI conversation handling.
-     --------------------------------------------------------- */
-
+  /*
+   * Pending outreach has priority over
+   * normal AI conversation handling.
+   */
   const pendingMessages = await getAllPendingOutreachByUser(user.id);
 
   if (Array.isArray(pendingMessages) && pendingMessages.length > 0) {
     await handlePendingMessages({
       user,
+
       inboundMsgId,
+
       contactId,
+
       inboundIdentity: identity,
+
       inboundText: text,
+
       pendingMessages,
+
       sentChannelId,
     });
 
     return;
   }
 
-  /* ---------------------------------------------------------
-     ORGANIZATION
-     --------------------------------------------------------- */
-
+  /*
+   * Resolve organization from the user too,
+   * and verify that it matches the inbound
+   * Bird channel organization.
+   */
   const organization = await getOrganization(user.organization_id);
 
   if (!organization) {
@@ -797,16 +902,22 @@ async function handleEvent(rawJSON) {
     return;
   }
 
-  /* ---------------------------------------------------------
-     DATABASE ASSISTANT
+  if (Number(organization.id) !== Number(channelOrganization.id)) {
+    throw new Error(
+      "User organization does not match webhook channel organization",
+    );
+  }
 
-     IMPORTANT:
-     No assistant.open_ai_id anymore.
-
-     The row returned here IS the assistant
-     configuration.
-     --------------------------------------------------------- */
-
+  /*
+   * =========================================================
+   * DATABASE ASSISTANT
+   * =========================================================
+   *
+   * No assistant.open_ai_id.
+   *
+   * The Supabase Assistant row is now the
+   * configuration used by Responses.
+   */
   const assistantRow = await getAssistantFromUser(user, organization);
 
   if (!assistantRow) {
@@ -821,9 +932,11 @@ async function handleEvent(rawJSON) {
 
   const channel = "whatsapp";
 
-  /* =========================================================
-     FIND DB THREAD
-     ========================================================= */
+  /*
+   * =========================================================
+   * FIND DB THREAD
+   * =========================================================
+   */
 
   let thread = await getUserThreadForChannel({
     userId: user.id,
@@ -835,18 +948,11 @@ async function handleEvent(rawJSON) {
 
   let conversationId = normalizeId(thread?.openai_conversation_id);
 
-  /* =========================================================
-     CASE 1:
-     BRAND NEW THREAD
-
-     No DB thread exists.
-
-     Create:
-       OpenAI Conversation
-       +
-       DB Thread
-     ========================================================= */
-
+  /*
+   * =========================================================
+   * NEW THREAD
+   * =========================================================
+   */
   if (!thread) {
     const conversation = await createConversation({
       assistantId: assistantRow.id,
@@ -872,14 +978,14 @@ async function handleEvent(rawJSON) {
       assistantId: assistantRow.id,
 
       /*
-       * Old Assistants API field.
+       * Legacy Assistants API field.
        *
-       * New rows leave this NULL.
+       * New threads leave this NULL.
        */
       aiThreadId: null,
 
       /*
-       * New OpenAI Conversation.
+       * New Conversations API identifier.
        */
       openAiConversationId: conversationId,
 
@@ -901,18 +1007,18 @@ async function handleEvent(rawJSON) {
     });
   } else if (!conversationId) {
 
-  /* =========================================================
-     CASE 2:
-     EXISTING LEGACY THREAD
-
-     DB thread exists but it was created using
-     the Assistants API:
-
-       ai_thread_id = thread_...
-       openai_conversation_id = NULL
-
-     We migrate it once, lazily.
-     ========================================================= */
+  /*
+   * =========================================================
+   * LEGACY THREAD MIGRATION
+   * =========================================================
+   *
+   * Existing DB row:
+   *
+   * ai_thread_id = thread_...
+   * openai_conversation_id = NULL
+   *
+   * We preserve the old ID but stop using it.
+   */
     const previousMessages = await getMessagesInThread(thread.id);
 
     const historyItems = buildConversationHistoryItems(previousMessages);
@@ -960,27 +1066,28 @@ async function handleEvent(rawJSON) {
     });
   }
 
-  /* =========================================================
-     SAFETY CHECK
-     ========================================================= */
-
+  /*
+   * Should never happen after the code above.
+   */
   if (!conversationId) {
     throw new Error(
       `DB thread ${thread?.id ?? "unknown"} has no OpenAI Conversation ID`,
     );
   }
 
-  /* =========================================================
-     SAVE INBOUND MESSAGE TO OUR DATABASE
-
-     IMPORTANT:
-     This happens AFTER old-history migration so the
-     current incoming message isn't copied into the
-     Conversation and then sent a second time.
-     ========================================================= */
-
+  /*
+   * IMPORTANT:
+   *
+   * Save the incoming message AFTER legacy
+   * history migration.
+   *
+   * Otherwise the current message would be
+   * added to initial Conversation history
+   * and then sent again as the new Response
+   * input.
+   */
   await createMessage({
-    threadId: thread?.id ?? null,
+    threadId: thread.id,
 
     userId: user.id,
 
@@ -999,27 +1106,20 @@ async function handleEvent(rawJSON) {
     role: "user",
   });
 
-  /* =========================================================
-     OPENAI RESPONSES API
-
-     OLD FLOW REMOVED:
-
-       assistant.open_ai_id
-       createOAiThread()
-       beta.threads.messages.create()
-       beta.threads.runs.create()
-       runs.retrieve()
-       message polling
-
-     NEW FLOW:
-
-       DB assistant
-       +
-       conv_...
-       +
-       Responses API
-     ========================================================= */
-
+  /*
+   * =========================================================
+   * RESPONSES API
+   * =========================================================
+   *
+   * Removed:
+   *
+   * assistant.open_ai_id
+   * createOAiThread()
+   * sendMessageToAi()
+   * beta.threads
+   * Runs
+   * polling
+   */
   const aiResponse = await generateAssistantResponse({
     assistant: assistantRow,
 
@@ -1034,14 +1134,13 @@ async function handleEvent(rawJSON) {
     throw new Error("OpenAI returned an empty assistant response");
   }
 
-  /* =========================================================
-     SEND AI RESPONSE THROUGH BIRD
-     ========================================================= */
-
+  /*
+   * Send AI response through Bird.
+   */
   let outboundId = null;
 
   const outgoingChannelId =
-    normalizeId(organization.channel_id) || normalizeId(sentChannelId);
+    normalizeId(organization.channel_id) || sentChannelId;
 
   const sendRes = await sendBirdMessage({
     channelId: outgoingChannelId,
@@ -1067,12 +1166,11 @@ async function handleEvent(rawJSON) {
     outboundId = sendRes.providerMessageId;
   }
 
-  /* =========================================================
-     SAVE AI RESPONSE TO OUR DATABASE
-     ========================================================= */
-
+  /*
+   * Save Assistant response locally.
+   */
   await createMessage({
-    threadId: thread?.id ?? null,
+    threadId: thread.id,
 
     userId: user.id,
 
@@ -1213,6 +1311,29 @@ async function handlePendingMessages({
       row.message_chain_recipient_id &&
       row.message_chain_step_index;
 
+    /*
+     * Security:
+     *
+     * Validate the chain, step and recipient
+     * against the user + organization before
+     * persisting any chain metadata.
+     */
+    const chainContext = hasChainMetadata
+      ? await getValidatedMessageChainContext({
+          chainId: row.message_chain_id,
+
+          chainStepId: row.message_chain_step_id,
+
+          chainRecipientId: row.message_chain_recipient_id,
+
+          stepIndex: Number(row.message_chain_step_index),
+
+          userId: user.id,
+
+          organizationId: user.organization_id,
+        })
+      : null;
+
     await createMessage({
       threadId: null,
 
@@ -1234,23 +1355,27 @@ async function handlePendingMessages({
 
       deliveryStatus: "accepted",
 
-      messageChainId: row.message_chain_id || null,
+      messageChainId: chainContext?.chain.id || null,
 
-      messageChainStepId: row.message_chain_step_id || null,
+      messageChainStepId: chainContext?.step.id || null,
 
-      messageChainRecipientId: row.message_chain_recipient_id || null,
+      messageChainRecipientId: chainContext?.recipient.id || null,
 
-      messageChainStepIndex: row.message_chain_step_index || null,
+      messageChainStepIndex: chainContext
+        ? Number(row.message_chain_step_index)
+        : null,
     });
 
-    if (hasChainMetadata) {
+    if (chainContext) {
       try {
         await createMessageChainDelivery({
-          chainId: row.message_chain_id,
+          chainId: chainContext.chain.id,
 
-          chainStepId: row.message_chain_step_id,
+          chainStepId: chainContext.step.id,
 
-          chainRecipientId: row.message_chain_recipient_id,
+          chainRecipientId: chainContext.recipient.id,
+
+          userId: user.id,
 
           stepIndex: Number(row.message_chain_step_index),
 
@@ -1262,7 +1387,11 @@ async function handlePendingMessages({
         });
 
         await updateMessageChainRecipientProgress({
-          chainRecipientId: row.message_chain_recipient_id,
+          chainId: chainContext.chain.id,
+
+          chainRecipientId: chainContext.recipient.id,
+
+          userId: user.id,
 
           currentStepIndex: Number(row.message_chain_step_index),
 
@@ -1304,11 +1433,20 @@ async function handlePendingMessages({
    ========================================================= */
 
 async function getAssistantFromUser(user, organization) {
+  const admin = getSupabaseAdminClient();
+
   /*
-   * Prefer the assistant explicitly assigned
-   * to this user.
+   * If the user has an explicitly assigned
+   * Assistant, verify that Assistant belongs
+   * to the user's organization before using it.
    */
   if (user.assistant_id) {
+    await assertAssistantBelongsToOrg(
+      admin,
+      organization.id,
+      user.assistant_id,
+    );
+
     const assistant = await getAssistantById(user.assistant_id);
 
     if (assistant) {
@@ -1317,8 +1455,8 @@ async function getAssistantFromUser(user, organization) {
   }
 
   /*
-   * Fallback:
-   * first assistant belonging to organization.
+   * Fallback to an Assistant from the same
+   * organization.
    */
   const assistants = await getAssistantsInOrg(organization.id);
 

@@ -62,6 +62,10 @@ async function processDueReadChains(req) {
         throw new Error("Could not find step 1 for scheduled read chain.");
       }
 
+      if (String(firstStep.chain_id) !== String(chain.id)) {
+        throw new Error("Chain step does not belong to chain.");
+      }
+
       const recipients = await getMessageChainRecipientsByChainId(chain.id);
 
       if (!recipients.length) {
@@ -70,6 +74,23 @@ async function processDueReadChains(req) {
 
       for (const chainRecipient of recipients) {
         try {
+          if (String(chainRecipient.chain_id) !== String(chain.id)) {
+            throw new Error("Chain recipient does not belong to chain.");
+          }
+
+          if (chainRecipient.status !== "active") {
+            result.skipped += 1;
+
+            result.results.push({
+              userId: chainRecipient.user_id,
+              ok: true,
+              skipped: true,
+              reason: "Chain recipient is not active.",
+            });
+
+            continue;
+          }
+
           const existingDelivery = await getMessageChainDelivery({
             chainRecipientId: chainRecipient.id,
             stepIndex: 1,
@@ -77,6 +98,7 @@ async function processDueReadChains(req) {
 
           if (existingDelivery) {
             result.skipped += 1;
+
             result.results.push({
               userId: chainRecipient.user_id,
               ok: true,
@@ -109,7 +131,7 @@ async function processDueReadChains(req) {
             ok: Boolean(sendResult.ok),
             sent: Boolean(sendResult.sent),
             waitingForReply: Boolean(sendResult.waitingForReply),
-            kind: sendReadChainStep.kind || null,
+            kind: sendResult.kind || null,
             error: sendResult.error || null,
             warning: sendResult.warning || null,
           });
@@ -122,7 +144,9 @@ async function processDueReadChains(req) {
             sent: false,
             waitingForReply: false,
             kind: "error",
-            error: recipientError.message,
+            error:
+              recipientError.message ||
+              "Failed to process scheduled chain recipient.",
           });
         }
       }
@@ -138,11 +162,12 @@ async function processDueReadChains(req) {
         });
       }
     } catch (chainError) {
-      result.error = chainError.message;
+      result.error =
+        chainError.message || "Failed to process scheduled read chain.";
 
       await markMessageChainFailed({
         chainId: chain.id,
-        errorMessage: chainError.message,
+        errorMessage: result.error,
       });
     }
 
@@ -150,10 +175,15 @@ async function processDueReadChains(req) {
   }
 
   const started = chainResults.filter(
-    (r) => r.ok > 0 || r.waitingForReply > 0 || r.skipped > 0,
+    (result) =>
+      result.ok > 0 ||
+      result.waitingForReply > 0 ||
+      result.skipped > 0,
   ).length;
 
-  const failed = chainResults.filter((r) => r.error || r.failed > 0).length;
+  const failed = chainResults.filter(
+    (result) => result.error || result.failed > 0,
+  ).length;
 
   return NextResponse.json({
     ok: true,

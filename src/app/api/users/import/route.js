@@ -409,13 +409,27 @@ export async function POST(req) {
       ),
     ];
 
+    const safeAssistantIds = new Map();
+
     for (const requestedAssistantId of requestedAssistantIds) {
-      await assertAssistantBelongsToOrg(
+      const safeAssistantId = await assertAssistantBelongsToOrg(
         orgAuth.admin,
         orgAuth.orgId,
         requestedAssistantId,
       );
+
+      safeAssistantIds.set(requestedAssistantId, safeAssistantId);
     }
+
+    toProcess.forEach((item) => {
+      if (item.assistantId != null) {
+        item.assistantId = safeAssistantIds.get(item.assistantId);
+      }
+
+      if (item.patch?.assistant_id != null) {
+        item.patch.assistant_id = safeAssistantIds.get(item.patch.assistant_id);
+      }
+    });
 
     const results = await Promise.allSettled(
       toProcess.map(async (item) => {

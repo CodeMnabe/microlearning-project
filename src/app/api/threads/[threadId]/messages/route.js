@@ -8,10 +8,18 @@ export async function GET(_req, { params }) {
   try {
     /*
      * Next.js 16:
-     * params is asynchronous.
+     *
+     * route params are asynchronous.
      */
     const { threadId } = await params;
 
+    /*
+     * Authorization happens before reading
+     * any messages.
+     *
+     * requireOrgForThread() also validates
+     * and parses the DB thread ID.
+     */
     const orgAuth = await requireOrgForThread(threadId);
 
     if (orgAuth.error) {
