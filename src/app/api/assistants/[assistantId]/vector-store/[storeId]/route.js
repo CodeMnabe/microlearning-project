@@ -1,73 +1,203 @@
-// src/app/api/assistants/[assistantId]/vector-store/[storeId]/route.js
 import { NextResponse } from "next/server";
+
 import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
+
 import { deleteFileById } from "@/lib/repos/files.repo";
-import { deleteOAiVectorStoreAndFiles } from "@/lib/services/oAi.services";
+
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 
-export async function GET(req, { params }) {
+import { deleteOpenAiVectorStoreAndFiles } from "@/lib/services/openaiFiles.service";
+
+import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
+
+/* =========================================================
+   GET VECTOR STORE
+   ========================================================= */
+
+export async function GET(_req, { params }) {
   try {
-    const { storeId } = await params;
-    const store = await getStoreById(Number(storeId));
-    if (!store)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const { assistantId, storeId } = await params;
+
+    const auth = await requireOrgForAssistant(assistantId);
+
+    if (auth.error) {
+      return auth.error;
+    }
+
+    const sId = Number(storeId);
+
+    if (!Number.isInteger(sId) || sId <= 0) {
+      return NextResponse.json(
+        {
+          error: "Invalid store id",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    /*
+     * Do not reveal whether some other
+     * Assistant's Vector Store exists.
+     */
+    if (Number(auth.assistant.vector_store_id) !== sId) {
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const store = await getStoreById(sId);
+
+    if (!store) {
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
 
     return NextResponse.json(
       {
         id: store.id,
+
         storeName: store.store_name,
+
         files: (store.file || []).map(({ id, name, size }) => ({
           id,
           name,
           size,
         })),
       },
-      { status: 200 }
+      {
+        status: 200,
+      },
     );
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to load vector store");
   }
 }
 
-export async function DELETE(req, ctx) {
+/* =========================================================
+   DELETE VECTOR STORE
+   ========================================================= */
+
+export async function DELETE(_req, { params }) {
   try {
-    const { assistantId, storeId } = await ctx.params;
+    const { assistantId, storeId } = await params;
+
+    const auth = await requireOrgForAssistant(assistantId);
+
+    if (auth.error) {
+      return auth.error;
+    }
+
     const sId = Number(storeId);
-    const aId = Number(assistantId);
+
+    if (!Number.isInteger(sId) || sId <= 0) {
+      return NextResponse.json(
+        {
+          error: "Invalid store id",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    /*
+     * Prevent deleting another Assistant's
+     * Vector Store by guessing the ID.
+     */
+    if (Number(auth.assistant.vector_store_id) !== sId) {
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
 
     const store = await getStoreById(sId);
+
     if (!store) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
     }
 
+    /*
+     * These OpenAI IDs are still valid.
+     *
+     * They belong to:
+     *
+     * OpenAI Files
+     * OpenAI Vector Stores
+     *
+     * NOT OpenAI Assistants.
+     */
     const openAiFileIds = (store.file ?? [])
-      .map((f) => f.open_ai_id)
+      .map((file) => file.open_ai_id)
       .filter(Boolean);
+
     const openAiStoreId = store.open_ai_id;
 
-    // ✨ 0) Break the FK first to avoid FK violations
-    await nullifyVectorStoreToDbAssistant(aId);
+    /*
+     * Disconnect the Vector Store from
+     * our DB Assistant first.
+     */
+    await nullifyVectorStoreToDbAssistant(auth.assistantId);
 
-    // 1) Delete from OpenAI (best-effort)
+    /*
+     * Delete the real OpenAI resources.
+     *
+     * If OpenAI cleanup fails, we still
+     * continue removing our local records
+     * so the Assistant is not left linked
+     * to a broken store.
+     */
     try {
-      await deleteOAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
-    } catch (e) {
-      // optional: log and continue or return a 502 if you want strictness
-      console.error("OpenAI delete failed:", e);
+      await deleteOpenAiVectorStoreAndFiles(openAiStoreId, openAiFileIds);
+    } catch (err) {
+      console.error("[Vector Store DELETE] OpenAI cleanup failed:", err);
     }
 
-    // 2) Delete DB (files then store) — or just store if you add CASCADE below
-    for (const f of store.file ?? []) {
-      await deleteFileById(f.id);
+    /*
+     * Delete local file rows.
+     */
+    for (const file of store.file ?? []) {
+      await deleteFileById(file.id);
     }
+
+    /*
+     * Delete local Vector Store row.
+     */
     await deleteStoreById(sId);
 
     return NextResponse.json(
-      { message: "Vector store and files deleted" },
-      { status: 200 }
+      {
+        message: "Vector store and files deleted",
+      },
+      {
+        status: 200,
+      },
     );
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to delete vector store");
   }
 }

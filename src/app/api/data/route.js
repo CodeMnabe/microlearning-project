@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import { readDb } from "@/lib/persistence/db";
 
 export async function GET() {
-  const { organization, users, threads, messages } = await readDb();
-
-  return NextResponse.json({ organization, users, threads, messages });
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
 }

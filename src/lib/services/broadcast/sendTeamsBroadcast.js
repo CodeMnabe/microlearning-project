@@ -46,6 +46,7 @@ export async function sendTeamsBroadcast(input = {}) {
   for (const userId of userIds) {
     const install = await getTeamsUserInstallation({
       userId,
+      organizationId: orgId,
       conversationType: "personal",
     });
 

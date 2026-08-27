@@ -21,22 +21,41 @@ export async function getOrgScheduledBroadcasts(
   organizationId,
   { source = "all" } = {},
 ) {
-  let query = sb
+  const { data, error } = await sb
     .from("scheduled_broadcast")
     .select("*")
     .eq("organization_id", organizationId)
     .order("scheduled_for", { ascending: true });
 
-  if (source === "manual") {
-    query = query.not("created_by_user_id", "is", null);
-  } else if (source === "automation") {
-    query = query.is("created_by_user_id", null);
+  if (error) throw error;
+
+  const rows = data || [];
+
+  function isAutomationBroadcast(broadcast) {
+    const payload = broadcast?.payload;
+
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+
+    return Boolean(
+      payload._automation ||
+        payload.automationRunId ||
+        payload.automationRuleId ||
+        payload.ruleId ||
+        payload.source === "automation",
+    );
   }
 
-  const { data, error } = await query;
+  if (source === "automation") {
+    return rows.filter(isAutomationBroadcast);
+  }
 
-  if (error) throw error;
-  return data || [];
+  if (source === "manual") {
+    return rows.filter((broadcast) => !isAutomationBroadcast(broadcast));
+  }
+
+  return rows;
 }
 
 export async function updateScheduledBroadcast(id, patch) {

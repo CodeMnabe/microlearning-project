@@ -37,13 +37,17 @@ export async function getTeamsInstallationByConversation({
 
 export async function getTeamsUserInstallation({
   userId,
+  organizationId,
   conversationType = "personal",
 }) {
+  if (!organizationId) return null;
+
   const { data, error } = await sb
     .from("teams_installation")
     .select("*")
     .eq("scope", "user")
     .eq("user_id", userId)
+    .eq("organization_id", organizationId)
     .eq("conversation_type", conversationType)
     .maybeSingle();
 

@@ -138,8 +138,6 @@ export default function AssistantsHub() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: selected.id,
-          open_ai_id: selected.open_ai_id,
           name: draft.name,
           description: draft.description,
           instructions: draft.instructions,
@@ -461,10 +459,14 @@ export default function AssistantsHub() {
                   {isEditing ? (
                     <select
                       className={styles.select}
-                      value={read("model", "gpt-4.1")}
+                      value={read("model", "gpt-5.6-luna")}
                       onChange={(e) => handleChange("model", e.target.value)}
                     >
-                      <option value="gpt-4.1">gpt-4.1</option>
+                      <option value="gpt-5.6-luna">Económico</option>
+
+                      <option value="gpt-5.6-terra">Equilibrado</option>
+
+                      <option value="gpt-5.6-sol">Avançado</option>
                     </select>
                   ) : (
                     <span className={styles.specValueBold}>

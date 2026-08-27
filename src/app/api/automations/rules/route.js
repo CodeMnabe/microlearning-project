@@ -4,6 +4,12 @@ import {
   createAutomationRule,
   getOrgAutomationRules,
 } from "@/lib/repos/automationRules.repo";
+import {
+  assertAssistantBelongsToOrg,
+  assertWhatsappTemplateBelongsToOrg,
+  requireOwnedOrg,
+} from "@/lib/auth/guards";
+import { sanitizeAutomationPayload } from "@/lib/services/automations/automationEngine";
 
 function normalizeAssistantId(value) {
   if (value === "" || value === undefined || value === null) return null;
@@ -19,7 +25,11 @@ export async function GET(req) {
       return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
     }
 
-    const items = await getOrgAutomationRules(orgId);
+    const orgAuth = await requireOwnedOrg(orgId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const items = await getOrgAutomationRules(orgAuth.orgId);
+
     return NextResponse.json({ items });
   } catch (error) {
     return NextResponse.json(
@@ -49,24 +59,39 @@ export async function POST(req) {
       );
     }
 
+    const orgAuth = await requireOwnedOrg(organizationId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const safeAssistantId = await assertAssistantBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      assistantId,
+    );
+
+    const safeTemplateId = await assertWhatsappTemplateBelongsToOrg(
+      orgAuth.admin,
+      orgAuth.orgId,
+      body.whatsapp_template_id,
+    );
+
     if (triggerType === "user.inactive" && isActive) {
       await assertNoActiveInactivityRuleConflict({
-        organizationId,
+        organizationId: orgAuth.orgId,
         channel,
-        assistantId,
+        assistantId: safeAssistantId,
       });
     }
 
     const row = await createAutomationRule({
-      organization_id: organizationId,
+      organization_id: orgAuth.orgId,
       name: body.name,
       trigger_type: triggerType,
-      assistant_id: assistantId,
+      assistant_id: safeAssistantId,
       channel,
       delay_minutes: Math.max(0, Number(body.delay_minutes || 0)),
-      payload: body.payload || {},
+      payload: sanitizeAutomationPayload(body.payload),
       is_active: isActive,
-      whatsapp_template_id: body.whatsapp_template_id ?? null,
+      whatsapp_template_id: safeTemplateId,
     });
 
     return NextResponse.json(row, { status: 201 });

@@ -5,6 +5,7 @@ import {
   finishScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
 import {
+  getAutomationRunForScheduledBroadcast,
   markAutomationRunFailed,
   markAutomationRunProcessing,
   markAutomationRunSent,
@@ -19,7 +20,7 @@ function isAuthorized(req) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
 
   const authHeader = req.headers.get("authorization") || "";
@@ -32,11 +33,11 @@ function isAuthorized(req) {
   return bearer === cronSecret || xCronSecret === cronSecret;
 }
 
-async function syncAutomationRunProcessing(automationRunId) {
+async function syncAutomationRunProcessing(automationRunId, context) {
   if (!automationRunId) return;
 
   try {
-    await markAutomationRunProcessing(automationRunId);
+    await markAutomationRunProcessing(automationRunId, context);
   } catch (error) {
     console.warn("[Automations] Failed to mark run processing", {
       automationRunId,
@@ -45,11 +46,11 @@ async function syncAutomationRunProcessing(automationRunId) {
   }
 }
 
-async function syncAutomationRunSuccess(automationRunId) {
+async function syncAutomationRunSuccess(automationRunId, context) {
   if (!automationRunId) return;
 
   try {
-    await markAutomationRunSent(automationRunId);
+    await markAutomationRunSent(automationRunId, context);
   } catch (error) {
     console.warn("[Automations] Failed to mark run sent", {
       automationRunId,
@@ -58,11 +59,11 @@ async function syncAutomationRunSuccess(automationRunId) {
   }
 }
 
-async function syncAutomationRunFailure(automationRunId, errorMessage) {
+async function syncAutomationRunFailure(automationRunId, errorMessage, context) {
   if (!automationRunId) return;
 
   try {
-    await markAutomationRunFailed(automationRunId, errorMessage);
+    await markAutomationRunFailed(automationRunId, errorMessage, context);
   } catch (error) {
     console.warn("[Automations] Failed to mark run failed", {
       automationRunId,
@@ -91,6 +92,11 @@ function normalizeError(err) {
 async function processOneBroadcast(broadcast) {
   let locked;
   const automationRunId = broadcast?.payload?.automationRunId || null;
+  let verifiedAutomationRunId = null;
+  const automationContext = {
+    organizationId: broadcast.organization_id,
+    scheduledBroadcastId: broadcast.id,
+  };
 
   try {
     locked = await markScheduledBroadcastProcessing(broadcast.id);
@@ -112,19 +118,53 @@ async function processOneBroadcast(broadcast) {
     };
   }
 
-  await syncAutomationRunProcessing(automationRunId);
-
   try {
-    // IMPORTANT:
-    // old scheduled rows may already contain createdByUserId inside payload.
-    // remove it before sending to avoid bigint/uuid issues in tracked_link.created_by_user_id
-    const { createdByUserId: _ignoredCreatedByUserId, ...safeStoredPayload } =
-      broadcast.payload || {};
+    if (automationRunId) {
+      const automationRun = await getAutomationRunForScheduledBroadcast({
+        id: automationRunId,
+        ...automationContext,
+      });
 
+      if (!automationRun) {
+        throw new Error(
+          "Automation run does not belong to this scheduled broadcast",
+        );
+      }
+
+      verifiedAutomationRunId = automationRun.id;
+      await syncAutomationRunProcessing(
+        verifiedAutomationRunId,
+        automationContext,
+      );
+    }
+
+    const storedPayload = broadcast.payload || {};
     const payload = {
-      ...safeStoredPayload,
-      orgId: safeStoredPayload.orgId || broadcast.organization_id,
+      orgId: broadcast.organization_id,
+      message: storedPayload.message || "",
+      files: Array.isArray(storedPayload.files) ? storedPayload.files : [],
+      imageUrls: Array.isArray(storedPayload.imageUrls)
+        ? storedPayload.imageUrls
+        : [],
+      trackedLinks: Array.isArray(storedPayload.trackedLinks)
+        ? storedPayload.trackedLinks
+        : [],
       scheduledBroadcastId: broadcast.id,
+      createdByUserId: null,
+      ...(broadcast.channel === "whatsapp"
+        ? {
+            recipients: Array.isArray(storedPayload.recipients)
+              ? storedPayload.recipients
+              : [],
+            template: storedPayload.template || null,
+            whatsappTemplateId: storedPayload.whatsappTemplateId || null,
+            chainMetadata: null,
+          }
+        : {
+            userIds: Array.isArray(storedPayload.userIds)
+              ? storedPayload.userIds
+              : [],
+          }),
     };
 
     console.log("[Schedule Broadcast] payload before send", {
@@ -156,11 +196,15 @@ async function processOneBroadcast(broadcast) {
 
     if (finalStatus === "failed") {
       await syncAutomationRunFailure(
-        automationRunId,
+        verifiedAutomationRunId,
         JSON.stringify(result?.results || result || {}),
+        automationContext,
       );
     } else {
-      await syncAutomationRunSuccess(automationRunId);
+      await syncAutomationRunSuccess(
+        verifiedAutomationRunId,
+        automationContext,
+      );
     }
 
     return {
@@ -190,7 +234,11 @@ async function processOneBroadcast(broadcast) {
 
     const normalizedError = normalizeError(err);
 
-    await syncAutomationRunFailure(automationRunId, normalizedError);
+    await syncAutomationRunFailure(
+      verifiedAutomationRunId,
+      normalizedError,
+      automationContext,
+    );
 
     return {
       id: broadcast.id,

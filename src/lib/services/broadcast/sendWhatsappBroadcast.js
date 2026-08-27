@@ -1,16 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { splitE164, toE164 } from "@/lib/whatsapp/E164";
-import {
-  getUserById,
-  getUserByNumber,
-  getUserByWhatsappBsuid,
-  getUserByBirdContactId,
-} from "@/lib/repos/user.repo";
+import { toE164 } from "@/lib/whatsapp/E164";
+import { getUserById } from "@/lib/repos/user.repo";
 import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
-import { getWhatsappTemplateById } from "@/lib/repos/whatsappTemplates.repo";
+import {
+  getWhatsappTemplateById,
+  getWhatsappTemplateByProviderId,
+} from "@/lib/repos/whatsappTemplates.repo";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,
@@ -70,26 +68,12 @@ function normalizeRecipient(raw) {
     return {
       raw,
       userId: raw.userId ?? raw.id ?? null,
-      phoneNumber: cleanText(
-        raw.phoneNumber ?? raw.phone_number ?? raw.to ?? raw.recipient,
-      ),
-      whatsappBsuid: cleanText(raw.whatsappBsuid ?? raw.whatsapp_bsuid),
-      whatsappUsername: cleanText(
-        raw.whatsappUsername ?? raw.whatsapp_username,
-      ),
-      birdContactId: cleanText(raw.birdContactId ?? raw.bird_contact_id),
-      name: cleanText(raw.name),
     };
   }
 
   return {
     raw,
     userId: null,
-    phoneNumber: cleanText(raw),
-    whatsappBsuid: null,
-    whatsappUsername: null,
-    birdContactId: null,
-    name: null,
   };
 }
 
@@ -339,7 +323,32 @@ export async function sendWhatsappBroadcast(input = {}) {
     .filter((f) => isImageType(f.contentType))
     .map((f) => f.url);
 
-  let resolvedTemplate = template;
+  let resolvedTemplate = null;
+
+  if (template?.projectId && !whatsappTemplateId) {
+    const allowedTemplate = await getWhatsappTemplateByProviderId(
+      template.projectId,
+      orgId,
+    );
+
+    if (!allowedTemplate) {
+      throw new BroadcastError(
+        "WhatsApp template does not belong to this organization",
+        403,
+      );
+    }
+
+    resolvedTemplate = {
+      projectId: String(allowedTemplate.provider_template_id || "").trim(),
+      languageCode: String(
+        template.languageCode || allowedTemplate.language || "pt-PT",
+      ).trim(),
+      varKeys: Array.isArray(template.varKeys) ? template.varKeys : [],
+      params: Array.isArray(template.params) ? template.params : [],
+      manualParams: String(template.manualParams || ""),
+      trackedUrlKey: cleanText(template.trackedUrlKey),
+    };
+  }
 
   if (!resolvedTemplate && whatsappTemplateId) {
     const tpl = await getWhatsappTemplateById(whatsappTemplateId);
@@ -393,40 +402,27 @@ export async function sendWhatsappBroadcast(input = {}) {
   async function resolveRecipient(rawRecipient) {
     const recipient = normalizeRecipient(rawRecipient);
 
-    let user = null;
-
-    if (recipient.userId) {
-      user = await getUserById(recipient.userId);
+    if (!recipient.userId) {
+      throw new BroadcastError("Recipient userId is required", 400);
     }
 
-    if (!user && recipient.whatsappBsuid) {
-      user = await getUserByWhatsappBsuid(recipient.whatsappBsuid, orgId);
+    const user = await getUserById(recipient.userId);
+
+    if (!user || Number(user.organization_id) !== Number(orgId)) {
+      throw new BroadcastError(
+        "Recipient does not belong to this organization",
+        403,
+      );
     }
 
-    if (!user && recipient.birdContactId) {
-      user = await getUserByBirdContactId(recipient.birdContactId, orgId);
-    }
-
-    if (!user && recipient.phoneNumber) {
-      const { nationalNumber } = splitE164(recipient.phoneNumber);
-      const digits = String(recipient.phoneNumber).replace(/\D/g, "");
-
-      user =
-        (nationalNumber && (await getUserByNumber(nationalNumber))) ||
-        (digits && (await getUserByNumber(digits))) ||
-        null;
-    }
-
-    let to = getUserPhone(user) || recipient.phoneNumber || null;
+    let to = getUserPhone(user);
 
     if (to) {
       to = await toE164(to, defaultCc);
     }
 
-    const whatsappBsuid =
-      recipient.whatsappBsuid || user?.whatsapp_bsuid || null;
-    const birdContactId =
-      recipient.birdContactId || user?.bird_contact_id || null;
+    const whatsappBsuid = user.whatsapp_bsuid || null;
+    const birdContactId = user.bird_contact_id || null;
 
     const contact = buildWhatsappContact({
       phoneNumber: to,

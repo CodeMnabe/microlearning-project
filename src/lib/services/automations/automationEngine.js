@@ -19,6 +19,34 @@ function hasTeamsIdentity(user) {
   );
 }
 
+const CLIENT_CONTROLLED_SECURITY_FIELDS = new Set([
+  "orgId",
+  "organizationId",
+  "organization_id",
+  "automationRunId",
+  "automationRuleId",
+  "scheduledBroadcastId",
+  "createdByUserId",
+  "sendGroupId",
+  "chainMetadata",
+  "recipients",
+  "userIds",
+  "template",
+  "whatsappTemplateId",
+]);
+
+export function sanitizeAutomationPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(payload).filter(
+      ([key]) => !CLIENT_CONTROLLED_SECURITY_FIELDS.has(key),
+    ),
+  );
+}
+
 function buildDefaultTriggerKey({
   type,
   userId,
@@ -88,7 +116,7 @@ export async function queueAutomationRunForRule({
   const scheduledFor = addMinutes(baseTime, rule.delay_minutes).toISOString();
 
   const mergedPayload = {
-    ...(rule.payload || {}),
+    ...sanitizeAutomationPayload(rule.payload),
     whatsappTemplateId: rule.whatsapp_template_id ?? null,
     _automation: {
       triggerType: rule.trigger_type,

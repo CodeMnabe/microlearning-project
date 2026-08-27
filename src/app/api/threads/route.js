@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
 import { getThreadsForUser } from "@/lib/repos/threads.repo";
+import { handleApiError, requireOrgForUser } from "@/lib/auth/guards";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
-    if (!userId) {
-      return NextResponse.json(
-        { error: "No userId provided" },
-        { status: 400 }
-      );
-    }
-    const userThreads = await getThreadsForUser(Number(userId));
+
+    const orgAuth = await requireOrgForUser(userId);
+    if (orgAuth.error) return orgAuth.error;
+
+    const userThreads = await getThreadsForUser(orgAuth.userId);
     return NextResponse.json({ threads: userThreads });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return handleApiError(err, "Failed to load threads");
   }
 }

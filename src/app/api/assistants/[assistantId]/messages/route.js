@@ -1,94 +1,240 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-import { getAssistantById } from "@/lib/repos/assistants.repo";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import {
+  handleApiError,
+  requireOrgForAssistant,
+  requireOrgForThread,
+} from "@/lib/auth/guards";
+
+import {
+  createConversation,
+  generateAssistantResponse,
+} from "@/lib/services/openaiResponses.service";
 
 export async function POST(req, { params }) {
   try {
     const { assistantId } = await params;
-    const {
-      message,
-      threadId: incomingAiThreadId, // OpenAI thread id (string)
-      assistantId: bodyOpenAiId, // optional override
-    } = await req.json();
 
-    if (!message?.trim()) {
-      return NextResponse.json({ error: "Missing message" }, { status: 400 });
+    /*
+     * =========================================================
+     * AUTHORIZE ASSISTANT
+     * =========================================================
+     */
+    const orgAuth = await requireOrgForAssistant(assistantId);
+
+    if (orgAuth.error) {
+      return orgAuth.error;
     }
 
-    const dbAssistant = await getAssistantById(Number(assistantId));
-    if (!dbAssistant) {
+    const { assistant, orgId, assistantId: authorizedAssistantId } = orgAuth;
+
+    /*
+     * =========================================================
+     * REQUEST BODY
+     * =========================================================
+     */
+    const body = await req.json();
+
+    const message =
+      typeof body?.message === "string" ? body.message.trim() : "";
+
+    if (!message) {
       return NextResponse.json(
-        { error: "Assistant not found" },
-        { status: 404 }
+        {
+          error: "Missing message",
+        },
+        {
+          status: 400,
+        },
       );
     }
-    const openAiAssistantId = bodyOpenAiId || dbAssistant.open_ai_id;
 
-    // Ensure an OpenAI thread id
-    let aiThreadId = incomingAiThreadId;
-    if (!aiThreadId) {
-      const thread = await client.beta.threads.create();
-      aiThreadId = thread.id; // e.g. "thread_abc..."
+    /*
+     * During migration the frontend may send:
+     *
+     * conversationId = "conv_..."
+     *
+     * or, for backwards compatibility:
+     *
+     * threadId = "conv_..."
+     *
+     * Staging may also send an actual numeric DB thread ID.
+     */
+    const incomingConversationId =
+      typeof body?.conversationId === "string"
+        ? body.conversationId.trim()
+        : null;
+
+    const incomingThreadId = body?.threadId ?? null;
+
+    let conversationId = null;
+
+    /*
+     * =========================================================
+     * NEW RESPONSES API CONVERSATION ID
+     * =========================================================
+     */
+    if (incomingConversationId?.startsWith("conv_")) {
+      conversationId = incomingConversationId;
     }
 
-    // Send user message
-    await client.beta.threads.messages.create(aiThreadId, {
-      role: "user",
-      content: message,
-    });
-
-    // Run assistant
-    const run = await client.beta.threads.runs.create(aiThreadId, {
-      assistant_id: openAiAssistantId,
-    });
-
-    // Poll until done (basic)
-    let status = run.status;
-    const start = Date.now();
-    while (
-      ![
-        "completed",
-        "failed",
-        "requires_action",
-        "cancelled",
-        "expired",
-      ].includes(status)
+    /*
+     * Legacy frontend compatibility.
+     *
+     * Historically the frontend called the value "threadId"
+     * even though it is now an OpenAI Conversation ID.
+     */
+    if (
+      !conversationId &&
+      typeof incomingThreadId === "string" &&
+      incomingThreadId.startsWith("conv_")
     ) {
-      if (Date.now() - start > 30000) {
-        return NextResponse.json(
-          { error: "Run timed out", threadId: aiThreadId },
-          { status: 504 }
-        );
+      conversationId = incomingThreadId;
+    }
+
+    /*
+     * =========================================================
+     * REAL DB THREAD ID
+     * =========================================================
+     *
+     * If threadId is a database thread ID instead of conv_...,
+     * preserve staging's stronger authorization checks.
+     */
+    if (
+      !conversationId &&
+      incomingThreadId !== undefined &&
+      incomingThreadId !== null &&
+      String(incomingThreadId).trim() !== ""
+    ) {
+      const possibleDbThreadId = Number(incomingThreadId);
+
+      if (Number.isInteger(possibleDbThreadId) && possibleDbThreadId > 0) {
+        const threadAuth = await requireOrgForThread(possibleDbThreadId);
+
+        if (threadAuth.error) {
+          return threadAuth.error;
+        }
+
+        /*
+         * The thread must belong to the same organization
+         * as the assistant being used.
+         */
+        if (Number(threadAuth.orgId) !== Number(orgId)) {
+          return NextResponse.json(
+            {
+              error: "Thread does not belong to this assistant organization",
+            },
+            {
+              status: 403,
+            },
+          );
+        }
+
+        /*
+         * The thread must also belong to this exact assistant.
+         */
+        if (
+          Number(threadAuth.thread.assistant_id) !==
+          Number(authorizedAssistantId)
+        ) {
+          return NextResponse.json(
+            {
+              error: "Thread does not belong to this assistant",
+            },
+            {
+              status: 403,
+            },
+          );
+        }
+
+        /*
+         * New architecture:
+         *
+         * use openai_conversation_id,
+         * never ai_thread_id.
+         */
+        const dbConversationId =
+          typeof threadAuth.thread.openai_conversation_id === "string"
+            ? threadAuth.thread.openai_conversation_id.trim()
+            : "";
+
+        if (dbConversationId.startsWith("conv_")) {
+          conversationId = dbConversationId;
+        }
       }
-      await new Promise((r) => setTimeout(r, 800));
-      const fresh = await client.beta.threads.runs.retrieve(aiThreadId, run.id);
-      status = fresh.status;
-    }
-    if (status !== "completed") {
-      return NextResponse.json(
-        { error: `Run ${status}`, threadId: aiThreadId },
-        { status: 500 }
-      );
     }
 
-    // Latest assistant message
-    const msgs = await client.beta.threads.messages.list(aiThreadId, {
-      limit: 10,
+    /*
+     * =========================================================
+     * CREATE CONVERSATION
+     * =========================================================
+     *
+     * No existing Conversation was supplied, so create one.
+     *
+     * This replaces:
+     *
+     * client.beta.threads.create()
+     */
+    if (!conversationId) {
+      const conversation = await createConversation({
+        assistantId: assistant.id,
+
+        organizationId: orgId,
+
+        channel: "web",
+
+        scope: "sandbox",
+      });
+
+      if (!conversation?.id) {
+        throw new Error("OpenAI did not return a conversation ID");
+      }
+
+      conversationId = conversation.id;
+    }
+
+    /*
+     * =========================================================
+     * RESPONSES API
+     * =========================================================
+     *
+     * This replaces:
+     *
+     * beta.threads.messages.create()
+     * beta.threads.runs.create()
+     * beta.threads.runs.retrieve()
+     * beta.threads.messages.list()
+     */
+    const result = await generateAssistantResponse({
+      assistant,
+
+      conversationId,
+
+      message,
     });
-    const assistantMsg = msgs.data.find((m) => m.role === "assistant");
-    const reply =
-      assistantMsg?.content?.[0]?.type === "text"
-        ? assistantMsg.content[0].text.value
-        : "";
 
-    return NextResponse.json({ reply, threadId: aiThreadId });
+    /*
+     * threadId is temporarily returned as an alias so older
+     * frontend code continues to work during the migration.
+     *
+     * It is NOT an Assistants API thread ID.
+     *
+     * Both values contain:
+     *
+     * conv_...
+     */
+    return NextResponse.json({
+      reply: result.aiResponse,
+
+      conversationId: result.conversationId,
+
+      threadId: result.conversationId,
+
+      responseId: result.responseId,
+    });
   } catch (err) {
-    console.error("messages POST error:", err);
-    return NextResponse.json(
-      { error: "Failed to send message" },
-      { status: 500 }
-    );
+    console.error("[Assistant Messages] POST failed:", err);
+
+    return handleApiError(err, "Failed to send assistant message");
   }
 }
