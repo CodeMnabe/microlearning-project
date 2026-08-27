@@ -9,6 +9,7 @@ import { useAlert } from "@/app/components/Alert/AlertProvider";
 export default function ChatSandbox({ assistant }) {
   const translation = useTranslations();
   const showAlert = useAlert();
+  const [conversationId, setConversationId] = useState("");
   const [threadId, setThreadId] = useState("");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -16,106 +17,102 @@ export default function ChatSandbox({ assistant }) {
   const trimmedInput = input.trim();
 
   async function handleSend(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  
-
-  
-
-  if (!assistant?.id) {
-    await showAlert({
-      title: translation("Chatbox.alerts.missingAssistant.title"),
-      message: translation("Chatbox.alerts.missingAssistant.message"),
-      tone: "warning",
-    });
-
-    return;
-  }
-
-  if (!assistant?.open_ai_id) {
-    await showAlert({
-      title: translation("Chatbox.alerts.missingOpenAiId.title"),
-      message: translation("Chatbox.alerts.missingOpenAiId.message"),
-      tone: "warning",
-    });
-
-    return;
-  }
-
-  const newUserMsg = { role: "user", content: trimmedInput };
-
-  setMessages((prev) => [newUserMsg, ...prev]);
-  setInput("");
-  setIsSending(true);
-
-  try {
-    const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        assistantId: assistant.open_ai_id,
-        message: trimmedInput,
-        threadId,
-      }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-   if (!res.ok) {
-  setMessages((prev) => [
-    {
-      role: "system",
-      content: translation("Chatbox.alerts.apiError.message"),
-    },
-    ...prev,
-  ]);
-
-  return;
-}
-    
-   
-
-    if (!data.reply) {
-      setMessages((prev) => [
-        {
-          role: "system",
-          content: translation("Chatbox.errorReply"),
-        },
-        ...prev,
-      ]);
-
+    if (!assistant?.id) {
       await showAlert({
-        title: translation("Chatbox.alerts.emptyReply.title"),
-        message: translation("Chatbox.alerts.emptyReply.message"),
+        title: translation("Chatbox.alerts.missingAssistant.title"),
+        message: translation("Chatbox.alerts.missingAssistant.message"),
         tone: "warning",
       });
 
       return;
     }
 
-    setMessages((prev) => [
-      { role: "assistant", content: data.reply },
-      ...prev,
-    ]);
+    // if (!assistant?.open_ai_id) {
+    //   await showAlert({
+    //     title: translation("Chatbox.alerts.missingOpenAiId.title"),
+    //     message: translation("Chatbox.alerts.missingOpenAiId.message"),
+    //     tone: "warning",
+    //   });
 
-        setThreadId(data.threadId || threadId);
-      } catch (err) {
-        console.warn("[Chatbox] send message error:", err);
+    //   return;
+    // }
 
+    const newUserMsg = { role: "user", content: trimmedInput };
+
+    setMessages((prev) => [newUserMsg, ...prev]);
+    setInput("");
+    setIsSending(true);
+
+    try {
+      const res = await fetch(`/api/assistants/${assistant.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: input,
+          conversationId,
+        }),
+      });
+
+      console.log(res);
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
         setMessages((prev) => [
-          { role: "system", content: translation("Chatbox.errorApi") },
+          {
+            role: "system",
+            content: translation("Chatbox.alerts.apiError.message"),
+          },
+          ...prev,
+        ]);
+
+        return;
+      }
+
+      if (!data.reply) {
+        setMessages((prev) => [
+          {
+            role: "system",
+            content: translation("Chatbox.errorReply"),
+          },
           ...prev,
         ]);
 
         await showAlert({
-          title: translation("Chatbox.alerts.networkError.title"),
-          message: translation("Chatbox.alerts.networkError.message"),
-          tone: "danger",
+          title: translation("Chatbox.alerts.emptyReply.title"),
+          message: translation("Chatbox.alerts.emptyReply.message"),
+          tone: "warning",
         });
-      } finally {
-        setIsSending(false);
+
+        return;
       }
+
+      setMessages((prev) => [
+        { role: "assistant", content: data.reply },
+        ...prev,
+      ]);
+
+      setThreadId(data.threadId || threadId);
+      setConversationId(data.conversationId);
+    } catch (err) {
+      console.warn("[Chatbox] send message error:", err);
+
+      setMessages((prev) => [
+        { role: "system", content: translation("Chatbox.errorApi") },
+        ...prev,
+      ]);
+
+      await showAlert({
+        title: translation("Chatbox.alerts.networkError.title"),
+        message: translation("Chatbox.alerts.networkError.message"),
+        tone: "danger",
+      });
+    } finally {
+      setIsSending(false);
     }
+  }
 
   return (
     <div className={styles.wrapper}>
@@ -124,6 +121,11 @@ export default function ChatSandbox({ assistant }) {
         {threadId && (
           <span className={styles.threadBadge}>
             Thread&nbsp;ID:&nbsp;{threadId}
+          </span>
+        )}
+        {conversationId && (
+          <span className={styles.threadBadge}>
+            Conversation&nbsp;ID:&nbsp;{conversationId}
           </span>
         )}
       </h2>
