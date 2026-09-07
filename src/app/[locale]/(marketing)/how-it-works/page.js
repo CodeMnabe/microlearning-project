@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import HowItWorksExplorer from "./howItWorksExplorer";
-import HowItWorksHeroLight from "./HowItWorksHeroLight";
+import SharedHeroNeonBrand from "../components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
 import styles from "./howItWorksPage.module.css";
 
@@ -12,8 +12,7 @@ export default function HowItWorksPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.background} aria-hidden="true" />
-        <HowItWorksHeroLight />
+        <SharedHeroNeonBrand variant="how-it-works" glowIntensity={1.05} />
 
         <PersistentHeader reserveSpace />
 

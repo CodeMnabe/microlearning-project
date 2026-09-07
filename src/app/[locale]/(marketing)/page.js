@@ -16,7 +16,7 @@ import LandingExperience from "./components/LandingExperience/LandingExperience"
 import InteractiveAmbientBackground from "./components/InteractiveAmbientBackground/InteractiveAmbientBackground";
 import BeforeAfterComparison from "./components/BeforeAfterComparison/BeforeAfterComparison";
 import FeatureGrid from "./components/FeatureGrid/FeatureGrid";
-import HeroBrandBackdrop from "./components/LandingExperience/HeroBrandBackdrop";
+import SharedHeroNeonBrand from "./components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import FinalBrandPattern from "./components/LandingExperience/FinalBrandPattern";
 import heroContent from "./components/Hero/hero.json";
 import pricingContent from "./components/Pricing/pricing.json";
@@ -70,13 +70,7 @@ export default async function LocaleIndex() {
       <LandingExperience>
         <section className={`${styles.scene} ${styles.heroScene}`}>
           <div className={styles.sceneSticky} data-scene-sticky>
-            <div className={styles.heroBackdrop} aria-hidden="true" />
-            <InteractiveAmbientBackground
-              variant="aurora"
-              intensity="medium"
-              interactive
-            />
-            <HeroBrandBackdrop />
+            <SharedHeroNeonBrand variant="home" glowIntensity={1.05} />
             <div className={styles.heroInner}>
               <div className={styles.heroCopy}>
                 <p className={styles.eyebrow} data-hero-intro>
@@ -295,44 +289,46 @@ export default async function LocaleIndex() {
               </h2>
             </header>
 
-            <div className={styles.acts}>
-              {heroCards.map((card, index) => (
-                <article
-                  className={styles.act}
-                  data-product-act
-                  key={card.id}
-                  style={{
-                    "--act-color": ["#7cc2ff", "#ffd166", "#7c5cfc"][index],
-                  }}
-                >
-                  <div className={styles.actCopy}>
-                    <span className={styles.actNumber}>
-                      {String(index + 1).padStart(2, "0")} / 03
-                    </span>
-                    <h3 className={styles.actTitle}>{card.title}</h3>
-                    <p className={styles.actMeta}>{card.meta}</p>
-                  </div>
-                  <div className={styles.actMedia}>
-                    <Image
-                      src={card.screenshot}
-                      alt={card.title}
-                      fill
-                      sizes="(max-width: 760px) 100vw, 720px"
-                    />
-                    <video
-                      data-scene-video
-                      muted
-                      playsInline
-                      loop
-                      preload="metadata"
-                      poster={card.screenshot}
-                      aria-label={card.title}
-                    >
-                      <source src={card.video} type="video/mp4" />
-                    </video>
-                  </div>
-                </article>
-              ))}
+            <div className={styles.actsViewport}>
+              <div className={styles.acts}>
+                {heroCards.map((card, index) => (
+                  <article
+                    className={styles.act}
+                    data-product-act
+                    key={card.id}
+                    style={{
+                      "--act-color": ["#7cc2ff", "#ffd166", "#7c5cfc"][index],
+                    }}
+                  >
+                    <div className={styles.actCopy}>
+                      <span className={styles.actNumber}>
+                        {String(index + 1).padStart(2, "0")} / 03
+                      </span>
+                      <h3 className={styles.actTitle}>{card.title}</h3>
+                      <p className={styles.actMeta}>{card.meta}</p>
+                    </div>
+                    <div className={styles.actMedia}>
+                      <Image
+                        src={card.screenshot}
+                        alt={card.title}
+                        fill
+                        sizes="(max-width: 760px) 100vw, 720px"
+                      />
+                      <video
+                        data-scene-video
+                        muted
+                        playsInline
+                        loop
+                        preload="metadata"
+                        poster={card.screenshot}
+                        aria-label={card.title}
+                      >
+                        <source src={card.video} type="video/mp4" />
+                      </video>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>

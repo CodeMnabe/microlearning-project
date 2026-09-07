@@ -1,21 +1,56 @@
 .page {
+  position: relative;
+  isolation: isolate;
   display: flex;
   min-height: 100vh;
+  min-height: 100svh;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  /* ⬅️ stack brand over form */
   gap: 1.25rem;
-  /* space between brand and card */
-  background: radial-gradient(1200px 520px at 50% -220px,
-      #eef8ff 0%,
-      transparent 70%),
-    #f4f8fc;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      900px 440px at 14% -14%,
+      rgba(var(--brand-2-rgb), 0.11),
+      transparent 68%
+    ),
+    #ffffff;
   padding: 1.25rem;
   font-family: var(--font-inter, system-ui), system-ui, sans-serif;
 }
 
+.brandMotif {
+  position: absolute;
+  z-index: -1;
+  right: clamp(1.5rem, 4vw, 4rem);
+  bottom: clamp(1.5rem, 4vw, 3.5rem);
+  width: clamp(18rem, 28vw, 25rem);
+  color: var(--brand-accent);
+  opacity: 0.7 ;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+
+.brandMotif svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.brandMotif path {
+  vector-effect: non-scaling-stroke;
+}
+
 .brand {
+  position: relative;
+  z-index: 1;
   margin: 0;
   text-align: center;
   font-size: clamp(2.25rem, 4vw + 0.5rem, 3.5rem);
@@ -42,6 +77,8 @@
 
 /* Card */
 .card {
+  position: relative;
+  z-index: 1;
   width: min(92vw, 420px);
   background: var(--ui-bg);
   color: var(--ink);
@@ -99,10 +136,13 @@
   padding: 0 0.9rem;
   font-size: 1rem;
   border: none;
-  border-radius: 10px;
-  font-weight: 700;
+  border-radius: 999px;
+  font-weight: 650;
   cursor: pointer;
-  transition: transform 0.05s ease, filter 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.12s ease;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -112,17 +152,24 @@
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  color: #fff;
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.25);
+  background: var(--brand-accent, #4ab0ff);
+  color: #081426;
+  box-shadow: 0 12px 28px rgba(var(--brand-accent-rgb), 0.22);
 }
 
 .btnPrimary:hover {
-  filter: brightness(0.98);
+  background: var(--brand-accent-hover, #7cc2ff);
+  box-shadow: 0 14px 32px rgba(var(--brand-accent-rgb), 0.28);
 }
 
 .btnPrimary:active {
+  background: var(--brand-accent-active, #30a9e0);
   transform: translateY(1px);
+}
+
+.btnPrimary:focus-visible {
+  outline: 3px solid rgba(var(--brand-accent-rgb), 0.3);
+  outline-offset: 3px;
 }
 
 .btnSecondary {
@@ -178,9 +225,9 @@
   width: 20px;
   height: 20px;
   border-radius: 9999px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  border-right-color: #fff;
+  border: 2px solid rgba(8, 20, 38, 0.24);
+  border-top-color: #081426;
+  border-right-color: #081426;
   animation: loginSpin 0.8s linear infinite;
 }
 
@@ -195,7 +242,7 @@
   position: absolute;
   width: 22px;
   height: 22px;
-  stroke: #fff;
+  stroke: #081426;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
@@ -212,14 +259,190 @@
   }
 }
 
-/* Make disabled button feel disabled but preserve gradient */
 .btnPrimary:disabled {
   cursor: default;
-  filter: grayscale(0.1) brightness(0.92);
-  opacity: 0.9;
+  opacity: 0.76;
 }
 
 .input:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+/* The auth layout still supplies its legacy switch for the reset flow. Hide
+   it only on the login route, which renders the marketing-style menu below. */
+:global(body:has(#login-page) div:has(> #login-page) > div:first-child) {
+  display: none;
+}
+
+.loginLanguage {
+  position: fixed;
+  z-index: 60;
+  top: 18px;
+  right: clamp(12px, 2.5vw, 32px);
+}
+
+.languageRoot {
+  position: relative;
+  display: inline-flex;
+}
+
+.languageTrigger {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgba(16, 27, 51, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1f4574;
+  box-shadow: 0 10px 28px rgba(16, 27, 51, 0.1);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.languageTrigger:hover,
+.languageTrigger[aria-expanded="true"] {
+  border-color: rgba(var(--brand-accent-rgb), 0.45);
+  background: #eef7ff;
+  color: #123c6c;
+}
+
+.languageTrigger:focus-visible {
+  outline: 2px solid var(--brand-accent, #4ab0ff);
+  outline-offset: 3px;
+}
+
+.languageCode {
+  min-width: 2.4ch;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.languageMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  display: flex;
+  min-width: 190px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid rgba(16, 27, 51, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 38px rgba(16, 27, 51, 0.16);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    visibility 0.16s ease;
+}
+
+.languageMenu[data-open] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.languageItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  color: #52627a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.languageItem:hover,
+.languageItem:focus-visible {
+  background: rgba(var(--brand-accent-rgb), 0.09);
+  color: #123c6c;
+}
+
+.languageItem:focus-visible {
+  outline: 2px solid var(--brand-accent, #4ab0ff);
+  outline-offset: -2px;
+}
+
+.languageItemActive,
+.languageItemActive:hover,
+.languageItemActive:focus-visible {
+  background: rgba(var(--brand-accent-rgb), 0.16);
+  color: #1f4574;
+}
+
+.languageCheck {
+  display: inline-flex;
+  width: 15px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-accent-active, #30a9e0);
+}
+
+.languageLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.languageShort {
+  flex: 0 0 auto;
+  color: rgba(31, 69, 116, 0.52);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 4.75rem 1rem 1.25rem;
+  }
+
+  .brandMotif {
+    right: -1rem;
+    bottom: 1rem;
+    width: min(18rem, 76vw);
+    opacity: 0.28;
+  }
+
+  .logoMark {
+    width: min(82vw, 420px);
+  }
+
+  .loginLanguage {
+    top: 10px;
+    right: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btnPrimary,
+  .btnSecondary,
+  .input {
+    transition: none;
+  }
 }

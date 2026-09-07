@@ -354,6 +354,8 @@ export default function ProductExplorer() {
               </div>
             </div>
           </div>
+
+          <div className={styles.journeyRunway} aria-hidden="true" />
         </div>
       </div>
     </section>

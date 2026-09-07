@@ -3,7 +3,7 @@ import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/Persistent
 import Footer from "../components/Footer/Footer";
 import ProductExplorer from "./ProductExplorer.jsx";
 import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
-import ProductHeroBackdrop from "./ProductHeroBackdrop.jsx";
+import SharedHeroNeonBrand from "../components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import styles from "./productPage.module.css";
 
 export default function ProductPage() {
@@ -12,8 +12,7 @@ export default function ProductPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.background} aria-hidden="true" />
-        <ProductHeroBackdrop />
+        <SharedHeroNeonBrand variant="product" glowIntensity={1.1} />
 
         <PersistentHeader reserveSpace />
 

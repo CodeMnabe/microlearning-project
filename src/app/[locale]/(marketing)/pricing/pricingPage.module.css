@@ -46,38 +46,9 @@
   min-height: 100svh;
   grid-template-rows: auto 1fr;
   overflow: hidden;
+  border-radius: 0;
   padding: 18px clamp(16px, 3vw, 48px) 46px;
   background: var(--night);
-}
-
-.page > .hero.hero > .background.background {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      circle at 72% 12%,
-      rgba(124, 194, 255, 0.28),
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 20% 100%,
-      rgba(var(--brand-accent-rgb), 0.1),
-      transparent 28%
-    ),
-    linear-gradient(145deg, var(--night), var(--navy) 60%, #103a5e);
-    border-radius: 0px !important;
-}
-
-.background::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.16;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at 54% 45%, #000, transparent 72%);
 }
 
 .container {

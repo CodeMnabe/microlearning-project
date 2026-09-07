@@ -3,7 +3,7 @@ import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/Persistent
 import Footer from "../components/Footer/Footer";
 import SolutionExplorer from "./solutionExplorer.jsx";
 import MarketingHeroActions from "../components/MarketingHeroActions/MarketingHeroActions";
-import SolutionHeroBackdrop from "./SolutionHeroBackdrop.jsx";
+import SharedHeroNeonBrand from "../components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import styles from "./solutionPage.module.css";
 
 export default function SolutionPage() {
@@ -12,7 +12,7 @@ export default function SolutionPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <SolutionHeroBackdrop />
+        <SharedHeroNeonBrand variant="solution" glowIntensity={0.95} />
 
         <PersistentHeader reserveSpace />
 

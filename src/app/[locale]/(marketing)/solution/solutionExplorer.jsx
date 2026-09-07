@@ -23,13 +23,6 @@ function SolutionChapter({ item, index }) {
       className={`${styles.chapter} ${index % 2 ? styles.chapterReverse : ""}`}
       data-solution-chapter
     >
-      <div className={styles.chapterRail} aria-hidden="true">
-        <span className={styles.chapterNumber}>{chapterNumber}</span>
-        <span className={styles.chapterTrace}>
-          <span className={styles.chapterTraceFill} data-solution-trace />
-        </span>
-      </div>
-
       <div className={styles.chapterMedia} data-solution-media>
         <div className={styles.mediaHalo} aria-hidden="true" />
         <div className={styles.imageShell}>
@@ -46,7 +39,7 @@ function SolutionChapter({ item, index }) {
       </div>
 
       <div className={styles.chapterCopy} data-solution-copy>
-        <p className={styles.chapterMeta} aria-hidden="true">
+        <p className={styles.chapterMeta}>
           {chapterNumber} / {String(items.length).padStart(2, "0")}
         </p>
         <h3 className={styles.solutionTitle}>{t(item.titleKey)}</h3>
@@ -83,6 +76,8 @@ export default function SolutionExplorer() {
       const chapters = gsap.utils.toArray(
         root.querySelectorAll("[data-solution-chapter]"),
       );
+      const narrative = root.querySelector("[data-solution-narrative]");
+      const progress = root.querySelector("[data-solution-progress]");
 
       gsap.from("[data-solution-intro] > *", {
         y: 30,
@@ -97,11 +92,25 @@ export default function SolutionExplorer() {
         },
       });
 
+      gsap.fromTo(
+        progress,
+        { scaleY: 0 },
+        {
+          scaleY: 1,
+          ease: "none",
+          scrollTrigger: {
+            trigger: narrative,
+            start: "top 58%",
+            end: "bottom 42%",
+            scrub: 0.25,
+          },
+        },
+      );
+
       chapters.forEach((chapter, index) => {
         const media = chapter.querySelector("[data-solution-media]");
         const image = media?.querySelector("img");
         const copy = chapter.querySelector("[data-solution-copy]");
-        const trace = chapter.querySelector("[data-solution-trace]");
 
         gsap.from(copy, {
           x: index % 2 ? -28 : 28,
@@ -151,21 +160,6 @@ export default function SolutionExplorer() {
             },
           );
         }
-
-        gsap.fromTo(
-          trace,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            ease: "none",
-            scrollTrigger: {
-              trigger: chapter,
-              start: "top 70%",
-              end: "bottom 42%",
-              scrub: true,
-            },
-          },
-        );
       });
 
       const refresh = () => ScrollTrigger.refresh();
@@ -188,7 +182,15 @@ export default function SolutionExplorer() {
           <p className={styles.sectionText}>{t("overview.subtitle")}</p>
         </header>
 
-        <div className={styles.narrative}>
+        <div className={styles.narrative} data-solution-narrative>
+          <div className={styles.sharedProgress} aria-hidden="true">
+            <span className={styles.sharedProgressTrack}>
+              <span
+                className={styles.sharedProgressFill}
+                data-solution-progress
+              />
+            </span>
+          </div>
           {items.map((item, index) => (
             <SolutionChapter key={item.id} item={item} index={index} />
           ))}

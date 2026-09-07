@@ -193,13 +193,39 @@ export default function LandingExperience({ children }) {
             ? Array.from(product.querySelectorAll("[data-product-act]"))
             : [];
           if (product && acts.length > 1) {
-            gsap.set(acts, { zIndex: (index) => index + 1 });
-            gsap.set(acts.slice(1), {
-              xPercent: 28,
-              scale: 0.98,
+            const transitionCount = acts.length - 1;
+            const timelineClock = { progress: 0 };
+            let activeIndex = -1;
+
+            const setActiveAct = (nextIndex) => {
+              const safeIndex = gsap.utils.clamp(0, transitionCount, nextIndex);
+              if (safeIndex === activeIndex) return;
+
+              activeIndex = safeIndex;
+              product.dataset.activeAct = String(safeIndex);
+              acts.forEach((act, actIndex) => {
+                const isActive = actIndex === safeIndex;
+                act.setAttribute("aria-hidden", String(!isActive));
+                if (isActive) {
+                  act.setAttribute("aria-current", "step");
+                } else {
+                  act.removeAttribute("aria-current");
+                }
+              });
+            };
+
+            gsap.set(acts, {
+              xPercent: 5,
               autoAlpha: 0,
             });
+            gsap.set(acts[0], { xPercent: 0, autoAlpha: 1 });
+            setActiveAct(0);
+
             const productTimeline = gsap.timeline({
+              defaults: { ease: "none" },
+              onUpdate() {
+                setActiveAct(Math.round(this.time()));
+              },
               scrollTrigger: {
                 trigger: product,
                 start: "top top",
@@ -208,31 +234,37 @@ export default function LandingExperience({ children }) {
               },
             });
 
+            // Keep the existing scroll runway while giving every transition an
+            // equal one-unit segment with stable space before and after the swap.
+            productTimeline.to(
+              timelineClock,
+              { progress: 1, duration: transitionCount },
+              0,
+            );
+
             acts.slice(1).forEach((act, index) => {
               const previous = acts[index];
-              const position = index + 1;
+              const position = index;
               productTimeline
                 .to(
                   previous,
                   {
-                    xPercent: -8,
-                    scale: 0.96,
+                    xPercent: -5,
                     autoAlpha: 0,
-                    duration: 0.5,
-                    ease: "none",
+                    duration: 0.24,
+                    ease: "power1.inOut",
                   },
-                  position,
+                  position + 0.25,
                 )
                 .to(
                   act,
                   {
                     xPercent: 0,
-                    scale: 1,
                     autoAlpha: 1,
-                    duration: 0.5,
-                    ease: "none",
+                    duration: 0.24,
+                    ease: "power1.inOut",
                   },
-                  position + 0.12,
+                  position + 0.52,
                 );
             });
           }
@@ -253,6 +285,14 @@ export default function LandingExperience({ children }) {
               },
             });
           }
+
+          return () => {
+            if (product) delete product.dataset.activeAct;
+            acts.forEach((act) => {
+              act.removeAttribute("aria-current");
+              act.removeAttribute("aria-hidden");
+            });
+          };
         },
       );
 

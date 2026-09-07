@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import PricingExplorer from "./PricingExplorer.jsx";
-import InteractiveAmbientBackground from "../components/InteractiveAmbientBackground/InteractiveAmbientBackground";
+import SharedHeroNeonBrand from "../components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import styles from "./pricingPage.module.css";
 
 export default function PricingPage() {
@@ -11,13 +11,7 @@ export default function PricingPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.background} aria-hidden="true" />
-        <InteractiveAmbientBackground
-          variant="mist"
-          intensity="subtle"
-          interactive={false}
-          quality="low"
-        />
+        <SharedHeroNeonBrand variant="pricing" glowIntensity={0.82} />
 
         <PersistentHeader reserveSpace />
 

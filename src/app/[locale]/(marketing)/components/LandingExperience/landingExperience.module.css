@@ -62,7 +62,6 @@
   position: relative;
 }
 
-.heroBackdrop,
 .finalBackdrop {
   position: absolute;
   inset: -20%;
@@ -90,85 +89,6 @@
 
 .finalAmbient {
   opacity: 0.44;
-}
-
-.heroBackdrop::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.24;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at center, #000 0, transparent 70%);
-}
-
-.heroBrandBackdrop {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.heroBrandDefinitions {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-.heroBrandShape {
-  position: absolute;
-  display: block;
-  overflow: visible;
-  fill: none;
-  stroke: rgba(124, 194, 255, 0.3);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.6;
-  filter: drop-shadow(0 0 7px rgba(124, 194, 255, 1));
-  vector-effect: non-scaling-stroke;
-}
-
-.heroBrandShape use {
-  vector-effect: non-scaling-stroke;
-}
-
-.heroBrandComposition {
-  position: absolute;
-  top: 16.2%;
-  right: 2.5%;
-  width: clamp(580px, 39vw, 790px);
-  aspect-ratio: 745 / 536;
-}
-
-.heroBrandMain {
-  top: 10%;
-  left: 0;
-  width: 110%;
-  height: 80%;
-  stroke-width: 0.55;
-  transform: rotate(15deg);
-  transform-origin: center;
-}
-
-.heroBrandEyeOne,
-.heroBrandEyeTwo {
-  width: 21%;
-  aspect-ratio: 79 / 68;
-  stroke-width: 0.7;
-}
-
-.heroBrandEyeOne {
-  top: 0;
-  left: 29.5%;
-}
-
-.heroBrandEyeTwo {
-  top: 13%;
-  left: 68.8%;
 }
 
 .heroInner {
@@ -891,6 +811,12 @@
   font-size: clamp(2.55rem, 4.2vw, 4.5rem);
 }
 
+.actsViewport {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+}
+
 .acts {
   position: absolute;
   inset: 0;
@@ -1330,15 +1256,6 @@
     opacity: 0.86;
   }
 
-  .heroBrandMain {
-    stroke-width: 0.65;
-  }
-
-  .heroBrandEyeOne,
-  .heroBrandEyeTwo {
-    stroke: rgba(124, 194, 255, 0.24);
-  }
-
   .transformScene,
   .productScene,
   .pricingScene,
@@ -1408,6 +1325,12 @@
     margin: 0 auto 56px;
   }
 
+  .actsViewport {
+    position: relative;
+    inset: auto;
+    overflow: visible;
+  }
+
   .acts {
     position: relative;
     inset: auto;
@@ -1448,27 +1371,6 @@
 
   .finalBrandMark {
     stroke-width: 1;
-  }
-
-  .heroBrandComposition {
-    inset: 0;
-    width: auto;
-    height: auto;
-    aspect-ratio: auto;
-  }
-
-  .heroBrandMain {
-    top: 84%;
-    left: 65%;
-    width: 620px;
-    height: 330px;
-    stroke: rgba(124, 194, 255, 0.15);
-    stroke-width: 0.7;
-  }
-
-  .heroBrandEyeOne,
-  .heroBrandEyeTwo {
-    display: none;
   }
 
   .lang {
@@ -1645,6 +1547,12 @@
     left: auto;
     width: min(1240px, calc(100% - 40px));
     margin: 0 auto 56px;
+  }
+
+  .actsViewport {
+    position: relative;
+    inset: auto;
+    overflow: visible;
   }
 
   .acts {

@@ -34,169 +34,10 @@
   min-height: 100svh;
   grid-template-rows: auto 1fr;
   overflow: hidden;
-  margin: 10px;
+  margin: 0;
   padding: 18px clamp(20px, 3.2vw, 56px) 54px;
-  border-radius: 30px 30px 0 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  border-radius: 0;
   background: var(--night);
-}
-
-.heroBackdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      ellipse at 88% 12%,
-      rgba(63, 111, 225, 0.3),
-      transparent 34%
-    ),
-    radial-gradient(
-      ellipse at 12% 108%,
-      rgba(52, 91, 225, 0.22),
-      transparent 38%
-    ),
-    radial-gradient(
-      ellipse at 80% 96%,
-      rgba(74, 91, 223, 0.17),
-      transparent 36%
-    ),
-    linear-gradient(138deg, #040b1b 0%, #07152b 48%, #0a1c3a 100%);
-  pointer-events: none;
-}
-
-.heroBackdrop::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.24;
-  background:
-    radial-gradient(
-      circle at 18% 74%,
-      rgba(112, 146, 255, 0.22) 0 1px,
-      transparent 1.5px
-    ),
-    radial-gradient(
-      circle at 76% 24%,
-      rgba(105, 160, 255, 0.24) 0 1px,
-      transparent 1.5px
-    );
-  background-size: 96px 96px, 132px 132px;
-  mask-image: linear-gradient(90deg, #000, transparent 44%, #000);
-}
-
-.ambientGlow {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-  filter: blur(58px);
-}
-
-.ambientGlowRight {
-  top: -22%;
-  right: -9%;
-  width: min(58vw, 880px);
-  height: min(56vw, 780px);
-  opacity: 0.42;
-  background: radial-gradient(circle, rgba(54, 117, 255, 0.5), transparent 69%);
-}
-
-.ambientGlowBottom {
-  right: 13%;
-  bottom: -28%;
-  width: min(70vw, 1050px);
-  height: min(34vw, 470px);
-  opacity: 0.38;
-  background: radial-gradient(ellipse, rgba(69, 87, 231, 0.52), transparent 70%);
-}
-
-.particleField {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.scatteredParticles {
-  fill: rgba(120, 170, 255, 0.42);
-}
-
-.brightParticle {
-  fill: rgba(157, 204, 255, 0.86);
-  filter: drop-shadow(0 0 5px rgba(86, 147, 255, 0.9));
-}
-
-.brandParticleMark {
-  position: absolute;
-  top: 3%;
-  right: -5%;
-  width: clamp(540px, 47vw, 820px);
-  overflow: visible;
-  opacity: 0.78;
-  transform: rotate(8deg);
-  transform-origin: center;
-}
-
-.markAura {
-  fill: none;
-  stroke: rgba(73, 135, 255, 0.3);
-  stroke-width: 8;
-}
-
-.markParticles {
-  fill: url("#solution-mark-dots");
-  opacity: 0.94;
-}
-
-.markContour {
-  fill: none;
-  stroke: url("#solution-mark-stroke");
-  stroke-width: 1.25;
-  opacity: 0.72;
-  filter: drop-shadow(0 0 7px rgba(79, 148, 255, 0.9));
-}
-
-.waveField {
-  position: absolute;
-  right: -2%;
-  bottom: -2%;
-  left: -2%;
-  width: 104%;
-  height: 48%;
-  overflow: visible;
-}
-
-.meshThreads {
-  fill: none;
-  stroke: url("#solution-wave-gradient");
-  stroke-width: 0.75;
-  opacity: 0.46;
-  vector-effect: non-scaling-stroke;
-}
-
-.meshDots {
-  fill: none;
-  stroke: url("#solution-wave-gradient");
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-dasharray: 0.1 4.5;
-  opacity: 0.72;
-  vector-effect: non-scaling-stroke;
-}
-
-.heroReadabilityVeil {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse at 50% 48%,
-      rgba(4, 11, 27, 0.68) 0,
-      rgba(4, 11, 27, 0.38) 31%,
-      transparent 60%
-    ),
-    linear-gradient(180deg, rgba(4, 11, 27, 0.18), transparent 22% 72%, rgba(4, 11, 27, 0.15));
 }
 
 .container {
@@ -328,13 +169,47 @@
   position: relative;
 }
 
+.sharedProgress {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(-22px, -1.6vw, -12px);
+  z-index: 3;
+  width: 3px;
+  pointer-events: none;
+}
+
+.sharedProgressTrack {
+  position: sticky;
+  top: 50%;
+  display: block;
+  width: 3px;
+  height: clamp(220px, 48vh, 440px);
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(8, 20, 38, 0.1);
+  transform: translateY(-50%);
+}
+
+.sharedProgressFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, var(--brand), var(--brand-accent));
+  box-shadow: 0 0 12px rgba(var(--brand-accent-rgb), 0.28);
+  transform: scaleY(0);
+  transform-origin: center top;
+  will-change: transform;
+}
+
 .chapter {
   position: relative;
   display: grid;
   min-height: clamp(650px, 82svh, 860px);
-  grid-template-columns: 34px minmax(0, 1.14fr) minmax(340px, 0.86fr);
-  grid-template-areas: "rail media copy";
-  gap: clamp(30px, 5vw, 76px);
+  grid-template-columns: minmax(0, 1.14fr) minmax(340px, 0.86fr);
+  grid-template-areas: "media copy";
+  gap: clamp(42px, 6vw, 86px);
   align-items: center;
   padding: clamp(76px, 9vw, 126px) 0;
   border-top: 1px solid rgba(8, 20, 38, 0.09);
@@ -345,41 +220,15 @@
 }
 
 .chapterReverse {
-  grid-template-columns: 34px minmax(340px, 0.86fr) minmax(0, 1.14fr);
-  grid-template-areas: "rail copy media";
+  grid-template-columns: minmax(340px, 0.86fr) minmax(0, 1.14fr);
+  grid-template-areas: "copy media";
 }
 
-.chapterRail {
-  grid-area: rail;
-  display: flex;
-  height: min(500px, 66svh);
-  flex-direction: column;
-  align-items: center;
-  align-self: center;
-  gap: 18px;
-}
-
-.chapterNumber,
 .chapterMeta {
   color: var(--brand);
   font-size: 11px;
   font-weight: 820;
   letter-spacing: 0.16em;
-}
-
-.chapterTrace {
-  position: relative;
-  width: 1px;
-  flex: 1;
-  overflow: hidden;
-  background: rgba(8, 20, 38, 0.11);
-}
-
-.chapterTraceFill {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--brand), var(--brand-accent));
-  transform-origin: center top;
 }
 
 .chapterMedia {
@@ -446,6 +295,9 @@
 }
 
 .chapterReverse .chapterCopy {
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline-start: clamp(32px, 3.2vw, 52px);
   justify-self: end;
 }
 
@@ -519,12 +371,12 @@
 @media (max-width: 1080px) {
   .chapter,
   .chapterReverse {
-    grid-template-columns: 28px minmax(0, 1.05fr) minmax(310px, 0.95fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(310px, 0.95fr);
     gap: 34px;
   }
 
   .chapterReverse {
-    grid-template-areas: "rail copy media";
+    grid-template-areas: "copy media";
   }
 
   .solutionTitle {
@@ -533,31 +385,6 @@
 }
 
 @media (max-width: 900px) {
-  .brandParticleMark {
-    top: 5%;
-    right: -18%;
-    width: min(72vw, 650px);
-    opacity: 0.58;
-  }
-
-  .waveField {
-    bottom: -1%;
-    height: 43%;
-  }
-
-  .meshThreads {
-    opacity: 0.38;
-  }
-
-  .meshDots {
-    opacity: 0.62;
-  }
-
-  .ambientGlowRight {
-    right: -20%;
-    opacity: 0.32;
-  }
-
   .container {
     padding-top: 120px;
   }
@@ -573,23 +400,19 @@
   .chapter,
   .chapterReverse {
     min-height: 0;
-    grid-template-columns: 26px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "rail copy"
-      "rail media";
-    gap: 34px 24px;
+      "copy"
+      "media";
+    gap: 34px;
     padding: 78px 0 92px;
-  }
-
-  .chapterRail {
-    height: 100%;
-    min-height: 460px;
   }
 
   .chapterCopy,
   .chapterReverse .chapterCopy {
     width: min(660px, 100%);
     max-width: none;
+    padding-inline-start: 0;
     justify-self: start;
   }
 
@@ -604,60 +427,9 @@
 
 @media (max-width: 760px) {
   .hero {
-    margin: 6px;
+    margin: 0;
     padding: 14px 12px 44px;
-    border-radius: 24px 24px 0 0;
-  }
-
-  .brandParticleMark {
-    top: 7%;
-    right: -32%;
-    width: 98vw;
-    opacity: 0.38;
-  }
-
-  .particleField {
-    opacity: 0.54;
-  }
-
-  .scatteredParticles circle:nth-child(n + 25) {
-    display: none;
-  }
-
-  .waveField {
-    right: -18%;
-    bottom: -2%;
-    left: -18%;
-    width: 136%;
-    height: 36%;
-  }
-
-  .meshThreads {
-    opacity: 0.28;
-  }
-
-  .meshDots {
-    stroke-width: 1.75;
-    opacity: 0.48;
-  }
-
-  .ambientGlowBottom {
-    right: -28%;
-    bottom: -16%;
-    width: 128vw;
-    height: 48vw;
-    opacity: 0.27;
-  }
-
-  .heroReadabilityVeil {
-    background:
-      radial-gradient(
-        ellipse at 50% 48%,
-        rgba(4, 11, 27, 0.78) 0,
-        rgba(4, 11, 27, 0.5) 38%,
-        transparent 72%
-      ),
-      linear-gradient(180deg, rgba(4, 11, 27, 0.2), transparent 20% 72%, rgba(4, 11, 27, 0.18));
+    border-radius: 0;
   }
 
   .container {
@@ -707,18 +479,9 @@
 
   .chapter,
   .chapterReverse {
-    grid-template-columns: 20px minmax(0, 1fr);
-    gap: 28px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
     padding: 64px 0 76px;
-  }
-
-  .chapterRail {
-    min-height: 390px;
-    gap: 12px;
-  }
-
-  .chapterNumber {
-    font-size: 9px;
   }
 
   .chapterMeta {
@@ -764,12 +527,6 @@
     font-size: clamp(2.45rem, 12.4vw, 3.25rem);
   }
 
-  .brandParticleMark {
-    top: 10%;
-    right: -42%;
-    width: 112vw;
-    opacity: 0.3;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -780,7 +537,7 @@
   .chapterMedia,
   .solutionImage,
   .chapterCopy,
-  .chapterTraceFill {
+  .sharedProgressFill {
     transition: none;
     transform: none !important;
   }

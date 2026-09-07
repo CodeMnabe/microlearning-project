@@ -1,0 +1,287 @@
+.root {
+  --neon-top: 10%;
+  --neon-right: -7%;
+  --neon-bottom: auto;
+  --neon-left: auto;
+  --neon-size: clamp(560px, 48vw, 820px);
+  --neon-rotation: 9deg;
+  --neon-opacity: 0.52;
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  contain: layout paint style;
+  background:
+    radial-gradient(
+      ellipse at 84% 28%,
+      rgba(35, 112, 184, 0.24),
+      transparent 37%
+    ),
+    radial-gradient(
+      ellipse at 16% 94%,
+      rgba(32, 70, 129, 0.18),
+      transparent 42%
+    ),
+    linear-gradient(132deg, #06101f 0%, #08172c 52%, #0a2340 100%);
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image:
+    linear-gradient(rgba(124, 194, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 194, 255, 0.045) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: radial-gradient(ellipse at 74% 43%, #000 0, transparent 70%);
+}
+
+.atmosphere {
+  position: absolute;
+  z-index: 0;
+  top: -20%;
+  right: -14%;
+  width: min(78vw, 1120px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.38;
+  background: radial-gradient(
+    circle,
+    rgba(51, 150, 231, 0.15),
+    rgba(27, 92, 157, 0.06) 38%,
+    transparent 70%
+  );
+  filter: blur(24px);
+}
+
+.motifPlacement {
+  position: absolute;
+  z-index: 2;
+  top: var(--neon-top);
+  right: var(--neon-right);
+  bottom: var(--neon-bottom);
+  left: var(--neon-left);
+  width: var(--neon-size);
+  opacity: var(--neon-opacity);
+  transform: rotate(var(--neon-rotation));
+  transform-origin: center;
+  mix-blend-mode: screen;
+}
+
+.motifFloat {
+  width: 100%;
+  animation: neonBrandDrift 15s ease-in-out infinite;
+}
+
+.motif {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.motif path {
+  vector-effect: non-scaling-stroke;
+}
+
+.halo {
+  opacity: var(--neon-halo-opacity);
+  stroke: #078dff;
+  stroke-width: 3.5;
+  filter: blur(var(--neon-glow-blur));
+}
+
+.glow {
+  opacity: var(--neon-glow-opacity);
+  stroke: #19a8ff;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 2px rgba(32, 174, 255, 0.42))
+    drop-shadow(0 0 6px rgba(0, 128, 255, 0.2));
+}
+
+.core {
+  opacity: 1;
+  stroke: #bcecff;
+  stroke-width: 0.8;
+  filter: drop-shadow(0 0 1px rgba(218, 247, 255, 0.48));
+}
+
+.readabilityVeil {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(5, 15, 31, 0.48), transparent 55%),
+    linear-gradient(90deg, rgba(5, 14, 28, 0.28), transparent 54%),
+    linear-gradient(
+      180deg,
+      rgba(3, 10, 21, 0.16),
+      transparent 24% 78%,
+      rgba(3, 10, 21, 0.2)
+    );
+}
+
+.root[data-neon-hero="solution"] {
+  --neon-top: 12%;
+  --neon-right: auto;
+  --neon-left: -3%;
+  --neon-size: clamp(570px, 45vw, 760px);
+  --neon-rotation: 4deg;
+  --neon-opacity: 0.48;
+}
+
+.root[data-neon-hero="product"] {
+  --neon-top: 17%;
+  --neon-right: -8%;
+  --neon-size: clamp(570px, 47vw, 790px);
+  --neon-rotation: 12deg;
+  --neon-opacity: 0.52;
+}
+
+.root[data-neon-hero="how-it-works"] {
+  --neon-top: 22%;
+  --neon-right: 3%;
+  --neon-size: clamp(390px, 35vw, 580px);
+  --neon-rotation: -5deg;
+  --neon-opacity: 0.47;
+}
+
+.root[data-neon-hero="how-it-works"] .readabilityVeil {
+  background:
+    linear-gradient(90deg, rgba(4, 13, 27, 0.56) 0 48%, transparent 74%),
+    linear-gradient(
+      180deg,
+      rgba(3, 10, 21, 0.16),
+      transparent 24% 78%,
+      rgba(3, 10, 21, 0.2)
+    );
+}
+
+.root[data-neon-hero="pricing"] {
+  --neon-top: 49%;
+  --neon-right: auto;
+  --neon-left: -5%;
+  --neon-size: clamp(510px, 41vw, 700px);
+  --neon-rotation: -7deg;
+  --neon-opacity: 0.42;
+}
+
+.root[data-neon-hero="contact"] {
+  --neon-top: 3%;
+  --neon-right: auto;
+  --neon-left: -8%;
+  --neon-size: clamp(500px, 40vw, 690px);
+  --neon-rotation: 9deg;
+  --neon-opacity: 0.38;
+}
+
+@keyframes neonBrandDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0);
+  }
+}
+
+@media (max-width: 900px) {
+  .root {
+    --neon-top: 9%;
+    --neon-right: -24%;
+    --neon-size: clamp(500px, 75vw, 690px);
+    --neon-opacity: 0.36;
+  }
+
+  .root[data-neon-hero="how-it-works"] {
+    --neon-top: 48%;
+    --neon-right: -12%;
+    --neon-size: clamp(360px, 54vw, 500px);
+  }
+
+  .root[data-neon-hero="pricing"] {
+    --neon-top: 53%;
+    --neon-right: auto;
+    --neon-left: -16%;
+  }
+}
+
+@media (max-width: 760px) {
+  .root,
+  .root[data-neon-hero] {
+    --neon-top: auto;
+    --neon-right: -38%;
+    --neon-bottom: -7%;
+    --neon-left: auto;
+    --neon-size: clamp(430px, 126vw, 620px);
+    --neon-opacity: 0.3;
+  }
+
+  .root[data-neon-hero="solution"] {
+    --neon-right: auto;
+    --neon-bottom: 3%;
+    --neon-left: -22%;
+    --neon-size: clamp(390px, 108vw, 530px);
+    --neon-rotation: 4deg;
+  }
+
+  .root[data-neon-hero="product"] {
+    --neon-right: -42%;
+    --neon-bottom: 8%;
+    --neon-rotation: 12deg;
+  }
+
+  .root[data-neon-hero="how-it-works"] {
+    --neon-right: -28%;
+    --neon-bottom: 1%;
+    --neon-size: clamp(390px, 112vw, 540px);
+  }
+
+  .root[data-neon-hero="pricing"] {
+    --neon-right: auto;
+    --neon-left: -48%;
+    --neon-bottom: 4%;
+    --neon-rotation: -7deg;
+  }
+
+  .root[data-neon-hero="contact"] {
+    --neon-top: 14%;
+    --neon-right: auto;
+    --neon-bottom: auto;
+    --neon-left: -52%;
+    --neon-opacity: 0.2;
+  }
+
+  .root::before {
+    opacity: 0.1;
+    background-size: 72px 72px;
+  }
+
+  .readabilityVeil,
+  .root[data-neon-hero="how-it-works"] .readabilityVeil {
+    background:
+      radial-gradient(
+        ellipse at 50% 40%,
+        rgba(4, 13, 27, 0.62),
+        transparent 62%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(3, 10, 21, 0.2),
+        transparent 22% 72%,
+        rgba(3, 10, 21, 0.26)
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motifFloat {
+    animation: none;
+  }
+}

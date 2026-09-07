@@ -4,6 +4,7 @@ import LoaderLink from "../components/TopLoader/LoaderLink";
 import PersistentHeader from "@/app/components/Navbar/MarketingNavbar/PersistentHeader";
 import Footer from "../components/Footer/Footer";
 import ContactForm from "./ContactForm.jsx";
+import SharedHeroNeonBrand from "../components/SharedHeroNeonBrand/SharedHeroNeonBrand";
 import styles from "./contact.module.css";
 
 function Point({ children }) {
@@ -16,7 +17,7 @@ export default function ContactPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.background} aria-hidden="true" />
+        <SharedHeroNeonBrand variant="contact" glowIntensity={0.8} />
 
         <PersistentHeader reserveSpace />
         <div className={styles.container}>

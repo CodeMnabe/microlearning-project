@@ -34,49 +34,11 @@
   min-height: 100svh;
   grid-template-rows: auto 1fr;
   overflow: hidden;
-  margin: 10px;
+  margin: 0;
   padding: 18px clamp(20px, 3.2vw, 56px) 46px;
   border-radius: 0;
   isolation: isolate;
   background: #050f20;
-}
-
-.background {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse at 87% 38%,
-      rgba(65, 165, 235, 0.12),
-      transparent 35%
-    ),
-    radial-gradient(
-      ellipse at 72% 104%,
-      rgba(23, 93, 157, 0.14),
-      transparent 40%
-    ),
-    linear-gradient(118deg, #050f20 0%, #07162c 46%, #0a2441 74%, #0b3154 100%);
-}
-
-.background::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.14;
-  background-image:
-    linear-gradient(rgba(142, 207, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(142, 207, 255, 0.08) 1px, transparent 1px);
-  background-size: 88px 88px;
-  mask-image: radial-gradient(ellipse at 82% 48%, #000, transparent 68%);
-}
-
-.background::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 24%),
-    radial-gradient(ellipse at 74% 46%, transparent 25%, rgba(2, 9, 20, 0.18) 76%);
 }
 
 .container {
@@ -392,23 +354,29 @@
 /* The sticky experience is opt-in; no-JS and reduced-motion keep the flow. */
 
 /*
- * Scroll runway: one viewport for the panel itself plus one stretch per
- * transition. Declared in CSS so no JS ever writes layout during scroll, and so
- * the section can never end up with a zero-height or NaN-height spacer.
+ * Scroll runway: the sticky panel is sized to fit its own content (not a
+ * forced 100vh, which left a growing blank strip below the content on tall
+ * viewports), followed by an explicit spacer sibling that reserves one
+ * stretch of scroll per transition. `.journey`'s height is never set
+ * directly — it's the sum of these two children, so it can't drift out of
+ * sync with what the sticky panel actually needs.
  */
-.explorer[data-motion="ready"][data-layout="sticky"] .journey {
-  height: calc(100svh + var(--journey-steps, 3) * min(64svh, 560px));
-}
-
 .explorer[data-motion="ready"][data-layout="sticky"] .journeySticky {
   position: sticky;
   top: 0;
   display: flex;
-  height: 100vh;
-  height: 100svh;
   align-items: flex-start;
   padding: clamp(92px, 11svh, 110px) 0 clamp(40px, 7svh, 68px);
   box-sizing: border-box;
+}
+
+.journeyRunway {
+  display: none;
+}
+
+.explorer[data-motion="ready"][data-layout="sticky"] .journeyRunway {
+  display: block;
+  height: calc(var(--journey-steps, 3) * min(64svh, 560px));
 }
 
 .explorer[data-motion="ready"][data-layout="sticky"] .showcase {
@@ -675,7 +643,7 @@
 
 @media (max-width: 760px) {
   .hero {
-    margin: 6px;
+    margin: 0;
     padding: 14px 12px 54px;
     border-radius: 0;
   }
