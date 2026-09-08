@@ -54,8 +54,6 @@ const BAND_ARGB = "FFE4ECF6";
 // de Excel normal, com as celulas visivelmente separadas.
 const RULE_ARGB = "FF262626";
 
-// Regua clara, para as fronteiras discretas do Painel.
-const SOFT_RULE_ARGB = "FFDBE3EE";
 
 // Vermelho de aviso, usado apenas em valores que exigem atencao.
 const ALERT_ARGB = "FFE05252";
@@ -166,11 +164,11 @@ const PANEL_THEME = "light";
 // ==============================
 
 /**
- * Prepara o aspeto geral de uma folha.
+ * Prepara o aspeto geral da folha de dados.
  *
- * A alteracao com mais efeito visual e a primeira: desligar a grelha.
- * E o que separa um relatorio de um despejo de dados — e e uma
- * subtracao, nao um adorno.
+ * Deixa a grelha do Excel visível e não fixa painéis: esta folha é para
+ * se comportar como uma folha de cálculo normal, onde as pessoas
+ * trabalham os números. A vista de apresentação é o Painel.
  */
 function applySheetChrome(sheet, { headerRow, lastColumn }) {
   sheet.properties.tabColor = { argb: BRAND_ARGB };
