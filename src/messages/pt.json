@@ -2167,9 +2167,15 @@
 
 "Analytics": {
   "title": "Métricas",
-
+  "description": "Atividade, entrega, automações e links da organização no período selecionado.",
   "refresh": "Atualizar",
+  "updatedAt": "Atualizado às {time}",
+  "retry": "Tentar novamente",
   "loading": "A carregar métricas...",
+  "actions": {
+    "viewUsers": "Ver utilizadores",
+    "viewAutomations": "Ver automações"
+  },
   "errors": {
     "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
     "noOrg": "Não foi possível identificar a organização atual."
@@ -2212,124 +2218,141 @@
     "clickDensityHelper": "{clicks} cliques em {links} links."
   },
   "sections": {
-  "breakdownTitle": "Resumo operacional",
-  "users": {
-    "title": "Cobertura",
-    "value": "{withAssistant}/{total} com assistente",
-    "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
+    "breakdownTitle": "Resumo operacional",
+    "users": {
+      "title": "Cobertura",
+      "value": "{withAssistant}/{total} com assistente",
+      "text": "{email} com email, {phone} com telefone, {teams} com Teams e {whatsapp} com WhatsApp/Bird."
+    },
+    "messages": {
+      "title": "Atividade",
+      "value": "{total} mensagens registadas",
+      "text": "{userMessages} mensagens de utilizadores, {assistantMessages} respostas de assistentes, {read} lidas e {failed} falhadas."
+    },
+    "attention": {
+      "title": "Pontos de atenção",
+      "value": "{total} problemas ativos",
+      "text": "{automationFailures} falhas em automações, {scheduledFailures} mensagens agendadas falhadas e {rejectedTemplates} templates rejeitados."
+    },
+    "next": {
+      "title": "Próxima melhoria",
+      "value": "Adicionar gráficos",
+      "text": "O próximo passo é mostrar evolução por período: mensagens por dia, cliques por dia, falhas por dia e automações processadas."
+    },
+    "breakdownDescription": "Leitura rápida da cobertura, da atividade e dos pontos a rever."
   },
-  "messages": {
-    "title": "Atividade",
-    "value": "{total} mensagens registadas",
-    "text": "{userMessages} mensagens de utilizadores, {assistantMessages} respostas de assistentes, {read} lidas e {failed} falhadas."
-  },
-  "attention": {
-    "title": "Pontos de atenção",
-    "value": "{total} problemas ativos",
-    "text": "{automationFailures} falhas em automações, {scheduledFailures} mensagens agendadas falhadas e {rejectedTemplates} templates rejeitados."
-  },
-  "next": {
-    "title": "Próxima melhoria",
-    "value": "Adicionar gráficos",
-    "text": "O próximo passo é mostrar evolução por período: mensagens por dia, cliques por dia, falhas por dia e automações processadas."
-  }
-  
-  },
-    "charts": {
-  "email": "Email",
-  "phone": "Telefone",
-  "teams": "Teams",
-  "whatsapp": "WhatsApp",
-  "active": "Ativos",
-  "pending": "Pendentes",
-  "rejected": "Rejeitados",
-  "assistants": "Assistentes",
-  "templates": "Templates",
-  "messages": "Mensagens",
-  "automations": "Automações",
-  "scheduled": "Agendadas",
-  
-  "messagesTitle": "Mensagens por canal",
-  "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
-  "templatesTitle": "Estado dos templates",
-  "templatesDescription": "Distribuição dos templates por estado.",
-  "problemsTitle": "Problemas encontrados",
-  "problemsDescription": "Resumo dos pontos que precisam de atenção.",
-  "sectionTitle": "Distribuição atual",
-  "sectionDescription": "Um resumo visual do estado atual e das métricas do período selecionado."
+  "charts": {
+    "email": "Email",
+    "phone": "Telefone",
+    "teams": "Teams",
+    "whatsapp": "WhatsApp",
+    "active": "Ativos",
+    "pending": "Pendentes",
+    "rejected": "Rejeitados",
+    "assistants": "Assistentes",
+    "templates": "Templates",
+    "messages": "Mensagens",
+    "automations": "Automações",
+    "scheduled": "Agendadas",
+    "messagesTitle": "Mensagens por canal",
+    "messagesDescription": "Comparação entre mensagens de WhatsApp e Teams.",
+    "templatesTitle": "Estado dos templates",
+    "templatesDescription": "Distribuição dos templates por estado.",
+    "problemsTitle": "Problemas encontrados",
+    "problemsDescription": "Resumo dos pontos que precisam de atenção.",
+    "sectionTitle": "Distribuição atual",
+    "sectionDescription": "Repartição das mensagens por canal e dos templates por estado.",
+    "empty": "Sem dados para mostrar."
   },
   "periods": {
-  "label": "Filtrar por período",
-  "all": "Tudo",
-  "last7Days": "7 dias",
-  "last30Days": "30 dias",
-  "last90Days": "90 dias"
- 
-    },
-
+    "label": "Filtrar por período",
+    "all": "Tudo",
+    "last7Days": "7 dias",
+    "last30Days": "30 dias",
+    "last90Days": "90 dias"
+  },
   "trends": {
-  "title": "Evolução diária",
-  "description": "Estes gráficos respeitam o período selecionado. Quando Tudo está selecionado, mostram os últimos 30 dias.",
-  "messagesTitle": "Mensagens por dia",
-  "messagesDescription": "Total de mensagens registadas em cada dia.",
-  "clicksTitle": "Cliques por dia",
-  "clicksDescription": "Cliques em links rastreados registados em cada dia.",
-  "failuresTitle": "Falhas por dia",
-  "failuresDescription": "Mensagens que falharam em cada dia.",
-  "automationsTitle": "Automações processadas por dia",
-  "automationsDescription": "Execuções de automação processadas em cada dia.",
-  "empty": "Não há dados para mostrar neste período."
-},
+    "title": "Evolução diária",
+    "description": "Valores por dia no período selecionado. Com Tudo selecionado, mostra os últimos 90 dias.",
+    "messagesTitle": "Mensagens por dia",
+    "messagesDescription": "Total de mensagens registadas em cada dia.",
+    "clicksTitle": "Cliques por dia",
+    "clicksDescription": "Cliques em links rastreados registados em cada dia.",
+    "failuresTitle": "Falhas por dia",
+    "failuresDescription": "Mensagens que falharam em cada dia.",
+    "automationsTitle": "Automações processadas por dia",
+    "automationsDescription": "Execuções de automação processadas em cada dia.",
+    "empty": "Não há dados para mostrar neste período.",
+    "peak": "Pico de {count} a {date}",
+    "expand": "Expandir gráfico",
+    "close": "Fechar",
+    "detail": {
+      "total": "Total no período",
+      "totalMeta": "{active} de {days} dias com atividade",
+      "average": "Média por dia",
+      "averageMeta": "{value} nos dias com atividade",
+      "peak": "Pico",
+      "peakMeta": "a {date}",
+      "lastWeek": "Últimos 7 dias",
+      "lastWeekMeta": "{delta} face aos 7 dias anteriores",
+      "lastWeekNoBase": "Sem dados nos 7 dias anteriores",
+      "topDays": "Dias com mais atividade",
+      "columns": {
+        "day": "Dia",
+        "value": "Valor",
+        "share": "Peso"
+      }
+    }
+  },
   "groups": {
-  "overview": {
-    "title": "Resumo geral",
-    "description": "Estado atual da configuração e organização."
+    "overview": {
+      "title": "Resumo geral",
+      "description": "Estado atual da configuração e organização."
+    },
+    "activity": {
+      "title": "Atividade",
+      "description": "Mensagens e entrega no período: {period}."
+    },
+    "automations": {
+      "title": "Automações",
+      "description": "Regras de automação, execuções e mensagens agendadas."
+    },
+    "engagement": {
+      "title": "Links Rastreados",
+      "description": "Cliques em links rastreados no período selecionado."
+    }
   },
-  "activity": {
-    "title": "Atividade",
-    "description": "Mensagens, entrega e métricas de atividade no período selecionado."
-  },
-  "automations": {
-    "title": "Automações",
-    "description": "Regras de automação, execuções e mensagens agendadas."
-  },
-  "engagement": {
-    "title": "Links Rastreados",
-    "description": "Atividade dos links rastreados e desempenho dos cliques."
-  }
-},
-
   "customization": {
-  "title": "Personalização da dashboard",
-  "description": "Mostra ou oculta grupos de métricas. A tua escolha fica guardada neste browser.",
-  "show": "Mostrar",
-  "hide": "Ocultar",
-  "reset": "Repor grupos",
-  "resetCharts": "Repor gráficos",
-  "exports":"Exportar",
-  "resetDashboard": "Repor dashboard"
-
-},
-    "rankings": {
-  "title": "Rankings",
-  "description": "Os elementos mais relevantes no período selecionado.",
-  "topLinksTitle": "Links mais clicados",
-  "topLinksDescription": "Links rastreados com maior número de cliques.",
-  "automationFailuresTitle": "Falhas em automações",
-  "automationFailuresDescription": "Regras de automação com maior número de execuções falhadas.",
-  "empty": "Não há dados de ranking neste período.",
-  "columns": {
-    "link": "Link",
-    "clicks": "Cliques",
-    "automation": "Automação",
-    "failures": "Falhas",
+    "title": "Personalização da dashboard",
+    "description": "Mostra ou oculta grupos de métricas. A tua escolha fica guardada neste browser.",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "reset": "Repor grupos",
+    "resetCharts": "Repor gráficos",
+    "exports": "Exportar",
+    "resetDashboard": "Repor dashboard",
+    "hiddenNotice": "Tens secções ocultas nesta página."
+  },
+  "rankings": {
+    "title": "Rankings",
+    "description": "Os elementos mais relevantes no período selecionado.",
+    "topLinksTitle": "Links mais clicados",
+    "topLinksDescription": "Links rastreados com maior número de cliques.",
+    "automationFailuresTitle": "Falhas em automações",
+    "automationFailuresDescription": "Regras de automação com maior número de execuções falhadas.",
+    "empty": "Não há dados de ranking neste período.",
+    "columns": {
+      "link": "Link",
+      "clicks": "Cliques",
+      "automation": "Automação",
+      "failures": "Falhas"
+    },
     "viewAllLinks": "Ver lista completa ({count})",
     "allLinksTitle": "Lista completa de links",
     "allLinksDescription": "Todos os links rastreados ordenados por número de cliques.",
     "close": "Fechar"
   }
-}
-  },
+},
   "Settings": {
     "title": "Definições",
     "description": "Gere a organização, a aparência e as integrações num só lugar.",
