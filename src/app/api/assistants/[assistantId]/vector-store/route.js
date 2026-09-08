@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { createClient as createServiceClient } from "@supabase/supabase-js";
-
-import { toFile } from "openai/uploads";
-
 import {
   createOpenAiVectorStore,
-  createOpenAiFile,
+  uploadOpenAiFilesFromStorage,
 } from "@/lib/services/openaiFiles.service";
 
 import { associateVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
@@ -14,16 +10,6 @@ import { associateVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 import { createDBStore } from "@/lib/repos/store.repo";
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
-
-const sb = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      persistSession: false,
-    },
-  },
-);
 
 export async function POST(req, ctx) {
   try {
@@ -69,126 +55,8 @@ export async function POST(req, ctx) {
       );
     }
 
-    const uploadedOpenAiIds = [];
-    const fileRowsForDb = [];
-
-    /*
-     * =========================================================
-     * UPLOAD FILES TO OPENAI
-     * =========================================================
-     *
-     * Files have already been uploaded to Supabase Storage.
-     *
-     * We:
-     *
-     * 1. Validate their organization path.
-     * 2. Download from Supabase.
-     * 3. Upload to OpenAI Files.
-     */
-    for (const f of files) {
-      const { bucket, path, name, type, size } = f || {};
-
-      if (!bucket || !path) {
-        return NextResponse.json(
-          {
-            error: "Each file requires bucket and path",
-          },
-          {
-            status: 400,
-          },
-        );
-      }
-
-      /*
-       * Security from staging:
-       *
-       * Don't allow a user to reference a Storage
-       * object belonging to another organization.
-       */
-      if (!path.startsWith(`${auth.orgId}/`)) {
-        return NextResponse.json(
-          {
-            error: "File does not belong to this organization",
-          },
-          {
-            status: 403,
-          },
-        );
-      }
-
-      /*
-       * Create a temporary signed URL for the
-       * Supabase Storage object.
-       */
-      const { data: signed, error: signErr } = await sb.storage
-        .from(bucket)
-        .createSignedUrl(path, 60);
-
-      if (signErr) {
-        throw signErr;
-      }
-
-      if (!signed?.signedUrl) {
-        throw new Error(`Could not create signed URL for ${path}`);
-      }
-
-      /*
-       * Download file from Supabase.
-       */
-      const response = await fetch(signed.signedUrl);
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch ${path} from Supabase Storage: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      /*
-       * Convert response into a file-like object
-       * accepted by the OpenAI SDK.
-       */
-      const fileLike = await toFile(
-        response.body ?? (await response.blob()),
-
-        name || "upload.bin",
-
-        {
-          type:
-            type ||
-            response.headers.get("content-type") ||
-            "application/octet-stream",
-        },
-      );
-
-      /*
-       * =========================================================
-       * OPENAI FILE
-       * =========================================================
-       *
-       * This is still a valid OpenAI resource.
-       *
-       * It has nothing to do with the deprecated
-       * Assistants API.
-       */
-      const uploaded = await createOpenAiFile(fileLike);
-
-      if (!uploaded?.id) {
-        throw new Error(`OpenAI did not return a file ID for ${name || path}`);
-      }
-
-      uploadedOpenAiIds.push(uploaded.id);
-
-      /*
-       * Prepare local DB file row.
-       */
-      fileRowsForDb.push({
-        open_ai_id: uploaded.id,
-
-        name: name || "file",
-
-        size: Number.isFinite(Number(size)) ? Number(size) : null,
-      });
-    }
+    const { fileIds: uploadedOpenAiIds, fileRows: fileRowsForDb } =
+      await uploadOpenAiFilesFromStorage(files, auth.orgId);
 
     /*
      * =========================================================

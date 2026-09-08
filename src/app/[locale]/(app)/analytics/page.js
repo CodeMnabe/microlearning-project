@@ -1,41 +1,13 @@
-
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Bot,
-  CalendarClock,
-  CheckCircle2,
-  FileText,
-  MessageSquare,
-  MousePointerClick,
-  RefreshCw,
-  Send,
-  Users,
-  Zap,
-  Info,
-} from "lucide-react";
-
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
-
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { ChevronRight, Maximize2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./analytics.module.css";
-
- 
 
 /**
  * Opções disponíveis para filtrar as métricas por período.
@@ -48,46 +20,23 @@ const PERIOD_OPTIONS = [
 ];
 
 /**
- * Chave usada no localStorage para guardar os grupos de métricas visíveis.
+ * Chave usada no localStorage para guardar as secções visíveis.
  */
-const METRIC_GROUP_STORAGE_KEY = "analytics.visibleMetricGroups";
+const SECTION_STORAGE_KEY = "analytics.visibleSections";
 
 /**
- * Grupos de métricas visíveis por default.
+ * Secções visíveis por defeito.
  */
-const DEFAULT_VISIBLE_METRIC_GROUPS = {
+const DEFAULT_VISIBLE_SECTIONS = {
   overview: true,
   activity: true,
   automations: true,
   engagement: true,
-  health: true,
-};
-
-/**
- * Chave usada no localStorage para guardar as secções de gráficos visíveis.
- */
-const CHART_SECTION_STORAGE_KEY = "analytics.visibleChartSections";
-
-/**
- * Secções de gráficos visíveis por defeito.
- */
-const DEFAULT_VISIBLE_CHART_SECTIONS = {
   distribution: true,
+  rankings: true,
   trends: true,
+  summary: true,
 };
-
-/**
- * Calcula uma percentagem de forma segura.
- * Evita erros quando o total é 0.
- */
-function safePercent(part, total) {
-  const partNumber = safeNumber(part);
-  const totalNumber = safeNumber(total);
-
-  if (totalNumber <= 0) return 0;
-
-  return Math.round((partNumber / totalNumber) * 100);
-}
 
 /**
  * Converte um valor para número de forma segura.
@@ -98,693 +47,699 @@ function safeNumber(value) {
 }
 
 /**
- * Formata a data dos gráficos diários de acordo com o idioma atual.
+ * Calcula uma percentagem de forma segura, limitada a 100.
  */
-function formatDateLabel(date, locale) {
-  const parsedDate = new Date(`${date}T00:00:00`);
+function safePercent(part, total) {
+  const totalNumber = safeNumber(total);
+  if (totalNumber <= 0) return 0;
+  return Math.min(100, Math.round((safeNumber(part) / totalNumber) * 100));
+}
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return date;
+/**
+ * Célula de métrica: etiqueta, número grande, barra opcional e contexto.
+ */
+function Stat({ label, value, meta, percent, attention = false, href }) {
+  const body = (
+    <>
+      <span className={styles.statLabel}>{label}</span>
+      <span className={styles.statBody}>
+        <span className={styles.statValue}>{value}</span>
+        {typeof percent === "number" ? (
+          <span className={styles.statBar} aria-hidden="true">
+            <span style={{ width: `${percent}%` }} />
+          </span>
+        ) : null}
+        {meta ? (
+          <span
+            className={`${styles.statMeta} ${attention ? styles.statAttention : ""}`}
+          >
+            {meta}
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={styles.stat}>
+        {body}
+      </Link>
+    );
   }
 
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "short",
-  }).format(parsedDate);
-}
-
-function DescriptionInfo({ text }){
-  const [isOpen, setIsOpen] = useState(false);
-
-  if (!text) return null;
-
-  return(
-    <span className={styles.infoWrapper}>
-      <button
-      type="button"
-      className={styles.infoButton}
-      onClick={() => setIsOpen((currentValue) => !currentValue)}
-      arial-label= "Mostrar informação"
-      aria-expanded={isOpen}
-      >
-        <Info size={14} />
-      </button>
-
-      {isOpen && (
-        <span className= {styles.infoPopover}>
-          {text}
-          </span>
-      )}
-
-    </span>
-  )
-
+  return <div className={styles.stat}>{body}</div>;
 }
 
 /**
- * Card reutilizável para mostrar uma métrica individual.
+ * Painel de secção com cabeçalho, descrição, link e botão para ocultar.
  */
-function MetricCard({ icon: Icon, title, value, description, tone = "default" }) {
+function Section({
+  title,
+  description,
+  linkHref,
+  linkLabel,
+  visible = true,
+  onToggle,
+  toggleLabels,
+  children,
+}) {
   return (
-    <article className={`${styles.card} ${styles[tone] || ""}`}>
-      <div className={styles.cardIcon}>
-        <Icon size={20} />
-      </div>
-
-      <div>
-        <div className={styles.cardLabel}>{title}</div>
-        <div className={styles.cardValue}>{value}</div>
-
-        {description && (
-          <div className={styles.cardHelper}>{description}</div>
-        )}
-      </div>
-    </article>
+    <section className={`${styles.section} ${!visible ? styles.sectionCollapsed : ""}`}>
+      <header className={styles.sectionHeader}>
+        <div className={styles.sectionCopy}>
+          <h2>{title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        <div className={styles.sectionActions}>
+          {linkHref && visible ? (
+            <Link href={linkHref} className={styles.sectionLink}>
+              {linkLabel}
+              <ChevronRight size={15} aria-hidden="true" />
+            </Link>
+          ) : null}
+          {onToggle ? (
+            <button type="button" className={styles.sectionToggle} onClick={onToggle}>
+              {visible ? toggleLabels.hide : toggleLabels.show}
+            </button>
+          ) : null}
+        </div>
+      </header>
+      {visible ? children : null}
+    </section>
   );
 }
 
 /**
- * Grupo reutilizável de cards de métricas.
- * Permite mostrar ou ocultar um conjunto de cards.
+ * Lista de barras horizontais para distribuições por categoria.
  */
-function MetricGroup({
-  title,
-  description,
-  children,
-  isVisible = true,
-  onToggle,
-  showLabel,
-  hideLabel,
-  className = "",
-}) {
-  return (
-    <section
-      className={`${styles.metricGroup} ${className} ${
-        !isVisible ? styles.metricGroupCollapsed : ""
-      }`}
-    >
-      <div className={styles.metricGroupHeader}>
-        <div>
-        <div className={styles.titleWithInfo}>
-        <h2 className={styles.metricGroupTitle}>{title}</h2>
-        <DescriptionInfo text={description} />
-      </div>
-        </div>
+function Breakdown({ title, items, format, emptyMessage }) {
+  const total = items.reduce((sum, item) => sum + safeNumber(item.value), 0);
+  const max = Math.max(1, ...items.map((item) => safeNumber(item.value)));
 
-        {onToggle && (
+  return (
+    <div className={styles.breakdown}>
+      <div className={styles.breakdownHeader}>
+        <h3>{title}</h3>
+        <strong>{format(total)}</strong>
+      </div>
+      {total > 0 ? (
+        <ul className={styles.breakdownList}>
+          {items.map((item) => {
+            const value = safeNumber(item.value);
+            return (
+              <li key={item.key} className={styles.breakdownRow}>
+                <span className={styles.breakdownMeta}>
+                  <span className={styles.breakdownLabel}>{item.label}</span>
+                  <span className={styles.breakdownValue}>
+                    {format(value)}
+                    <small>{safePercent(value, total)}%</small>
+                  </span>
+                </span>
+                <span className={styles.breakdownTrack} aria-hidden="true">
+                  <span
+                    className={styles.breakdownFill}
+                    data-tone={item.tone || "brand"}
+                    style={{ width: `${(value / max) * 100}%` }}
+                  />
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={styles.emptyState}>{emptyMessage}</p>
+      )}
+    </div>
+  );
+}
+
+/* ───────── Daily trends ───────── */
+
+const toDate = (value) => new Date(`${value}T00:00:00Z`);
+
+/**
+ * "10 jun" / "Jun 10": dia e mês curtos, sem preposições nem ponto final.
+ */
+function shortDay(date, locale) {
+  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" })
+    .formatToParts(date)
+    .filter((part) => part.type === "day" || part.type === "month")
+    .map((part) => part.value.replace(/\.$/, ""))
+    .join(" ");
+}
+
+function fullDay(date, locale) {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/**
+ * Arredonda o máximo do eixo para um valor "limpo" logo acima do valor real,
+ * para a linha aproveitar a altura do gráfico.
+ */
+const NICE_STEPS = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+
+function niceCeil(value) {
+  if (value <= 0) return 1;
+  if (value <= 5) return Math.ceil(value);
+  const exponent = Math.floor(Math.log10(value));
+  const base = 10 ** exponent;
+  const ratio = value / base;
+  const step = NICE_STEPS.find((candidate) => ratio <= candidate) || 10;
+  return Math.round(step * base);
+}
+
+/**
+ * Converte uma série diária da API em pontos {date, value}.
+ */
+function toPoints(series, key) {
+  return (Array.isArray(series) ? series : []).map((item) => ({
+    date: item.date,
+    value: safeNumber(item[key]),
+  }));
+}
+
+/**
+ * Resumo numérico de uma série: total, pico, média e últimos 7 dias.
+ */
+function summarize(points) {
+  const values = points.map((point) => point.value);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  const activeDays = values.filter((value) => value > 0).length;
+  const peakIndex = values.length ? values.indexOf(Math.max(...values)) : -1;
+  const lastWeek = values.slice(-7).reduce((sum, value) => sum + value, 0);
+  const previousWeek = values.slice(-14, -7).reduce((sum, value) => sum + value, 0);
+
+  return {
+    total,
+    days: values.length,
+    activeDays,
+    average: values.length ? total / values.length : 0,
+    activeAverage: activeDays ? total / activeDays : 0,
+    peakIndex,
+    peakValue: peakIndex >= 0 ? values[peakIndex] : 0,
+    lastWeek,
+    previousWeek,
+  };
+}
+
+function useElementSize() {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+
+    const update = () =>
+      setSize({ width: element.clientWidth, height: element.clientHeight });
+    update();
+
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+}
+
+/**
+ * Gráfico de linha em SVG com grelha, eixos e leitura ao passar o rato.
+ * Com `fill`, ocupa a altura do contentor em vez de uma altura fixa.
+ */
+function LineChart({
+  points,
+  locale,
+  format,
+  t,
+  tone = "brand",
+  height: fixedHeight = 190,
+  detailed = false,
+  fill = false,
+}) {
+  const [containerRef, size] = useElementSize();
+  const [hoverIndex, setHoverIndex] = useState(null);
+
+  const width = size.width;
+  const height = fill ? size.height : fixedHeight;
+
+  const count = points.length;
+  const values = points.map((point) => point.value);
+  const rawMax = Math.max(0, ...values);
+  const hasData = rawMax > 0;
+
+  const pad = { top: 12, right: 12, bottom: 26, left: detailed ? 48 : 40 };
+  const innerWidth = Math.max(0, width - pad.left - pad.right);
+  const innerHeight = Math.max(0, height - pad.top - pad.bottom);
+  const max = niceCeil(rawMax);
+
+  const x = (index) =>
+    pad.left + (count > 1 ? (index / (count - 1)) * innerWidth : innerWidth / 2);
+  const y = (value) => pad.top + innerHeight - (value / max) * innerHeight;
+
+  const linePath = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${x(index).toFixed(1)},${y(point.value).toFixed(1)}`)
+    .join(" ");
+  const areaPath = count
+    ? `${linePath} L${x(count - 1).toFixed(1)},${(pad.top + innerHeight).toFixed(1)} L${x(0).toFixed(1)},${(pad.top + innerHeight).toFixed(1)} Z`
+    : "";
+
+  const ticks = max % 2 === 0 ? [0, max / 2, max] : [0, max];
+  const labelStep = Math.max(1, Math.ceil(count / (detailed ? 12 : 6)));
+  const labelIndexes = points.map((_, index) => index).filter((index) => index % labelStep === 0);
+
+  function handleMove(event) {
+    if (!count || !innerWidth) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left - pad.left) / innerWidth;
+    const index = Math.round(ratio * (count - 1));
+    setHoverIndex(Math.min(count - 1, Math.max(0, index)));
+  }
+
+  const hovered = hoverIndex !== null && points[hoverIndex] ? points[hoverIndex] : null;
+  const hoverX = hovered ? x(hoverIndex) : 0;
+  const tooltipSide = hoverX < 110 ? "start" : hoverX > width - 110 ? "end" : "middle";
+
+  return (
+    <div
+      ref={containerRef}
+      className={styles.lineChart}
+      style={fill ? undefined : { height }}
+      data-tone={tone}
+    >
+      {width > 0 && height > 0 && count > 0 ? (
+        <svg
+          width={width}
+          height={height}
+          role="img"
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {ticks.map((tick) => (
+            <g key={tick}>
+              <line
+                className={styles.lcGrid}
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y(tick)}
+                y2={y(tick)}
+              />
+              <text className={styles.lcAxis} x={pad.left - 8} y={y(tick) + 4} textAnchor="end">
+                {format(tick)}
+              </text>
+            </g>
+          ))}
+          {labelIndexes.map((index) => (
+            <text
+              key={index}
+              className={styles.lcAxis}
+              x={x(index)}
+              y={height - 8}
+              textAnchor={index === 0 ? "start" : index >= count - labelStep ? "end" : "middle"}
+            >
+              {shortDay(toDate(points[index].date), locale)}
+            </text>
+          ))}
+          {hasData ? (
+            <>
+              <path className={styles.lcArea} d={areaPath} />
+              <path className={styles.lcLine} d={linePath} />
+            </>
+          ) : (
+            <path className={styles.lcFlat} d={linePath} />
+          )}
+          {hovered ? (
+            <g>
+              <line
+                className={styles.lcCursor}
+                x1={hoverX}
+                x2={hoverX}
+                y1={pad.top}
+                y2={pad.top + innerHeight}
+              />
+              <circle className={styles.lcDot} cx={hoverX} cy={y(hovered.value)} r={4} />
+            </g>
+          ) : null}
+        </svg>
+      ) : null}
+      {hovered ? (
+        <div
+          className={styles.lcTooltip}
+          data-side={tooltipSide}
+          style={{ left: hoverX, top: y(hovered.value) - 12 }}
+        >
+          <span>{fullDay(toDate(hovered.date), locale)}</span>
+          <strong>{format(hovered.value)}</strong>
+        </div>
+      ) : null}
+      {!hasData && width > 0 ? <p className={styles.lcEmpty}>{t("trends.empty")}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Painel compacto de uma série diária, com botão para expandir.
+ */
+function TrendPanel({ trend, locale, format, t, onExpand }) {
+  const summary = summarize(trend.points);
+
+  return (
+    <div className={styles.trend}>
+      <div className={styles.trendHeader}>
+        <div className={styles.trendTitle}>
+          <h3>{trend.title}</h3>
           <button
             type="button"
-            className={styles.metricGroupToggle}
-            onClick={onToggle}
+            className={styles.trendExpand}
+            onClick={onExpand}
+            aria-label={t("trends.expand")}
+            title={t("trends.expand")}
           >
-            {isVisible ? hideLabel : showLabel}
+            <Maximize2 size={14} aria-hidden="true" />
           </button>
-        )}
-      </div>
-
-      {isVisible && <div className={styles.metricGroupGrid}>{children}</div>}
-    </section>
-  );
-}
-
-/**
- * Card com gráfico de barras.
- * Usado para mostrar distribuições e comparações por categoria.
- */
-function ChartCard({ title, description, data }) {
-  const hasData = data.some((item) => safeNumber(item.value) > 0);
-
-  return (
-    <section className={styles.chartCard}>
-      <div className={styles.chartHeader}>
-        <h2 className={styles.chartTitle}>{title}</h2>
-
-        {description && (
-          <p className={styles.chartDescription}>{description}</p>
-        )}
-      </div>
-
-      <div className={styles.chartBox}>
-        {hasData ? (
-         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barCategoryGap="28%" barGap={8}>
-            <CartesianGrid strokeDasharray="1 1" vertical={false} />
-            <XAxis dataKey="name" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              fill="var(--brand-1)"
-              radius={[8, 8, 0, 0]}
-              barSize={40}
-            />
-          </BarChart>
-</ResponsiveContainer>
-        ) : (
-          <div className={styles.chartEmpty}>Sem dados para mostrar.</div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * Card com gráfico de linha.
- * Usado para mostrar evolução diária.
- */
-function TrendChartCard({
-  title,
-  description,
-  data,
-  dataKey,
-  locale,
-  emptyMessage,
-}) {
-  const hasData = data.some((item) => safeNumber(item[dataKey]) > 0);
-
-  const chartData = data.map((item) => ({
-    ...item,
-    label: formatDateLabel(item.date, locale),
-  }));
-
-  return (
-    <section className={styles.chartCard}>
-      <div className={styles.chartHeader}>
-
-      <div className={styles.titleWithInfo}>
-        <div className={styles.titleWithInfo}>
-        <h2 className={styles.chartTitle}>{title}</h2>
-        <DescriptionInfo text={description} />
-      </div>
-      </div>
-
-      </div>
-
-      <div className={styles.chartBox}>
-        {hasData ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" minTickGap={20} />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey={dataKey}
-                stroke="var( --brand-1)"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className={styles.chartEmpty}>{emptyMessage}</div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * Tabela reutilizável para rankings.
- * Recebe colunas dinâmicas e linhas vindas da API.
- */
-function RankingTable({
-  title,
-  description,
-  columns,
-  rows,
-  emptyMessage,
-  splitTopTen = false,
-  footer,
-}) {
-  const visibleRows = splitTopTen ? rows.slice(0, 10) : rows;
-
-  const shouldSplit = splitTopTen && visibleRows.length > 5;
-
-  const rowGroups = shouldSplit
-    ? [visibleRows.slice(0, 5), visibleRows.slice(5, 10)]
-    : [visibleRows];
-
-  return (
-    <section className={styles.rankingCard}>
-      <div className={styles.chartHeader}>
-        <div className={styles.titleWithInfo}>
-          <h2 className={styles.chartTitle}>{title}</h2>
-          <DescriptionInfo text={description} />
+        </div>
+        <div className={styles.trendFigures}>
+          <strong>{format(summary.total)}</strong>
+          <span>
+            {summary.total > 0
+              ? t("trends.peak", {
+                  count: format(summary.peakValue),
+                  date: shortDay(toDate(trend.points[summary.peakIndex].date), locale),
+                })
+              : t("trends.empty")}
+          </span>
         </div>
       </div>
+      <LineChart points={trend.points} locale={locale} format={format} t={t} tone={trend.tone} />
+    </div>
+  );
+}
 
-      {visibleRows.length > 0 ? (
-        <div
-          className={`${styles.tableWrapper} ${
-            shouldSplit ? styles.splitTableWrapper : ""
-          }`}
-        >
-          {rowGroups.map((groupRows, groupIndex) => (
-            <table key={groupIndex} className={styles.rankingTable}>
-              <thead>
-                <tr>
-                  {columns.map((column) => (
-                    <th key={column.key}>{column.label}</th>
-                  ))}
-                </tr>
-              </thead>
+/**
+ * Modal com a análise detalhada de uma série diária.
+ */
+function TrendModal({ trend, locale, format, decimalFormat, t, onClose }) {
+  const summary = summarize(trend.points);
+  const topDays = [...trend.points]
+    .filter((point) => point.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
 
-              <tbody>
-                {groupRows.map((row, index) => {
-                  const globalIndex = groupIndex === 0 ? index : index + 5;
+  let weekDelta = t("trends.detail.lastWeekNoBase");
+  if (summary.previousWeek > 0) {
+    const percent = Math.round(((summary.lastWeek - summary.previousWeek) / summary.previousWeek) * 100);
+    weekDelta = t("trends.detail.lastWeekMeta", {
+      delta: `${percent > 0 ? "+" : ""}${percent}%`,
+    });
+  }
 
-                  return (
-                    <tr key={row.id || `${groupIndex}-${index}`}>
-                      {columns.map((column) => (
-                        <td key={column.key}>
-                          {column.render
-                            ? column.render(row, globalIndex)
-                            : row[column.key]}
-                        </td>
-                      ))}
-                    </tr>
-                  );
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <section
+        className={`${styles.modal} ${styles.modalFull}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={trend.title}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className={styles.sectionHeader}>
+          <div className={styles.sectionCopy}>
+            <h2>{trend.title}</h2>
+            <p>{trend.description}</p>
+          </div>
+          <button type="button" className={styles.sectionToggle} onClick={onClose}>
+            {t("trends.close")}
+          </button>
+        </header>
+        <div className={styles.detailBody}>
+          <div className={styles.detailStats}>
+            <div className={styles.detailStat}>
+              <span>{t("trends.detail.total")}</span>
+              <strong>{format(summary.total)}</strong>
+              <small>
+                {t("trends.detail.totalMeta", {
+                  active: format(summary.activeDays),
+                  days: format(summary.days),
                 })}
-              </tbody>
-            </table>
-          ))}
-        </div>
-      ) : (
-        <div className={styles.chartEmpty}>{emptyMessage}</div>
-      )}
+              </small>
+            </div>
+            <div className={styles.detailStat}>
+              <span>{t("trends.detail.average")}</span>
+              <strong>{decimalFormat(summary.average)}</strong>
+              <small>
+                {t("trends.detail.averageMeta", { value: decimalFormat(summary.activeAverage) })}
+              </small>
+            </div>
+            <div className={styles.detailStat}>
+              <span>{t("trends.detail.peak")}</span>
+              <strong>{format(summary.peakValue)}</strong>
+              <small>
+                {summary.peakValue > 0
+                  ? t("trends.detail.peakMeta", {
+                      date: fullDay(toDate(trend.points[summary.peakIndex].date), locale),
+                    })
+                  : t("trends.empty")}
+              </small>
+            </div>
+            <div className={styles.detailStat}>
+              <span>{t("trends.detail.lastWeek")}</span>
+              <strong>{format(summary.lastWeek)}</strong>
+              <small>{weekDelta}</small>
+            </div>
+          </div>
 
-      {footer}
-    </section>
+          <div className={styles.detailLayout}>
+            <div className={styles.detailChart}>
+              <LineChart
+                points={trend.points}
+                locale={locale}
+                format={format}
+                t={t}
+                tone={trend.tone}
+                detailed
+                fill
+              />
+            </div>
+
+            <aside className={styles.detailAside}>
+              <h3>{t("trends.detail.topDays")}</h3>
+              {topDays.length ? (
+                <table className={styles.rankingTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.rankingIndex}>#</th>
+                      <th>{t("trends.detail.columns.day")}</th>
+                      <th className={styles.rankingNumber}>{t("trends.detail.columns.value")}</th>
+                      <th className={styles.rankingNumber}>{t("trends.detail.columns.share")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topDays.map((point, index) => (
+                      <tr key={point.date}>
+                        <td className={styles.rankingIndex}>
+                          <span className={styles.rankingRank}>{index + 1}</span>
+                        </td>
+                        <td>
+                          <span className={styles.rankingLabel}>
+                            {fullDay(toDate(point.date), locale)}
+                          </span>
+                        </td>
+                        <td className={styles.rankingNumber}>{format(point.value)}</td>
+                        <td className={styles.rankingNumber}>
+                          {safePercent(point.value, summary.total)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className={styles.emptyState}>{t("trends.empty")}</p>
+              )}
+            </aside>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
+
 /**
- * Página principal de Analytics.
- * Carrega dados da API e apresenta a dashboard.
+ * Tabela de ranking de links.
+ */
+const MEDALS = ["gold", "silver", "bronze"];
+
+function LinksTable({ rows, maxClicks, offset = 0, format, t }) {
+  const max = Math.max(1, safeNumber(maxClicks), ...rows.map((row) => safeNumber(row.clicks)));
+
+  return (
+    <table className={styles.rankingTable}>
+      <thead>
+        <tr>
+          <th className={styles.rankingIndex}>#</th>
+          <th>{t("rankings.columns.link")}</th>
+          <th className={styles.rankingNumber}>{t("rankings.columns.clicks")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, index) => {
+          const position = offset + index;
+          const medal = MEDALS[position];
+          return (
+            <tr key={row.id || `${offset}-${index}`} data-medal={medal}>
+              <td className={styles.rankingIndex}>
+                <span className={styles.rankingRank} data-medal={medal}>
+                  {position + 1}
+                </span>
+              </td>
+              <td>
+                <span className={styles.rankingLabel} title={row.destinationUrl || row.label}>
+                  {row.label}
+                </span>
+                <span className={styles.rankingBar} aria-hidden="true">
+                  <span style={{ width: `${(safeNumber(row.clicks) / max) * 100}%` }} />
+                </span>
+              </td>
+              <td className={styles.rankingNumber}>{format(row.clicks)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function PageHeader({ t, children }) {
+  return (
+    <header className={styles.header}>
+      <div className={styles.headerCopy}>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
+      </div>
+      {children}
+    </header>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className={styles.loadingState} aria-busy="true" aria-label="Loading">
+      <div className={`${styles.skeleton} ${styles.skeletonWide}`} />
+      <div className={`${styles.skeleton} ${styles.skeletonWide}`} />
+      <div className={styles.loadingColumns}>
+        <div className={styles.skeleton} />
+        <div className={styles.skeleton} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Página principal de métricas.
+ * Carrega dados da API e apresenta os painéis.
  */
 export default function AnalyticsPage() {
-  // Traduções e idioma atual.
-  const translation = useTranslations("Analytics");
+  const t = useTranslations("Analytics");
   const locale = useLocale();
 
-  // Dados do utilizador, organização e loader global.
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
-  const { startLoading, stopLoading } = useGlobalLoader();
+  const { stopLoading } = useGlobalLoader();
 
-  // ID da organização atual.
   const orgId = org?.id;
 
-  // Estados principais da dashboard.
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState("all");
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(null);
   const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
-
-  // Estado dos grupos de métricas visíveis.
-  const [visibleMetricGroups, setVisibleMetricGroups] = useState(
-    DEFAULT_VISIBLE_METRIC_GROUPS
-  );
-
-  // Estado das secções de gráficos visíveis.
-  const [visibleChartSections, setVisibleChartSections] = useState(
-    DEFAULT_VISIBLE_CHART_SECTIONS
-  );
-
-  
+  const [expandedTrend, setExpandedTrend] = useState(null);
+  const [visibleSections, setVisibleSections] = useState(DEFAULT_VISIBLE_SECTIONS);
+  const [sectionsLoaded, setSectionsLoaded] = useState(false);
 
   /**
-   * Carrega do localStorage os grupos de métricas que o utilizador quer ver.
+   * Carrega do localStorage as secções que o utilizador quer ver.
    */
   useEffect(() => {
     try {
-      const storedValue = window.localStorage.getItem(
-        METRIC_GROUP_STORAGE_KEY
-      );
-
-      if (!storedValue) return;
-
-      const parsedValue = JSON.parse(storedValue);
-
-      setVisibleMetricGroups({
-        ...DEFAULT_VISIBLE_METRIC_GROUPS,
-        ...parsedValue,
-      });
+      const storedValue = window.localStorage.getItem(SECTION_STORAGE_KEY);
+      if (storedValue) {
+        setVisibleSections({
+          ...DEFAULT_VISIBLE_SECTIONS,
+          ...JSON.parse(storedValue),
+        });
+      }
     } catch (err) {
-      console.error(
-        "[analytics] Failed to load metric group preferences:",
-        err
-      );
+      console.error("[analytics] Failed to load section preferences:", err);
+    } finally {
+      setSectionsLoaded(true);
     }
   }, []);
 
   /**
-   * Guarda no localStorage os grupos de métricas visíveis.
+   * Guarda no localStorage as secções visíveis.
    */
   useEffect(() => {
+    if (!sectionsLoaded) return;
     try {
-      window.localStorage.setItem(
-        METRIC_GROUP_STORAGE_KEY,
-        JSON.stringify(visibleMetricGroups)
-      );
+      window.localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(visibleSections));
     } catch (err) {
-      console.error(
-        "[analytics] Failed to save metric group preferences:",
-        err
-      );
+      console.error("[analytics] Failed to save section preferences:", err);
     }
-  }, [visibleMetricGroups]);
+  }, [visibleSections, sectionsLoaded]);
+
+  useEffect(() => {
+    stopLoading();
+  }, [stopLoading]);
 
   /**
-   * Carrega do localStorage as secções de gráficos que o utilizador quer ver.
+   * Fecha os modais com a tecla Escape.
    */
   useEffect(() => {
-    try {
-      const storedValue = window.localStorage.getItem(
-        CHART_SECTION_STORAGE_KEY
-      );
+    if (!isFullLinksListOpen && !expandedTrend) return undefined;
 
-      if (!storedValue) return;
-
-      const parsedValue = JSON.parse(storedValue);
-
-      setVisibleChartSections({
-        ...DEFAULT_VISIBLE_CHART_SECTIONS,
-        ...parsedValue,
-      });
-    } catch (err) {
-      console.error(
-        "[analytics] Failed to load chart section preferences:",
-        err
-      );
+    function handleKey(event) {
+      if (event.key === "Escape") {
+        setIsFullLinksListOpen(false);
+        setExpandedTrend(null);
+      }
     }
-  }, []);
 
-  /**
-   * Guarda no localStorage as secções de gráficos visíveis.
-   */
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        CHART_SECTION_STORAGE_KEY,
-        JSON.stringify(visibleChartSections)
-      );
-    } catch (err) {
-      console.error(
-        "[analytics] Failed to save chart section preferences:",
-        err
-      );
-    }
-  }, [visibleChartSections]);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isFullLinksListOpen, expandedTrend]);
 
-  /**
-   * Formatador de números de acordo com o idioma atual.
-   */
-  const formatter = useMemo(() => {
-    return new Intl.NumberFormat(locale || "pt-PT");
-  }, [locale]);
-
-  /**
-   * Formata valores numéricos para apresentação.
-   */
-  function format(value) {
-    return formatter.format(safeNumber(value));
-  }
-
-  /**
-   * Mostra ou oculta um grupo de métricas.
-   */
-  function toggleMetricGroup(groupKey) {
-    setVisibleMetricGroups((currentGroups) => ({
-      ...currentGroups,
-      [groupKey]: !currentGroups[groupKey],
-    }));
-  }
-
-
-  /**
-   * Mostra ou oculta uma secção de gráficos.
-   */
-  function toggleChartSection(sectionKey) {
-    setVisibleChartSections((currentSections) => ({
-      ...currentSections,
-      [sectionKey]: !currentSections[sectionKey],
-    }));
-  }
-
-  
-
-  function resetDashboardView() {
-  setVisibleMetricGroups({ ...DEFAULT_VISIBLE_METRIC_GROUPS });
-  setVisibleChartSections({ ...DEFAULT_VISIBLE_CHART_SECTIONS });
-}
-
-
-
-  async function handleExportPdf() {
-  if (!metrics) return;
-
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-    import("jspdf"),
-    import("jspdf-autotable"),
-  ]);
-
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  function addFooter(pageNumber) {
-    pdf.setFontSize(9);
-    pdf.setTextColor(120, 130, 145);
-    pdf.text(
-      `Analytics report • ${translation(`periods.${period === "all" ? "all" : period === "7d" ? "last7Days" : period === "30d" ? "last30Days" : "last90Days"}`)} • Página ${pageNumber}`,
-      16,
-      pageHeight - 10
-    );
-  }
-
-  function addSectionTitle(title, y) {
-    pdf.setFontSize(15);
-    pdf.setTextColor(15, 23, 42);
-    pdf.setFont(undefined, "bold");
-    pdf.text(title, 16, y);
-  }
-
-  const generatedAt = new Intl.DateTimeFormat(locale || "pt-PT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date());
-
-  // Página 1 — Capa
-  pdf.setFillColor(48, 169, 224);
-  pdf.rect(0, 0, pageWidth, 70, "F");
-
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(28);
-  pdf.setFont(undefined, "bold");
-  pdf.text("Analytics", 16, 32);
-
-  pdf.setFontSize(13);
-  pdf.setFont(undefined, "normal");
-  pdf.text("Dashboard report", 16, 43);
-
-  pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(14);
-  pdf.setFont(undefined, "bold");
-  pdf.text(org?.name || "Organization", 16, 92);
-
-  pdf.setFontSize(11);
-  pdf.setFont(undefined, "normal");
-  pdf.setTextColor(82, 100, 122);
-  pdf.text(`Período: ${translation(`periods.${period === "all" ? "all" : period === "7d" ? "last7Days" : period === "30d" ? "last30Days" : "last90Days"}`)}`, 16, 104);
-  pdf.text(`Gerado em: ${generatedAt}`, 16, 112);
-
-  pdf.setFontSize(10);
-  pdf.text(
-    "Este relatório resume os principais indicadores de utilização, atividade, automações, links e evolução diária.",
-    16,
-    132,
-    { maxWidth: pageWidth - 32 }
+  const formatter = useMemo(() => new Intl.NumberFormat(locale || "pt-PT"), [locale]);
+  const decimalFormatter = useMemo(
+    () => new Intl.NumberFormat(locale || "pt-PT", { maximumFractionDigits: 1 }),
+    [locale]
   );
 
-  addFooter(1);
+  const format = useCallback((value) => formatter.format(safeNumber(value)), [formatter]);
+  const decimalFormat = useCallback(
+    (value) => decimalFormatter.format(safeNumber(value)),
+    [decimalFormatter]
+  );
 
-  // Página 2 — Métricas principais
-  pdf.addPage();
-  addSectionTitle("Resumo geral", 20);
+  function toggleSection(key) {
+    setVisibleSections((current) => ({ ...current, [key]: !current[key] }));
+  }
 
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.users"),
-        format(users.total),
-        `${format(users.withAssistant)} com assistente, ${format(users.withoutAssistant)} sem assistente`,
-      ],
-      [
-        translation("cards.assistants"),
-        format(assistants.total),
-        `${format(assistants.withoutOpenAiId)} sem OpenAI ID configurado`,
-      ],
-      [
-        translation("cards.templates"),
-        format(templates.total),
-        `${format(templates.active)} ativos, ${format(templates.pending)} pendentes, ${format(templates.rejected)} rejeitados`,
-      ],
-      [
-        translation("cards.assistantCoverage"),
-        `${assistantCoverageRate}%`,
-        `${format(users.withAssistant)}/${format(users.total)} utilizadores com assistente`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
+  function resetSections() {
+    setVisibleSections({ ...DEFAULT_VISIBLE_SECTIONS });
+  }
 
-  addSectionTitle("Atividade", pdf.lastAutoTable.finalY + 16);
-
-  autoTable(pdf, {
-    startY: pdf.lastAutoTable.finalY + 24,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.messages"),
-        format(messages.total),
-        `${format(messages.whatsapp)} WhatsApp, ${format(messages.teams)} Teams`,
-      ],
-      [
-        translation("cards.delivery"),
-        format(messages.delivered),
-        `${format(messages.read)} lidas, ${format(messages.failed)} falhadas`,
-      ],
-      [
-        translation("cards.readRate"),
-        `${readRate}%`,
-        `${format(messages.read)} de ${format(messages.total)} mensagens`,
-      ],
-      [
-        translation("cards.failureRate"),
-        `${failedMessageRate}%`,
-        `${format(messages.failed)} de ${format(messages.total)} mensagens`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addFooter(2);
-
-  // Página 3 — Automações e links
-  pdf.addPage();
-  addSectionTitle("Automações", 20);
-
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Métrica", "Valor", "Detalhe"]],
-    body: [
-      [
-        translation("cards.automations"),
-        format(automations.rulesTotal),
-        `${format(automations.rulesActive)} ativas, ${format(automations.rulesPaused)} pausadas`,
-      ],
-      [
-        translation("cards.automationRuns"),
-        format(automations.runsTotal),
-        `${format(automations.runsProcessed)} processadas, ${format(automations.runsFailed)} falhadas`,
-      ],
-      [
-        translation("cards.scheduledBroadcasts"),
-        format(scheduledBroadcasts.total),
-        `${format(scheduledBroadcasts.completed)} concluídas, ${format(scheduledBroadcasts.failed)} falhadas, ${format(scheduledBroadcasts.recipientCount)} destinatários`,
-      ],
-    ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addSectionTitle("Links mais clicados", pdf.lastAutoTable.finalY + 16);
-
-  autoTable(pdf, {
-    startY: pdf.lastAutoTable.finalY + 24,
-    head: [["#", translation("rankings.columns.link"), translation("rankings.columns.clicks")]],
-    body: topTrackedLinks.slice(0, 10).map((link, index) => [
-      index + 1,
-      link.label,
-      format(link.clicks),
-    ]),
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addFooter(3);
-
-  // Página 4 — Evolução diária
-  pdf.addPage();
-  addSectionTitle("Evolução diária", 20);
-
-  autoTable(pdf, {
-    startY: 30,
-    head: [["Data", "Mensagens", "Cliques", "Automações processadas"]],
-    body: dailyMessagesData.map((item) => {
-      const clickItem = dailyClicksData.find((row) => row.date === item.date);
-      const automationItem = dailyAutomationRunsData.find(
-        (row) => row.date === item.date
-      );
-
-      return [
-        item.date,
-        format(item.messages),
-        format(clickItem?.clicks),
-        format(automationItem?.processed),
-      ];
-    }),
-    styles: {
-      fontSize: 8,
-      cellPadding: 2.4,
-    },
-    headStyles: {
-      fillColor: [48, 169, 224],
-      textColor: [255, 255, 255],
-    },
-  });
-
-  addFooter(4);
-
-  pdf.save(`analytics-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
-}
-
+  const hasHiddenSections = Object.values(visibleSections).some((value) => !value);
+  const toggleLabels = {
+    show: t("customization.show"),
+    hide: t("customization.hide"),
+  };
 
   /**
    * Carrega métricas da API para a organização e período atual.
@@ -794,15 +749,11 @@ export default function AnalyticsPage() {
 
     setError("");
     setIsLoadingMetrics(true);
-    startLoading();
 
     try {
-      const res = await fetch(
-        `/api/analytics/overview?orgId=${orgId}&period=${period}`,
-        {
-          cache: "no-store",
-        }
-      );
+      const res = await fetch(`/api/analytics/overview?orgId=${orgId}&period=${period}`, {
+        cache: "no-store",
+      });
 
       const data = await res.json().catch(() => ({}));
 
@@ -811,26 +762,19 @@ export default function AnalyticsPage() {
       }
 
       setMetrics(data);
+      setUpdatedAt(new Date());
     } catch (err) {
       console.warn("[Analytics] load error:", err);
-      setError(translation("errors.load"));
+      setError(t("errors.load"));
     } finally {
       setIsLoadingMetrics(false);
-      stopLoading();
     }
-  }, [orgId, period, startLoading, stopLoading, translation]);
+  }, [orgId, period, t]);
 
-  /**
-   * Recarrega as métricas quando a organização ou o período muda.
-   */
   useEffect(() => {
     if (authLoading || orgLoading || !orgId) return;
-
     loadMetrics();
   }, [authLoading, orgLoading, orgId, loadMetrics]);
-
- 
- 
 
   // Dados recebidos da API, separados por grupo.
   const users = metrics?.users ?? {};
@@ -844,79 +788,284 @@ export default function AnalyticsPage() {
   const daily = metrics?.daily ?? {};
   const rankings = metrics?.rankings ?? {};
 
-  // Rankings recebidos da API.
   const topTrackedLinks = rankings.topTrackedLinks ?? [];
-  const allTrackedLinks = rankings.topTrackedLinks ?? [];
- 
-
-  // Dados usados nos gráficos diários.
   const dailyMessagesData = daily.messages ?? [];
   const dailyClicksData = daily.clicks ?? [];
- 
+  const dailyFailedMessagesData = daily.failedMessages ?? [];
   const dailyAutomationRunsData = daily.automationRuns ?? [];
 
-  // Percentagens calculadas para os cards.
+  // Séries diárias prontas para os gráficos e para o modal de detalhe.
+  const trends = [
+    {
+      key: "messages",
+      title: t("trends.messagesTitle"),
+      description: t("trends.messagesDescription"),
+      points: toPoints(dailyMessagesData, "messages"),
+      tone: "brand",
+    },
+    {
+      key: "clicks",
+      title: t("trends.clicksTitle"),
+      description: t("trends.clicksDescription"),
+      points: toPoints(dailyClicksData, "clicks"),
+      tone: "brand",
+    },
+    {
+      key: "automations",
+      title: t("trends.automationsTitle"),
+      description: t("trends.automationsDescription"),
+      points: toPoints(dailyAutomationRunsData, "processed"),
+      tone: "brand",
+    },
+    {
+      key: "failures",
+      title: t("trends.failuresTitle"),
+      description: t("trends.failuresDescription"),
+      points: toPoints(dailyFailedMessagesData, "failures"),
+      tone: "danger",
+    },
+  ];
+  const expandedTrendData = trends.find((trend) => trend.key === expandedTrend) || null;
+
+  // Percentagens calculadas para as células.
   const assistantCoverageRate = safePercent(users.withAssistant, users.total);
-  
   const readRate = safePercent(messages.read, messages.total);
   const failedMessageRate = safePercent(messages.failed, messages.total);
+  const clicksPerLink =
+    safeNumber(trackedLinks.totalLinks) > 0
+      ? safeNumber(trackedLinks.totalClicks) / safeNumber(trackedLinks.totalLinks)
+      : 0;
+  const activeIssues =
+    safeNumber(automations.runsFailed) +
+    safeNumber(scheduledBroadcasts.failed) +
+    safeNumber(templates.rejected);
 
-
-
-  const clickPerLinkRate = safePercent(
-    trackedLinks.totalClicks,
-    trackedLinks.totalLinks
+  const periodLabel = t(
+    PERIOD_OPTIONS.find((option) => option.value === period)?.labelKey || "periods.all"
   );
 
- 
+  async function handleExportPdf() {
+    if (!metrics) return;
 
-  // Dados do gráfico de mensagens por canal.
-  const messagesChartData = [
-    {
-      name: "WhatsApp",
-      value: safeNumber(messages.whatsapp),
-    },
-    {
-      name: "Teams",
-      value: safeNumber(messages.teams),
-    },
-  ];
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
 
-  // Dados do gráfico de estado dos templates.
-  const templatesChartData = [
-    {
-      name: translation("charts.active"),
-      value: safeNumber(templates.active),
-    },
-    {
-      name: translation("charts.pending"),
-      value: safeNumber(templates.pending),
-    },
-    {
-      name: translation("charts.rejected"),
-      value: safeNumber(templates.rejected),
-    },
-  ];
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const headStyles = { fillColor: [48, 169, 224], textColor: [255, 255, 255] };
+    const tableStyles = { fontSize: 9, cellPadding: 3 };
 
- 
+    function addFooter(pageNumber) {
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text(`Analytics report • ${periodLabel} • Página ${pageNumber}`, 16, pageHeight - 10);
+    }
+
+    function addSectionTitle(title, y) {
+      pdf.setFontSize(15);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont(undefined, "bold");
+      pdf.text(title, 16, y);
+    }
+
+    const generatedAt = new Intl.DateTimeFormat(locale || "pt-PT", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date());
+
+    // Página 1 — Capa
+    pdf.setFillColor(48, 169, 224);
+    pdf.rect(0, 0, pageWidth, 70, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(28);
+    pdf.setFont(undefined, "bold");
+    pdf.text("Analytics", 16, 32);
+    pdf.setFontSize(13);
+    pdf.setFont(undefined, "normal");
+    pdf.text("Dashboard report", 16, 43);
+    pdf.setTextColor(15, 23, 42);
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, "bold");
+    pdf.text(org?.name || "Organization", 16, 92);
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, "normal");
+    pdf.setTextColor(82, 100, 122);
+    pdf.text(`Período: ${periodLabel}`, 16, 104);
+    pdf.text(`Gerado em: ${generatedAt}`, 16, 112);
+    pdf.setFontSize(10);
+    pdf.text(
+      "Este relatório resume os principais indicadores de utilização, atividade, automações, links e evolução diária.",
+      16,
+      132,
+      { maxWidth: pageWidth - 32 }
+    );
+    addFooter(1);
+
+    // Página 2 — Métricas principais
+    pdf.addPage();
+    addSectionTitle("Resumo geral", 20);
+    autoTable(pdf, {
+      startY: 30,
+      head: [["Métrica", "Valor", "Detalhe"]],
+      body: [
+        [
+          t("cards.users"),
+          format(users.total),
+          `${format(users.withAssistant)} com assistente, ${format(users.withoutAssistant)} sem assistente`,
+        ],
+        [
+          t("cards.assistants"),
+          format(assistants.total),
+          `${format(assistants.withoutOpenAiId)} sem OpenAI ID configurado`,
+        ],
+        [
+          t("cards.templates"),
+          format(templates.total),
+          `${format(templates.active)} ativos, ${format(templates.pending)} pendentes, ${format(templates.rejected)} rejeitados`,
+        ],
+        [
+          t("cards.assistantCoverage"),
+          `${assistantCoverageRate}%`,
+          `${format(users.withAssistant)}/${format(users.total)} utilizadores com assistente`,
+        ],
+      ],
+      styles: tableStyles,
+      headStyles,
+    });
+
+    addSectionTitle("Atividade", pdf.lastAutoTable.finalY + 16);
+    autoTable(pdf, {
+      startY: pdf.lastAutoTable.finalY + 24,
+      head: [["Métrica", "Valor", "Detalhe"]],
+      body: [
+        [
+          t("cards.messages"),
+          format(messages.total),
+          `${format(messages.whatsapp)} WhatsApp, ${format(messages.teams)} Teams`,
+        ],
+        [
+          t("cards.delivery"),
+          format(messages.delivered),
+          `${format(messages.read)} lidas, ${format(messages.failed)} falhadas`,
+        ],
+        [
+          t("cards.readRate"),
+          `${readRate}%`,
+          `${format(messages.read)} de ${format(messages.total)} mensagens`,
+        ],
+        [
+          t("cards.failureRate"),
+          `${failedMessageRate}%`,
+          `${format(messages.failed)} de ${format(messages.total)} mensagens`,
+        ],
+      ],
+      styles: tableStyles,
+      headStyles,
+    });
+    addFooter(2);
+
+    // Página 3 — Automações e links
+    pdf.addPage();
+    addSectionTitle("Automações", 20);
+    autoTable(pdf, {
+      startY: 30,
+      head: [["Métrica", "Valor", "Detalhe"]],
+      body: [
+        [
+          t("cards.automations"),
+          format(automations.rulesTotal),
+          `${format(automations.rulesActive)} ativas, ${format(automations.rulesPaused)} pausadas`,
+        ],
+        [
+          t("cards.automationRuns"),
+          format(automations.runsTotal),
+          `${format(automations.runsProcessed)} processadas, ${format(automations.runsFailed)} falhadas`,
+        ],
+        [
+          t("cards.scheduledBroadcasts"),
+          format(scheduledBroadcasts.total),
+          `${format(scheduledBroadcasts.completed)} concluídas, ${format(scheduledBroadcasts.failed)} falhadas, ${format(scheduledBroadcasts.recipientCount)} destinatários`,
+        ],
+      ],
+      styles: tableStyles,
+      headStyles,
+    });
+
+    addSectionTitle("Links mais clicados", pdf.lastAutoTable.finalY + 16);
+    autoTable(pdf, {
+      startY: pdf.lastAutoTable.finalY + 24,
+      head: [["#", t("rankings.columns.link"), t("rankings.columns.clicks")]],
+      body: topTrackedLinks.slice(0, 10).map((link, index) => [
+        index + 1,
+        link.label,
+        format(link.clicks),
+      ]),
+      styles: tableStyles,
+      headStyles,
+    });
+    addFooter(3);
+
+    // Página 4 — Evolução diária
+    pdf.addPage();
+    addSectionTitle("Evolução diária", 20);
+    autoTable(pdf, {
+      startY: 30,
+      head: [["Data", "Mensagens", "Cliques", "Falhas", "Automações processadas"]],
+      body: dailyMessagesData.map((item) => {
+        const clickItem = dailyClicksData.find((row) => row.date === item.date);
+        const failedItem = dailyFailedMessagesData.find((row) => row.date === item.date);
+        const automationItem = dailyAutomationRunsData.find((row) => row.date === item.date);
+        return [
+          item.date,
+          format(item.messages),
+          format(clickItem?.clicks),
+          format(failedItem?.failures),
+          format(automationItem?.processed),
+        ];
+      }),
+      styles: { fontSize: 8, cellPadding: 2.4 },
+      headStyles,
+    });
+    addFooter(4);
+
+    pdf.save(`analytics-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  const updatedLabel = updatedAt
+    ? t("updatedAt", {
+        time: updatedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }),
+      })
+    : null;
+
+  if (authLoading || orgLoading || (orgId && !metrics && !error)) {
+    return (
+      <main className={styles.page}>
+        <PageHeader t={t} />
+        <LoadingState />
+      </main>
+    );
+  }
+
+  if (!orgId) {
+    return (
+      <main className={styles.page}>
+        <PageHeader t={t} />
+        <div className={styles.errorBox}>
+          <p>{t("errors.noOrg")}</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.page}>
-      {/* Cabeçalho da página com título, nota, filtros e botão de refresh */}
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{translation("title")}</h1>
-          
-
-          
-        </div>
-
+      <PageHeader t={t}>
         <div className={styles.headerActions}>
-          {/* Botões de filtro por período */}
-          <div
-            className={styles.periodTabs}
-            aria-label={translation("periods.label")}
-          >
+          {updatedLabel ? <span className={styles.updatedAt}>{updatedLabel}</span> : null}
+          <div className={styles.periodTabs} role="group" aria-label={t("periods.label")}>
             {PERIOD_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -925,527 +1074,328 @@ export default function AnalyticsPage() {
                   period === option.value ? styles.periodButtonActive : ""
                 }`}
                 onClick={() => setPeriod(option.value)}
-                disabled={!orgId || isLoadingMetrics}
+                disabled={isLoadingMetrics}
+                aria-pressed={period === option.value}
               >
-                {translation(option.labelKey)}
+                {t(option.labelKey)}
               </button>
             ))}
           </div>
-
-          {/* Botão para recarregar métricas manualmente */}
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={handleExportPdf}
+            disabled={!metrics || isLoadingMetrics}
+          >
+            {t("customization.exports")}
+          </button>
           <button
             type="button"
             className={styles.refreshButton}
             onClick={loadMetrics}
-            disabled={!orgId || isLoadingMetrics}
+            disabled={isLoadingMetrics}
           >
-            <RefreshCw
-              size={16}
-              className={isLoadingMetrics ? styles.spinIcon : ""}
-            />
-            {isLoadingMetrics ? translation("loading") : translation("refresh")}
+            <RefreshCw size={15} className={isLoadingMetrics ? styles.spin : ""} aria-hidden="true" />
+            {t("refresh")}
           </button>
         </div>
-      </header>
+      </PageHeader>
 
-      {/* Mensagem quando não existe organização associada */}
-      {!orgId && !authLoading && !orgLoading && (
-        <div className={styles.errorBox}>{translation("errors.noOrg")}</div>
-      )}
-
-      {/* Mensagem de erro ao carregar dados */}
-      {error && <div className={styles.errorBox}>{error}</div>}
-
-      {/* Estado inicial enquanto ainda não há métricas */}
-      {!metrics && !error ? (
-        <div className={styles.empty}>{translation("loading")}</div>
+      {hasHiddenSections ? (
+        <div className={styles.hiddenNotice}>
+          <span>{t("customization.hiddenNotice")}</span>
+          <button type="button" onClick={resetSections}>
+            {t("customization.resetDashboard")}
+          </button>
+        </div>
       ) : null}
 
-      {metrics && (
-        <>
+      {error ? (
+        <div className={styles.errorBox} role="alert">
+          <p>{error}</p>
+          <button type="button" onClick={loadMetrics} disabled={isLoadingMetrics}>
+            {t("retry")}
+          </button>
+        </div>
+      ) : null}
 
-      
-          
-          {/* Grupos principais de cards de métricas */}
-          <div className={styles.metricGroups}>
-
-            <MetricGroup className={styles.review}
-              title={translation("groups.overview.title")}
-              description={translation("groups.overview.description")}
-              
-              showLabel={translation("customization.show")}
-              hideLabel={translation("customization.hide")}
-            >
-                
-
-              
-              <MetricCard
-                icon={Users}
-                title={translation("cards.users")}
+      {metrics ? (
+        <div className={`${styles.content} ${isLoadingMetrics ? styles.contentLoading : ""}`}>
+          <Section
+            title={t("groups.overview.title")}
+            description={t("groups.overview.description")}
+            linkHref="/users"
+            linkLabel={t("actions.viewUsers")}
+            visible={visibleSections.overview}
+            onToggle={() => toggleSection("overview")}
+            toggleLabels={toggleLabels}
+          >
+            <div className={`${styles.stats} ${styles.statsFour}`}>
+              <Stat
+                label={t("cards.users")}
                 value={format(users.total)}
-                description={translation("cards.usersHelper", {
+                meta={t("cards.usersHelper", {
                   withAssistant: format(users.withAssistant),
                   withoutAssistant: format(users.withoutAssistant),
                 })}
+                href="/users"
               />
-
-              <MetricCard
-                icon={Bot}
-                title={translation("cards.assistants")}
+              <Stat
+                label={t("cards.assistantCoverage")}
+                value={`${assistantCoverageRate}%`}
+                percent={assistantCoverageRate}
+                meta={t("cards.assistantCoverageHelper", {
+                  withAssistant: format(users.withAssistant),
+                  total: format(users.total),
+                })}
+                href="/users"
+              />
+              <Stat
+                label={t("cards.assistants")}
                 value={format(assistants.total)}
-                description={translation("cards.assistantsHelper", {
+                meta={t("cards.assistantsHelper", {
                   withoutOpenAiId: format(assistants.withoutOpenAiId),
                 })}
-                tone={
-                  safeNumber(assistants.withoutOpenAiId) > 0
-                    ? "warning"
-                    : "default"
-                }
+                attention={safeNumber(assistants.withoutOpenAiId) > 0}
+                href="/assistants"
               />
-
-              <MetricCard
-                icon={FileText}
-                title={translation("cards.templates")}
+              <Stat
+                label={t("cards.templates")}
                 value={format(templates.total)}
-                description={translation("cards.templatesHelper", {
+                meta={t("cards.templatesHelper", {
                   active: format(templates.active),
                   pending: format(templates.pending),
                   rejected: format(templates.rejected),
                 })}
-                tone={safeNumber(templates.rejected) > 0 ? "warning" : "default"}
+                attention={safeNumber(templates.rejected) > 0}
+                href="/templates"
               />
+            </div>
+          </Section>
 
-              <MetricCard
-                icon={Users}
-                title={translation("cards.assistantCoverage")}
-                value={`${assistantCoverageRate}%`}
-                description={translation("cards.assistantCoverageHelper", {
-                  withAssistant: format(users.withAssistant),
-                  total: format(users.total),
-                })}
-                tone={assistantCoverageRate < 100 ? "warning" : "default"}
-              />
-            </MetricGroup>
-
-              {/* Barra de personalização da dashboard */}
-         
-          <div className={styles.dashboardQuickActions}>
-            <button
-              type="button"
-              className={styles.customizationResetButton}
-              onClick={resetDashboardView}
-            >
-              {translation("customization.resetDashboard")}
-            </button>
-
-            <button
-              type="button"
-                className={`${styles.customizationResetButton} ${styles.exportButton}`}
-              onClick={handleExportPdf}
-            >
-              {translation("customization.exports")}
-            </button>
-          </div>
-
-            <MetricGroup
-              title={translation("groups.activity.title")}
-              description={translation("groups.activity.description")}
-              isVisible={visibleMetricGroups.activity}
-              onToggle={() => toggleMetricGroup("activity")}
-              showLabel={translation("customization.show")}
-              hideLabel={translation("customization.hide")}
-            >
-              <MetricCard
-                icon={MessageSquare}
-                title={translation("cards.messages")}
+          <Section
+            title={t("groups.activity.title")}
+            description={t("groups.activity.description", { period: periodLabel })}
+            visible={visibleSections.activity}
+            onToggle={() => toggleSection("activity")}
+            toggleLabels={toggleLabels}
+          >
+            <div className={`${styles.stats} ${styles.statsFive}`}>
+              <Stat
+                label={t("cards.messages")}
                 value={format(messages.total)}
-                description={translation("cards.messagesHelper", {
+                meta={t("cards.messagesHelper", {
                   whatsapp: format(messages.whatsapp),
                   teams: format(messages.teams),
                 })}
               />
-
-              <MetricCard
-                icon={CheckCircle2}
-                title={translation("cards.delivery")}
+              <Stat
+                label={t("cards.delivery")}
                 value={format(messages.delivered)}
-                description={translation("cards.deliveryHelper", {
+                meta={t("cards.deliveryHelper", {
                   read: format(messages.read),
                   failed: format(messages.failed),
                 })}
-                tone={safeNumber(messages.failed) > 0 ? "warning" : "default"}
+                attention={safeNumber(messages.failed) > 0}
               />
-
-              <MetricCard
-                icon={CheckCircle2}
-                title={translation("cards.readRate")}
+              <Stat
+                label={t("cards.readRate")}
                 value={`${readRate}%`}
-                description={translation("cards.readRateHelper", {
+                percent={readRate}
+                meta={t("cards.readRateHelper", {
                   read: format(messages.read),
                   total: format(messages.total),
                 })}
               />
-
-              <MetricCard
-                icon={AlertTriangle}
-                title={translation("cards.failureRate")}
+              <Stat
+                label={t("cards.failureRate")}
                 value={`${failedMessageRate}%`}
-                description={translation("cards.failureRateHelper", {
+                percent={failedMessageRate}
+                meta={t("cards.failureRateHelper", {
                   failed: format(messages.failed),
                   total: format(messages.total),
                 })}
-                tone={failedMessageRate > 0 ? "warning" : "default"}
+                attention={failedMessageRate > 0}
               />
-
-              <MetricCard
-                icon={MessageSquare}
-                title={translation("cards.pendingOutreach")}
+              <Stat
+                label={t("cards.pendingOutreach")}
                 value={format(pendingOutreach.total)}
-                description={translation("cards.pendingOutreachHelper", {
+                meta={t("cards.pendingOutreachHelper", {
                   active: format(pendingOutreach.active),
                 })}
               />
-            </MetricGroup>
+            </div>
+          </Section>
 
-            <MetricGroup
-              title={translation("groups.automations.title")}
-              description={translation("groups.automations.description")}
-              isVisible={visibleMetricGroups.automations}
-              onToggle={() => toggleMetricGroup("automations")}
-              showLabel={translation("customization.show")}
-              hideLabel={translation("customization.hide")}
+          <div className={styles.columns}>
+            <Section
+              title={t("groups.automations.title")}
+              description={t("groups.automations.description")}
+              linkHref="/automations"
+              linkLabel={t("actions.viewAutomations")}
+              visible={visibleSections.automations}
+              onToggle={() => toggleSection("automations")}
+              toggleLabels={toggleLabels}
             >
-              <MetricCard
-                icon={Zap}
-                title={translation("cards.automations")}
-                value={format(automations.rulesTotal)}
-                description={translation("cards.automationsHelper", {
-                  active: format(automations.rulesActive),
-                  paused: format(automations.rulesPaused),
-                })}
-              />
+              <div className={`${styles.stats} ${styles.statsThree}`}>
+                <Stat
+                  label={t("cards.automations")}
+                  value={format(automations.rulesTotal)}
+                  meta={t("cards.automationsHelper", {
+                    active: format(automations.rulesActive),
+                    paused: format(automations.rulesPaused),
+                  })}
+                  href="/automations"
+                />
+                <Stat
+                  label={t("cards.automationRuns")}
+                  value={format(automations.runsTotal)}
+                  meta={t("cards.automationRunsHelper", {
+                    processed: format(automations.runsProcessed),
+                    failed: format(automations.runsFailed),
+                  })}
+                  attention={safeNumber(automations.runsFailed) > 0}
+                  href="/automations"
+                />
+                <Stat
+                  label={t("cards.scheduledBroadcasts")}
+                  value={format(scheduledBroadcasts.total)}
+                  meta={t("cards.scheduledBroadcastsHelper", {
+                    queued: format(scheduledBroadcasts.queued),
+                    completed: format(scheduledBroadcasts.completed),
+                    failed: format(scheduledBroadcasts.failed),
+                    recipients: format(scheduledBroadcasts.recipientCount),
+                  })}
+                  attention={safeNumber(scheduledBroadcasts.failed) > 0}
+                  href="/broadcast/scheduled"
+                />
+              </div>
+            </Section>
 
-              <MetricCard
-                icon={Send}
-                title={translation("cards.automationRuns")}
-                value={format(automations.runsTotal)}
-                description={translation("cards.automationRunsHelper", {
-                  processed: format(automations.runsProcessed),
-                  failed: format(automations.runsFailed),
-                })}
-                tone={
-                  safeNumber(automations.runsFailed) > 0
-                    ? "warning"
-                    : "default"
-                }
-              />
-
-              <MetricCard
-                icon={CalendarClock}
-                title={translation("cards.scheduledBroadcasts")}
-                value={format(scheduledBroadcasts.total)}
-                description={translation("cards.scheduledBroadcastsHelper", {
-                  queued: format(scheduledBroadcasts.queued),
-                  completed: format(scheduledBroadcasts.completed),
-                  failed: format(scheduledBroadcasts.failed),
-                  recipients: format(scheduledBroadcasts.recipientCount),
-                })}
-                tone={
-                  safeNumber(scheduledBroadcasts.failed) > 0
-                    ? "warning"
-                    : "default"
-                }
-              />
-            </MetricGroup>
-
-            <MetricGroup
-              title={translation("groups.engagement.title")}
-              description={translation("groups.engagement.description")}
-              isVisible={visibleMetricGroups.engagement}
-              onToggle={() => toggleMetricGroup("engagement")}
-              showLabel={translation("customization.show")}
-              hideLabel={translation("customization.hide")}
+            <Section
+              title={t("groups.engagement.title")}
+              description={t("groups.engagement.description")}
+              visible={visibleSections.engagement}
+              onToggle={() => toggleSection("engagement")}
+              toggleLabels={toggleLabels}
             >
-              <MetricCard
-                icon={MousePointerClick}
-                title={translation("cards.trackedLinks")}
-                value={format(trackedLinks.totalClicks)}
-                description={translation("cards.trackedLinksHelper", {
-                  links: format(trackedLinks.totalLinks),
-                })}
-              />
-
-              <MetricCard
-                icon={MousePointerClick}
-                title={translation("cards.clickDensity")}
-                value={`${clickPerLinkRate}%`}
-                description={translation("cards.clickDensityHelper", {
-                  clicks: format(trackedLinks.totalClicks),
-                  links: format(trackedLinks.totalLinks),
-                })}
-              />
-            </MetricGroup>
-
-            
+              <div className={`${styles.stats} ${styles.statsTwo}`}>
+                <Stat
+                  label={t("cards.trackedLinks")}
+                  value={format(trackedLinks.totalClicks)}
+                  meta={t("cards.trackedLinksHelper", {
+                    links: format(trackedLinks.totalLinks),
+                  })}
+                />
+                <Stat
+                  label={t("cards.clickDensity")}
+                  value={decimalFormatter.format(clicksPerLink)}
+                  meta={t("cards.clickDensityHelper", {
+                    clicks: format(trackedLinks.totalClicks),
+                    links: format(trackedLinks.totalLinks),
+                  })}
+                />
+              </div>
+            </Section>
           </div>
 
-          {/* Secção de gráficos de distribuição */}
-          <section
-            className={`${styles.section} ${
-              !visibleChartSections.distribution
-                ? styles.sectionCollapsed
-                : ""
-            }`}
-          >
-            <div className={styles.sectionHeader}>
-              <div>
-                <div className={styles.titleWithInfo}>
-                <h2 className={styles.sectionTitle}>
-                  {translation("charts.sectionTitle")}
-                </h2>
-
-                <DescriptionInfo text={translation("charts.sectionDescription")} />
-              </div>
-              </div>
-
-              <button
-                type="button"
-                className={styles.metricGroupToggle}
-                onClick={() => toggleChartSection("distribution")}
-              >
-                {visibleChartSections.distribution
-                  ? translation("customization.hide")
-                  : translation("customization.show")}
-              </button>
-            </div>
-
-            {visibleChartSections.distribution && (
-              <div className={styles.distributionChartGrid}>
-                
-
-                <ChartCard
-                  title={translation("charts.messagesTitle")}
-                  description={translation("charts.messagesDescription")}
-                  data={messagesChartData}
+          <div className={styles.columnsWide}>
+            <Section
+              title={t("charts.sectionTitle")}
+              description={t("charts.sectionDescription")}
+              visible={visibleSections.distribution}
+              onToggle={() => toggleSection("distribution")}
+              toggleLabels={toggleLabels}
+            >
+              <div className={styles.breakdowns}>
+                <Breakdown
+                  title={t("charts.messagesTitle")}
+                  format={format}
+                  emptyMessage={t("charts.empty")}
+                  items={[
+                    { key: "whatsapp", label: t("charts.whatsapp"), value: messages.whatsapp, tone: "ink" },
+                    { key: "teams", label: t("charts.teams"), value: messages.teams, tone: "brand" },
+                  ]}
                 />
-
-                <ChartCard
-                  title={translation("charts.templatesTitle")}
-                  description={translation("charts.templatesDescription")}
-                  data={templatesChartData}
+                <Breakdown
+                  title={t("charts.templatesTitle")}
+                  format={format}
+                  emptyMessage={t("charts.empty")}
+                  items={[
+                    { key: "active", label: t("charts.active"), value: templates.active, tone: "brand" },
+                    { key: "pending", label: t("charts.pending"), value: templates.pending, tone: "muted" },
+                    { key: "rejected", label: t("charts.rejected"), value: templates.rejected, tone: "danger" },
+                  ]}
                 />
-
               </div>
-            )}
-          </section>
+            </Section>
 
-          {/* Secção de rankings */}
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <div>
-              <div className={styles.titleWithInfo}>
-              <h2 className={styles.sectionTitle}>
-                {translation("rankings.title")}
-              </h2>
-
-              <DescriptionInfo text={translation("rankings.description")} />
-            </div>
-              </div>
-            </div>
-
-            <div className={styles.rankingGrid}>
-              <RankingTable
-                title={translation("rankings.topLinksTitle")}
-                description={translation("rankings.topLinksDescription")}
-                rows={topTrackedLinks}
-                emptyMessage={translation("rankings.empty")}
-                splitTopTen
-                footer={
-                  allTrackedLinks.length > 10 ? (
+            <Section
+              title={t("rankings.topLinksTitle")}
+              description={t("rankings.topLinksDescription")}
+              visible={visibleSections.rankings}
+              onToggle={() => toggleSection("rankings")}
+              toggleLabels={toggleLabels}
+            >
+              {topTrackedLinks.length ? (
+                <div className={styles.rankingPanel}>
+                  <LinksTable rows={topTrackedLinks.slice(0, 5)} format={format} t={t} />
+                  {topTrackedLinks.length > 5 ? (
                     <button
                       type="button"
-                      className={styles.viewAllButton}
+                      className={styles.rankingMore}
                       onClick={() => setIsFullLinksListOpen(true)}
                     >
-                      {translation("rankings.viewAllLinks", {
-                        count: format(allTrackedLinks.length),
-                      })}
+                      {t("rankings.viewAllLinks", { count: format(topTrackedLinks.length) })}
+                      <ChevronRight size={15} aria-hidden="true" />
                     </button>
-                  ) : null
-                }
-                columns={[
-                  {
-                    key: "position",
-                    label: "#",
-                    render: (_row, index) => (
-                      <span className={styles.rankingPosition}>{index + 1}</span>
-                    ),
-                  },
-                  {
-                    key: "label",
-                    label: translation("rankings.columns.link"),
-                    render: (row) => (
-                      <span className={styles.rankingMainText}>
-                        {row.label}
-                      </span>
-                    ),
-                  },
-                  {
-                    key: "clicks",
-                    label: translation("rankings.columns.clicks"),
-                    render: (row) => format(row.clicks),
-                  },
-                ]}
-              />
-
-            </div>
-          </section>
-
-                          {isFullLinksListOpen && (
-            <div
-              className={styles.modalBackdrop}
-              onClick={() => setIsFullLinksListOpen(false)}
-            >
-              <section
-                className={styles.linksModal}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className={styles.linksModalHeader}>
-                  <div className={styles.titleWithInfo}>
-                    <h2 className={styles.sectionTitle}>
-                      {translation("rankings.allLinksTitle")}
-                    </h2>
-
-                    <DescriptionInfo text={translation("rankings.allLinksDescription")} />
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.modalCloseButton}
-                    onClick={() => setIsFullLinksListOpen(false)}
-                  >
-                    {translation("rankings.close")}
-                  </button>
+                  ) : null}
                 </div>
-
-                <div className={styles.fullLinksTableWrapper}>
-                  <table className={styles.rankingTable}>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>{translation("rankings.columns.link")}</th>
-                        <th>{translation("rankings.columns.clicks")}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {allTrackedLinks.map((row, index) => (
-                        <tr key={row.id || index}>
-                          <td>
-                            <span className={styles.rankingPosition}>
-                              {index + 1}
-                            </span>
-                          </td>
-
-                          <td>
-                            <span className={styles.rankingMainText}>
-                              {row.label}
-                            </span>
-                          </td>
-
-                          <td>{format(row.clicks)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* Secção de gráficos de evolução diária */}
-          <section
-            className={`${styles.section} ${
-              !visibleChartSections.trends ? styles.sectionCollapsed : ""
-            }`}
-          >
-            <div className={styles.sectionHeader}>
-              <div>
-               <div className={styles.titleWithInfo}>
-                <h2 className={styles.sectionTitle}>
-                  {translation("trends.title")}
-                </h2>
-
-                <DescriptionInfo text={translation("trends.description")} />
-              </div>
-              </div>
-
-              <button
-                type="button"
-                className={styles.metricGroupToggle}
-                onClick={() => toggleChartSection("trends")}
-              >
-                {visibleChartSections.trends
-                  ? translation("customization.hide")
-                  : translation("customization.show")}
-              </button>
-            </div>
-
-                {visibleChartSections.trends && (
-                <div className={styles.trendChartGrid}>
-                  <TrendChartCard
-                    title={translation("trends.messagesTitle")}
-                    description={translation("trends.messagesDescription")}
-                    data={dailyMessagesData}
-                    dataKey="messages"
-                    locale={locale}
-                    emptyMessage={translation("trends.empty")}
-                  />
-
-                  <TrendChartCard
-                    title={translation("trends.clicksTitle")}
-                    description={translation("trends.clicksDescription")}
-                    data={dailyClicksData}
-                    dataKey="clicks"
-                    locale={locale}
-                    emptyMessage={translation("trends.empty")}
-                  />
-
-                 
-
-                  <TrendChartCard
-                    title={translation("trends.automationsTitle")}
-                    description={translation("trends.automationsDescription")}
-                    data={dailyAutomationRunsData}
-                    dataKey="processed"
-                    locale={locale}
-                    emptyMessage={translation("trends.empty")}
-                  />
-                </div>
+              ) : (
+                <p className={styles.emptyState}>{t("rankings.empty")}</p>
               )}
-          </section>
+            </Section>
+          </div>
 
-          {/* Resumo operacional final */}
-          <section className={`${styles.section} ${styles.operationalSummary}`}>
-            <h2 className={styles.sectionTitle}>
-              {translation("sections.breakdownTitle")}
-            </h2>
+          <Section
+            title={t("trends.title")}
+            description={t("trends.description")}
+            visible={visibleSections.trends}
+            onToggle={() => toggleSection("trends")}
+            toggleLabels={toggleLabels}
+          >
+            <div className={styles.trendGrid}>
+              {trends.map((trend) => (
+                <TrendPanel
+                  key={trend.key}
+                  trend={trend}
+                  locale={locale}
+                  format={format}
+                  t={t}
+                  onExpand={() => setExpandedTrend(trend.key)}
+                />
+              ))}
+            </div>
+          </Section>
 
+          <Section
+            title={t("sections.breakdownTitle")}
+            description={t("sections.breakdownDescription")}
+            visible={visibleSections.summary}
+            onToggle={() => toggleSection("summary")}
+            toggleLabels={toggleLabels}
+          >
             <div className={styles.summaryGrid}>
               <div className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>
-                  {translation("sections.users.title")}
-                </span>
-
+                <span className={styles.summaryLabel}>{t("sections.users.title")}</span>
                 <strong className={styles.summaryValue}>
-                  {translation("sections.users.value", {
+                  {t("sections.users.value", {
                     total: format(users.total),
                     withAssistant: format(users.withAssistant),
                   })}
                 </strong>
-
                 <p>
-                  {translation("sections.users.text", {
+                  {t("sections.users.text", {
                     email: format(users.withEmail),
                     phone: format(users.withPhone),
                     teams: format(users.withTeams),
@@ -1455,18 +1405,12 @@ export default function AnalyticsPage() {
               </div>
 
               <div className={styles.summaryItem}>
-                <span className={styles.summaryLabel}>
-                  {translation("sections.messages.title")}
-                </span>
-
+                <span className={styles.summaryLabel}>{t("sections.messages.title")}</span>
                 <strong className={styles.summaryValue}>
-                  {translation("sections.messages.value", {
-                    total: format(messages.total),
-                  })}
+                  {t("sections.messages.value", { total: format(messages.total) })}
                 </strong>
-
                 <p>
-                  {translation("sections.messages.text", {
+                  {t("sections.messages.text", {
                     userMessages: format(messages.userMessages),
                     assistantMessages: format(messages.assistantMessages),
                     read: format(messages.read),
@@ -1477,38 +1421,69 @@ export default function AnalyticsPage() {
 
               <div
                 className={`${styles.summaryItem} ${
-                  safeNumber(automations.runsFailed) +
-                    safeNumber(scheduledBroadcasts.failed) >
-                  0
-                    ? styles.summaryWarning
-                    : ""
+                  activeIssues > 0 ? styles.summaryAttention : ""
                 }`}
               >
-                <span className={styles.summaryLabel}>
-                  {translation("sections.attention.title")}
-                </span>
-
+                <span className={styles.summaryLabel}>{t("sections.attention.title")}</span>
                 <strong className={styles.summaryValue}>
-                  {translation("sections.attention.value", {
-                    total:
-                      safeNumber(automations.runsFailed) +
-                      safeNumber(scheduledBroadcasts.failed),
-                  })}
+                  {activeIssues > 0
+                    ? t("sections.attention.value", { total: format(activeIssues) })
+                    : t("health.ok")}
                 </strong>
-
                 <p>
-                  {translation("sections.attention.text", {
-                    automationFailures: format(automations.runsFailed),
-                    scheduledFailures: format(scheduledBroadcasts.failed),
-                    rejectedTemplates: format(templates.rejected),
-                  })}
+                  {activeIssues > 0
+                    ? t("sections.attention.text", {
+                        automationFailures: format(automations.runsFailed),
+                        scheduledFailures: format(scheduledBroadcasts.failed),
+                        rejectedTemplates: format(templates.rejected),
+                      })
+                    : t("health.noErrors")}
                 </p>
               </div>
             </div>
+          </Section>
+        </div>
+      ) : null}
+
+      {isFullLinksListOpen ? (
+        <div className={styles.modalBackdrop} onClick={() => setIsFullLinksListOpen(false)}>
+          <section
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("rankings.allLinksTitle")}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className={styles.sectionHeader}>
+              <div className={styles.sectionCopy}>
+                <h2>{t("rankings.allLinksTitle")}</h2>
+                <p>{t("rankings.allLinksDescription")}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.sectionToggle}
+                onClick={() => setIsFullLinksListOpen(false)}
+              >
+                {t("rankings.close")}
+              </button>
+            </header>
+            <div className={styles.modalBody}>
+              <LinksTable rows={topTrackedLinks} format={format} t={t} />
+            </div>
           </section>
-        </>
-      )}
+        </div>
+      ) : null}
+
+      {expandedTrendData ? (
+        <TrendModal
+          trend={expandedTrendData}
+          locale={locale}
+          format={format}
+          decimalFormat={decimalFormat}
+          t={t}
+          onClose={() => setExpandedTrend(null)}
+        />
+      ) : null}
     </main>
   );
 }
-

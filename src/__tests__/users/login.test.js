@@ -21,6 +21,13 @@ vi.mock("next/navigation", () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  usePathname: () => "/pt/login",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) =>
+    React.createElement("a", { href, ...rest }, children),
 }));
 
 // No JSX here either
@@ -48,7 +55,7 @@ beforeEach(() => {
 });
 
 describe("LoginPage", () => {
-  it("redirects to /pt/users if session exists", async () => {
+  it("redirects to /pt/dashboard if session exists", async () => {
     mocks.auth.getSession.mockResolvedValueOnce({
       data: { session: { user: { id: "123" } } },
     });
@@ -57,7 +64,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => {
       expect(mocks.startLoading).toHaveBeenCalled();
-      expect(mocks.replace).toHaveBeenCalledWith("/pt/users");
+      expect(mocks.replace).toHaveBeenCalledWith("/pt/dashboard");
     });
 
     expect(mocks.stopLoading).not.toHaveBeenCalled();
@@ -99,7 +106,7 @@ describe("LoginPage", () => {
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it("navigates to /pt/users on login success after 650ms", async () => {
+  it("navigates to /pt/dashboard on login success after 650ms", async () => {
     const realSetTimeout = globalThis.setTimeout;
 
     const timeoutSpy = vi
@@ -129,7 +136,7 @@ describe("LoginPage", () => {
     expect(await screen.findByLabelText("Common.ok")).toBeInTheDocument();
 
     expect(mocks.startLoading).toHaveBeenCalled();
-    expect(mocks.push).toHaveBeenCalledWith("/pt/users");
+    expect(mocks.push).toHaveBeenCalledWith("/pt/dashboard");
 
     timeoutSpy.mockRestore();
   });

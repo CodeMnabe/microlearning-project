@@ -23,7 +23,7 @@ export default function LoginPage() {
 
       if (session) {
         startLoading();
-        router.replace(`/${locale}/users`);
+        router.replace(`/${locale}/dashboard`);
         return;
       }
       stopLoading?.();
@@ -55,7 +55,7 @@ export default function LoginPage() {
     // give the tick a brief moment, then navigate
     setTimeout(() => {
       startLoading?.();
-      router.push(`/${locale}/users`);
+      router.push(`/${locale}/dashboard`);
     }, 650);
   }
 
