@@ -39,7 +39,9 @@ export default function AnalyticsMetricGroups({
   onToggleGroup,
   onResetDashboard,
   onExportPdf,
+  onExportExcel,
   isExportingPdf,
+  isExportingExcel,
   canExport,
 }) {
   const translation = useTranslations("Analytics");
@@ -116,7 +118,9 @@ export default function AnalyticsMetricGroups({
       <DashboardQuickActions
         onResetDashboard={onResetDashboard}
         onExportPdf={onExportPdf}
+        onExportExcel={onExportExcel}
         isExportingPdf={isExportingPdf}
+        isExportingExcel={isExportingExcel}
         canExport={canExport}
       />
 

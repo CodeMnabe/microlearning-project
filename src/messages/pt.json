@@ -2326,9 +2326,40 @@
   "reset": "Repor grupos",
   "resetCharts": "Repor gráficos",
   "exports":"Exportar",
+  "exportPdf": "Exportar PDF",
+  "exportExcel": "Exportar Excel",
+  "exporting": "A exportar...",
   "resetDashboard": "Repor dashboard"
 
 },
+    "excel": {
+  "title": "Analytics",
+  "summarySheet": "Resumo",
+  "organization": "Organização",
+  "period": "Período",
+  "exportedAt": "Exportado em",
+  "columnGroup": "Grupo",
+  "columnMetric": "Métrica",
+  "columnValue": "Valor",
+  "columnRate": "Taxa",
+  "groups": {
+    "users": "Utilizadores", "assistants": "Assistentes", "messages": "Mensagens",
+    "automations": "Automações", "scheduled": "Mensagens agendadas", "templates": "Templates",
+    "trackedLinks": "Links rastreados", "pendingOutreach": "Outreach pendente"
+  },
+  "metrics": {
+    "total": "Total", "withAssistant": "Com assistente", "withoutAssistant": "Sem assistente",
+    "withEmail": "Com email", "withPhone": "Com telefone", "withTeams": "Com Teams",
+    "withWhatsapp": "Com WhatsApp", "withoutOpenAiId": "Sem OpenAI ID", "whatsapp": "WhatsApp",
+    "teams": "Teams", "fromUser": "Do utilizador", "fromAssistant": "Do assistente",
+    "delivered": "Entregues", "read": "Lidas", "failed": "Falhadas", "rulesTotal": "Regras",
+    "rulesActive": "Regras ativas", "rulesPaused": "Regras pausadas", "runsTotal": "Execuções",
+    "runsProcessed": "Processadas", "runsFailed": "Falhadas", "queued": "Em fila",
+    "completed": "Concluídas", "recipients": "Destinatários", "active": "Ativos",
+    "pending": "Pendentes", "rejected": "Rejeitados", "linksTotal": "Links", "clicksTotal": "Cliques"
+  }
+},
+
     "rankings": {
   "title": "Rankings",
   "description": "Os elementos mais relevantes no período selecionado.",

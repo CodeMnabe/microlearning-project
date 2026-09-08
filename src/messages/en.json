@@ -2321,7 +2321,38 @@
   "reset": "Reset groups",
   "resetCharts": "Reset charts",
   "exports": "Export",
+  "exportPdf": "Export PDF",
+  "exportExcel": "Export Excel",
+  "exporting": "Exporting...",
   "resetDashboard": "Reset dashboard"
+},
+
+  "excel": {
+  "title": "Analytics",
+  "summarySheet": "Summary",
+  "organization": "Organisation",
+  "period": "Period",
+  "exportedAt": "Exported on",
+  "columnGroup": "Group",
+  "columnMetric": "Metric",
+  "columnValue": "Value",
+  "columnRate": "Rate",
+  "groups": {
+    "users": "Users", "assistants": "Assistants", "messages": "Messages",
+    "automations": "Automations", "scheduled": "Scheduled broadcasts", "templates": "Templates",
+    "trackedLinks": "Tracked links", "pendingOutreach": "Pending outreach"
+  },
+  "metrics": {
+    "total": "Total", "withAssistant": "With assistant", "withoutAssistant": "Without assistant",
+    "withEmail": "With email", "withPhone": "With phone", "withTeams": "With Teams",
+    "withWhatsapp": "With WhatsApp", "withoutOpenAiId": "Without OpenAI ID", "whatsapp": "WhatsApp",
+    "teams": "Teams", "fromUser": "From user", "fromAssistant": "From assistant",
+    "delivered": "Delivered", "read": "Read", "failed": "Failed", "rulesTotal": "Rules",
+    "rulesActive": "Active rules", "rulesPaused": "Paused rules", "runsTotal": "Runs",
+    "runsProcessed": "Processed", "runsFailed": "Failed", "queued": "Queued",
+    "completed": "Completed", "recipients": "Recipients", "active": "Active",
+    "pending": "Pending", "rejected": "Rejected", "linksTotal": "Links", "clicksTotal": "Clicks"
+  }
 },
 
   "rankings": {

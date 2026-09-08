@@ -10,6 +10,12 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./analytics.module.css";
 
 import { exportAnalyticsPdf } from "./lib/analytics.export";
+import { exportAnalyticsExcel } from "./lib/analytics.excel";
+import {
+  buildExcelLabels,
+  buildExcelFileName,
+  getPeriodLabelKey,
+} from "./lib/analytics.helpers";
 
 import AnalyticsHeader from "./components/AnalyticsHeader";
 import AnalyticsMetricGroups from "./components/AnalyticsMetricGroups";
@@ -73,6 +79,7 @@ export default function AnalyticsPage() {
 
   const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const exportRef = useRef(null);
 
   /**
@@ -95,6 +102,43 @@ export default function AnalyticsPage() {
       console.error("[analytics] Failed to export PDF:", err);
     } finally {
       setIsExportingPdf(false);
+    }
+  }
+
+  /**
+   * Exporta os indicadores para Excel.
+   *
+   * Ao contrário do PDF, não captura o ecrã: usa os dados já em memória.
+   * A construção do livro fica isolada em `lib/analytics.excel` e as
+   * etiquetas são traduzidas aqui, para que essa camada não dependa
+   * do next-intl.
+   */
+  async function handleExportExcel() {
+    if (!metrics || isExportingExcel) return;
+
+    setIsExportingExcel(true);
+
+    try {
+      const exportedAt = new Date();
+
+      await exportAnalyticsExcel({
+        data,
+        meta: {
+          organizationName: org?.name ?? "",
+          periodLabel: translation(getPeriodLabelKey(period)),
+          exportedAt,
+          exportedAtLabel: new Intl.DateTimeFormat(locale, {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(exportedAt),
+          fileName: buildExcelFileName(period, exportedAt),
+          labels: buildExcelLabels(translation),
+        },
+      });
+    } catch (err) {
+      console.error("[analytics] Failed to export Excel:", err);
+    } finally {
+      setIsExportingExcel(false);
     }
   }
 
@@ -132,7 +176,9 @@ export default function AnalyticsPage() {
             onToggleGroup={toggleMetricGroup}
             onResetDashboard={resetDashboardView}
             onExportPdf={handleExportPdf}
+            onExportExcel={handleExportExcel}
             isExportingPdf={isExportingPdf}
+            isExportingExcel={isExportingExcel}
             canExport={Boolean(metrics)}
           />
 
