@@ -1807,7 +1807,18 @@
       "docCollection": "Coleção de Documentos",
       "collectionTitle": "Nome da Coleção",
       "quantity": "Quantidade",
-      "filenames": "Nome dos Ficheiros"
+      "filenames": "Nome dos Ficheiros",
+      "edit": "Editar ficheiros",
+      "editTitle": "Editar coleção de ficheiros",
+      "storeNamePlaceholder": "Nome da coleção",
+      "addFiles": "Adicionar ficheiros",
+      "replaceHelp": "Para substituir um ficheiro, remove o antigo e adiciona o novo.",
+      "newFiles": "Novos ficheiros",
+      "noFiles": "Não existem ficheiros associados.",
+      "remove": "Remover",
+      "keep": "Manter",
+      "save": "Guardar alterações",
+      "saving": "A atualizar..."
     },
     "placeholder": "Seleciona um assistant na coluna da esquerda."
   },
@@ -2318,11 +2329,146 @@
     "close": "Fechar"
   }
 }
-
-
+  },
+  "Settings": {
+    "title": "Definições",
+    "description": "Gere a organização, a aparência e as integrações num só lugar.",
+    "loadError": "Não foi possível carregar as definições.",
+    "organizationMissing": "Não foi encontrada uma organização para esta conta.",
+    "retry": "Tentar novamente",
+    "save": "Guardar alterações",
+    "saving": "A guardar…",
+    "saveSuccessTitle": "Definições guardadas",
+    "saveSuccess": "As definições da organização foram atualizadas.",
+    "saveErrorTitle": "Erro ao guardar",
+    "saveError": "Não foi possível guardar as definições.",
+    "organization": {
+      "title": "Organização",
+      "description": "Dados gerais utilizados em toda a aplicação.",
+      "name": "Nome",
+      "defaultCountryCode": "Indicativo telefónico",
+      "defaultCountryCodeHelp": "Usado como predefinição ao criar novos colaboradores."
+    },
+    "appearance": {
+      "title": "Aparência",
+      "description": "Personaliza as cores e o logótipo da organização.",
+      "primary": "Cor primária",
+      "secondary": "Cor secundária",
+      "primaryPicker": "Selecionar cor primária",
+      "secondaryPicker": "Selecionar cor secundária"
+    },
+    "preview": {
+      "organization": "Organização",
+      "cardTitle": "Pré-visualização",
+      "cardText": "Exemplo da aparência da aplicação.",
+      "action": "Ação principal"
+    },
+    "logo": {
+      "title": "Logótipo",
+      "choose": "Escolher ficheiro",
+      "help": "PNG, JPEG ou WebP. Tamanho máximo: 2 MB.",
+      "upload": "Carregar logótipo",
+      "working": "A processar…",
+      "reset": "Repor",
+      "invalidType": "Escolhe uma imagem PNG, JPEG ou WebP.",
+      "tooLarge": "O ficheiro não pode exceder 2 MB.",
+      "uploadSuccessTitle": "Logótipo atualizado",
+      "uploadSuccess": "O novo logótipo foi guardado.",
+      "uploadErrorTitle": "Erro no logótipo",
+      "uploadError": "Não foi possível carregar o logótipo.",
+      "resetSuccess": "O logótipo por omissão foi reposto.",
+      "resetError": "Não foi possível repor o logótipo."
+    },
+    "integrations": {
+      "title": "Integrações",
+      "description": "Configura os identificadores das plataformas de mensagens.",
+      "teamsTitle": "Microsoft Teams",
+      "tenantId": "Tenant ID",
+      "tenantIdHelp": "Identificador do tenant Microsoft associado a esta organização.",
+      "whatsappTitle": "WhatsApp Business",
+      "wabaId": "Whatsapp Business Account ID",
+      "namespace": "Namespace",
+      "namespaceOptional": "opcional"
+    },
+    "validation": {
+      "nameRequired": "O nome da organização é obrigatório.",
+      "nameTooLong": "O nome não pode exceder 150 caracteres.",
+      "invalidColor": "Usa cores hexadecimais com 3 ou 6 dígitos, por exemplo #0af ou #00aaff.",
+      "teamsConflict": "Este Tenant ID do Microsoft Teams já está associado a outra organização."
+    }
+  },
+  "Dashboard": {
+    "title": "Início",
+    "description": "Visão geral da utilização e configuração da organização.",
+    "eyebrow": "Visão geral",
+    "organizationFallback": "a organização",
+    "loadError": "Não foi possível carregar a dashboard.",
+    "organizationMissing": "Não foi encontrada uma organização para esta conta.",
+    "refresh": "Atualizar",
+    "retry": "Tentar novamente",
+    "welcome": {
+      "kicker": "Bem-vindo de volta",
+      "title": "Tudo num só lugar, {name}",
+      "description": "Acompanha a atividade da organização e acede rapidamente às áreas principais.",
+      "primaryAction": "Gerir utilizadores",
+      "secondaryAction": "Abrir definições",
+      "totalUsers": "Utilizadores",
+      "totalUsersHint": "na organização"
+    },
+    "groups": {
+      "users": "Utilizadores",
+      "content": "Conteúdo",
+      "automations": "Automações"
+    },
+    "sections": {
+      "overview": "Resumo",
+      "usersDescription": "Configuração e utilização dos canais pelos teus utilizadores.",
+      "resources": "Recursos",
+      "contentDescription": "Elementos criados e disponíveis para a organização.",
+      "operations": "Operações",
+      "automationsDescription": "Regras ativas e mensagens que estão na fila.",
+      "configuration": "Configuração",
+      "shortcuts": "Atalhos"
+    },
+    "actions": {
+      "viewUsers": "Ver utilizadores",
+      "viewAutomations": "Ver automações",
+      "viewSettings": "Gerir integrações"
+    },
+    "metrics": {
+      "totalUsers": "Total de utilizadores",
+      "teamsConfigured": "Utilizadores com Teams",
+      "whatsappConfigured": "Utilizadores com WhatsApp",
+      "teamsUsed": "Utilizadores que usaram Teams",
+      "whatsappUsed": "Utilizadores que usaram WhatsApp",
+      "tags": "Tags criadas",
+      "tagsHelper": "Gerir etiquetas e filtros",
+      "assistants": "Assistentes criados",
+      "assistantsHelper": "Configurar respostas automáticas",
+      "automationsTotal": "Automações criadas",
+      "automationsActive": "Automações ativas",
+      "scheduledMessages": "Mensagens agendadas"
+    },
+    "channels": {
+      "title": "Estado dos canais",
+      "description": "Percebe rapidamente onde a organização está mais ativa.",
+      "teams": "Microsoft Teams",
+      "whatsapp": "WhatsApp",
+      "configured": "utilizadores configurados",
+      "used": "utilizadores com atividade"
+    },
+    "quickActions": {
+      "title": "Acesso rápido",
+      "description": "Vai diretamente para uma tarefa.",
+      "users": "Utilizadores",
+      "usersDescription": "Gerir pessoas e perfis",
+      "assistants": "Assistentes",
+      "assistantsDescription": "Criar ou editar assistentes",
+      "automations": "Automações",
+      "automationsDescription": "Configurar regras e fluxos",
+      "broadcast": "Nova mensagem",
+      "broadcastDescription": "Enviar uma comunicação",
+      "footer": "Os cartões e atalhos abrem as áreas correspondentes."
+    }
   }
-
-
-
-
 }

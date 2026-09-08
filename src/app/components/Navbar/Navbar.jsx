@@ -125,18 +125,16 @@ export default function Navbar() {
             </div>
 
             <nav className={styles.nav}>
-              {isAdmin && (
-                <Link
-                  href="/"
-                  onClick={onNavClick("/")}
-                  className={`${styles.navItem} ${
-                    isActive("/") ? styles.active : ""
-                  }`}
-                >
-                  <Home aria-hidden className={styles.icon} />
-                  <span>{translation("Nav.home")}</span>
-                </Link>
-              )}
+              <Link
+                href="/dashboard"
+                onClick={onNavClick("/dashboard")}
+                className={`${styles.navItem} ${
+                  isActive("/dashboard") ? styles.active : ""
+                }`}
+              >
+                <Home aria-hidden className={styles.icon} />
+                <span>{translation("Nav.home")}</span>
+              </Link>
 
               <Link
                 href="/users"
@@ -266,24 +264,14 @@ export default function Navbar() {
                 )}
               </div>
 
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  onClick={onNavClick("/admin")}
-                  className={`${styles.navItem} ${
-                    isActive("/admin") ? styles.active : ""
-                  }`}
-                >
-                  <Settings aria-hidden className={styles.icon} />
-                  <span>{translation("Nav.admin")}</span>
-                </Link>
-              )}
             </nav>
 
             <Link
-              href="/options"
-              onClick={onNavClick("/options")}
-              className={`${styles.navItem} ${styles.options}`}
+              href="/settings"
+              onClick={onNavClick("/settings")}
+              className={`${styles.navItem} ${styles.options} ${
+                isActive("/settings") ? styles.active : ""
+              }`}
             >
               <Settings aria-hidden className={styles.icon} />
               <span>{translation("Nav.options")}</span>

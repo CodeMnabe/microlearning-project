@@ -87,7 +87,8 @@ export async function getUserMetrics(orgId) {
    * Consideramos WhatsApp configurado se existir:
    * - whatsapp_bsuid;
    * - bird_contact_id;
-   * - ou phone_number.
+   * - phone_number;
+   * - ou phone_country_code em conjunto com phone_national.
    *
    * O phone_number entra aqui porque, mesmo sem IDs externos,
    * o número pode permitir contacto por WhatsApp.
@@ -96,7 +97,8 @@ export async function getUserMetrics(orgId) {
     (user) =>
       hasValue(user.whatsapp_bsuid) ||
       hasValue(user.bird_contact_id) ||
-      hasValue(user.phone_number)
+      hasValue(user.phone_number) ||
+      (hasValue(user.phone_country_code) && hasValue(user.phone_national))
   ).length;
 
   /**

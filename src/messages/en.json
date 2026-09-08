@@ -887,7 +887,7 @@
     "templates": "Templates",
     "admin": "Admin",
     "login": "Login",
-    "options": "Options",
+    "options": "Settings",
     "logout": "Sign out",
      "analytics": "Analytics"
   },
@@ -1798,7 +1798,18 @@
       "docCollection": "Document Collection",
       "collectionTitle": "Collection Name",
       "quantity": "Quantity",
-      "filenames": "File Names"
+      "filenames": "File Names",
+      "edit": "Edit files",
+      "editTitle": "Edit file collection",
+      "storeNamePlaceholder": "Collection name",
+      "addFiles": "Add files",
+      "replaceHelp": "To replace a file, remove the old one and add the new one.",
+      "newFiles": "New files",
+      "noFiles": "No files are attached.",
+      "remove": "Remove",
+      "keep": "Keep",
+      "save": "Save changes",
+      "saving": "Updating..."
     },
     "placeholder": "Select an assistant from the left column."
   },
@@ -2314,20 +2325,146 @@
     "close": "Close"
   }
 }
-
-
-
-
-    
-
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "Manage your organization, appearance, and integrations in one place.",
+    "loadError": "Organization settings could not be loaded.",
+    "organizationMissing": "No organization was found for this account.",
+    "retry": "Try again",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saveSuccessTitle": "Settings saved",
+    "saveSuccess": "The organization settings were updated.",
+    "saveErrorTitle": "Could not save",
+    "saveError": "The organization settings could not be saved.",
+    "organization": {
+      "title": "Organization",
+      "description": "General details used throughout the application.",
+      "name": "Name",
+      "defaultCountryCode": "Phone country code",
+      "defaultCountryCodeHelp": "Used as the default when new users are created."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize the organization's colors and logo.",
+      "primary": "Primary color",
+      "secondary": "Secondary color",
+      "primaryPicker": "Choose primary color",
+      "secondaryPicker": "Choose secondary color"
+    },
+    "preview": {
+      "organization": "Organization",
+      "cardTitle": "Preview",
+      "cardText": "An example of the application's appearance.",
+      "action": "Primary action"
+    },
+    "logo": {
+      "title": "Logo",
+      "choose": "Choose file",
+      "help": "PNG, JPEG, or WebP. Maximum size: 2 MB.",
+      "upload": "Upload logo",
+      "working": "Working…",
+      "reset": "Reset",
+      "invalidType": "Choose a PNG, JPEG, or WebP image.",
+      "tooLarge": "The file must not exceed 2 MB.",
+      "uploadSuccessTitle": "Logo updated",
+      "uploadSuccess": "The new logo was saved.",
+      "uploadErrorTitle": "Logo error",
+      "uploadError": "The logo could not be uploaded.",
+      "resetSuccess": "The default logo was restored.",
+      "resetError": "The default logo could not be restored."
+    },
+    "integrations": {
+      "title": "Integrations",
+      "description": "Configure identifiers for messaging platforms.",
+      "teamsTitle": "Microsoft Teams",
+      "tenantId": "Tenant ID",
+      "tenantIdHelp": "The Microsoft tenant identifier associated with this organization.",
+      "whatsappTitle": "WhatsApp Business",
+      "wabaId": "Whatsapp Business Account ID",
+      "namespace": "Namespace",
+      "namespaceOptional": "optional"
+    },
+    "validation": {
+      "nameRequired": "The organization name is required.",
+      "nameTooLong": "The name must not exceed 150 characters.",
+      "invalidColor": "Use a 3- or 6-digit hexadecimal color, such as #0af or #00aaff.",
+      "teamsConflict": "This Microsoft Teams Tenant ID is already assigned to another organization."
+    }
+  },
+  "Dashboard": {
+    "title": "Home",
+    "description": "An overview of your organization's usage and configuration.",
+    "eyebrow": "Overview",
+    "organizationFallback": "your organization",
+    "loadError": "The dashboard could not be loaded.",
+    "organizationMissing": "No organization was found for this account.",
+    "refresh": "Refresh",
+    "retry": "Try again",
+    "welcome": {
+      "kicker": "Welcome back",
+      "title": "Everything in one place, {name}",
+      "description": "Keep track of your organization's activity and jump straight to the areas that matter.",
+      "primaryAction": "Manage users",
+      "secondaryAction": "Open settings",
+      "totalUsers": "Users",
+      "totalUsersHint": "in the organization"
+    },
+    "groups": {
+      "users": "Users",
+      "content": "Content",
+      "automations": "Automations"
+    },
+    "sections": {
+      "overview": "Summary",
+      "usersDescription": "Channel configuration and usage across your users.",
+      "resources": "Resources",
+      "contentDescription": "Content created and available to the organization.",
+      "operations": "Operations",
+      "automationsDescription": "Active rules and messages currently in the queue.",
+      "configuration": "Configuration",
+      "shortcuts": "Shortcuts"
+    },
+    "actions": {
+      "viewUsers": "View users",
+      "viewAutomations": "View automations",
+      "viewSettings": "Manage integrations"
+    },
+    "metrics": {
+      "totalUsers": "Total users",
+      "teamsConfigured": "Users with Teams",
+      "whatsappConfigured": "Users with WhatsApp",
+      "teamsUsed": "Users who used Teams",
+      "whatsappUsed": "Users who used WhatsApp",
+      "tags": "Tags created",
+      "tagsHelper": "Manage labels and filters",
+      "assistants": "Assistants created",
+      "assistantsHelper": "Configure automated replies",
+      "automationsTotal": "Automations created",
+      "automationsActive": "Active automations",
+      "scheduledMessages": "Scheduled messages"
+    },
+    "channels": {
+      "title": "Channel status",
+      "description": "See at a glance where your organization is most active.",
+      "teams": "Microsoft Teams",
+      "whatsapp": "WhatsApp",
+      "configured": "users configured",
+      "used": "users with activity"
+    },
+    "quickActions": {
+      "title": "Quick access",
+      "description": "Jump straight to a task.",
+      "users": "Users",
+      "usersDescription": "Manage people and profiles",
+      "assistants": "Assistants",
+      "assistantsDescription": "Create or edit assistants",
+      "automations": "Automations",
+      "automationsDescription": "Configure rules and flows",
+      "broadcast": "New message",
+      "broadcastDescription": "Send a communication",
+      "footer": "Cards and shortcuts open their corresponding areas."
+    }
   }
-
 }
-
-
-
-
-
-
-
-
