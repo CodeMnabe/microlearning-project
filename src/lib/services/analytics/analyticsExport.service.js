@@ -1,0 +1,101 @@
+import { getAnalyticsPeriodRange } from "./analytics.helpers";
+
+import {
+  getAutomationRunRows,
+  getAutomationRuleNames,
+  getScheduledBroadcastRows,
+} from "@/lib/repos/analytics/analyticsExport.repo";
+
+import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
+
+/**
+ * Dataset de detalhe da exportação.
+ *
+ * A `getAnalyticsOverview` devolve contagens; esta devolve linhas. São
+ * as duas faces do mesmo período: o Resumo mostra "825 mensagens", este
+ * dataset mostra as 825.
+ *
+ * O período atravessa tudo de propósito. Se as folhas de detalhe
+ * ignorassem o filtro, um export de "últimos 7 dias" traria resumo de
+ * 7 dias e detalhe de sempre — os totais não bateriam certo com as
+ * linhas por baixo deles, e ninguém saberia qual acreditar.
+ */
+export async function getAnalyticsExportDataset({ orgId, period }) {
+  const { valid, periodStart, rankingStart } = getAnalyticsPeriodRange(period);
+
+  if (!valid) {
+    const error = new Error("Invalid period");
+    error.status = 400;
+    throw error;
+  }
+
+  /**
+   * Os nomes das regras vão em paralelo com o resto: são poucos e não
+   * dependem de nada, mas seriam uma espera desnecessária em série.
+   */
+  const [runRows, ruleNames, scheduledRows, linkReports] = await Promise.all([
+    getAutomationRunRows(orgId, periodStart),
+    getAutomationRuleNames(orgId),
+    getScheduledBroadcastRows(orgId, periodStart),
+    getTrackedLinkReportsByOrg(orgId, rankingStart),
+  ]);
+
+  /**
+   * Achatamos as execuções aqui e não no repo.
+   *
+   * O repo devolve a forma que o Supabase deu, com o utilizador
+   * aninhado. Quem escreve a folha quer uma linha plana, com uma coluna
+   * por célula. Esta tradução é trabalho de composição, e é por isso
+   * que vive na service.
+   */
+  const automationRuns = runRows.map((run) => ({
+    id: run.id,
+    rule: ruleNames.get(run.rule_id) ?? null,
+    ruleId: run.rule_id,
+    status: run.status,
+    userName: run.user_row?.name ?? null,
+    userEmail: run.user_row?.email ?? null,
+    createdAt: run.created_at,
+    scheduledFor: run.scheduled_for,
+    processedAt: run.processed_at,
+    lastError: run.last_error,
+    scheduledBroadcastId: run.scheduled_broadcast_id,
+  }));
+
+  const scheduledBroadcasts = scheduledRows.map((row) => ({
+    id: row.id,
+    status: row.status,
+    channel: row.channel,
+    scheduledFor: row.scheduled_for,
+    recipientCount: row.recipient_count,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+  }));
+
+  return {
+    ok: true,
+
+    period: {
+      value: period,
+      startDate: periodStart,
+    },
+
+    /**
+     * Contagens de cada conjunto.
+     *
+     * Vão no payload para o cliente poder confirmar que recebeu tudo,
+     * sem ter de contar arrays. Também é o que permite avisar quando um
+     * export sai vazio por causa do período, em vez de parecer avariado.
+     */
+    counts: {
+      automationRuns: automationRuns.length,
+      scheduledBroadcasts: scheduledBroadcasts.length,
+      trackedLinkGroups: linkReports.length,
+    },
+
+    automationRuns,
+    scheduledBroadcasts,
+    trackedLinks: linkReports,
+  };
+}
