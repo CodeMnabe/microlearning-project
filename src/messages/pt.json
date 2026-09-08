@@ -2400,75 +2400,76 @@
   "Dashboard": {
     "title": "Início",
     "description": "Visão geral da utilização e configuração da organização.",
-    "eyebrow": "Visão geral",
-    "organizationFallback": "a organização",
-    "loadError": "Não foi possível carregar a dashboard.",
     "organizationMissing": "Não foi encontrada uma organização para esta conta.",
+    "loadError": "Não foi possível carregar a dashboard.",
     "refresh": "Atualizar",
     "retry": "Tentar novamente",
-    "welcome": {
-      "kicker": "Bem-vindo de volta",
-      "title": "Tudo num só lugar, {name}",
-      "description": "Acompanha a atividade da organização e acede rapidamente às áreas principais.",
-      "primaryAction": "Gerir utilizadores",
-      "secondaryAction": "Abrir definições",
-      "totalUsers": "Utilizadores",
-      "totalUsersHint": "na organização"
-    },
+    "updatedAt": "Atualizado às {time}",
     "groups": {
       "users": "Utilizadores",
       "content": "Conteúdo",
       "automations": "Automações"
     },
     "sections": {
-      "overview": "Resumo",
-      "usersDescription": "Configuração e utilização dos canais pelos teus utilizadores.",
-      "resources": "Recursos",
+      "usersDescription": "Configuração e utilização dos canais.",
       "contentDescription": "Elementos criados e disponíveis para a organização.",
-      "operations": "Operações",
-      "automationsDescription": "Regras ativas e mensagens que estão na fila.",
-      "configuration": "Configuração",
-      "shortcuts": "Atalhos"
+      "automationsDescription": "Regras configuradas e mensagens em fila."
     },
     "actions": {
       "viewUsers": "Ver utilizadores",
+      "viewAssistants": "Ver assistentes",
       "viewAutomations": "Ver automações",
-      "viewSettings": "Gerir integrações"
+      "viewScheduled": "Ver agendamentos",
+      "viewAnalytics": "Ver métricas"
     },
     "metrics": {
       "totalUsers": "Total de utilizadores",
-      "teamsConfigured": "Utilizadores com Teams",
-      "whatsappConfigured": "Utilizadores com WhatsApp",
-      "teamsUsed": "Utilizadores que usaram Teams",
-      "whatsappUsed": "Utilizadores que usaram WhatsApp",
+      "teamsConfigured": "Com Teams configurado",
+      "whatsappConfigured": "Com WhatsApp configurado",
+      "teamsUsed": "Já utilizaram o Teams",
+      "whatsappUsed": "Já utilizaram o WhatsApp",
       "tags": "Tags criadas",
-      "tagsHelper": "Gerir etiquetas e filtros",
       "assistants": "Assistentes criados",
-      "assistantsHelper": "Configurar respostas automáticas",
       "automationsTotal": "Automações criadas",
       "automationsActive": "Automações ativas",
       "scheduledMessages": "Mensagens agendadas"
     },
-    "channels": {
-      "title": "Estado dos canais",
-      "description": "Percebe rapidamente onde a organização está mais ativa.",
-      "teams": "Microsoft Teams",
-      "whatsapp": "WhatsApp",
-      "configured": "utilizadores configurados",
-      "used": "utilizadores com atividade"
+    "meta": {
+      "inOrganization": "na organização",
+      "shareOfUsers": "{percent}% dos utilizadores",
+      "tags": "para segmentar utilizadores",
+      "assistants": "disponíveis na organização",
+      "automationsTotal": "regras configuradas",
+      "automationsActive": "de {total} criadas",
+      "scheduledMessages": "em fila de envio"
     },
-    "quickActions": {
+    "activity": {
+      "title": "Atividade recente",
+      "description": "Mensagens trocadas nos últimos {days} dias.",
+      "total": "{count, plural, one {# mensagem} other {# mensagens}}",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp",
+      "empty": "Sem mensagens neste período.",
+      "dayTooltip": "{date}: {teams} Teams, {whatsapp} WhatsApp"
+    },
+    "upcoming": {
+      "title": "Próximos envios",
+      "description": "Mensagens agendadas que ainda estão em fila.",
+      "empty": "Não há envios agendados.",
+      "recipients": "{count, plural, one {# destinatário} other {# destinatários}}",
+      "noPreview": "Sem texto"
+    },
+    "channels": {
+      "teams": "Teams",
+      "whatsapp": "WhatsApp"
+    },
+    "shortcuts": {
       "title": "Acesso rápido",
-      "description": "Vai diretamente para uma tarefa.",
       "users": "Utilizadores",
-      "usersDescription": "Gerir pessoas e perfis",
       "assistants": "Assistentes",
-      "assistantsDescription": "Criar ou editar assistentes",
       "automations": "Automações",
-      "automationsDescription": "Configurar regras e fluxos",
       "broadcast": "Nova mensagem",
-      "broadcastDescription": "Enviar uma comunicação",
-      "footer": "Os cartões e atalhos abrem as áreas correspondentes."
+      "settings": "Definições"
     }
   }
 }

@@ -2396,75 +2396,76 @@
   "Dashboard": {
     "title": "Home",
     "description": "An overview of your organization's usage and configuration.",
-    "eyebrow": "Overview",
-    "organizationFallback": "your organization",
-    "loadError": "The dashboard could not be loaded.",
     "organizationMissing": "No organization was found for this account.",
+    "loadError": "The dashboard could not be loaded.",
     "refresh": "Refresh",
     "retry": "Try again",
-    "welcome": {
-      "kicker": "Welcome back",
-      "title": "Everything in one place, {name}",
-      "description": "Keep track of your organization's activity and jump straight to the areas that matter.",
-      "primaryAction": "Manage users",
-      "secondaryAction": "Open settings",
-      "totalUsers": "Users",
-      "totalUsersHint": "in the organization"
-    },
+    "updatedAt": "Updated at {time}",
     "groups": {
       "users": "Users",
       "content": "Content",
       "automations": "Automations"
     },
     "sections": {
-      "overview": "Summary",
-      "usersDescription": "Channel configuration and usage across your users.",
-      "resources": "Resources",
+      "usersDescription": "Channel configuration and usage.",
       "contentDescription": "Content created and available to the organization.",
-      "operations": "Operations",
-      "automationsDescription": "Active rules and messages currently in the queue.",
-      "configuration": "Configuration",
-      "shortcuts": "Shortcuts"
+      "automationsDescription": "Configured rules and queued messages."
     },
     "actions": {
       "viewUsers": "View users",
+      "viewAssistants": "View assistants",
       "viewAutomations": "View automations",
-      "viewSettings": "Manage integrations"
+      "viewScheduled": "View scheduled",
+      "viewAnalytics": "View analytics"
     },
     "metrics": {
       "totalUsers": "Total users",
-      "teamsConfigured": "Users with Teams",
-      "whatsappConfigured": "Users with WhatsApp",
-      "teamsUsed": "Users who used Teams",
-      "whatsappUsed": "Users who used WhatsApp",
+      "teamsConfigured": "With Teams configured",
+      "whatsappConfigured": "With WhatsApp configured",
+      "teamsUsed": "Have used Teams",
+      "whatsappUsed": "Have used WhatsApp",
       "tags": "Tags created",
-      "tagsHelper": "Manage labels and filters",
       "assistants": "Assistants created",
-      "assistantsHelper": "Configure automated replies",
       "automationsTotal": "Automations created",
       "automationsActive": "Active automations",
       "scheduledMessages": "Scheduled messages"
     },
-    "channels": {
-      "title": "Channel status",
-      "description": "See at a glance where your organization is most active.",
-      "teams": "Microsoft Teams",
-      "whatsapp": "WhatsApp",
-      "configured": "users configured",
-      "used": "users with activity"
+    "meta": {
+      "inOrganization": "in the organization",
+      "shareOfUsers": "{percent}% of users",
+      "tags": "to segment users",
+      "assistants": "available to the organization",
+      "automationsTotal": "configured rules",
+      "automationsActive": "of {total} created",
+      "scheduledMessages": "queued for delivery"
     },
-    "quickActions": {
+    "activity": {
+      "title": "Recent activity",
+      "description": "Messages exchanged in the last {days} days.",
+      "total": "{count, plural, one {# message} other {# messages}}",
+      "teams": "Teams",
+      "whatsapp": "WhatsApp",
+      "empty": "No messages in this period.",
+      "dayTooltip": "{date}: {teams} Teams, {whatsapp} WhatsApp"
+    },
+    "upcoming": {
+      "title": "Upcoming sends",
+      "description": "Scheduled messages still in the queue.",
+      "empty": "No scheduled sends.",
+      "recipients": "{count, plural, one {# recipient} other {# recipients}}",
+      "noPreview": "No text"
+    },
+    "channels": {
+      "teams": "Teams",
+      "whatsapp": "WhatsApp"
+    },
+    "shortcuts": {
       "title": "Quick access",
-      "description": "Jump straight to a task.",
       "users": "Users",
-      "usersDescription": "Manage people and profiles",
       "assistants": "Assistants",
-      "assistantsDescription": "Create or edit assistants",
       "automations": "Automations",
-      "automationsDescription": "Configure rules and flows",
       "broadcast": "New message",
-      "broadcastDescription": "Send a communication",
-      "footer": "Cards and shortcuts open their corresponding areas."
+      "settings": "Settings"
     }
   }
 }

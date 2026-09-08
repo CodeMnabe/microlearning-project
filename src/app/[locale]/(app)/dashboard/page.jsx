@@ -2,24 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
-import {
-  ArrowUpRight,
-  Bot,
-  CalendarClock,
-  CheckCircle2,
-  ChevronRight,
-  FileText,
-  MessageCircle,
-  RefreshCw,
-  Settings,
-  Sparkles,
-  Tags,
-  ToggleRight,
-  UserCheck,
-  Users,
-  Zap,
-} from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/AuthContext.jsx";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
@@ -42,6 +26,12 @@ const EMPTY_OVERVIEW = {
     active: 0,
     scheduledMessages: 0,
   },
+  activity: {
+    days: 14,
+    total: 0,
+    series: [],
+  },
+  upcoming: [],
 };
 
 function number(value) {
@@ -55,96 +45,171 @@ function percentage(value, total) {
   return Math.min(100, Math.round((number(value) / safeTotal) * 100));
 }
 
-function MetricCard({ icon: Icon, label, value, href, helper }) {
-  const content = (
+function Stat({ label, value, meta, href, percent }) {
+  const body = (
     <>
-      <span className={styles.cardIcon} aria-hidden="true">
-        <Icon size={19} strokeWidth={2} />
+      <span className={styles.statLabel}>{label}</span>
+      <span className={styles.statBody}>
+        <span className={styles.statValue}>{number(value)}</span>
+        {typeof percent === "number" ? (
+          <span className={styles.statBar} aria-hidden="true">
+            <span style={{ width: `${percent}%` }} />
+          </span>
+        ) : null}
+        {meta ? <span className={styles.statMeta}>{meta}</span> : null}
       </span>
-      <span className={styles.cardBody}>
-        <span className={styles.cardLabel}>{label}</span>
-        <strong className={styles.cardValue}>{number(value)}</strong>
-        {helper ? <span className={styles.cardHelper}>{helper}</span> : null}
-      </span>
-      {href ? <ArrowUpRight className={styles.cardArrow} size={16} aria-hidden="true" /> : null}
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className={styles.card}>
-        {content}
+      <Link href={href} className={styles.stat}>
+        {body}
       </Link>
     );
   }
 
-  return <article className={styles.card}>{content}</article>;
+  return <div className={styles.stat}>{body}</div>;
 }
 
-function ChannelStatus({
-  icon: Icon,
-  label,
-  configured,
-  used,
-  total,
-  configuredText,
-  usedText,
-}) {
-  const completion = percentage(used, total);
+function Section({ title, description, linkHref, linkLabel, children }) {
+  return (
+    <section className={styles.section}>
+      <header className={styles.sectionHeader}>
+        <div className={styles.sectionCopy}>
+          <h2>{title}</h2>
+          {description ? <p>{description}</p> : null}
+        </div>
+        {linkHref ? (
+          <Link href={linkHref} className={styles.sectionLink}>
+            {linkLabel}
+            <ChevronRight size={15} aria-hidden="true" />
+          </Link>
+        ) : null}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function ActivityChart({ series, t, locale }) {
+  const max = Math.max(1, ...series.map((day) => day.teams + day.whatsapp));
+  const dayFormatter = new Intl.DateTimeFormat(locale, { day: "numeric" });
+  const fullFormatter = new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 
   return (
-    <div className={styles.channelRow}>
-      <span className={styles.channelIcon} aria-hidden="true">
-        <Icon size={19} strokeWidth={2} />
-      </span>
-      <div className={styles.channelBody}>
-        <div className={styles.channelHeader}>
-          <span>{label}</span>
-          <span>{completion}%</span>
-        </div>
-        <div className={styles.progressTrack} aria-hidden="true">
-          <span className={styles.progressFill} style={{ width: `${completion}%` }} />
-        </div>
-        <div className={styles.channelMeta}>
-          <span>
-            {number(configured)} {configuredText}
-          </span>
-          <span>
-            {number(used)} {usedText}
-          </span>
-        </div>
+    <div className={styles.chart} role="img" aria-label={t("activity.title")}>
+      <div className={styles.chartBars}>
+        {series.map((day) => {
+          const date = new Date(`${day.date}T00:00:00Z`);
+          const total = day.teams + day.whatsapp;
+          return (
+            <div
+              key={day.date}
+              className={styles.chartColumn}
+              title={t("activity.dayTooltip", {
+                date: fullFormatter.format(date),
+                teams: day.teams,
+                whatsapp: day.whatsapp,
+              })}
+            >
+              <div className={styles.chartStack}>
+                {total ? (
+                  <>
+                    <span
+                      className={styles.chartTeams}
+                      style={{ height: `${(day.teams / max) * 100}%` }}
+                    />
+                    <span
+                      className={styles.chartWhatsapp}
+                      style={{ height: `${(day.whatsapp / max) * 100}%` }}
+                    />
+                  </>
+                ) : (
+                  <span className={styles.chartEmptyTick} />
+                )}
+              </div>
+              <span className={styles.chartLabel}>{dayFormatter.format(date)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function QuickLink({ href, icon: Icon, title, description }) {
+function UpcomingList({ items, t, locale }) {
+  if (!items.length) {
+    return <p className={styles.emptyState}>{t("upcoming.empty")}</p>;
+  }
+
+  const formatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
-    <Link href={href} className={styles.quickLink}>
-      <span className={styles.quickLinkIcon} aria-hidden="true">
-        <Icon size={17} strokeWidth={2} />
-      </span>
-      <span className={styles.quickLinkBody}>
-        <strong>{title}</strong>
-        <span>{description}</span>
-      </span>
-      <ChevronRight size={16} aria-hidden="true" />
-    </Link>
+    <ul className={styles.upcomingList}>
+      {items.map((item) => {
+        const date = item.scheduledFor ? new Date(item.scheduledFor) : null;
+        const channelLabel =
+          item.channel === "teams" || item.channel === "whatsapp"
+            ? t(`channels.${item.channel}`)
+            : item.channel;
+        return (
+          <li key={item.id}>
+            <Link href="/broadcast/scheduled" className={styles.upcomingItem}>
+              <span className={styles.upcomingWhen}>
+                {date && !Number.isNaN(date.getTime()) ? formatter.format(date) : "—"}
+              </span>
+              <span className={styles.upcomingBody}>
+                <span className={styles.upcomingPreview}>
+                  {item.preview || t("upcoming.noPreview")}
+                </span>
+                <span className={styles.upcomingMeta}>
+                  <span className={styles.channelTag} data-channel={item.channel}>
+                    {channelLabel}
+                  </span>
+                  {t("upcoming.recipients", { count: number(item.recipients) })}
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function PageHeader({ t, children }) {
+  return (
+    <header className={styles.header}>
+      <div className={styles.headerCopy}>
+        <h1>{t("title")}</h1>
+        <p>{t("description")}</p>
+      </div>
+      {children}
+    </header>
   );
 }
 
 function LoadingState() {
   return (
     <div className={styles.loadingState} aria-busy="true" aria-label="Loading">
-      <div className={`${styles.skeleton} ${styles.skeletonHero}`} />
-      <div className={styles.skeletonGrid}>
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div className={styles.skeleton} key={index} />
-        ))}
+      <div className={`${styles.skeleton} ${styles.skeletonWide}`} />
+      <div className={styles.loadingColumns}>
+        <div className={styles.skeleton} />
+        <div className={styles.skeleton} />
       </div>
       <div className={styles.loadingColumns}>
-        <div className={`${styles.skeleton} ${styles.skeletonPanel}`} />
-        <div className={`${styles.skeleton} ${styles.skeletonPanel}`} />
+        <div className={styles.skeleton} />
+        <div className={styles.skeleton} />
       </div>
     </div>
   );
@@ -152,10 +217,12 @@ function LoadingState() {
 
 export default function DashboardPage() {
   const t = useTranslations("Dashboard");
+  const locale = useLocale();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const { stopLoading } = useGlobalLoader();
   const [overview, setOverview] = useState(null);
+  const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -177,7 +244,14 @@ export default function DashboardPage() {
         users: { ...EMPTY_OVERVIEW.users, ...(data?.users || {}) },
         content: { ...EMPTY_OVERVIEW.content, ...(data?.content || {}) },
         automations: { ...EMPTY_OVERVIEW.automations, ...(data?.automations || {}) },
+        activity: {
+          ...EMPTY_OVERVIEW.activity,
+          ...(data?.activity || {}),
+          series: Array.isArray(data?.activity?.series) ? data.activity.series : [],
+        },
+        upcoming: Array.isArray(data?.upcoming) ? data.upcoming : [],
       });
+      setUpdatedAt(new Date());
     } catch (loadError) {
       console.error("[Dashboard] overview load error:", loadError);
       setError(t("loadError"));
@@ -197,18 +271,13 @@ export default function DashboardPage() {
   const users = overview?.users || EMPTY_OVERVIEW.users;
   const content = overview?.content || EMPTY_OVERVIEW.content;
   const automations = overview?.automations || EMPTY_OVERVIEW.automations;
-  const organizationName = org?.name?.trim() || t("organizationFallback");
+  const activity = overview?.activity || EMPTY_OVERVIEW.activity;
+  const upcoming = overview?.upcoming || EMPTY_OVERVIEW.upcoming;
 
-  if (authLoading || orgLoading || (loading && org?.id)) {
+  if (authLoading || orgLoading || (loading && org?.id && !overview)) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.headerCopy}>
-            <span className={styles.eyebrow}>{t("eyebrow")}</span>
-            <h1>{t("title")}</h1>
-            <p>{t("description")}</p>
-          </div>
-        </header>
+        <PageHeader t={t} />
         <LoadingState />
       </main>
     );
@@ -217,13 +286,7 @@ export default function DashboardPage() {
   if (!org?.id) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.headerCopy}>
-            <span className={styles.eyebrow}>{t("eyebrow")}</span>
-            <h1>{t("title")}</h1>
-            <p>{t("description")}</p>
-          </div>
-        </header>
+        <PageHeader t={t} />
         <div className={styles.errorBox}>
           <p>{t("organizationMissing")}</p>
         </div>
@@ -231,240 +294,187 @@ export default function DashboardPage() {
     );
   }
 
+  const shareOf = (value) => percentage(value, users.total);
+  const shareOfUsers = (value) => t("meta.shareOfUsers", { percent: shareOf(value) });
+
+  const updatedLabel = updatedAt
+    ? t("updatedAt", {
+        time: updatedAt.toLocaleTimeString(locale, {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      })
+    : null;
+
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerCopy}>
-          <span className={styles.eyebrow}>{t("eyebrow")}</span>
-          <h1>{t("title")}</h1>
-          <p>{t("description")}</p>
+      <PageHeader t={t}>
+        <div className={styles.headerActions}>
+          {updatedLabel ? <span className={styles.updatedAt}>{updatedLabel}</span> : null}
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={loadOverview}
+            disabled={loading}
+          >
+            <RefreshCw size={15} className={loading ? styles.spin : ""} aria-hidden="true" />
+            {t("refresh")}
+          </button>
         </div>
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={loadOverview}
-          disabled={loading}
-        >
-          <RefreshCw size={16} className={loading ? styles.spin : ""} aria-hidden="true" />
-          {t("refresh")}
-        </button>
-      </header>
+      </PageHeader>
+
+      <nav className={styles.shortcuts} aria-label={t("shortcuts.title")}>
+        <Link href="/users">{t("shortcuts.users")}</Link>
+        <Link href="/assistants">{t("shortcuts.assistants")}</Link>
+        <Link href="/automations">{t("shortcuts.automations")}</Link>
+        <Link href="/broadcast">{t("shortcuts.broadcast")}</Link>
+        <Link href="/settings">{t("shortcuts.settings")}</Link>
+      </nav>
 
       {error ? (
         <div className={styles.errorBox} role="alert">
           <p>{error}</p>
           <button type="button" onClick={loadOverview} disabled={loading}>
-            <RefreshCw size={15} className={loading ? styles.spin : ""} aria-hidden="true" />
             {t("retry")}
           </button>
         </div>
       ) : null}
 
-      <div className={styles.dashboard}>
-        <section className={styles.heroCard}>
-          <div className={styles.heroContent}>
-            <span className={styles.heroKicker}>
-              <Sparkles size={15} aria-hidden="true" />
-              {t("welcome.kicker")}
-            </span>
-            <h2>{t("welcome.title", { name: organizationName })}</h2>
-            <p>{t("welcome.description")}</p>
-            <div className={styles.heroActions}>
-              <Link href="/users" className={styles.primaryAction}>
-                {t("welcome.primaryAction")}
-                <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
-              <Link href="/settings" className={styles.secondaryAction}>
-                <Settings size={15} aria-hidden="true" />
-                {t("welcome.secondaryAction")}
-              </Link>
-            </div>
-          </div>
-          <div className={styles.heroStat}>
-            <span>{t("welcome.totalUsers")}</span>
-            <strong>{number(users.total)}</strong>
-            <small>{t("welcome.totalUsersHint")}</small>
-          </div>
-        </section>
+      <div className={styles.content}>
+      <Section
+        title={t("groups.users")}
+        description={t("sections.usersDescription")}
+        linkHref="/users"
+        linkLabel={t("actions.viewUsers")}
+      >
+        <div className={`${styles.stats} ${styles.statsFive}`}>
+          <Stat
+            label={t("metrics.totalUsers")}
+            value={users.total}
+            meta={t("meta.inOrganization")}
+            href="/users"
+          />
+          <Stat
+            label={t("metrics.teamsConfigured")}
+            value={users.teamsConfigured}
+            meta={shareOfUsers(users.teamsConfigured)}
+            percent={shareOf(users.teamsConfigured)}
+            href="/users"
+          />
+          <Stat
+            label={t("metrics.whatsappConfigured")}
+            value={users.whatsappConfigured}
+            meta={shareOfUsers(users.whatsappConfigured)}
+            percent={shareOf(users.whatsappConfigured)}
+            href="/users"
+          />
+          <Stat
+            label={t("metrics.teamsUsed")}
+            value={users.teamsUsed}
+            meta={shareOfUsers(users.teamsUsed)}
+            percent={shareOf(users.teamsUsed)}
+            href="/analytics"
+          />
+          <Stat
+            label={t("metrics.whatsappUsed")}
+            value={users.whatsappUsed}
+            meta={shareOfUsers(users.whatsappUsed)}
+            percent={shareOf(users.whatsappUsed)}
+            href="/analytics"
+          />
+        </div>
+      </Section>
 
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <span className={styles.panelEyebrow}>{t("sections.overview")}</span>
-              <h2>{t("groups.users")}</h2>
-              <p>{t("sections.usersDescription")}</p>
-            </div>
-            <Link href="/users" className={styles.panelLink}>
-              {t("actions.viewUsers")}
-              <ChevronRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className={styles.metricGrid}>
-            <MetricCard icon={Users} label={t("metrics.totalUsers")} value={users.total} href="/users" />
-            <MetricCard
-              icon={UserCheck}
-              label={t("metrics.teamsConfigured")}
-              value={users.teamsConfigured}
+      <div className={styles.columns}>
+        <Section
+          title={t("groups.content")}
+          description={t("sections.contentDescription")}
+          linkHref="/assistants"
+          linkLabel={t("actions.viewAssistants")}
+        >
+          <div className={`${styles.stats} ${styles.statsTwo}`}>
+            <Stat
+              label={t("metrics.tags")}
+              value={content.tags}
+              meta={t("meta.tags")}
               href="/users"
             />
-            <MetricCard
-              icon={MessageCircle}
-              label={t("metrics.whatsappConfigured")}
-              value={users.whatsappConfigured}
-              href="/users"
-            />
-            <MetricCard
-              icon={ToggleRight}
-              label={t("metrics.teamsUsed")}
-              value={users.teamsUsed}
-              href="/analytics"
-            />
-            <MetricCard
-              icon={MessageCircle}
-              label={t("metrics.whatsappUsed")}
-              value={users.whatsappUsed}
-              href="/analytics"
+            <Stat
+              label={t("metrics.assistants")}
+              value={content.assistants}
+              meta={t("meta.assistants")}
+              href="/assistants"
             />
           </div>
-        </section>
+        </Section>
 
-        <div className={styles.dashboardColumns}>
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.panelEyebrow}>{t("sections.resources")}</span>
-                <h2>{t("groups.content")}</h2>
-                <p>{t("sections.contentDescription")}</p>
-              </div>
-            </div>
-            <div className={styles.metricGridTwo}>
-              <MetricCard
-                icon={Tags}
-                label={t("metrics.tags")}
-                value={content.tags}
-                helper={t("metrics.tagsHelper")}
-                href="/users"
-              />
-              <MetricCard
-                icon={Bot}
-                label={t("metrics.assistants")}
-                value={content.assistants}
-                helper={t("metrics.assistantsHelper")}
-                href="/assistants"
-              />
-            </div>
-          </section>
+        <Section
+          title={t("groups.automations")}
+          description={t("sections.automationsDescription")}
+          linkHref="/automations"
+          linkLabel={t("actions.viewAutomations")}
+        >
+          <div className={`${styles.stats} ${styles.statsThree}`}>
+            <Stat
+              label={t("metrics.automationsTotal")}
+              value={automations.total}
+              meta={t("meta.automationsTotal")}
+              href="/automations"
+            />
+            <Stat
+              label={t("metrics.automationsActive")}
+              value={automations.active}
+              meta={t("meta.automationsActive", { total: number(automations.total) })}
+              href="/automations"
+            />
+            <Stat
+              label={t("metrics.scheduledMessages")}
+              value={automations.scheduledMessages}
+              meta={t("meta.scheduledMessages")}
+              href="/broadcast/scheduled"
+            />
+          </div>
+        </Section>
+      </div>
 
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.panelEyebrow}>{t("sections.operations")}</span>
-                <h2>{t("groups.automations")}</h2>
-                <p>{t("sections.automationsDescription")}</p>
-              </div>
-              <Link href="/automations" className={styles.panelLink}>
-                {t("actions.viewAutomations")}
-                <ChevronRight size={15} aria-hidden="true" />
-              </Link>
+      <div className={styles.columnsWide}>
+        <Section
+          title={t("activity.title")}
+          description={t("activity.description", { days: number(activity.days) })}
+          linkHref="/analytics"
+          linkLabel={t("actions.viewAnalytics")}
+        >
+          <div className={styles.chartPanel}>
+            <div className={styles.chartSummary}>
+              <strong>{t("activity.total", { count: number(activity.total) })}</strong>
+              <span className={styles.legend}>
+                <span>
+                  <i className={styles.legendTeams} />
+                  {t("activity.teams")}
+                </span>
+                <span>
+                  <i className={styles.legendWhatsapp} />
+                  {t("activity.whatsapp")}
+                </span>
+              </span>
             </div>
-            <div className={styles.metricGridThree}>
-              <MetricCard
-                icon={Zap}
-                label={t("metrics.automationsTotal")}
-                value={automations.total}
-                href="/automations"
-              />
-              <MetricCard
-                icon={ToggleRight}
-                label={t("metrics.automationsActive")}
-                value={automations.active}
-                href="/automations"
-              />
-              <MetricCard
-                icon={CalendarClock}
-                label={t("metrics.scheduledMessages")}
-                value={automations.scheduledMessages}
-                href="/broadcast/scheduled"
-              />
-            </div>
-          </section>
-        </div>
+            {activity.series.length ? (
+              <ActivityChart series={activity.series} t={t} locale={locale} />
+            ) : (
+              <p className={styles.emptyState}>{t("activity.empty")}</p>
+            )}
+          </div>
+        </Section>
 
-        <div className={styles.dashboardColumns}>
-          <section className={`${styles.panel} ${styles.channelPanel}`}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.panelEyebrow}>{t("sections.configuration")}</span>
-                <h2>{t("channels.title")}</h2>
-                <p>{t("channels.description")}</p>
-              </div>
-              <Link href="/settings" className={styles.panelLink}>
-                {t("actions.viewSettings")}
-                <ChevronRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
-            <div className={styles.channelList}>
-              <ChannelStatus
-                icon={ToggleRight}
-                label={t("channels.teams")}
-                configured={users.teamsConfigured}
-                used={users.teamsUsed}
-                total={users.total}
-                configuredText={t("channels.configured")}
-                usedText={t("channels.used")}
-              />
-              <ChannelStatus
-                icon={MessageCircle}
-                label={t("channels.whatsapp")}
-                configured={users.whatsappConfigured}
-                used={users.whatsappUsed}
-                total={users.total}
-                configuredText={t("channels.configured")}
-                usedText={t("channels.used")}
-              />
-            </div>
-          </section>
-
-          <section className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.panelEyebrow}>{t("sections.shortcuts")}</span>
-                <h2>{t("quickActions.title")}</h2>
-                <p>{t("quickActions.description")}</p>
-              </div>
-            </div>
-            <div className={styles.quickLinks}>
-              <QuickLink
-                href="/users"
-                icon={Users}
-                title={t("quickActions.users")}
-                description={t("quickActions.usersDescription")}
-              />
-              <QuickLink
-                href="/assistants"
-                icon={Bot}
-                title={t("quickActions.assistants")}
-                description={t("quickActions.assistantsDescription")}
-              />
-              <QuickLink
-                href="/automations"
-                icon={Zap}
-                title={t("quickActions.automations")}
-                description={t("quickActions.automationsDescription")}
-              />
-              <QuickLink
-                href="/broadcast"
-                icon={FileText}
-                title={t("quickActions.broadcast")}
-                description={t("quickActions.broadcastDescription")}
-              />
-            </div>
-            <p className={styles.panelFooterNote}>
-              <CheckCircle2 size={14} aria-hidden="true" />
-              {t("quickActions.footer")}
-            </p>
-          </section>
-        </div>
+        <Section
+          title={t("upcoming.title")}
+          description={t("upcoming.description")}
+          linkHref="/broadcast/scheduled"
+          linkLabel={t("actions.viewScheduled")}
+        >
+          <UpcomingList items={upcoming} t={t} locale={locale} />
+        </Section>
+      </div>
       </div>
     </main>
   );

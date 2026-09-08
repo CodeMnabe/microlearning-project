@@ -1,8 +1,11 @@
 import { safeNumberForApi } from "@/lib/helpers/analytics.helpers";
 import {
+  DASHBOARD_ACTIVITY_DAYS,
   getChannelUsageMetrics,
+  getDailyMessageActivity,
   getDashboardCountMetrics,
   getDashboardUserMetrics,
+  getUpcomingScheduledBroadcasts,
 } from "@/lib/repos/dashboard/dashboard.repo";
 
 export const EMPTY_DASHBOARD_OVERVIEW = Object.freeze({
@@ -22,14 +25,28 @@ export const EMPTY_DASHBOARD_OVERVIEW = Object.freeze({
     active: 0,
     scheduledMessages: 0,
   }),
+  activity: Object.freeze({
+    days: DASHBOARD_ACTIVITY_DAYS,
+    total: 0,
+    series: Object.freeze([]),
+  }),
+  upcoming: Object.freeze([]),
 });
 
 export async function getDashboardOverview(orgId) {
-  const [users, channelUsage, counts] = await Promise.all([
+  const [users, channelUsage, counts, series, upcoming] = await Promise.all([
     getDashboardUserMetrics(orgId),
     getChannelUsageMetrics(orgId),
     getDashboardCountMetrics(orgId),
+    getDailyMessageActivity(orgId),
+    getUpcomingScheduledBroadcasts(orgId),
   ]);
+
+  const activitySeries = series.map((day) => ({
+    date: day.date,
+    teams: safeNumberForApi(day.teams),
+    whatsapp: safeNumberForApi(day.whatsapp),
+  }));
 
   return {
     users: {
@@ -48,5 +65,11 @@ export async function getDashboardOverview(orgId) {
       active: safeNumberForApi(counts.active),
       scheduledMessages: safeNumberForApi(counts.scheduledMessages),
     },
+    activity: {
+      days: DASHBOARD_ACTIVITY_DAYS,
+      total: activitySeries.reduce((sum, day) => sum + day.teams + day.whatsapp, 0),
+      series: activitySeries,
+    },
+    upcoming,
   };
 }

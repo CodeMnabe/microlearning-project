@@ -3,14 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const base = vi.hoisted(() => ({
   countRows: vi.fn(),
   fetchAllRows: vi.fn(),
+  fetchRows: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/analytics/analyticsBase.repo", () => base);
 
 import {
   getChannelUsageMetrics,
+  getDailyMessageActivity,
   getDashboardCountMetrics,
   getDashboardUserMetrics,
+  getUpcomingScheduledBroadcasts,
   isWhatsAppConfigured,
 } from "@/lib/repos/dashboard/dashboard.repo";
 
@@ -27,6 +30,18 @@ function queryRecorder() {
     }),
     in: vi.fn((...args) => {
       calls.push(["in", ...args]);
+      return query;
+    }),
+    gte: vi.fn((...args) => {
+      calls.push(["gte", ...args]);
+      return query;
+    }),
+    order: vi.fn((...args) => {
+      calls.push(["order", ...args]);
+      return query;
+    }),
+    limit: vi.fn((...args) => {
+      calls.push(["limit", ...args]);
       return query;
     }),
   };
@@ -126,5 +141,85 @@ describe("dashboard repository metrics", () => {
     expect(scheduled.calls).toContainEqual(["eq", "status", "queued"]);
     expect(scheduled.calls.flat()).not.toContain("source");
     expect(scheduled.calls.flat()).not.toContain("scheduled_for");
+  });
+});
+
+describe("dashboard activity and upcoming sends", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("builds a continuous daily series with zeros and buckets by channel", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    base.fetchAllRows.mockImplementation(async (table, columns, applyFilters) => {
+      const { query, calls } = queryRecorder();
+      applyFilters(query);
+      expect(table).toBe("message");
+      expect(calls).toEqual(
+        expect.arrayContaining([
+          ["eq", "organization_id", 7],
+          ["in", "channel", ["teams", "whatsapp"]],
+        ]),
+      );
+      expect(calls.find((call) => call[0] === "gte")?.[1]).toBe("created_at");
+      return [
+        { created_at: `${today}T09:00:00Z`, channel: "teams" },
+        { created_at: `${today}T10:00:00Z`, channel: "whatsapp" },
+        { created_at: `${today}T11:00:00Z`, channel: "whatsapp" },
+        { created_at: "2000-01-01T00:00:00Z", channel: "teams" },
+        { created_at: `${today}T12:00:00Z`, channel: "email" },
+      ];
+    });
+
+    const series = await getDailyMessageActivity(7, 3);
+    expect(series).toHaveLength(3);
+    expect(series.at(-1)).toEqual({ date: today, teams: 1, whatsapp: 2 });
+    expect(series[0]).toEqual({ date: series[0].date, teams: 0, whatsapp: 0 });
+  });
+
+  it("lists queued broadcasts in send order with a trimmed preview", async () => {
+    base.fetchRows.mockImplementation(async (table, columns, applyFilters) => {
+      const { query, calls } = queryRecorder();
+      applyFilters(query);
+      expect(table).toBe("scheduled_broadcast");
+      expect(calls).toEqual([
+        ["eq", "organization_id", 7],
+        ["eq", "status", "queued"],
+        ["order", "scheduled_for", { ascending: true }],
+        ["limit", 5],
+      ]);
+      return [
+        {
+          id: "a",
+          channel: "WhatsApp",
+          scheduled_for: "2026-09-09T08:00:00Z",
+          recipient_count: "12",
+          payload: { text: "  Bom dia equipa  " },
+        },
+        {
+          id: "b",
+          channel: "teams",
+          scheduled_for: null,
+          recipient_count: null,
+          payload: "x".repeat(200),
+        },
+      ];
+    });
+
+    const items = await getUpcomingScheduledBroadcasts(7);
+    expect(items).toEqual([
+      {
+        id: "a",
+        channel: "whatsapp",
+        scheduledFor: "2026-09-09T08:00:00Z",
+        recipients: 12,
+        preview: "Bom dia equipa",
+      },
+      {
+        id: "b",
+        channel: "teams",
+        scheduledFor: null,
+        recipients: 0,
+        preview: "x".repeat(120),
+      },
+    ]);
   });
 });
