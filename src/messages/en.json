@@ -2330,6 +2330,12 @@
   "excel": {
   "title": "Analytics",
   "summarySheet": "Summary",
+  "dashboardSheet": "Dashboard",
+  "panels": {
+    "messages": "MESSAGES",
+    "operations": "OPERATIONS",
+    "templates": "TEMPLATES"
+  },
   "organization": "Organisation",
   "period": "Period",
   "exportedAt": "Exported on",

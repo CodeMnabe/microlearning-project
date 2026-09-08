@@ -172,9 +172,13 @@ export function buildExcelLabels(translation) {
   const fromKeys = (keys, prefix) =>
     Object.fromEntries(keys.map((key) => [key, translation(`${prefix}.${key}`)]));
 
+  const panelKeys = ["messages", "operations", "templates"];
+
   return {
     title: translation("excel.title"),
     summarySheet: translation("excel.summarySheet"),
+    dashboardSheet: translation("excel.dashboardSheet"),
+    panels: fromKeys(panelKeys, "excel.panels"),
     organization: translation("excel.organization"),
     period: translation("excel.period"),
     exportedAt: translation("excel.exportedAt"),

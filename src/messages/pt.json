@@ -2335,6 +2335,12 @@
     "excel": {
   "title": "Analytics",
   "summarySheet": "Resumo",
+  "dashboardSheet": "Painel",
+  "panels": {
+    "messages": "MENSAGENS",
+    "operations": "OPERAÇÃO",
+    "templates": "TEMPLATES"
+  },
   "organization": "Organização",
   "period": "Período",
   "exportedAt": "Exportado em",
