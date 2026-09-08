@@ -40,3 +40,4 @@ src/app/api/teams/messages/_route(deprecated).js
 src.zip
 tmp
 scripts
+.idea/
