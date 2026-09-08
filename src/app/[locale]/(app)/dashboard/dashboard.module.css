@@ -457,34 +457,6 @@ a.stat:hover .statLabel {
   font-size: 13px;
 }
 
-/* ───────── Shortcuts ───────── */
-
-.shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: -4px;
-}
-
-.shortcuts a {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 14px;
-  border: 1px solid var(--dash-border);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--dash-text);
-  font-size: 13px;
-  font-weight: 600;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-}
-
-.shortcuts a:hover {
-  border-color: rgba(var(--brand-1-rgb), 0.55);
-  background: rgba(var(--brand-1-rgb), 0.06);
-  color: var(--color-primary);
-}
-
 /* ───────── States ───────── */
 
 .errorBox {

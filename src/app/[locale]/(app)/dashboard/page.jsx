@@ -323,14 +323,6 @@ export default function DashboardPage() {
         </div>
       </PageHeader>
 
-      <nav className={styles.shortcuts} aria-label={t("shortcuts.title")}>
-        <Link href="/users">{t("shortcuts.users")}</Link>
-        <Link href="/assistants">{t("shortcuts.assistants")}</Link>
-        <Link href="/automations">{t("shortcuts.automations")}</Link>
-        <Link href="/broadcast">{t("shortcuts.broadcast")}</Link>
-        <Link href="/settings">{t("shortcuts.settings")}</Link>
-      </nav>
-
       {error ? (
         <div className={styles.errorBox} role="alert">
           <p>{error}</p>

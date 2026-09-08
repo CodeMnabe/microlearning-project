@@ -2477,14 +2477,6 @@
     "channels": {
       "teams": "Teams",
       "whatsapp": "WhatsApp"
-    },
-    "shortcuts": {
-      "title": "Quick access",
-      "users": "Users",
-      "assistants": "Assistants",
-      "automations": "Automations",
-      "broadcast": "New message",
-      "settings": "Settings"
     }
   }
 }

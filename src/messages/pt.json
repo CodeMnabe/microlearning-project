@@ -2485,14 +2485,6 @@
     "channels": {
       "teams": "Teams",
       "whatsapp": "WhatsApp"
-    },
-    "shortcuts": {
-      "title": "Acesso rápido",
-      "users": "Utilizadores",
-      "assistants": "Assistentes",
-      "automations": "Automações",
-      "broadcast": "Nova mensagem",
-      "settings": "Definições"
     }
   }
 }
