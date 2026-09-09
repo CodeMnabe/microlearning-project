@@ -7,6 +7,7 @@ import {
   getMessageRows,
   getUserRows,
   getTemplateRows,
+  getAssistantNames,
 } from "@/lib/repos/analytics/analyticsExport.repo";
 
 import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
@@ -44,6 +45,7 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     messageRows,
     userRows,
     templateRows,
+    assistantNames,
   ] =
     await Promise.all([
       getAutomationRunRows(orgId, periodStart),
@@ -53,6 +55,7 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
       getMessageRows(orgId, periodStart),
       getUserRows(orgId),
       getTemplateRows(orgId),
+      getAssistantNames(orgId),
     ]);
 
   /**
@@ -78,6 +81,14 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
   }));
 
   /**
+   * Índice de nomes, para trocar chaves estrangeiras por algo legível.
+   *
+   * Os utilizadores já vêm todos no dataset, portanto o cruzamento é
+   * em memória e não custa consulta nenhuma.
+   */
+  const userNames = new Map(userRows.map((row) => [row.id, row.name]));
+
+  /**
    * As mensagens saem quase como vêm: já são planas.
    *
    * Só renomeamos para camelCase, para a folha não misturar
@@ -92,13 +103,27 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     deliveredAt: row.delivered_at,
     readAt: row.read_at,
     failedAt: row.failed_at,
+    /**
+     * Nome em vez do número.
+     *
+     * `userId: 5696` não diz nada a quem lê o ficheiro. O `id` continua
+     * a viajar, no fim da linha, porque é o que permite cruzar com a
+     * folha de Utilizadores quando dois nomes coincidem.
+     */
+    userName: userNames.get(row.user_id) ?? null,
+    assistantName: assistantNames.get(row.assistant_id) ?? null,
+    /**
+     * Os identificadores viajam todos, mas vão para o fim da folha.
+     *
+     * Não servem para ler o relatório — servem para o suporte. Quando
+     * alguém diz "uma mensagem falhou", a diferença entre resolver e
+     * adivinhar é ter aqui o número da linha exata na base de dados.
+     */
     userId: row.user_id,
     assistantId: row.assistant_id,
     threadId: row.thread_id,
     scheduledBroadcastId: row.scheduled_broadcast_id,
     automationRunId: row.automation_run_id,
-    messageChainId: row.message_chain_id,
-    messageChainStepIndex: row.message_chain_step_index,
     ...(row.content === undefined ? {} : { content: row.content }),
   }));
 
@@ -119,9 +144,10 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     whatsappId: row.whatsapp_bsuid,
     whatsappUsername: row.whatsapp_username,
     birdContactId: row.bird_contact_id,
-    teamsId: row.teams_aad_object_id,
-    assistantId: row.assistant_id,
+    assistantName: assistantNames.get(row.assistant_id) ?? null,
     createdAt: row.created_at,
+    assistantId: row.assistant_id,
+    teamsId: row.teams_aad_object_id,
     tags: (row.user_tag ?? [])
       .map((link) => link.tag?.name)
       .filter(Boolean)
@@ -136,8 +162,8 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     // `org_id` nulo significa template global, partilhado por todas as
     // organizações. Traduzimos isso em vez de mostrar uma célula vazia.
     scope: row.org_id === null ? "global" : "org",
-    providerTemplateId: row.provider_template_id,
     createdAt: row.created_at,
+    providerTemplateId: row.provider_template_id,
   }));
 
   const scheduledBroadcasts = scheduledRows.map((row) => ({

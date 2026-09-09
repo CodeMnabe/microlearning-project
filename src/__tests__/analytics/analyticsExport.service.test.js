@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   getMessageRows: vi.fn(),
   getUserRows: vi.fn(),
   getTemplateRows: vi.fn(),
+  getAssistantNames: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/analytics/analyticsExport.repo", () => ({
@@ -27,6 +28,7 @@ vi.mock("@/lib/repos/analytics/analyticsExport.repo", () => ({
   getMessageRows: mocks.getMessageRows,
   getUserRows: mocks.getUserRows,
   getTemplateRows: mocks.getTemplateRows,
+  getAssistantNames: mocks.getAssistantNames,
 }));
 
 vi.mock("@/lib/repos/broadcast/trackedLinks.repo", () => ({
@@ -45,6 +47,7 @@ beforeEach(() => {
   mocks.getMessageRows.mockResolvedValue([]);
   mocks.getUserRows.mockResolvedValue([]);
   mocks.getTemplateRows.mockResolvedValue([]);
+  mocks.getAssistantNames.mockResolvedValue(new Map());
 });
 
 describe("getAnalyticsExportDataset", () => {
@@ -235,5 +238,74 @@ describe("getAnalyticsExportDataset", () => {
     await getAnalyticsExportDataset({ orgId: 7, period: "30d" });
 
     expect(mocks.getTemplateRows).toHaveBeenCalledWith(7);
+  });
+  it("troca os identificadores por nomes nas mensagens", async () => {
+    // `userId: 5696` não diz nada a quem lê o ficheiro. O id continua
+    // a viajar, para cruzar folhas quando dois nomes coincidem.
+    mocks.getUserRows.mockResolvedValue([{ id: 7, name: "Fernando" }]);
+    mocks.getAssistantNames.mockResolvedValue(new Map([[60, "Onboarding"]]));
+    mocks.getMessageRows.mockResolvedValue([
+      { id: 1, user_id: 7, assistant_id: 60, channel: "whatsapp" },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.messages[0]).toMatchObject({
+      userName: "Fernando",
+      assistantName: "Onboarding",
+      userId: 7,
+    });
+  });
+
+  it("troca o id do assistente pelo nome nos utilizadores", async () => {
+    mocks.getAssistantNames.mockResolvedValue(new Map([[10, "Suporte"]]));
+    mocks.getUserRows.mockResolvedValue([
+      { id: 1, name: "Gaspar", assistant_id: 10 },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.users[0].assistantName).toBe("Suporte");
+
+    // O id continua a viajar, para o fim da folha: é o que o suporte
+    // usa para localizar o registo exato quando alguém reporta um erro.
+    expect(result.users[0].assistantId).toBe(10);
+  });
+
+  it("mantém os identificadores ao lado dos nomes", async () => {
+    mocks.getUserRows.mockResolvedValue([{ id: 7, name: "Fernando" }]);
+    mocks.getAssistantNames.mockResolvedValue(new Map([[60, "Onboarding"]]));
+    mocks.getMessageRows.mockResolvedValue([
+      {
+        id: 877,
+        user_id: 7,
+        assistant_id: 60,
+        thread_id: 60,
+        scheduled_broadcast_id: "abc",
+        automation_run_id: "def",
+      },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    // Nome para ler, id para localizar. Os dois.
+    expect(result.messages[0]).toMatchObject({
+      userName: "Fernando",
+      assistantName: "Onboarding",
+      id: 877,
+      userId: 7,
+      assistantId: 60,
+      threadId: 60,
+      scheduledBroadcastId: "abc",
+      automationRunId: "def",
+    });
+  });
+
+  it("aguenta um assistente apagado", async () => {
+    mocks.getMessageRows.mockResolvedValue([{ id: 1, assistant_id: 999 }]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.messages[0].assistantName).toBeNull();
   });
 });

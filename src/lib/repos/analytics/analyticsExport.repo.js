@@ -185,3 +185,18 @@ export async function getTemplateRows(orgId) {
     (query) => query.or(`org_id.eq.${orgId},org_id.is.null`),
   );
 }
+
+/**
+ * Vai buscar os nomes dos assistentes da organização.
+ *
+ * Mesma lógica das regras de automação: são poucos, repetem-se muito
+ * nas linhas, e trazê-los uma vez para cruzar em memória custa menos
+ * do que uma junção que repetisse o nome em cada mensagem.
+ */
+export async function getAssistantNames(orgId) {
+  const assistants = await fetchRows("assistant", "id, name", (query) =>
+    query.eq("organization_id", orgId),
+  );
+
+  return new Map(assistants.map((assistant) => [assistant.id, assistant.name]));
+}

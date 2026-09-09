@@ -1085,17 +1085,26 @@ function addDetailSheets(workbook, detail, meta) {
     {
       name: columns.messagesSheet,
       rows: detail.messages ?? [],
+      /**
+       * Primeiro o que se lê, depois os identificadores.
+       *
+       * Ficam no fim porque não servem para ler o relatório: servem
+       * para cruzar folhas e, sobretudo, para o suporte conseguir
+       * localizar o registo exato quando alguém reporta um erro.
+       */
       columns: [
-        { key: "id", header: columns.id, width: 10, type: "number" },
         { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "userName", header: columns.name, width: 24 },
+        { key: "assistantName", header: columns.assistant, width: 24 },
         { key: "channel", header: columns.channel, width: 12 },
         { key: "role", header: columns.role, width: 12 },
         { key: "deliveryStatus", header: columns.deliveryStatus, width: 14 },
         { key: "deliveredAt", header: columns.deliveredAt, width: 20, type: "date" },
         { key: "readAt", header: columns.readAt, width: 20, type: "date" },
         { key: "failedAt", header: columns.failedAt, width: 20, type: "date" },
-        { key: "userId", header: columns.userId, width: 10, type: "number" },
-        { key: "assistantId", header: columns.assistantId, width: 12, type: "number" },
+        { key: "id", header: columns.id, width: 12, type: "number" },
+        { key: "userId", header: columns.userId, width: 12, type: "number" },
+        { key: "assistantId", header: columns.assistantId, width: 13, type: "number" },
         { key: "threadId", header: columns.threadId, width: 12, type: "number" },
         { key: "scheduledBroadcastId", header: columns.scheduledBroadcastId, width: 38 },
         { key: "automationRunId", header: columns.automationRunId, width: 38 },
@@ -1105,15 +1114,16 @@ function addDetailSheets(workbook, detail, meta) {
       name: columns.usersSheet,
       rows: detail.users ?? [],
       columns: [
-        { key: "id", header: columns.id, width: 10, type: "number" },
         { key: "name", header: columns.name, width: 26 },
         { key: "email", header: columns.email, width: 30 },
         { key: "phoneNumber", header: columns.phone, width: 20 },
-        { key: "whatsappId", header: columns.whatsappId, width: 26 },
-        { key: "teamsId", header: columns.teamsId, width: 38 },
-        { key: "assistantId", header: columns.assistantId, width: 12, type: "number" },
+        { key: "assistantName", header: columns.assistant, width: 24 },
         { key: "tags", header: columns.tags, width: 30 },
         { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "id", header: columns.id, width: 12, type: "number" },
+        { key: "assistantId", header: columns.assistantId, width: 13, type: "number" },
+        { key: "whatsappId", header: columns.whatsappId, width: 26 },
+        { key: "teamsId", header: columns.teamsId, width: 38 },
       ],
     },
     {
@@ -1128,6 +1138,8 @@ function addDetailSheets(workbook, detail, meta) {
         { key: "scheduledFor", header: columns.scheduledFor, width: 20, type: "date" },
         { key: "processedAt", header: columns.processedAt, width: 20, type: "date" },
         { key: "lastError", header: columns.lastError, width: 46 },
+        // Alvo do `automationRunId` das Mensagens — é o que permite
+        // perguntar que mensagens esta automação enviou.
         { key: "id", header: columns.id, width: 38 },
       ],
     },
@@ -1142,6 +1154,7 @@ function addDetailSheets(workbook, detail, meta) {
         { key: "startedAt", header: columns.startedAt, width: 20, type: "date" },
         { key: "completedAt", header: columns.completedAt, width: 20, type: "date" },
         { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        // Alvo do `scheduledBroadcastId` das Mensagens.
         { key: "id", header: columns.id, width: 38 },
       ],
     },
@@ -1154,6 +1167,7 @@ function addDetailSheets(workbook, detail, meta) {
         { key: "language", header: columns.language, width: 12 },
         { key: "scope", header: columns.scope, width: 12 },
         { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "id", header: columns.id, width: 12, type: "number" },
         { key: "providerTemplateId", header: columns.providerTemplateId, width: 38 },
       ],
     },

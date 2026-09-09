@@ -212,6 +212,8 @@ export function buildExcelLabels(translation) {
     "clickRate",
     "linkLabel",
     "destinationUrl",
+    "assistant",
+    "rule",
     "templatesSheet",
     "dailySheet",
     "language",

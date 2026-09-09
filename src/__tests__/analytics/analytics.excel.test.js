@@ -59,6 +59,7 @@ const META = {
       sendGroupId: "ID envio",
       whatsappId: "ID WhatsApp",
       teamsId: "ID Teams",
+      assistant: "Assistente",
       tags: "Etiquetas",
       recipients: "Destinatarios",
       clicked: "Clicaram",
@@ -623,9 +624,9 @@ describe("folhas de detalhe", () => {
         deliveredAt: "2026-08-14T16:21:41+00:00",
         readAt: null,
         failedAt: null,
+        userName: "Fernando",
+        assistantName: "Onboarding",
         userId: 7,
-        assistantId: 10,
-        threadId: 60,
         scheduledBroadcastId: null,
         automationRunId: null,
       },
@@ -697,7 +698,7 @@ describe("folhas de detalhe", () => {
 
     // As outras folhas continuam a mostrar a hora, que ali importa.
     expect(
-      detailed.getWorksheet("Mensagens").getCell("B2").numFmt,
+      detailed.getWorksheet("Mensagens").getCell("A2").numFmt,
     ).toBe("yyyy-mm-dd hh:mm");
 
     // Linha de 2026-09-02: 10 mensagens, sem cliques, 2 execuções, 1 falha.
@@ -724,7 +725,7 @@ describe("folhas de detalhe", () => {
   });
 
   it("grava datas como datas, não como texto", () => {
-    const cell = detailed.getWorksheet("Mensagens").getCell("B2");
+    const cell = detailed.getWorksheet("Mensagens").getCell("A2");
 
     // Se fosse string, o Excel ordenava por ordem alfabética e
     // "filtrar por mês" deixava de existir.
@@ -735,19 +736,19 @@ describe("folhas de detalhe", () => {
   it("lê como UTC uma data que não diz o fuso", () => {
     // Sem isto, o JavaScript interpretava-a na zona de quem tem o
     // browser aberto — no verão em Portugal, uma hora de desvio.
-    const cell = detailed.getWorksheet("Mensagens").getCell("B2");
+    const cell = detailed.getWorksheet("Mensagens").getCell("A2");
 
     expect(cell.value.toISOString()).toBe("2026-08-14T16:21:27.678Z");
   });
 
   it("respeita o fuso quando ele vem indicado", () => {
-    const cell = detailed.getWorksheet("Mensagens").getCell("F2");
+    const cell = detailed.getWorksheet("Mensagens").getCell("G2");
 
     expect(cell.value.toISOString()).toBe("2026-08-14T16:21:41.000Z");
   });
 
   it("deixa vazias as datas em falta, sem inventar epochs", () => {
-    const cell = detailed.getWorksheet("Mensagens").getCell("G2");
+    const cell = detailed.getWorksheet("Mensagens").getCell("H2");
 
     expect(cell.value).toBeNull();
   });
