@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   getTrackedLinkReportsByOrg: vi.fn(),
   getMessageRows: vi.fn(),
   getUserRows: vi.fn(),
+  getTemplateRows: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/analytics/analyticsExport.repo", () => ({
@@ -25,6 +26,7 @@ vi.mock("@/lib/repos/analytics/analyticsExport.repo", () => ({
   getScheduledBroadcastRows: mocks.getScheduledBroadcastRows,
   getMessageRows: mocks.getMessageRows,
   getUserRows: mocks.getUserRows,
+  getTemplateRows: mocks.getTemplateRows,
 }));
 
 vi.mock("@/lib/repos/broadcast/trackedLinks.repo", () => ({
@@ -42,6 +44,7 @@ beforeEach(() => {
   mocks.getTrackedLinkReportsByOrg.mockResolvedValue([]);
   mocks.getMessageRows.mockResolvedValue([]);
   mocks.getUserRows.mockResolvedValue([]);
+  mocks.getTemplateRows.mockResolvedValue([]);
 });
 
 describe("getAnalyticsExportDataset", () => {
@@ -153,6 +156,7 @@ describe("getAnalyticsExportDataset", () => {
     expect(result.counts).toEqual({
       messages: 0,
       users: 0,
+      templates: 0,
       automationRuns: 2,
       scheduledBroadcasts: 0,
       trackedLinkGroups: 1,
@@ -214,5 +218,22 @@ describe("getAnalyticsExportDataset", () => {
 
     expect(mocks.getUserRows).toHaveBeenCalledWith(7);
     expect(mocks.getUserRows.mock.calls[0]).toHaveLength(1);
+  });
+  it("traduz org_id nulo em ambito global", async () => {
+    mocks.getTemplateRows.mockResolvedValue([
+      { id: 1, name: "meu", org_id: 7 },
+      { id: 2, name: "partilhado", org_id: null },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.templates.map((t) => t.scope)).toEqual(["org", "global"]);
+  });
+
+  it("não filtra os templates por período", async () => {
+    // Um template não é um acontecimento datado: existe ou não existe.
+    await getAnalyticsExportDataset({ orgId: 7, period: "30d" });
+
+    expect(mocks.getTemplateRows).toHaveBeenCalledWith(7);
   });
 });

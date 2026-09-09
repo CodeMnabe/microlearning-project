@@ -6,6 +6,7 @@ import {
   getScheduledBroadcastRows,
   getMessageRows,
   getUserRows,
+  getTemplateRows,
 } from "@/lib/repos/analytics/analyticsExport.repo";
 
 import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
@@ -35,7 +36,15 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
    * Os nomes das regras vão em paralelo com o resto: são poucos e não
    * dependem de nada, mas seriam uma espera desnecessária em série.
    */
-  const [runRows, ruleNames, scheduledRows, linkReports, messageRows, userRows] =
+  const [
+    runRows,
+    ruleNames,
+    scheduledRows,
+    linkReports,
+    messageRows,
+    userRows,
+    templateRows,
+  ] =
     await Promise.all([
       getAutomationRunRows(orgId, periodStart),
       getAutomationRuleNames(orgId),
@@ -43,6 +52,7 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
       getTrackedLinkReportsByOrg(orgId, rankingStart),
       getMessageRows(orgId, periodStart),
       getUserRows(orgId),
+      getTemplateRows(orgId),
     ]);
 
   /**
@@ -118,6 +128,18 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
       .join(", "),
   }));
 
+  const templates = templateRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    language: row.language,
+    status: row.status,
+    // `org_id` nulo significa template global, partilhado por todas as
+    // organizações. Traduzimos isso em vez de mostrar uma célula vazia.
+    scope: row.org_id === null ? "global" : "org",
+    providerTemplateId: row.provider_template_id,
+    createdAt: row.created_at,
+  }));
+
   const scheduledBroadcasts = scheduledRows.map((row) => ({
     id: row.id,
     status: row.status,
@@ -147,6 +169,7 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     counts: {
       messages: messages.length,
       users: users.length,
+      templates: templates.length,
       automationRuns: automationRuns.length,
       scheduledBroadcasts: scheduledBroadcasts.length,
       trackedLinkGroups: linkReports.length,
@@ -154,6 +177,7 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
 
     messages,
     users,
+    templates,
     automationRuns,
     scheduledBroadcasts,
     trackedLinks: linkReports,

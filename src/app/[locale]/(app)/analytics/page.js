@@ -140,7 +140,12 @@ export default function AnalyticsPage() {
         const payload = await response.json().catch(() => null);
 
         if (response.ok && payload?.ok) {
-          detail = payload;
+          /**
+           * As séries diárias já vieram no `overview` e estão em
+           * memória. Juntá-las aqui evita uma segunda ida ao servidor
+           * para calcular o mesmo.
+           */
+          detail = { ...payload, daily: data.daily };
         } else {
           console.warn("[analytics] Detail dataset unavailable:", payload);
         }

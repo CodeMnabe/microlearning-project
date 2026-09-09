@@ -1033,6 +1033,38 @@ function addSummarySheet(workbook, data, meta) {
 }
 
 /**
+ * Junta as quatro séries diárias numa só tabela.
+ *
+ * A API devolve-as separadas — mensagens, cliques, execuções e falhas,
+ * cada uma como uma lista de `{ date, valor }`. Numa folha isso seriam
+ * quatro tabelas paralelas que ninguém consegue cruzar.
+ *
+ * Indexamos por data e juntamos: uma linha por dia, uma coluna por
+ * série. Assim dá para ver num relance se o pico de falhas caiu no
+ * mesmo dia do pico de mensagens.
+ */
+function buildDailyRows(daily) {
+  const byDate = new Map();
+
+  const merge = (rows, key, valueKey) => {
+    (rows ?? []).forEach((row) => {
+      const existing = byDate.get(row.date) ?? { date: row.date };
+      existing[key] = row[valueKey] ?? 0;
+      byDate.set(row.date, existing);
+    });
+  };
+
+  merge(daily?.messages, "messages", "messages");
+  merge(daily?.clicks, "clicks", "clicks");
+  merge(daily?.automationRuns, "runs", "processed");
+  merge(daily?.failedMessages, "failures", "failures");
+
+  // Ordenadas por data. Sem isto sairiam pela ordem em que a primeira
+  // série as encontrou, que não é ordem nenhuma.
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
  * Acrescenta as folhas de detalhe ao livro.
  *
  * Só corre quando existe `detail`. Sem ele o livro fica com o Resumo e
@@ -1108,6 +1140,29 @@ function addDetailSheets(workbook, detail, meta) {
         { key: "completedAt", header: columns.completedAt, width: 20, type: "date" },
         { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
         { key: "id", header: columns.id, width: 38 },
+      ],
+    },
+    {
+      name: columns.templatesSheet,
+      rows: detail.templates ?? [],
+      columns: [
+        { key: "name", header: columns.name, width: 34 },
+        { key: "status", header: columns.status, width: 14 },
+        { key: "language", header: columns.language, width: 12 },
+        { key: "scope", header: columns.scope, width: 12 },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "providerTemplateId", header: columns.providerTemplateId, width: 38 },
+      ],
+    },
+    {
+      name: columns.dailySheet,
+      rows: buildDailyRows(detail.daily),
+      columns: [
+        { key: "date", header: columns.date, width: 14, type: "date" },
+        { key: "messages", header: columns.messagesSheet, width: 14, type: "number" },
+        { key: "clicks", header: columns.clicksTotal, width: 14, type: "number" },
+        { key: "runs", header: columns.runsSheet, width: 14, type: "number" },
+        { key: "failures", header: columns.failures, width: 14, type: "number" },
       ],
     },
     {

@@ -66,6 +66,13 @@ const META = {
       clickRate: "Taxa",
       linkLabel: "Link",
       destinationUrl: "Destino",
+      templatesSheet: "Templates",
+      dailySheet: "Evolucao diaria",
+      language: "Idioma",
+      scope: "Ambito",
+      providerTemplateId: "ID no fornecedor",
+      date: "Data",
+      failures: "Falhas",
     },
     organization: "Organização",
     period: "Período",
@@ -620,6 +627,19 @@ describe("folhas de detalhe", () => {
     trackedLinks: [
       { sendGroupId: "ghi", linkLabel: "Curso", totalClicks: 5, clickRate: 41.7 },
     ],
+    templates: [
+      { id: 1, name: "boas_vindas", status: "ACTIVE", language: "pt_PT", scope: "org" },
+      { id: 2, name: "global_ping", status: "ACTIVE", language: "en", scope: "global" },
+    ],
+    daily: {
+      messages: [
+        { date: "2026-09-02", messages: 10 },
+        { date: "2026-09-01", messages: 4 },
+      ],
+      clicks: [{ date: "2026-09-01", clicks: 3 }],
+      automationRuns: [{ date: "2026-09-02", processed: 2 }],
+      failedMessages: [{ date: "2026-09-02", failures: 1 }],
+    },
   };
 
   let detailed;
@@ -639,8 +659,35 @@ describe("folhas de detalhe", () => {
       "Utilizadores",
       "Execucoes",
       "Agendamentos",
+      "Templates",
+      "Evolucao diaria",
       "Links",
     ]);
+  });
+
+  it("junta as quatro séries diárias numa tabela só", () => {
+    // A API devolve-as separadas. Em folhas paralelas ninguém as
+    // conseguia cruzar; numa linha por dia, vê-se logo se o pico de
+    // falhas caiu no mesmo dia do pico de mensagens.
+    const sheet = detailed.getWorksheet("Evolucao diaria");
+
+    // Ordenadas por data, não pela ordem em que a primeira série
+    // as encontrou.
+    expect(sheet.getCell("A2").value.toISOString()).toContain("2026-09-01");
+    expect(sheet.getCell("A3").value.toISOString()).toContain("2026-09-02");
+
+    // Linha de 2026-09-02: 10 mensagens, sem cliques, 2 execuções, 1 falha.
+    expect(sheet.getRow(3).getCell(2).value).toBe(10);
+    expect(sheet.getRow(3).getCell(3).value).toBeNull();
+    expect(sheet.getRow(3).getCell(4).value).toBe(2);
+    expect(sheet.getRow(3).getCell(5).value).toBe(1);
+  });
+
+  it("distingue templates globais dos da organização", () => {
+    const sheet = detailed.getWorksheet("Templates");
+
+    expect(sheet.getCell("D2").value).toBe("org");
+    expect(sheet.getCell("D3").value).toBe("global");
   });
 
   it("continua a produzir o livro curto sem dataset de detalhe", () => {

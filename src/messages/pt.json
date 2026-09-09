@@ -2337,6 +2337,13 @@
   "summarySheet": "Resumo",
   "detail": {
     "messagesSheet": "Mensagens",
+    "templatesSheet": "Templates",
+    "dailySheet": "Evolucao diaria",
+    "language": "Idioma",
+    "scope": "Ambito",
+    "providerTemplateId": "ID no fornecedor",
+    "date": "Data",
+    "failures": "Falhas",
     "usersSheet": "Utilizadores",
     "runsSheet": "Execucoes",
     "scheduledSheet": "Agendamentos",

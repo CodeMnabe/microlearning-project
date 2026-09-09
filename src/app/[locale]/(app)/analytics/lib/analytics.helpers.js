@@ -212,6 +212,13 @@ export function buildExcelLabels(translation) {
     "clickRate",
     "linkLabel",
     "destinationUrl",
+    "templatesSheet",
+    "dailySheet",
+    "language",
+    "scope",
+    "providerTemplateId",
+    "date",
+    "failures",
   ];
 
   return {

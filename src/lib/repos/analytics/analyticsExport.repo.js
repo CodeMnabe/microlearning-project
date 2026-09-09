@@ -167,3 +167,21 @@ export async function getUserRows(orgId) {
     (query) => query.eq("organization_id", orgId),
   );
 }
+
+/**
+ * Vai buscar os templates de WhatsApp visíveis para a organização.
+ *
+ * O filtro `org_id.eq.X,org_id.is.null` é o mesmo que o repo de
+ * contagens usa: além dos próprios, a organização vê os templates
+ * globais, que não pertencem a ninguém.
+ *
+ * Sem período: um template não é um acontecimento datado, é uma coisa
+ * que existe ou não existe agora.
+ */
+export async function getTemplateRows(orgId) {
+  return fetchRows(
+    "whatsapp_templates",
+    "id, name, language, status, org_id, provider_template_id, created_at",
+    (query) => query.or(`org_id.eq.${orgId},org_id.is.null`),
+  );
+}
