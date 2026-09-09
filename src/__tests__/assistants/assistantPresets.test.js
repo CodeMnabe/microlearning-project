@@ -14,7 +14,7 @@ import {
   ASSISTANT_PRESETS,
   DEFAULT_ASSISTANT_PRESET,
   getAssistantPreset,
-  findPresetByTemperature,
+  findPreset,
 } from "@/app/[locale]/(app)/assistants/assistantPresets";
 
 describe("predefinições de assistente", () => {
@@ -80,16 +80,29 @@ describe("predefinições de assistente", () => {
     expect(getAssistantPreset(null).temperature).toBe(0.7);
   });
 
-  it("reconhece a predefinição de um assistente já criado", () => {
-    expect(findPresetByTemperature(0.2).id).toBe("formal");
-    expect(findPresetByTemperature("1.1").id).toBe("creative");
+  it("reconhece a predefinicao de um assistente ja criado", () => {
+    expect(findPreset({ temperature: 0.2, top_p: 1 }).id).toBe("formal");
+    expect(findPreset({ temperature: "1.1", top_p: "1" }).id).toBe("creative");
   });
 
-  it("não inventa predefinição para valores afinados à mão", () => {
-    // Qualquer assistente anterior a esta mudança tem valores fora
-    // destes. Dizer que é "Normal" seria mentir sobre o que ele faz.
-    expect(findPresetByTemperature(0.45)).toBeNull();
-    expect(findPresetByTemperature(null)).toBeNull();
-    expect(findPresetByTemperature(undefined)).toBeNull();
+  it("trata um top_p por preencher como o valor por omissao", () => {
+    // A API usa 1 quando nao lhe mandamos nada, por isso e o que o
+    // assistente tem na pratica.
+    expect(findPreset({ temperature: 0.7 }).id).toBe("normal");
+    expect(findPreset({ temperature: 0.7, top_p: null }).id).toBe("normal");
+  });
+
+  it("nao inventa predefinicao para valores afinados a mao", () => {
+    // Qualquer assistente anterior a esta mudanca tem valores fora
+    // destes. Dizer que e "Normal" seria mentir sobre o que ele faz.
+    expect(findPreset({ temperature: 0.45 })).toBeNull();
+    expect(findPreset({ temperature: null })).toBeNull();
+    expect(findPreset({})).toBeNull();
+    expect(findPreset()).toBeNull();
+  });
+
+  it("nao chama Normal a um assistente com o top_p mexido", () => {
+    // A temperatura bate certo, o top_p nao: o comportamento e outro.
+    expect(findPreset({ temperature: 0.7, top_p: 0.35 })).toBeNull();
   });
 });

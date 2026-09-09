@@ -46,20 +46,32 @@ export function getAssistantPreset(id) {
 }
 
 /**
- * Descobre a que predefinição corresponde uma temperatura.
+ * Descobre a que predefinição corresponde um assistente.
  *
- * Serve para o ecrã de edição poder assinalar qual está ativa quando o
- * assistente foi criado por aqui. Devolve `null` para valores afinados
- * à mão — o caso de qualquer assistente anterior a esta mudança.
+ * Compara os dois parâmetros, não só a `temperature`: um assistente com
+ * `temperature` 0.7 mas `top_p` 0.35 não se comporta como o Normal, e
+ * chamar-lhe Normal seria mentir sobre o que ele faz.
+ *
+ * Um `top_p` por preencher conta como 1: é o valor que a OpenAI usa
+ * quando não lhe mandamos nada, por isso é o que o assistente tem na
+ * prática.
+ *
+ * Devolve `null` para valores afinados à mão — o caso de qualquer
+ * assistente criado antes desta mudança.
  */
-export function findPresetByTemperature(temperature) {
+export function findPreset({ temperature, top_p } = {}) {
   if (temperature === null || temperature === undefined) return null;
 
-  const value = Number(temperature);
+  const wanted = Number(temperature);
+  const wantedTopP = Number(top_p ?? ASSISTANT_PRESET_TOP_P);
+
+  if (Number.isNaN(wanted) || Number.isNaN(wantedTopP)) return null;
 
   return (
     ASSISTANT_PRESETS.find(
-      (preset) => Math.abs(preset.temperature - value) < 0.001,
+      (preset) =>
+        Math.abs(preset.temperature - wanted) < 0.001 &&
+        Math.abs(preset.top_p - wantedTopP) < 0.001,
     ) ?? null
   );
 }

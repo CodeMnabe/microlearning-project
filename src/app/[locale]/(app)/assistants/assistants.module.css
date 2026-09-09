@@ -707,3 +707,17 @@ body.modalOpen {
   outline: 2px solid var(--brand-1, #30a9e0);
   outline-offset: 2px;
 }
+
+/*
+  A linha do comportamento em edicao.
+
+  As outras linhas das especificidades sao uma grelha de tres colunas
+  (rotulo | barra | valor). As tres predefinicoes nao cabem numa coluna,
+  por isso esta linha empilha: rotulo em cima, opcoes por baixo a toda a
+  largura.
+*/
+.specRowStacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -217,11 +217,11 @@ export default function CreateAssistantModal({
                     onChange={() => setPreset(option.id)}
                   />
                   <span className={styles.presetName}>
-                    {translation(`CreateAssistant.presets.${option.id}.name`)}
+                    {translation(`AssistantPresets.${option.id}.name`)}
                   </span>
                   <span className={styles.presetDescription}>
                     {translation(
-                      `CreateAssistant.presets.${option.id}.description`,
+                      `AssistantPresets.${option.id}.description`,
                     )}
                   </span>
                 </label>

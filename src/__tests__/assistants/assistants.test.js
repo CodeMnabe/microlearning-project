@@ -42,19 +42,6 @@ vi.mock("@/app/[locale]/(app)/assistants/Chatbox/Chatbox.jsx", () => ({
     ),
 }));
 
-vi.mock("@/app/component/Slider/Slider", () => ({
-  default: ({ value, onChange, min = 0, max = 1, step = 0.01 }) =>
-    React.createElement("input", {
-      type: range,
-      "aria-label": "slider",
-      value: value ?? 0,
-      min,
-      max,
-      step,
-      onChange,
-    }),
-}));
-
 function makeResponse(data, ok = true) {
   return Promise.resolve({
     ok,
@@ -92,8 +79,8 @@ const DETAILS_2 = {
   description: "Beta desc",
   instructions: "Beta instructions",
   model: "gpt-4.1",
-  top_p: 0.5,
-  temperature: 1.2,
+  top_p: 1,
+  temperature: 1.1,
   created_at: new Date("2025-01-02T10:00:00Z").toISOString(),
   vectorStoreId: null,
 };
@@ -342,5 +329,77 @@ describe("AssistantsHub Page", () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByText("Gamma desc")).toBeInTheDocument();
+  });
+
+  it("mostra o nome da predefinicao em vez dos dois numeros", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // O Beta nasceu com a predefinicao Criativo (1.1 / 1).
+    await user.click(await screen.findByText("Beta"));
+
+    expect(
+      await screen.findByText("AssistantPresets.creative.name"),
+    ).toBeInTheDocument();
+
+    // "Criativo" diz ao cliente o que o assistente faz; "1.10" nao diz.
+    expect(screen.queryByText("Assistants.details.creativity")).toBeNull();
+    expect(screen.queryByText("Assistants.details.variety")).toBeNull();
+  });
+
+  it("assinala como personalizado um assistente afinado a mao", async () => {
+    renderPage();
+
+    // O Alpha tem temperatura 0.7 (a do Normal) mas top_p 0.2. Nao se
+    // comporta como o Normal, e chamar-lhe Normal seria mentir.
+    expect(
+      await screen.findByText("Assistants.details.customBehavior"),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText("AssistantPresets.normal.name")).toBeNull();
+  });
+
+  it("em edicao oferece as tres predefinicoes e nenhum deslizador", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("Alpha instructions")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.edit" }),
+    );
+
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+  });
+
+  it("guarda os valores da predefinicao escolhida", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("Alpha instructions")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.edit" }),
+    );
+
+    await user.click(screen.getByRole("radio", { name: /formal/i }));
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.save" }),
+    );
+
+    const patch = await waitFor(() => {
+      const call = mocks.fetch.mock.calls.find(
+        (c) => c[0] === "/api/assistants/asst_1" && c[1]?.method === "PATCH",
+      );
+      expect(call).toBeTruthy();
+      return JSON.parse(call[1].body);
+    });
+
+    expect(patch.temperature).toBe(0.2);
+
+    // O top_p tem de vir corrigido para 1: o assistente tinha 0.2, e
+    // escolher uma predefinicao escreve os dois parametros.
+    expect(patch.top_p).toBe(1);
   });
 });
