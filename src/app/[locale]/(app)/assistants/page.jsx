@@ -10,11 +10,8 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-import {
-  ASSISTANT_PRESETS,
-  findPreset,
-  getAssistantPreset,
-} from "./assistantPresets";
+import PresetPicker from "./PresetPicker";
+import { findPreset, getAssistantPreset } from "./assistantPresets";
 
 const STORAGE_BUCKET = "assistant-uploads";
 
@@ -418,41 +415,17 @@ export default function AssistantsHub() {
                       {translation("Assistants.details.behavior")}
                     </span>
 
-                    <div className={styles.presetGroup} role="radiogroup">
-                      {ASSISTANT_PRESETS.map((option) => (
-                        <label
-                          key={option.id}
-                          className={`${styles.presetOption} ${
-                            currentPreset?.id === option.id
-                              ? styles.presetOptionActive
-                              : ""
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="assistant-behavior"
-                            value={option.id}
-                            checked={currentPreset?.id === option.id}
-                            onChange={() => applyPreset(option.id)}
-                          />
-                          <span className={styles.presetName}>
-                            {translation(`AssistantPresets.${option.id}.name`)}
-                          </span>
-                          <span className={styles.presetDescription}>
-                            {translation(
-                              `AssistantPresets.${option.id}.description`,
-                            )}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                    <PresetPicker
+                      name="assistant-behavior"
+                      value={currentPreset?.id ?? null}
+                      onChange={applyPreset}
+                    />
                   </div>
                 ) : (
-                  <div className={styles.specRowGrid}>
+                  <div className={styles.specRowBehavior}>
                     <span className={styles.specLabel}>
                       {translation("Assistants.details.behavior")}
                     </span>
-                    <div className={styles.specTrack} />
                     <span className={styles.specValueBold}>
                       {currentPreset
                         ? translation(

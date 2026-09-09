@@ -22,9 +22,18 @@
 // O `top_p` fica no valor por omissão em todas as predefinições.
 export const ASSISTANT_PRESET_TOP_P = 1;
 
+/*
+ * A ordem desta lista e a ordem no ecra.
+ *
+ * O Normal vem primeiro por ser a escolha de omissao e a que serve a
+ * maioria dos casos: quem nao quer decidir encontra logo a certa.
+ *
+ * Os numeros continuam a crescer do Formal para o Criativo, mas a lista
+ * deixou de o mostrar pela ordem — por isso ha um teste a garanti-lo.
+ */
 export const ASSISTANT_PRESETS = [
-  { id: "formal", temperature: 0.2, top_p: ASSISTANT_PRESET_TOP_P },
   { id: "normal", temperature: 0.7, top_p: ASSISTANT_PRESET_TOP_P },
+  { id: "formal", temperature: 0.2, top_p: ASSISTANT_PRESET_TOP_P },
   { id: "creative", temperature: 1.1, top_p: ASSISTANT_PRESET_TOP_P },
 ];
 

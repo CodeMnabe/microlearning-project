@@ -200,4 +200,66 @@ describe("CreateAssistantModal", () => {
     // Quem cria um assistente pela primeira vez nao sabe o que sao.
     expect(screen.queryAllByRole("slider")).toHaveLength(0);
   });
+
+  it("mostra a descricao da predefinicao ao carregar no icone", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    // Fechada de origem: sao tres linhas em vez de nove, e e por isso
+    // que as instrucoes ganharam espaco.
+    expect(screen.queryByText("AssistantPresets.formal.description")).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: "AssistantPresets.formal.name" }),
+    );
+
+    expect(
+      screen.getByText("AssistantPresets.formal.description"),
+    ).toBeInTheDocument();
+  });
+
+  it("abrir uma descricao fecha a anterior", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await user.click(
+      screen.getByRole("button", { name: "AssistantPresets.formal.name" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "AssistantPresets.creative.name" }),
+    );
+
+    // Duas bolhas abertas ao mesmo tempo deixavam de dizer a qual das
+    // predefinicoes pertence cada explicacao.
+    expect(screen.queryByText("AssistantPresets.formal.description")).toBeNull();
+    expect(
+      screen.getByText("AssistantPresets.creative.description"),
+    ).toBeInTheDocument();
+  });
+
+  it("carregar no mesmo icone fecha a descricao", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    const botao = screen.getByRole("button", {
+      name: "AssistantPresets.normal.name",
+    });
+
+    await user.click(botao);
+    await user.click(botao);
+
+    expect(screen.queryByText("AssistantPresets.normal.description")).toBeNull();
+  });
+
+  it("escolher uma predefinicao fecha a descricao aberta", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await user.click(
+      screen.getByRole("button", { name: "AssistantPresets.formal.name" }),
+    );
+    await user.click(screen.getByRole("radio", { name: /formal/i }));
+
+    expect(screen.queryByText("AssistantPresets.formal.description")).toBeNull();
+  });
 });

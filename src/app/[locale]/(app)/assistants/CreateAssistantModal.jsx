@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
 import { useTranslations } from "next-intl";
+import PresetPicker from "./PresetPicker";
 import {
-  ASSISTANT_PRESETS,
   DEFAULT_ASSISTANT_PRESET,
   getAssistantPreset,
 } from "./assistantPresets";
@@ -167,6 +167,7 @@ export default function CreateAssistantModal({
               </span>
             </label>
             <textarea
+              rows={8}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
             />
@@ -196,37 +197,11 @@ export default function CreateAssistantModal({
               </span>
             </label>
 
-            {/*
-              Botões de rádio e não uma lista pendente: são três opções,
-              e ver as três ao mesmo tempo com a explicação de cada uma é
-              o que permite escolher sem saber o que é `temperature`.
-            */}
-            <div className={styles.presetGroup} role="radiogroup">
-              {ASSISTANT_PRESETS.map((option) => (
-                <label
-                  key={option.id}
-                  className={`${styles.presetOption} ${
-                    preset === option.id ? styles.presetOptionActive : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="assistant-preset"
-                    value={option.id}
-                    checked={preset === option.id}
-                    onChange={() => setPreset(option.id)}
-                  />
-                  <span className={styles.presetName}>
-                    {translation(`AssistantPresets.${option.id}.name`)}
-                  </span>
-                  <span className={styles.presetDescription}>
-                    {translation(
-                      `AssistantPresets.${option.id}.description`,
-                    )}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <PresetPicker
+              name="create-assistant-preset"
+              value={preset}
+              onChange={setPreset}
+            />
           </div>
 
           <div className={styles.buttonGroup}>

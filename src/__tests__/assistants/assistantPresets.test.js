@@ -18,14 +18,35 @@ import {
 } from "@/app/[locale]/(app)/assistants/assistantPresets";
 
 describe("predefinições de assistente", () => {
-  it("tem três, com os ids que a interface espera", () => {
+  it("mostra as tres pela ordem que a interface espera", () => {
+    // O Normal primeiro: e a escolha de omissao e a que serve a
+    // maioria dos casos, por isso quem nao quer decidir encontra logo
+    // a certa.
     expect(ASSISTANT_PRESETS.map((preset) => preset.id)).toEqual([
-      "formal",
       "normal",
+      "formal",
       "creative",
     ]);
   });
 
+  it("comeca pela predefinicao de omissao", () => {
+    // Se a de omissao deixasse de ser a primeira, a lista passaria a
+    // sugerir uma escolha diferente daquela que o formulario aplica.
+    expect(ASSISTANT_PRESETS[0].id).toBe(DEFAULT_ASSISTANT_PRESET);
+  });
+
+  it("mantem as temperaturas do mais contido ao mais solto", () => {
+    /*
+     * Procuradas pelo id e nao pela posicao: a lista esta pela ordem
+     * do ecra, que ja nao e a ordem dos valores. Se fosse pela posicao,
+     * este teste passaria a dizer outra coisa sem ninguem dar por isso.
+     */
+    const temperatura = (id) =>
+      ASSISTANT_PRESETS.find((preset) => preset.id === id).temperature;
+
+    expect(temperatura("formal")).toBeLessThan(temperatura("normal"));
+    expect(temperatura("normal")).toBeLessThan(temperatura("creative"));
+  });
   it("só faz variar a temperatura", () => {
     /**
      * A OpenAI recomenda alterar a `temperature` OU o `top_p`, nunca os
@@ -37,13 +58,6 @@ describe("predefinições de assistente", () => {
 
     expect(topPs.size).toBe(1);
     expect([...topPs][0]).toBe(1);
-  });
-
-  it("ordena as temperaturas do mais contido ao mais solto", () => {
-    const [formal, normal, creative] = ASSISTANT_PRESETS;
-
-    expect(formal.temperature).toBeLessThan(normal.temperature);
-    expect(normal.temperature).toBeLessThan(creative.temperature);
   });
 
   it("mantém-se dentro da gama em que a qualidade aguenta", () => {
