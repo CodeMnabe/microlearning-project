@@ -3,8 +3,11 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
 import { useTranslations } from "next-intl";
-import PillSelect from "@/app/components/PillSelect/PillSelect";
-import Slider from "@/app/components/Slider/Slider";
+import PresetPicker from "./PresetPicker";
+import {
+  DEFAULT_ASSISTANT_PRESET,
+  getAssistantPreset,
+} from "./assistantPresets";
 
 export default function CreateAssistantModal({
   orgId,
@@ -16,23 +19,15 @@ export default function CreateAssistantModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [model, setModel] = useState("gpt-5.6-luna");
-  const modelOptions = [
-    {
-      value: "gpt-5.6-luna",
-      label: "Económico",
-    },
-    {
-      value: "gpt-5.6-terra",
-      label: "Equilibrado",
-    },
-    {
-      value: "gpt-5.6-sol",
-      label: "Avançado",
-    },
-  ];
-  const [topP, setTopP] = useState(0.5);
-  const [temperature, setTemperature] = useState(1.0);
+  /**
+   * A predefinição escolhida.
+   *
+   * O modelo deixou de ser escolhido aqui: fica no valor por omissão e
+   * muda-se na edição, onde quem já conhece o assistente o pode afinar.
+   */
+  const [preset, setPreset] = useState(DEFAULT_ASSISTANT_PRESET);
+  // O modelo com que os assistentes nascem. Alterável na edição.
+  const DEFAULT_MODEL = "gpt-5.6-luna";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -56,9 +51,9 @@ export default function CreateAssistantModal({
         name: name,
         description: description,
         instructions: instructions,
-        model: model,
-        top_p: topP,
-        temperature: temperature,
+        model: DEFAULT_MODEL,
+        top_p: getAssistantPreset(preset).top_p,
+        temperature: getAssistantPreset(preset).temperature,
       }),
     });
 
@@ -172,16 +167,17 @@ export default function CreateAssistantModal({
               </span>
             </label>
             <textarea
+              rows={8}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
             />
           </div>
           <div className={styles.formGroup}>
             <label>
-              {translation("CreateAssistant.model")}
+              {translation("CreateAssistant.presetLabel")}
               <span
                 className={styles.infoIcon}
-                data-tooltip={translation("CreateAssistant.modelHelp")}
+                data-tooltip={translation("CreateAssistant.presetHelp")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -200,88 +196,14 @@ export default function CreateAssistantModal({
                 </svg>
               </span>
             </label>
-            <PillSelect
-              options={modelOptions}
-              value={model}
-              onChange={setModel}
-              placeholder={translation("CreateAssistant.modelPlaceholder")}
-              fullWidth
-              className={styles.input} // keeps same width/spacing as your inputs
+
+            <PresetPicker
+              name="create-assistant-preset"
+              value={preset}
+              onChange={setPreset}
             />
           </div>
-          <div className={styles.formGroup}>
-            <label>
-              {translation("CreateAssistant.creativity")}
-              <span
-                className={styles.infoIcon}
-                data-tooltip={translation("CreateAssistant.creativityHelp")}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
-           10-4.48 10-10S17.52 2 12 2zm0 18c-4.41
-           0-8-3.59-8-8s3.59-8 8-8 8 3.59 8
-           8-3.59 8-8 8zm-1-13h2v2h-2zm0
-           4h2v6h-2z"
-                  />
-                </svg>
-              </span>
-            </label>
-            <div className={styles.sliderRow}>
-              <span className={styles.sliderLabel}>{topP.toFixed(2)}</span>
-              <Slider
-                min={0}
-                max={1}
-                step={0.01}
-                value={topP}
-                onChange={(e) => setTopP(parseFloat(e.target.value))}
-              />
-            </div>
-          </div>
 
-          <div className={styles.formGroup}>
-            <label>
-              {translation("CreateAssistant.variety")}
-              <span
-                className={styles.infoIcon}
-                data-tooltip={translation("CreateAssistant.varietyHelp")}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
-           10-4.48 10-10S17.52 2 12 2zm0 18c-4.41
-           0-8-3.59-8-8s3.59-8 8-8 8 3.59 8
-           8-3.59 8-8 8zm-1-13h2v2h-2zm0
-           4h2v6h-2z"
-                  />
-                </svg>
-              </span>
-            </label>
-            <div className={styles.sliderRow}>
-              <span className={styles.sliderLabel}>
-                {temperature.toFixed(2)}
-              </span>
-              <Slider
-                min={0}
-                max={2}
-                step={0.01}
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              />
-            </div>
-          </div>
           <div className={styles.buttonGroup}>
             <button type="submit">
               {translation("CreateAssistant.create")}

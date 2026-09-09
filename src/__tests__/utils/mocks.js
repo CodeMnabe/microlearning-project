@@ -8,6 +8,7 @@ export const appMocks = {
   useOrganization: vi.fn(),
 
   confirm: vi.fn(),
+  alert: vi.fn(),
 
   push: vi.fn(),
   replace: vi.fn(),
@@ -33,6 +34,10 @@ export function registerAppModulePacks() {
     useConfirm: () => appMocks.confirm,
   }));
 
+  vi.mock("@/app/components/Alert/AlertProvider", () => ({
+    useAlert: () => appMocks.alert,
+  }));
+
   vi.mock("next/navigation", () => ({
     useRouter: () => ({
       push: appMocks.push,
@@ -52,6 +57,7 @@ export function setDefaultAppMockReturns({
   appMocks.useAuth.mockReturnValue(auth);
   appMocks.useOrganization.mockReturnValue(org);
   appMocks.confirm.mockResolvedValue(confirm);
+  appMocks.alert.mockResolvedValue(undefined);
 }
 
 export function resetAppMocks() {

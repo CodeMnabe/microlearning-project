@@ -42,19 +42,6 @@ vi.mock("@/app/[locale]/(app)/assistants/Chatbox/Chatbox.jsx", () => ({
     ),
 }));
 
-vi.mock("@/app/component/Slider/Slider", () => ({
-  default: ({ value, onChange, min = 0, max = 1, step = 0.01 }) =>
-    React.createElement("input", {
-      type: range,
-      "aria-label": "slider",
-      value: value ?? 0,
-      min,
-      max,
-      step,
-      onChange,
-    }),
-}));
-
 function makeResponse(data, ok = true) {
   return Promise.resolve({
     ok,
@@ -92,8 +79,8 @@ const DETAILS_2 = {
   description: "Beta desc",
   instructions: "Beta instructions",
   model: "gpt-4.1",
-  top_p: 0.5,
-  temperature: 1.2,
+  top_p: 1,
+  temperature: 1.1,
   created_at: new Date("2025-01-02T10:00:00Z").toISOString(),
   vectorStoreId: null,
 };
@@ -255,13 +242,26 @@ describe("AssistantsHub Page", () => {
     const sent = JSON.parse(patchCall[1].body);
 
     expect(sent).toMatchObject({
-      id: "asst_1",
-      open_ai_id: "oa_1",
       name: "Alpha renamed",
       description: "New description",
       instructions: "New instructions",
       model: "gpt-4.1",
     });
+
+    /*
+     * O `id` e o `open_ai_id` nao vao no corpo, e nao e um esquecimento.
+     *
+     * A route identifica o assistente pelo `assistantId` do URL e passa
+     * o corpo por `cleanPatch`, que so deixa passar os campos de
+     * ALLOWED_ASSISTANT_PATCH_FIELDS. Nenhum desses dois esta la: aceitar
+     * um `open_ai_id` vindo do cliente deixaria uma organizacao apontar
+     * o seu assistente para o de outra.
+     *
+     * Este teste exigia-os e estava vermelho desde a migracao para a API
+     * de Responses. Era o teste que estava errado.
+     */
+    expect(sent).not.toHaveProperty("id");
+    expect(sent).not.toHaveProperty("open_ai_id");
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(`/api/assistants/asst_1`);
@@ -342,5 +342,89 @@ describe("AssistantsHub Page", () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByText("Gamma desc")).toBeInTheDocument();
+  });
+
+  it("mostra o nome da predefinicao em vez dos dois numeros", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // O Beta nasceu com a predefinicao Criativo (1.1 / 1).
+    await user.click(await screen.findByText("Beta"));
+
+    expect(
+      await screen.findByText("AssistantPresets.creative.name"),
+    ).toBeInTheDocument();
+
+    // "Criativo" diz ao cliente o que o assistente faz; "1.10" nao diz.
+    expect(screen.queryByText("Assistants.details.creativity")).toBeNull();
+    expect(screen.queryByText("Assistants.details.variety")).toBeNull();
+
+    // O modelo tambem saiu do ecra: nao se escolhe nem se mostra. O id
+    // cru ("gpt-4.1") nunca foi para os olhos do cliente.
+    expect(screen.queryByText(/gpt-/i)).toBeNull();
+    expect(screen.queryByText("Assistants.details.model")).toBeNull();
+  });
+
+  it("assinala como personalizado um assistente afinado a mao", async () => {
+    renderPage();
+
+    // O Alpha tem temperatura 0.7 (a do Normal) mas top_p 0.2. Nao se
+    // comporta como o Normal, e chamar-lhe Normal seria mentir.
+    expect(
+      await screen.findByText("Assistants.details.customBehavior"),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByText("AssistantPresets.normal.name")).toBeNull();
+  });
+
+  it("em edicao oferece as tres predefinicoes e nenhum deslizador", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("Alpha instructions")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.edit" }),
+    );
+
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
+
+    // O comportamento e a unica coisa que se escolhe: o seletor de
+    // modelo saiu daqui como ja tinha saido da criacao.
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+  });
+
+  it("guarda os valores da predefinicao escolhida", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("Alpha instructions")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.edit" }),
+    );
+
+    await user.click(screen.getByRole("radio", { name: /formal/i }));
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.details.save" }),
+    );
+
+    const patch = await waitFor(() => {
+      const call = mocks.fetch.mock.calls.find(
+        (c) => c[0] === "/api/assistants/asst_1" && c[1]?.method === "PATCH",
+      );
+      expect(call).toBeTruthy();
+      return JSON.parse(call[1].body);
+    });
+
+    expect(patch.temperature).toBe(0.2);
+
+    // Sem seletor, o modelo do assistente tem de sobreviver a gravacao.
+    expect(patch.model).toBe("gpt-4.1");
+
+    // O top_p tem de vir corrigido para 1: o assistente tinha 0.2, e
+    // escolher uma predefinicao escreve os dois parametros.
+    expect(patch.top_p).toBe(1);
   });
 });

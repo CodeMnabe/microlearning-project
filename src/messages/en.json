@@ -1780,9 +1780,8 @@
       "instructionsPlaceholder": "Assistant's instructions",
       "createdAt": "Created at",
       "specs": "Specifications:",
-      "creativity": "Creativity",
-      "variety": "Variety",
-      "model": "Model",
+      "behavior": "Behaviour",
+      "customBehavior": "Custom ({temperature})",
       "save": "Save",
       "saving": "Saving...",
       "cancel": "Cancel",
@@ -1802,21 +1801,31 @@
     },
     "placeholder": "Select an assistant from the left column."
   },
+  "AssistantPresets": {
+    "formal": {
+      "name": "Formal",
+      "description": "Predictable answers that stick to the instructions. For procedures and factual information."
+    },
+    "normal": {
+      "name": "Normal",
+      "description": "A balance between consistency and natural phrasing. Fits most cases."
+    },
+    "creative": {
+      "name": "Creative",
+      "description": "More varied answers with more initiative. For conversation and suggestions."
+    }
+  },
+
   "CreateAssistant": {
     "title": "Create new Assistant",
+    "presetLabel": "Behaviour",
+    "presetHelp": "Sets how predictable or varied the Assistant is when answering. You can change it later when editing.",
     "name": "Name",
     "nameHelp": "Name that will be associated with the Assistant.",
     "description": "Description",
     "descriptionHelp": "A brief description about the Assistant.",
     "instructions": "Instructions",
     "instructionsHelp": "Instructions the Assistant will follow.",
-    "model": "Model",
-    "modelHelp": "AI model the Assistant will use.",
-    "modelPlaceholder": "Select a model",
-    "creativity": "Creativity",
-    "creativityHelp": "Controls diversity of answers: at 0.5, the Assistant picks among higher-probability options, keeping to the most relevant ones.",
-    "variety": "Variety",
-    "varietyHelp": "Controls randomness: lower values lead to more predictable replies. Closer to zero becomes more deterministic.",
     "create": "Create",
     "cancel": "Cancel"
   },
