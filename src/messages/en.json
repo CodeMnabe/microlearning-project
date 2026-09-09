@@ -2182,7 +2182,9 @@
   "loading": "Loading metrics...",
   "errors": {
     "load": "Metrics could not be loaded. Please try again in a few seconds.",
-    "noOrg": "The current organization could not be identified."
+    "noOrg": "The current organization could not be identified.",
+  "export": "Could not generate the Excel file. Please try again.",
+  "exportPartial": "The Excel file was downloaded with only the Summary and Dashboard: the detail data could not be retrieved."
   },
   "health": {
     "ok": "All good",

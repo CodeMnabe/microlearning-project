@@ -80,6 +80,14 @@ export default function AnalyticsPage() {
   const [isFullLinksListOpen, setIsFullLinksListOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  /**
+   * Estado próprio para os erros de exportação.
+   *
+   * Não reutilizamos o `error` do carregamento das métricas: são coisas
+   * diferentes, e partilhar o mesmo lugar faria uma esconder a outra.
+   */
+  const [exportNotice, setExportNotice] = useState(null);
   const exportRef = useRef(null);
 
   /**
@@ -117,6 +125,7 @@ export default function AnalyticsPage() {
     if (!metrics || isExportingExcel) return;
 
     setIsExportingExcel(true);
+    setExportNotice(null);
 
     try {
       const exportedAt = new Date();
@@ -153,6 +162,20 @@ export default function AnalyticsPage() {
         console.warn("[analytics] Detail dataset request failed:", err);
       }
 
+      /**
+       * Um export sem detalhe é sucesso a meio, não falha.
+       *
+       * O ficheiro sai na mesma, com o Resumo e o Painel. Mas quem o
+       * receber ia contar duas folhas em vez de nove e pensar que
+       * estava avariado — mais vale dizer-lhe porquê.
+       */
+      if (!detail) {
+        setExportNotice({
+          tone: "warning",
+          message: translation("errors.exportPartial"),
+        });
+      }
+
       await exportAnalyticsExcel({
         detail,
         data,
@@ -170,6 +193,13 @@ export default function AnalyticsPage() {
       });
     } catch (err) {
       console.error("[analytics] Failed to export Excel:", err);
+
+      // Sem isto o botão voltava ao normal e não acontecia nada: a
+      // pessoa ficava a olhar para o ecrã sem saber que falhou.
+      setExportNotice({
+        tone: "error",
+        message: translation("errors.export"),
+      });
     } finally {
       setIsExportingExcel(false);
     }
@@ -195,6 +225,12 @@ export default function AnalyticsPage() {
       )}
 
       {error && <div className={styles.errorBox}>{error}</div>}
+
+      {exportNotice && (
+        <div className={styles.errorBox} role="status">
+          {exportNotice.message}
+        </div>
+      )}
 
       {!metrics && !error ? (
         <div className={styles.empty}>{translation("loading")}</div>

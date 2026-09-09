@@ -2191,7 +2191,9 @@
   "loading": "A carregar métricas...",
   "errors": {
     "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
-    "noOrg": "Não foi possível identificar a organização atual."
+    "noOrg": "Não foi possível identificar a organização atual.",
+  "export": "Não foi possível gerar o ficheiro Excel. Tenta novamente.",
+  "exportPartial": "O Excel foi descarregado apenas com o Resumo e o Painel: não foi possível obter os dados de detalhe."
   },
   "health": {
     "ok": "Tudo OK",

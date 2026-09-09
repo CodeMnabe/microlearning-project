@@ -227,6 +227,21 @@ describe("folha de resumo", () => {
     expect(header.getCell(1).fill.fgColor.argb).toBe("FF191E3B");
   });
 
+  it("alinha todos os cabeçalhos à esquerda, longe da seta do filtro", () => {
+    // A seta do filtro automático desenha-se no canto direito da
+    // célula. Um cabeçalho à direita fica por baixo dela: "Valor"
+    // aparecia como "Val".
+    const header = sheet.getRow(1);
+
+    [1, 2, 3, 4].forEach((column) => {
+      expect(header.getCell(column).alignment.horizontal).toBe("left");
+    });
+
+    // Os valores continuam à direita — só o cabeçalho é que mudou.
+    const row = sheet.getRow(rowOfMetric("Mensagens", "Total"));
+    expect(row.getCell(3).alignment.horizontal).toBe("right");
+  });
+
   it("escreve o nome do grupo só na primeira linha de cada grupo", () => {
     const first = rowOfMetric("Utilizadores", "Total");
     const second = rowOfMetric("Utilizadores", "Com assistente");
@@ -675,6 +690,15 @@ describe("folhas de detalhe", () => {
     // as encontrou.
     expect(sheet.getCell("A2").value.toISOString()).toContain("2026-09-01");
     expect(sheet.getCell("A3").value.toISOString()).toContain("2026-09-02");
+
+    // Só o dia, sem hora. Com o formato completo a coluna não chegava
+    // para o valor e o Excel mostrava #### em vez da data.
+    expect(sheet.getCell("A2").numFmt).toBe("yyyy-mm-dd");
+
+    // As outras folhas continuam a mostrar a hora, que ali importa.
+    expect(
+      detailed.getWorksheet("Mensagens").getCell("B2").numFmt,
+    ).toBe("yyyy-mm-dd hh:mm");
 
     // Linha de 2026-09-02: 10 mensagens, sem cliques, 2 execuções, 1 falha.
     expect(sheet.getRow(3).getCell(2).value).toBe(10);

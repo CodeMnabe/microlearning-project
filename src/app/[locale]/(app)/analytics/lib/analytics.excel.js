@@ -212,13 +212,17 @@ function applySheetChrome(sheet, { headerRow, lastColumn }) {
 /**
  * Pinta a linha de cabecalho de uma tabela.
  *
- * As colunas numericas ficam alinhadas a direita, para baterem certo
- * com os valores por baixo.
+ * Todos os cabecalhos ficam a esquerda, incluindo os das colunas
+ * numericas. A razao e o filtro automatico: a seta desenha-se sempre no
+ * canto direito da celula, e um titulo alinhado a direita fica por
+ * baixo dela — "Valor" aparecia como "Val".
+ *
+ * Os valores continuam a direita. So o cabecalho e que muda de lado.
  */
-function styleHeaderRow(row, { numericFrom }) {
+function styleHeaderRow(row) {
   row.height = 22;
 
-  row.eachCell((cell, columnNumber) => {
+  row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: HEADER_TEXT_ARGB } };
     cell.fill = {
       type: "pattern",
@@ -227,10 +231,7 @@ function styleHeaderRow(row, { numericFrom }) {
       // como o mesmo documento, e não como dois ficheiros colados.
       fgColor: { argb: NAVY_ARGB },
     };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: columnNumber >= numericFrom ? "right" : "left",
-    };
+    cell.alignment = { vertical: "middle", horizontal: "left" };
     cell.border = {
       top: { style: "thin", color: { argb: RULE_ARGB } },
       bottom: { style: "thin", color: { argb: RULE_ARGB } },
@@ -350,6 +351,10 @@ function addPanelTitle(sheet, { row, left, right, title, theme }) {
 // conforme as definições regionais de quem abre o ficheiro.
 const DATE_FORMAT = "yyyy-mm-dd hh:mm";
 
+// Para colunas que só têm dia, sem hora. Mostrar `00:00` numa data
+// dessas não acrescenta nada e obriga a coluna a ser mais larga.
+const DAY_FORMAT = "yyyy-mm-dd";
+
 /**
  * Converte um valor vindo da API numa data verdadeira.
  *
@@ -405,9 +410,7 @@ function addDataSheet(workbook, { name, columns, rows }) {
   const headerRow = sheet.getRow(1);
   headerRow.values = columns.map((column) => column.header);
 
-  styleHeaderRow(headerRow, {
-    numericFrom: columns.length + 1,
-  });
+  styleHeaderRow(headerRow);
 
   const edge = { style: "thin", color: { argb: RULE_ARGB } };
 
@@ -431,7 +434,7 @@ function addDataSheet(workbook, { name, columns, rows }) {
       cell.border = { top: edge, bottom: edge, left: edge, right: edge };
 
       if (column.type === "date") {
-        cell.numFmt = DATE_FORMAT;
+        cell.numFmt = column.format ?? DATE_FORMAT;
         cell.alignment = { horizontal: "left" };
       } else if (column.type === "number") {
         cell.numFmt = column.format ?? NUMBER_FORMAT;
@@ -789,7 +792,7 @@ function addSummarySheet(workbook, data, meta) {
     meta.labels.columnRate,
   ];
 
-  styleHeaderRow(headerRow, { numericFrom: 3 });
+  styleHeaderRow(headerRow);
 
   // ---------- linhas ----------
 
@@ -1158,7 +1161,15 @@ function addDetailSheets(workbook, detail, meta) {
       name: columns.dailySheet,
       rows: buildDailyRows(detail.daily),
       columns: [
-        { key: "date", header: columns.date, width: 14, type: "date" },
+        {
+          key: "date",
+          header: columns.date,
+          width: 13,
+          type: "date",
+          // Sem hora: a série é por dia. Com o formato completo, a
+          // coluna não chegava para o valor e o Excel mostrava ####.
+          format: DAY_FORMAT,
+        },
         { key: "messages", header: columns.messagesSheet, width: 14, type: "number" },
         { key: "clicks", header: columns.clicksTotal, width: 14, type: "number" },
         { key: "runs", header: columns.runsSheet, width: 14, type: "number" },
