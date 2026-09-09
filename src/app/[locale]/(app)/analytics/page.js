@@ -121,7 +121,35 @@ export default function AnalyticsPage() {
     try {
       const exportedAt = new Date();
 
+      /**
+       * Vai buscar o detalhe antes de montar o livro.
+       *
+       * O Resumo e o Painel saem dos dados que já estão em memória; as
+       * folhas de detalhe precisam de uma ida ao servidor. Se essa
+       * falhar, exportamos na mesma o que temos — um ficheiro com duas
+       * folhas vale mais do que um erro e nenhum ficheiro.
+       */
+      let detail = null;
+
+      try {
+        const response = await fetch(
+          `/api/analytics/export?orgId=${orgId}&period=${period}`,
+          { cache: "no-store" },
+        );
+
+        const payload = await response.json().catch(() => null);
+
+        if (response.ok && payload?.ok) {
+          detail = payload;
+        } else {
+          console.warn("[analytics] Detail dataset unavailable:", payload);
+        }
+      } catch (err) {
+        console.warn("[analytics] Detail dataset request failed:", err);
+      }
+
       await exportAnalyticsExcel({
+        detail,
         data,
         meta: {
           organizationName: org?.name ?? "",

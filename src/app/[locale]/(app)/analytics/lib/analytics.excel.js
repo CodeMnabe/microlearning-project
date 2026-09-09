@@ -343,6 +343,129 @@ function addPanelTitle(sheet, { row, left, right, title, theme }) {
 }
 
 // ==============================
+// Folhas de detalhe
+// ==============================
+
+// Como as datas aparecem nas células. O Excel mostra-as depois
+// conforme as definições regionais de quem abre o ficheiro.
+const DATE_FORMAT = "yyyy-mm-dd hh:mm";
+
+/**
+ * Converte um valor vindo da API numa data verdadeira.
+ *
+ * Há uma armadilha real aqui. Nesta base de dados umas tabelas guardam
+ * `timestamptz` e outras `timestamp`, e o JSON reflete isso:
+ *
+ *   automation_run.created_at   2026-08-28T13:17:17.249798+00:00
+ *   message.created_at          2026-08-14T16:21:27.678
+ *
+ * A segunda não diz em que fuso está. O JavaScript, perante uma string
+ * assim, interpreta-a na zona de quem tem o browser aberto — e no verão
+ * em Portugal isso desloca a data uma hora. Metade das colunas ficaria
+ * certa e a outra metade errada, sem nada a assinalar.
+ *
+ * Assumimos UTC quando o fuso falta, porque é o que o servidor grava.
+ * A correção fica aqui, na leitura, e não na base de dados: funciona
+ * seja qual for o tipo da coluna e não obriga a migração nenhuma.
+ */
+function toDate(value) {
+  if (!value) return null;
+
+  const hasTimeZone = /([Zz]|[+-]\d{2}:?\d{2})$/.test(value);
+  const date = new Date(hasTimeZone ? value : `${value}Z`);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Escreve uma folha de dados a partir de uma lista de objetos.
+ *
+ * As colunas trazem o tipo, e é ele que decide como a célula é gravada:
+ *
+ *   date    vira um objeto Date com formato de data. O Excel ordena,
+ *           filtra por intervalo e calcula diferenças.
+ *   number  vira número com separador de milhares.
+ *   text    vira texto.
+ *
+ * Se as datas fossem gravadas como as strings que vêm da API, o Excel
+ * recebia texto: ordenava por ordem alfabética, e "Filtrar por mês"
+ * deixava de existir. É o mesmo erro dos números, com outra roupa.
+ */
+function addDataSheet(workbook, { name, columns, rows }) {
+  const sheet = workbook.addWorksheet(name, {
+    properties: { tabColor: { argb: BRAND_ARGB } },
+    views: [{ showGridLines: true }],
+  });
+
+  sheet.columns = columns.map((column) => ({
+    key: column.key,
+    width: column.width ?? 18,
+  }));
+
+  const headerRow = sheet.getRow(1);
+  headerRow.values = columns.map((column) => column.header);
+
+  styleHeaderRow(headerRow, {
+    numericFrom: columns.length + 1,
+  });
+
+  const edge = { style: "thin", color: { argb: RULE_ARGB } };
+
+  rows.forEach((item) => {
+    const row = sheet.addRow(
+      columns.map((column) => {
+        const value = item[column.key];
+
+        if (column.type === "date") return toDate(value);
+        if (column.type === "number") return value ?? null;
+
+        return value ?? null;
+      }),
+    );
+
+    row.height = 16;
+
+    columns.forEach((column, index) => {
+      const cell = row.getCell(index + 1);
+
+      cell.border = { top: edge, bottom: edge, left: edge, right: edge };
+
+      if (column.type === "date") {
+        cell.numFmt = DATE_FORMAT;
+        cell.alignment = { horizontal: "left" };
+      } else if (column.type === "number") {
+        cell.numFmt = column.format ?? NUMBER_FORMAT;
+      }
+    });
+  });
+
+  const lastRow = sheet.lastRow?.number ?? 1;
+
+  sheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: lastRow, column: columns.length },
+  };
+
+  sheet.pageSetup = {
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    printTitlesRow: "1:1",
+    margins: {
+      left: 0.4,
+      right: 0.4,
+      top: 0.5,
+      bottom: 0.5,
+      header: 0.2,
+      footer: 0.2,
+    },
+  };
+
+  return sheet;
+}
+
+// ==============================
 // Folha de painel
 // ==============================
 
@@ -909,6 +1032,110 @@ function addSummarySheet(workbook, data, meta) {
   return sheet;
 }
 
+/**
+ * Acrescenta as folhas de detalhe ao livro.
+ *
+ * Só corre quando existe `detail`. Sem ele o livro fica com o Resumo e
+ * o Painel — que é o que se consegue montar sem ir ao servidor.
+ *
+ * Cada folha é uma tabela plana: uma linha por registo, uma coluna por
+ * campo. Nada de agrupamentos nem de formatação inventiva, porque estas
+ * folhas existem para serem filtradas e cruzadas, não para serem lidas
+ * de cima a baixo.
+ */
+function addDetailSheets(workbook, detail, meta) {
+  const columns = meta.labels.detail;
+
+  const sheets = [
+    {
+      name: columns.messagesSheet,
+      rows: detail.messages ?? [],
+      columns: [
+        { key: "id", header: columns.id, width: 10, type: "number" },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "channel", header: columns.channel, width: 12 },
+        { key: "role", header: columns.role, width: 12 },
+        { key: "deliveryStatus", header: columns.deliveryStatus, width: 14 },
+        { key: "deliveredAt", header: columns.deliveredAt, width: 20, type: "date" },
+        { key: "readAt", header: columns.readAt, width: 20, type: "date" },
+        { key: "failedAt", header: columns.failedAt, width: 20, type: "date" },
+        { key: "userId", header: columns.userId, width: 10, type: "number" },
+        { key: "assistantId", header: columns.assistantId, width: 12, type: "number" },
+        { key: "threadId", header: columns.threadId, width: 12, type: "number" },
+        { key: "scheduledBroadcastId", header: columns.scheduledBroadcastId, width: 38 },
+        { key: "automationRunId", header: columns.automationRunId, width: 38 },
+      ],
+    },
+    {
+      name: columns.usersSheet,
+      rows: detail.users ?? [],
+      columns: [
+        { key: "id", header: columns.id, width: 10, type: "number" },
+        { key: "name", header: columns.name, width: 26 },
+        { key: "email", header: columns.email, width: 30 },
+        { key: "phoneNumber", header: columns.phone, width: 20 },
+        { key: "whatsappId", header: columns.whatsappId, width: 26 },
+        { key: "teamsId", header: columns.teamsId, width: 38 },
+        { key: "assistantId", header: columns.assistantId, width: 12, type: "number" },
+        { key: "tags", header: columns.tags, width: 30 },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+      ],
+    },
+    {
+      name: columns.runsSheet,
+      rows: detail.automationRuns ?? [],
+      columns: [
+        { key: "rule", header: columns.rule, width: 30 },
+        { key: "status", header: columns.status, width: 14 },
+        { key: "userName", header: columns.name, width: 24 },
+        { key: "userEmail", header: columns.email, width: 28 },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "scheduledFor", header: columns.scheduledFor, width: 20, type: "date" },
+        { key: "processedAt", header: columns.processedAt, width: 20, type: "date" },
+        { key: "lastError", header: columns.lastError, width: 46 },
+        { key: "id", header: columns.id, width: 38 },
+      ],
+    },
+    {
+      name: columns.scheduledSheet,
+      rows: detail.scheduledBroadcasts ?? [],
+      columns: [
+        { key: "status", header: columns.status, width: 14 },
+        { key: "channel", header: columns.channel, width: 12 },
+        { key: "scheduledFor", header: columns.scheduledFor, width: 20, type: "date" },
+        { key: "recipientCount", header: columns.recipients, width: 14, type: "number" },
+        { key: "startedAt", header: columns.startedAt, width: 20, type: "date" },
+        { key: "completedAt", header: columns.completedAt, width: 20, type: "date" },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "id", header: columns.id, width: 38 },
+      ],
+    },
+    {
+      name: columns.linksSheet,
+      rows: detail.trackedLinks ?? [],
+      columns: [
+        { key: "linkLabel", header: columns.linkLabel, width: 30 },
+        { key: "destinationUrl", header: columns.destinationUrl, width: 46 },
+        { key: "channel", header: columns.channel, width: 12 },
+        { key: "recipientCount", header: columns.recipients, width: 14, type: "number" },
+        { key: "clickedCount", header: columns.clicked, width: 14, type: "number" },
+        { key: "totalClicks", header: columns.clicksTotal, width: 14, type: "number" },
+        {
+          key: "clickRate",
+          header: columns.clickRate,
+          width: 12,
+          type: "number",
+          format: RATIO_FORMAT,
+        },
+        { key: "createdAt", header: columns.createdAt, width: 20, type: "date" },
+        { key: "sendGroupId", header: columns.sendGroupId, width: 38 },
+      ],
+    },
+  ];
+
+  sheets.forEach((sheet) => addDataSheet(workbook, sheet));
+}
+
 // ==============================
 // Livro completo
 // ==============================
@@ -920,7 +1147,7 @@ function addSummarySheet(workbook, data, meta) {
  * não precisa de importar o ExcelJS e pode ser testada passando-lhe
  * um livro criado pelo próprio teste.
  */
-export function buildAnalyticsWorkbook(workbook, data, meta) {
+export function buildAnalyticsWorkbook(workbook, data, meta, detail = null) {
   workbook.creator = "MyDigitalBot";
   workbook.created = meta.exportedAt ?? new Date();
 
@@ -934,6 +1161,12 @@ export function buildAnalyticsWorkbook(workbook, data, meta) {
   // apresentação.
   addSummarySheet(workbook, data, meta);
   addDashboardSheet(workbook, data, meta);
+
+  // As folhas de detalhe só existem quando o dataset foi pedido ao
+  // servidor. Sem ele o livro continua válido, apenas mais curto.
+  if (detail) {
+    addDetailSheets(workbook, detail, meta);
+  }
 
   return workbook;
 }
@@ -949,12 +1182,12 @@ export function buildAnalyticsWorkbook(workbook, data, meta) {
  * navegador tem cerca de 900 KB e não tem nada que fazer no bundle
  * inicial da página.
  */
-export async function exportAnalyticsExcel({ data, meta }) {
+export async function exportAnalyticsExcel({ data, meta, detail = null }) {
   const ExcelJS = await import("exceljs");
 
   const workbook = new ExcelJS.Workbook();
 
-  buildAnalyticsWorkbook(workbook, data, meta);
+  buildAnalyticsWorkbook(workbook, data, meta, detail);
 
   const buffer = await workbook.xlsx.writeBuffer();
 

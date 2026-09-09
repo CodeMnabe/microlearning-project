@@ -28,6 +28,45 @@ const META = {
       operations: "OPERAÇÃO",
       templates: "TEMPLATES",
     },
+    detail: {
+      messagesSheet: "Mensagens",
+      usersSheet: "Utilizadores",
+      runsSheet: "Execucoes",
+      scheduledSheet: "Agendamentos",
+      linksSheet: "Links",
+      id: "ID",
+      name: "Nome",
+      email: "Email",
+      phone: "Telefone",
+      channel: "Canal",
+      role: "Origem",
+      status: "Estado",
+      deliveryStatus: "Estado de entrega",
+      createdAt: "Criado em",
+      deliveredAt: "Entregue em",
+      readAt: "Lido em",
+      failedAt: "Falhou em",
+      scheduledFor: "Agendado para",
+      processedAt: "Processado em",
+      startedAt: "Iniciado em",
+      completedAt: "Concluido em",
+      lastError: "Ultimo erro",
+      userId: "ID utilizador",
+      assistantId: "ID assistente",
+      threadId: "ID conversa",
+      scheduledBroadcastId: "ID agendamento",
+      automationRunId: "ID execucao",
+      sendGroupId: "ID envio",
+      whatsappId: "ID WhatsApp",
+      teamsId: "ID Teams",
+      tags: "Etiquetas",
+      recipients: "Destinatarios",
+      clicked: "Clicaram",
+      clicksTotal: "Cliques",
+      clickRate: "Taxa",
+      linkLabel: "Link",
+      destinationUrl: "Destino",
+    },
     organization: "Organização",
     period: "Período",
     exportedAt: "Exportado em",
@@ -545,5 +584,114 @@ describe("identidade visual", () => {
     // da tabela.
     expect(panel.getCell(5, 1).fill.fgColor.argb).toBe("FF30A9E0");
     expect(summary.getRow(1).getCell(1).fill.fgColor.argb).toBe("FF191E3B");
+  });
+});
+
+describe("folhas de detalhe", () => {
+  const DETAIL = {
+    messages: [
+      {
+        id: 877,
+        // Sem fuso — como vem de `message.created_at`, que é `timestamp`.
+        createdAt: "2026-08-14T16:21:27.678",
+        channel: "whatsapp",
+        role: "user",
+        deliveryStatus: null,
+        // Com fuso — como vem de `message.delivered_at`, que é `timestamptz`.
+        deliveredAt: "2026-08-14T16:21:41+00:00",
+        readAt: null,
+        failedAt: null,
+        userId: 7,
+        assistantId: 10,
+        threadId: 60,
+        scheduledBroadcastId: null,
+        automationRunId: null,
+      },
+    ],
+    users: [
+      { id: 1, name: "Gaspar", email: "", tags: "Digik, IT", createdAt: null },
+    ],
+    automationRuns: [
+      { id: "abc", rule: "Boas-vindas", status: "sent", createdAt: null },
+    ],
+    scheduledBroadcasts: [
+      { id: "def", status: "queued", channel: "whatsapp", recipientCount: 2 },
+    ],
+    trackedLinks: [
+      { sendGroupId: "ghi", linkLabel: "Curso", totalClicks: 5, clickRate: 41.7 },
+    ],
+  };
+
+  let detailed;
+
+  beforeEach(() => {
+    detailed = new ExcelJS.Workbook();
+    buildAnalyticsWorkbook(detailed, DATA, META, DETAIL);
+  });
+
+  it("acrescenta uma folha por conjunto", () => {
+    const names = detailed.worksheets.map((worksheet) => worksheet.name);
+
+    expect(names).toEqual([
+      "Resumo",
+      "Painel",
+      "Mensagens",
+      "Utilizadores",
+      "Execucoes",
+      "Agendamentos",
+      "Links",
+    ]);
+  });
+
+  it("continua a produzir o livro curto sem dataset de detalhe", () => {
+    // Se a ida ao servidor falhar, um ficheiro com duas folhas vale
+    // mais do que um erro e nenhum ficheiro.
+    const short = new ExcelJS.Workbook();
+    buildAnalyticsWorkbook(short, DATA, META);
+
+    expect(short.worksheets).toHaveLength(2);
+  });
+
+  it("grava datas como datas, não como texto", () => {
+    const cell = detailed.getWorksheet("Mensagens").getCell("B2");
+
+    // Se fosse string, o Excel ordenava por ordem alfabética e
+    // "filtrar por mês" deixava de existir.
+    expect(cell.value).toBeInstanceOf(Date);
+    expect(cell.numFmt).toBe("yyyy-mm-dd hh:mm");
+  });
+
+  it("lê como UTC uma data que não diz o fuso", () => {
+    // Sem isto, o JavaScript interpretava-a na zona de quem tem o
+    // browser aberto — no verão em Portugal, uma hora de desvio.
+    const cell = detailed.getWorksheet("Mensagens").getCell("B2");
+
+    expect(cell.value.toISOString()).toBe("2026-08-14T16:21:27.678Z");
+  });
+
+  it("respeita o fuso quando ele vem indicado", () => {
+    const cell = detailed.getWorksheet("Mensagens").getCell("F2");
+
+    expect(cell.value.toISOString()).toBe("2026-08-14T16:21:41.000Z");
+  });
+
+  it("deixa vazias as datas em falta, sem inventar epochs", () => {
+    const cell = detailed.getWorksheet("Mensagens").getCell("G2");
+
+    expect(cell.value).toBeNull();
+  });
+
+  it("grava os números como números", () => {
+    const cell = detailed.getWorksheet("Agendamentos").getCell("D2");
+
+    expect(typeof cell.value).toBe("number");
+    expect(cell.value).toBe(2);
+  });
+
+  it("liga o filtro em cada folha de detalhe", () => {
+    const sheet = detailed.getWorksheet("Utilizadores");
+
+    expect(sheet.autoFilter.from).toEqual({ row: 1, column: 1 });
+    expect(sheet.views[0].showGridLines).toBe(true);
   });
 });
