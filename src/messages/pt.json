@@ -1813,6 +1813,22 @@
   },
   "CreateAssistant": {
     "title": "Criar novo Assistente",
+    "presetLabel": "Comportamento",
+    "presetHelp": "Define quão previsível ou variado o Assistant é a responder. Podes afinar os valores em detalhe depois de o criar.",
+    "presets": {
+      "formal": {
+        "name": "Formal",
+        "description": "Respostas previsíveis e agarradas às instruções. Para procedimentos e informação factual."
+      },
+      "normal": {
+        "name": "Normal",
+        "description": "Equilíbrio entre consistência e naturalidade. Serve para a maioria dos casos."
+      },
+      "creative": {
+        "name": "Criativo",
+        "description": "Respostas mais variadas e com mais iniciativa. Para conversa e sugestões."
+      }
+    },
     "name": "Nome",
     "nameHelp": "Nome que vai ficar associado ao Assistant.",
     "description": "Descrição",

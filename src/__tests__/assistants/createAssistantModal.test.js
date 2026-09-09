@@ -141,9 +141,63 @@ describe("CreateAssistantModal", () => {
       name: "My Assistant",
       description: "Desc",
       instructions: "Instr",
-      model: "gpt-4.1",
+      model: "gpt-5.6-luna",
     });
 
     expect(mocks.onCreated).toHaveBeenCalled();
+  });
+
+  it("cria com a predefinicao Normal quando nenhuma e escolhida", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    const [nameInput] = screen.getAllByRole("textbox");
+    await user.type(nameInput, "My Assistant");
+
+    await user.click(
+      screen.getByRole("button", { name: "CreateAssistant.create" }),
+    );
+
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalled());
+
+    const body = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+
+    expect(body.temperature).toBe(0.7);
+    expect(body.top_p).toBe(1);
+  });
+
+  it("envia a temperatura da predefinicao escolhida", async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    const [nameInput] = screen.getAllByRole("textbox");
+    await user.type(nameInput, "My Assistant");
+
+    // Formal e Criativo tem de dar valores diferentes, senao a escolha
+    // do utilizador nao muda nada.
+    await user.click(screen.getByRole("radio", { name: /Formal/i }));
+    await user.click(
+      screen.getByRole("button", { name: "CreateAssistant.create" }),
+    );
+
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalled());
+
+    const body = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+
+    expect(body.temperature).toBe(0.2);
+
+    // O top_p fica no valor por omissao em todas: a OpenAI recomenda
+    // alterar a temperature OU o top_p, nunca os dois.
+    expect(body.top_p).toBe(1);
+  });
+
+  it("mostra as tres predefinicoes e nenhum controlo numerico", async () => {
+    renderModal();
+
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+
+    // Os deslizadores de criatividade e variedade sairam da criacao.
+    // Quem cria um assistente pela primeira vez nao sabe o que sao.
+    expect(screen.queryAllByRole("slider")).toHaveLength(0);
   });
 });
