@@ -4,6 +4,8 @@ import {
   getAutomationRunRows,
   getAutomationRuleNames,
   getScheduledBroadcastRows,
+  getMessageRows,
+  getUserRows,
 } from "@/lib/repos/analytics/analyticsExport.repo";
 
 import { getTrackedLinkReportsByOrg } from "@/lib/repos/broadcast/trackedLinks.repo";
@@ -33,12 +35,15 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
    * Os nomes das regras vão em paralelo com o resto: são poucos e não
    * dependem de nada, mas seriam uma espera desnecessária em série.
    */
-  const [runRows, ruleNames, scheduledRows, linkReports] = await Promise.all([
-    getAutomationRunRows(orgId, periodStart),
-    getAutomationRuleNames(orgId),
-    getScheduledBroadcastRows(orgId, periodStart),
-    getTrackedLinkReportsByOrg(orgId, rankingStart),
-  ]);
+  const [runRows, ruleNames, scheduledRows, linkReports, messageRows, userRows] =
+    await Promise.all([
+      getAutomationRunRows(orgId, periodStart),
+      getAutomationRuleNames(orgId),
+      getScheduledBroadcastRows(orgId, periodStart),
+      getTrackedLinkReportsByOrg(orgId, rankingStart),
+      getMessageRows(orgId, periodStart),
+      getUserRows(orgId),
+    ]);
 
   /**
    * Achatamos as execuções aqui e não no repo.
@@ -60,6 +65,57 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
     processedAt: run.processed_at,
     lastError: run.last_error,
     scheduledBroadcastId: run.scheduled_broadcast_id,
+  }));
+
+  /**
+   * As mensagens saem quase como vêm: já são planas.
+   *
+   * Só renomeamos para camelCase, para a folha não misturar
+   * `delivered_at` com `recipientCount` na mesma linha de cabeçalhos.
+   */
+  const messages = messageRows.map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    channel: row.channel,
+    role: row.role,
+    deliveryStatus: row.delivery_status,
+    deliveredAt: row.delivered_at,
+    readAt: row.read_at,
+    failedAt: row.failed_at,
+    userId: row.user_id,
+    assistantId: row.assistant_id,
+    threadId: row.thread_id,
+    scheduledBroadcastId: row.scheduled_broadcast_id,
+    automationRunId: row.automation_run_id,
+    messageChainId: row.message_chain_id,
+    messageChainStepIndex: row.message_chain_step_index,
+    ...(row.content === undefined ? {} : { content: row.content }),
+  }));
+
+  /**
+   * Os utilizadores trazem as etiquetas por duas junções aninhadas.
+   *
+   * Juntamos os nomes numa string separada por vírgulas: uma célula de
+   * folha de cálculo não guarda listas, e uma coluna por etiqueta
+   * mudaria de forma consoante a organização.
+   */
+  const users = userRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phoneNumber: row.phone_number,
+    phoneCountryCode: row.phone_country_code,
+    phoneNational: row.phone_national,
+    whatsappId: row.whatsapp_bsuid,
+    whatsappUsername: row.whatsapp_username,
+    birdContactId: row.bird_contact_id,
+    teamsId: row.teams_aad_object_id,
+    assistantId: row.assistant_id,
+    createdAt: row.created_at,
+    tags: (row.user_tag ?? [])
+      .map((link) => link.tag?.name)
+      .filter(Boolean)
+      .join(", "),
   }));
 
   const scheduledBroadcasts = scheduledRows.map((row) => ({
@@ -89,11 +145,15 @@ export async function getAnalyticsExportDataset({ orgId, period }) {
      * export sai vazio por causa do período, em vez de parecer avariado.
      */
     counts: {
+      messages: messages.length,
+      users: users.length,
       automationRuns: automationRuns.length,
       scheduledBroadcasts: scheduledBroadcasts.length,
       trackedLinkGroups: linkReports.length,
     },
 
+    messages,
+    users,
     automationRuns,
     scheduledBroadcasts,
     trackedLinks: linkReports,

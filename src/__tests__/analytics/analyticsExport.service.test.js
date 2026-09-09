@@ -15,12 +15,16 @@ const mocks = vi.hoisted(() => ({
   getAutomationRuleNames: vi.fn(),
   getScheduledBroadcastRows: vi.fn(),
   getTrackedLinkReportsByOrg: vi.fn(),
+  getMessageRows: vi.fn(),
+  getUserRows: vi.fn(),
 }));
 
 vi.mock("@/lib/repos/analytics/analyticsExport.repo", () => ({
   getAutomationRunRows: mocks.getAutomationRunRows,
   getAutomationRuleNames: mocks.getAutomationRuleNames,
   getScheduledBroadcastRows: mocks.getScheduledBroadcastRows,
+  getMessageRows: mocks.getMessageRows,
+  getUserRows: mocks.getUserRows,
 }));
 
 vi.mock("@/lib/repos/broadcast/trackedLinks.repo", () => ({
@@ -36,6 +40,8 @@ beforeEach(() => {
   mocks.getAutomationRuleNames.mockResolvedValue(new Map());
   mocks.getScheduledBroadcastRows.mockResolvedValue([]);
   mocks.getTrackedLinkReportsByOrg.mockResolvedValue([]);
+  mocks.getMessageRows.mockResolvedValue([]);
+  mocks.getUserRows.mockResolvedValue([]);
 });
 
 describe("getAnalyticsExportDataset", () => {
@@ -145,9 +151,68 @@ describe("getAnalyticsExportDataset", () => {
     const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
 
     expect(result.counts).toEqual({
+      messages: 0,
+      users: 0,
       automationRuns: 2,
       scheduledBroadcasts: 0,
       trackedLinkGroups: 1,
     });
+  });
+
+  it("não leva o conteúdo das mensagens no ficheiro", async () => {
+    // O repo não pede a coluna, portanto ela não chega aqui. Este teste
+    // guarda a decisão: se alguém ligar a constante sem pensar, isto
+    // não impede — mas se alguém a acrescentar por engano no mapeamento,
+    // apanha.
+    mocks.getMessageRows.mockResolvedValue([
+      {
+        id: 1,
+        created_at: "2026-09-01T10:00:00Z",
+        channel: "whatsapp",
+        role: "assistant",
+      },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.messages[0]).not.toHaveProperty("content");
+  });
+
+  it("junta as etiquetas do utilizador numa só célula", async () => {
+    // Uma célula de folha de cálculo não guarda listas, e uma coluna
+    // por etiqueta mudaria de forma consoante a organização.
+    mocks.getUserRows.mockResolvedValue([
+      {
+        id: 5,
+        name: "Ana",
+        email: "ana@digik.pt",
+        user_tag: [
+          { tag: { id: 1, name: "Formação" } },
+          { tag: { id: 2, name: "Piloto" } },
+        ],
+      },
+    ]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.users[0].tags).toBe("Formação, Piloto");
+  });
+
+  it("aguenta um utilizador sem etiquetas", async () => {
+    mocks.getUserRows.mockResolvedValue([{ id: 6, name: "Rui" }]);
+
+    const result = await getAnalyticsExportDataset({ orgId: 7, period: "all" });
+
+    expect(result.users[0].tags).toBe("");
+  });
+
+  it("não filtra os utilizadores por período", async () => {
+    // Um export de utilizadores é o retrato de quem existe agora.
+    // Filtrar por data de criação daria uma lista incompleta: as
+    // mensagens do período podem ser de pessoas registadas antes dele.
+    await getAnalyticsExportDataset({ orgId: 7, period: "30d" });
+
+    expect(mocks.getUserRows).toHaveBeenCalledWith(7);
+    expect(mocks.getUserRows.mock.calls[0]).toHaveLength(1);
   });
 });

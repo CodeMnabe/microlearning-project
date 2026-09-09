@@ -89,3 +89,81 @@ export async function getScheduledBroadcastRows(orgId, periodStart) {
       ),
   );
 }
+
+/**
+ * Se o conteúdo das mensagens entra na exportação.
+ *
+ * Fica em `false` de propósito. Com ele ligado, o ficheiro passa a
+ * conter as conversas todas e muda de categoria em RGPD: deixa de ser
+ * um relatório de métricas e passa a ser um export de dados pessoais,
+ * com as obrigações que isso traz.
+ *
+ * É uma constante e não um parâmetro do pedido de propósito. Se fosse
+ * `?content=1`, qualquer pessoa com sessão podia levar as conversas —
+ * a decisão passaria a ser de quem chama, e não de quem é responsável
+ * pelos dados.
+ */
+const INCLUDE_MESSAGE_CONTENT = false;
+
+/**
+ * Vai buscar as mensagens da organização, uma linha por mensagem.
+ *
+ * As colunas seguem o `MESSAGE_SELECT` de `repos/messages.repo.js`, para
+ * a exportação mostrar os mesmos campos que o resto da aplicação usa.
+ */
+export async function getMessageRows(orgId, periodStart) {
+  const columns = [
+    "id",
+    "created_at",
+    "channel",
+    "role",
+    "delivery_status",
+    "delivered_at",
+    "read_at",
+    "failed_at",
+    "user_id",
+    "assistant_id",
+    "thread_id",
+    "scheduled_broadcast_id",
+    "automation_run_id",
+    "message_chain_id",
+    "message_chain_step_index",
+    ...(INCLUDE_MESSAGE_CONTENT ? ["content"] : []),
+  ].join(", ");
+
+  return fetchRows("message", columns, (query) =>
+    applyPeriod(query.eq("organization_id", orgId), periodStart),
+  );
+}
+
+/**
+ * Vai buscar os utilizadores da organização com as etiquetas deles.
+ *
+ * Não leva filtro de período: um export de utilizadores é o retrato de
+ * quem existe agora, não de quem foi criado numa janela. Filtrar por
+ * data de criação daria uma lista incompleta e enganadora, porque as
+ * mensagens do período podem ser de pessoas registadas antes dele.
+ */
+export async function getUserRows(orgId) {
+  return fetchRows(
+    "user",
+    `
+      id,
+      name,
+      email,
+      phone_number,
+      phone_country_code,
+      phone_national,
+      whatsapp_bsuid,
+      whatsapp_username,
+      bird_contact_id,
+      teams_aad_object_id,
+      assistant_id,
+      created_at,
+      user_tag:user_tag (
+        tag:tags ( id, name )
+      )
+    `,
+    (query) => query.eq("organization_id", orgId),
+  );
+}
