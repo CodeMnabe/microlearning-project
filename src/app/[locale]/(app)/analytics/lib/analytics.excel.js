@@ -1106,8 +1106,22 @@ function addDetailSheets(workbook, detail, meta) {
         { key: "userId", header: columns.userId, width: 12, type: "number" },
         { key: "assistantId", header: columns.assistantId, width: 13, type: "number" },
         { key: "threadId", header: columns.threadId, width: 12, type: "number" },
-        { key: "scheduledBroadcastId", header: columns.scheduledBroadcastId, width: 38 },
-        { key: "automationRunId", header: columns.automationRunId, width: 38 },
+
+        /**
+         * O `scheduledBroadcastId` e o `automationRunId` ficam de fora.
+         *
+         * Não é por serem ruído: é porque saem sempre vazios. O
+         * `sendWhatsappBroadcast` e o `sendTeamsBroadcast` não escrevem
+         * na tabela `message`, portanto as mensagens de envios em massa
+         * não existem lá e não há linha para preencher.
+         *
+         * Os campos continuam a viajar no dataset. Quando o caminho de
+         * envio passar a registá-las, voltar a acrescentar aqui duas
+         * linhas chega:
+         *
+         *   { key: "scheduledBroadcastId", header: columns.scheduledBroadcastId, width: 38 },
+         *   { key: "automationRunId", header: columns.automationRunId, width: 38 },
+         */
       ],
     },
     {

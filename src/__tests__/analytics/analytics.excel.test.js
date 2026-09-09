@@ -681,6 +681,31 @@ describe("folhas de detalhe", () => {
     ]);
   });
 
+  it("não mostra colunas que saem sempre vazias", () => {
+    /**
+     * O `scheduledBroadcastId` e o `automationRunId` ficam de fora da
+     * folha de Mensagens porque o `sendWhatsappBroadcast` e o
+     * `sendTeamsBroadcast` não escrevem na tabela `message`: as
+     * mensagens de envios em massa não existem lá.
+     *
+     * Uma coluna sempre vazia não ajuda o suporte — leva-o a procurar
+     * o que não existe. Quando o caminho de envio passar a registar as
+     * mensagens, este teste é o sítio onde a decisão se inverte.
+     */
+    const headers = [];
+    detailed
+      .getWorksheet("Mensagens")
+      .getRow(1)
+      .eachCell((cell) => headers.push(String(cell.value)));
+
+    expect(headers).not.toContain("ID agendamento");
+    expect(headers).not.toContain("ID execucao");
+
+    // Os que têm dados continuam lá.
+    expect(headers).toContain("ID utilizador");
+    expect(headers).toContain("ID conversa");
+  });
+
   it("junta as quatro séries diárias numa tabela só", () => {
     // A API devolve-as separadas. Em folhas paralelas ninguém as
     // conseguia cruzar; numa linha por dia, vê-se logo se o pico de
