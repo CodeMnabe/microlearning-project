@@ -467,30 +467,6 @@ export default function AssistantsHub() {
                   </div>
                 )}
 
-                {/* Model */}
-                <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>
-                    {translation("Assistants.details.model")}
-                  </span>
-                  <div className={styles.specTrack} />
-                  {isEditing ? (
-                    <select
-                      className={styles.select}
-                      value={read("model", "gpt-5.6-luna")}
-                      onChange={(e) => handleChange("model", e.target.value)}
-                    >
-                      <option value="gpt-5.6-luna">Económico</option>
-
-                      <option value="gpt-5.6-terra">Equilibrado</option>
-
-                      <option value="gpt-5.6-sol">Avançado</option>
-                    </select>
-                  ) : (
-                    <span className={styles.specValueBold}>
-                      {selected.model}
-                    </span>
-                  )}
-                </div>
               </div>
 
               {/* Meta + Actions */}

@@ -1791,7 +1791,6 @@
       "specs": "Especificidades:",
       "behavior": "Comportamento",
       "customBehavior": "Personalizado ({temperature})",
-      "model": "Modelo",
       "save": "Guardar",
       "saving": "A guardar...",
       "cancel": "Cancelar",

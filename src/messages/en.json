@@ -1782,7 +1782,6 @@
       "specs": "Specifications:",
       "behavior": "Behaviour",
       "customBehavior": "Custom ({temperature})",
-      "model": "Model",
       "save": "Save",
       "saving": "Saving...",
       "cancel": "Cancel",

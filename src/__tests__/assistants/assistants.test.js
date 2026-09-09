@@ -345,6 +345,11 @@ describe("AssistantsHub Page", () => {
     // "Criativo" diz ao cliente o que o assistente faz; "1.10" nao diz.
     expect(screen.queryByText("Assistants.details.creativity")).toBeNull();
     expect(screen.queryByText("Assistants.details.variety")).toBeNull();
+
+    // O modelo tambem saiu do ecra: nao se escolhe nem se mostra. O id
+    // cru ("gpt-4.1") nunca foi para os olhos do cliente.
+    expect(screen.queryByText(/gpt-/i)).toBeNull();
+    expect(screen.queryByText("Assistants.details.model")).toBeNull();
   });
 
   it("assinala como personalizado um assistente afinado a mao", async () => {
@@ -371,6 +376,10 @@ describe("AssistantsHub Page", () => {
 
     expect(screen.getAllByRole("radio")).toHaveLength(3);
     expect(screen.queryAllByRole("slider")).toHaveLength(0);
+
+    // O comportamento e a unica coisa que se escolhe: o seletor de
+    // modelo saiu daqui como ja tinha saido da criacao.
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
   });
 
   it("guarda os valores da predefinicao escolhida", async () => {
@@ -397,6 +406,9 @@ describe("AssistantsHub Page", () => {
     });
 
     expect(patch.temperature).toBe(0.2);
+
+    // Sem seletor, o modelo do assistente tem de sobreviver a gravacao.
+    expect(patch.model).toBe("gpt-4.1");
 
     // O top_p tem de vir corrigido para 1: o assistente tinha 0.2, e
     // escolher uma predefinicao escreve os dois parametros.

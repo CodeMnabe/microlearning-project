@@ -407,16 +407,6 @@ input[type="range"].slider {
   margin: 8px 0 4px;
   opacity: 0.9;
 }
-.select {
-  appearance: none;
-  background: #ffffff18;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
 
 /* ===== Modal ===== */
 body.modal-open {
