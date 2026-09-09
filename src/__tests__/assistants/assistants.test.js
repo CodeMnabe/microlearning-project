@@ -242,13 +242,26 @@ describe("AssistantsHub Page", () => {
     const sent = JSON.parse(patchCall[1].body);
 
     expect(sent).toMatchObject({
-      id: "asst_1",
-      open_ai_id: "oa_1",
       name: "Alpha renamed",
       description: "New description",
       instructions: "New instructions",
       model: "gpt-4.1",
     });
+
+    /*
+     * O `id` e o `open_ai_id` nao vao no corpo, e nao e um esquecimento.
+     *
+     * A route identifica o assistente pelo `assistantId` do URL e passa
+     * o corpo por `cleanPatch`, que so deixa passar os campos de
+     * ALLOWED_ASSISTANT_PATCH_FIELDS. Nenhum desses dois esta la: aceitar
+     * um `open_ai_id` vindo do cliente deixaria uma organizacao apontar
+     * o seu assistente para o de outra.
+     *
+     * Este teste exigia-os e estava vermelho desde a migracao para a API
+     * de Responses. Era o teste que estava errado.
+     */
+    expect(sent).not.toHaveProperty("id");
+    expect(sent).not.toHaveProperty("open_ai_id");
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith(`/api/assistants/asst_1`);
