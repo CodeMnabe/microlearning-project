@@ -1121,6 +1121,79 @@
   },
 
   "Templates": {
+    "editor": {
+      "exampleHint": "Valor de exemplo usado pela Meta na aprovação.",
+      "header": {
+        "title": "Cabeçalho",
+        "types": {
+          "none": "Sem cabeçalho",
+          "text": "Texto",
+          "image": "Imagem"
+        },
+        "text": "Texto do cabeçalho",
+        "textPlaceholder": "Dica da semana",
+        "example": "Exemplo para '{{'1'}}'",
+        "imageUrl": "URL de uma imagem de exemplo",
+        "imageHint": "Usada apenas para a aprovação. A imagem real é escolhida ao enviar."
+      },
+      "body": {
+        "title": "Corpo",
+        "addVariable": "Adicionar variável",
+        "placeholder": "Olá '{{'1'}}'! A dica de hoje é '{{'2'}}'.",
+        "hint": "As variáveis '{{'1'}}', '{{'2'}}'… são preenchidas ao enviar.",
+        "examplesTitle": "Exemplos das variáveis",
+        "exampleFor": "Exemplo para a variável {index}"
+      },
+      "footer": {
+        "title": "Rodapé (opcional)",
+        "placeholder": "Responda STOP para deixar de receber",
+        "hint": "Texto pequeno no fim da mensagem. Não aceita variáveis."
+      },
+      "buttons": {
+        "title": "Botões",
+        "empty": "Sem botões. Podes adicionar respostas rápidas ou um botão com link.",
+        "types": {
+          "QUICK_REPLY": "Resposta rápida",
+          "URL": "Link"
+        },
+        "text": "Texto do botão",
+        "url": "URL",
+        "urlHint": "Pode terminar em '{{'1'}}' para um link variável por contacto.",
+        "urlExample": "Exemplo para '{{'1'}}' no URL",
+        "addQuickReply": "+ Resposta rápida",
+        "addUrl": "+ Botão com link",
+        "remove": "Remover botão {index}",
+        "removeLabel": "Remover"
+      },
+      "generatedJson": "Ver JSON gerado",
+      "errors": {
+        "nameRequired": "O nome é obrigatório.",
+        "nameFormat": "O nome só pode ter letras minúsculas, números e _.",
+        "headerTextRequired": "O texto do cabeçalho é obrigatório.",
+        "headerTextTooLong": "O cabeçalho não pode ter mais de {max} caracteres.",
+        "headerSingleVariable": "O cabeçalho só pode ter a variável '{{'1'}}'.",
+        "headerExampleRequired": "Indica um exemplo para a variável do cabeçalho.",
+        "headerImageUrl": "Indica um URL válido (https://) para a imagem de exemplo.",
+        "headerTypeInvalid": "Tipo de cabeçalho inválido.",
+        "bodyRequired": "O corpo da mensagem é obrigatório.",
+        "bodyTooLong": "O corpo não pode ter mais de {max} caracteres.",
+        "bodySequential": "As variáveis têm de ser seguidas: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+        "bodyExampleRequired": "Falta o exemplo da variável {index}.",
+        "footerTooLong": "O rodapé não pode ter mais de {max} caracteres.",
+        "footerNoVariables": "O rodapé não aceita variáveis.",
+        "tooManyButtons": "No máximo {max} botões.",
+        "tooManyUrlButtons": "No máximo {max} botões com link.",
+        "buttonsGrouped": "As respostas rápidas têm de ficar juntas, separadas dos botões com link.",
+        "buttonTypeInvalid": "Tipo de botão inválido.",
+        "buttonTextRequired": "O botão {index} não tem texto.",
+        "buttonTextTooLong": "O texto do botão não pode ter mais de {max} caracteres.",
+        "buttonUrlInvalid": "Indica um URL válido (https://).",
+        "buttonUrlTooLong": "O URL não pode ter mais de {max} caracteres.",
+        "buttonUrlSingleVariable": "O URL só pode ter a variável '{{'1'}}'.",
+        "buttonUrlVariableAtEnd": "A variável '{{'1'}}' tem de estar no fim do URL.",
+        "buttonUrlExampleRequired": "Indica um exemplo para a variável do URL."
+      }
+    },
     "title": "WhatsApp Templates",
     "tabList": "Lista",
     "tabCreate": "Criar",
@@ -1169,7 +1242,6 @@
       "language": "Idioma",
       "category": "Categoria",
       "preset": "Modelo",
-      "components": "Components (JSON)",
       "submit": "Submeter para aprovação",
       "reset": "Repor exemplo",
       "creating": "A criar…"
@@ -1189,9 +1261,8 @@
     "errors": {
       "noOrg": "Não foi encontrada uma organização.",
       "fetch": "Falha ao carregar templates: {message}",
-      "componentsArray": "Os componentes devem ser um array.",
-      "invalidComponents": "JSON de componentes inválido: {message}",
       "nameRequired": "O nome é obrigatório.",
+      "formInvalid": "Há campos por corrigir no template.",
       "createFailed": "Falha ao criar template: {message}",
       "sendFailed": "Falha ao enviar template: {message}"
     },
@@ -1204,17 +1275,13 @@
         "title": "Templates sincronizados",
         "message": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}"
       },
-      "invalidJson": {
-        "title": "JSON inválido",
-        "message": "O campo Components tem um erro de formato. Verifica vírgulas, aspas e chavetas."
-      },
-      "componentsNotArray": {
-        "title": "Formato inválido",
-        "message": "Os componentes devem estar dentro de um array JSON."
-      },
       "nameRequired": {
         "title": "Nome em falta",
         "message": "Preenche o nome do template antes de submeter."
+      },
+      "formInvalid": {
+        "title": "Template incompleto",
+        "message": "Corrige os campos assinalados antes de submeter."
       },
       "templateSubmitted": {
         "title": "Template submetido",

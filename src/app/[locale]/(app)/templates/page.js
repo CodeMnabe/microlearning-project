@@ -5,6 +5,17 @@ import { useAuth } from "../../../AuthContext";
 import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert} from "@/app/components/Alert/AlertProvider";
+import TemplateComponentsEditor from "./components/TemplateComponentsEditor";
+import {
+  PRESET_KEYS,
+  buildTemplateComponents,
+  presetForm,
+  sanitizeTemplateName,
+  validateTemplateForm,
+} from "./lib/templateComponents";
+import styles from "./templates.module.css";
+
+const DEFAULT_PRESET = "text_quickreplies";
 
 export default function TemplatesPage() {
   const translation = useTranslations("Templates");
@@ -22,10 +33,14 @@ export default function TemplatesPage() {
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("pt");
   const [category, setCategory] = useState("MARKETING");
-  const [componentsText, setComponentsText] = useState(() =>
-    JSON.stringify(preset("text_quickreplies"), null, 2)
+  const [form, setForm] = useState(() => presetForm(DEFAULT_PRESET));
+  const [formErrors, setFormErrors] = useState([]);
+  const [presetKey, setPresetKey] = useState(DEFAULT_PRESET);
+
+  const generatedComponents = useMemo(
+    () => buildTemplateComponents(form),
+    [form]
   );
-  const [presetKey, setPresetKey] = useState("text_quickreplies");
 
   const [sendOpen, setSendOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
@@ -123,8 +138,13 @@ const refresh = useCallback(
 
   function onPresetChange(key) {
     setPresetKey(key);
-    const data = preset(key);
-    setComponentsText(JSON.stringify(data, null, 2));
+    setForm(presetForm(key));
+    setFormErrors([]);
+  }
+
+  function onFormChange(next) {
+    setForm(next);
+    if (formErrors.length) setFormErrors([]);
   }
 
   async function createTemplate(e) {
@@ -132,48 +152,34 @@ const refresh = useCallback(
     if (!org?.id) return;
     clearMessages();
 
-   let components;
+    const errors = validateTemplateForm(form, { name });
+    setFormErrors(errors);
 
-      try {
-        components = JSON.parse(componentsText);
-      } catch (err) {
-        setError(
-          translation("errors.invalidComponents", {
-            message: err.message,
-          })
-        );
+    if (errors.some((err) => err.field === "name")) {
+      setError(translation("errors.nameRequired"));
 
-        await showAlert({
-          title: translation("alerts.invalidJson.title"),
-          message: translation("alerts.invalidJson.message"),
-          tone: "warning",
-        });
+      await showAlert({
+        title: translation("alerts.nameRequired.title"),
+        message: translation("alerts.nameRequired.message"),
+        tone: "warning",
+      });
 
-        return;
-      }
+      return;
+    }
 
-      if (!Array.isArray(components)) {
-        setError(translation("errors.componentsArray"));
+    if (errors.length > 0) {
+      setError(translation("errors.formInvalid"));
 
-        await showAlert({
-          title: translation("alerts.componentsNotArray.title"),
-          message: translation("alerts.componentsNotArray.message"),
-          tone: "warning",
-        });
+      await showAlert({
+        title: translation("alerts.formInvalid.title"),
+        message: translation("alerts.formInvalid.message"),
+        tone: "warning",
+      });
 
-        return;
-      }
-              if (!name.trim()) {
-        setError(translation("errors.nameRequired"));
+      return;
+    }
 
-        await showAlert({
-          title: translation("alerts.nameRequired.title"),
-          message: translation("alerts.nameRequired.message"),
-          tone: "warning",
-        });
-
-        return;
-      }
+    const components = buildTemplateComponents(form);
 
     setLoading(true);
     try {
@@ -483,7 +489,7 @@ const refresh = useCallback(
                 <label style={label()}> {translation("name")}</label>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setName(sanitizeTemplateName(e.target.value))}
                   placeholder="ml_tip_image_v1"
                   style={input()}
                 />
@@ -516,47 +522,42 @@ const refresh = useCallback(
                   onChange={(e) => onPresetChange(e.target.value)}
                   style={input()}
                 >
-                  <option value="text_quickreplies">
-                    {translation("text_quickreplies")}
-                  </option>
-                  <option value="image_header_quickreplies">
-                    {translation("image_header_quickreplies")}
-                  </option>
-                  <option value="quiz_url_button">
-                    {translation("quiz_url_button")}
-                  </option>
+                  {PRESET_KEYS.map((key) => (
+                    <option key={key} value={key}>
+                      {translation(key)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div style={{ gridColumn: "1 / span 2" }}>
-              <label style={label()}>Components (JSON)</label>
-              <textarea
-                value={componentsText}
-                onChange={(e) => setComponentsText(e.target.value)}
-                spellCheck={false}
-                rows={18}
-                style={{
-                  ...input(),
-                  fontFamily:
-                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                  minHeight: 320,
-                }}
+              <TemplateComponentsEditor
+                form={form}
+                onChange={onFormChange}
+                errors={formErrors}
+                disabled={loading}
               />
+              <details className={styles.jsonDetails}>
+                <summary>{translation("editor.generatedJson")}</summary>
+                <pre className={styles.jsonPre}>
+                  {JSON.stringify(generatedComponents, null, 2)}
+                </pre>
+              </details>
             </div>
 
             <div style={{ gridColumn: "1 / span 2", display: "flex", gap: 8 }}>
               <button type="submit" disabled={loading} style={primaryBtn()}>
-                {loading ? "A criar…" : "Submeter para aprovação"}
+                {loading
+                  ? translation("createForm.creating")
+                  : translation("createForm.submit")}
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  setComponentsText(JSON.stringify(preset(presetKey), null, 2))
-                }
+                onClick={() => onPresetChange(presetKey)}
                 style={secondaryBtn()}
               >
-                Repor exemplo
+                {translation("createForm.reset")}
               </button>
             </div>
           </form>
@@ -749,69 +750,3 @@ function modalCard() {
   };
 }
 
-// ---------- Presets ----------
-function preset(key) {
-  switch (key) {
-    case "image_header_quickreplies":
-      return [
-        {
-          type: "HEADER",
-          format: "IMAGE",
-          example: { header_url: ["https://cdn.example.com/tip1.jpg"] },
-        },
-        {
-          type: "BODY",
-          text: "Olá {{1}}! 🎓 Dica de hoje: {{2}}",
-          example: { body_text: [["João", "Verificar pressão dos pneus"]] },
-        },
-        { type: "FOOTER", text: "Responda para saber mais" },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "Quiz rápido" },
-            { type: "QUICK_REPLY", text: "Parar" },
-          ],
-        },
-      ];
-    case "quiz_url_button":
-      return [
-        {
-          type: "BODY",
-          text: "Pergunta: {{1}}",
-          example: { body_text: [["Qual a autonomia em WLTP?"]] },
-        },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "A" },
-            { type: "QUICK_REPLY", text: "B" },
-            { type: "QUICK_REPLY", text: "C" },
-            {
-              type: "URL",
-              text: "Abrir Quiz",
-              url: "https://example.com/quiz/{{1}}",
-              example: { button_url: ["session-12345"] },
-            },
-          ],
-        },
-      ];
-    case "text_quickreplies":
-    default:
-      return [
-        {
-          type: "BODY",
-          text: "Olá {{1}}! 🎓 Microlearning: {{2}}. Dica: {{3}}",
-          example: {
-            body_text: [["João", "Baterias", "Evite cargas 100% diárias"]],
-          },
-        },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "Ver mais" },
-            { type: "QUICK_REPLY", text: "Parar" },
-          ],
-        },
-      ];
-  }
-}

@@ -1112,6 +1112,79 @@
   },
 
   "Templates": {
+    "editor": {
+      "exampleHint": "Sample value Meta uses during approval.",
+      "header": {
+        "title": "Header",
+        "types": {
+          "none": "No header",
+          "text": "Text",
+          "image": "Image"
+        },
+        "text": "Header text",
+        "textPlaceholder": "Tip of the week",
+        "example": "Example for '{{'1'}}'",
+        "imageUrl": "Sample image URL",
+        "imageHint": "Only used for approval. The actual image is chosen when sending."
+      },
+      "body": {
+        "title": "Body",
+        "addVariable": "Add variable",
+        "placeholder": "Hi '{{'1'}}'! Today''s tip is '{{'2'}}'.",
+        "hint": "Variables '{{'1'}}', '{{'2'}}'… are filled in when sending.",
+        "examplesTitle": "Variable examples",
+        "exampleFor": "Example for variable {index}"
+      },
+      "footer": {
+        "title": "Footer (optional)",
+        "placeholder": "Reply STOP to unsubscribe",
+        "hint": "Small text at the end of the message. Variables are not allowed."
+      },
+      "buttons": {
+        "title": "Buttons",
+        "empty": "No buttons. You can add quick replies or a link button.",
+        "types": {
+          "QUICK_REPLY": "Quick reply",
+          "URL": "Link"
+        },
+        "text": "Button text",
+        "url": "URL",
+        "urlHint": "May end with '{{'1'}}' for a per-contact link.",
+        "urlExample": "Example for '{{'1'}}' in the URL",
+        "addQuickReply": "+ Quick reply",
+        "addUrl": "+ Link button",
+        "remove": "Remove button {index}",
+        "removeLabel": "Remove"
+      },
+      "generatedJson": "View generated JSON",
+      "errors": {
+        "nameRequired": "Name is required.",
+        "nameFormat": "Name may only contain lowercase letters, numbers and _.",
+        "headerTextRequired": "Header text is required.",
+        "headerTextTooLong": "Header cannot exceed {max} characters.",
+        "headerSingleVariable": "The header may only contain variable '{{'1'}}'.",
+        "headerExampleRequired": "Provide an example for the header variable.",
+        "headerImageUrl": "Provide a valid URL (https://) for the sample image.",
+        "headerTypeInvalid": "Invalid header type.",
+        "bodyRequired": "Message body is required.",
+        "bodyTooLong": "Body cannot exceed {max} characters.",
+        "bodySequential": "Variables must be sequential: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+        "bodyExampleRequired": "Missing example for variable {index}.",
+        "footerTooLong": "Footer cannot exceed {max} characters.",
+        "footerNoVariables": "The footer does not accept variables.",
+        "tooManyButtons": "At most {max} buttons.",
+        "tooManyUrlButtons": "At most {max} link buttons.",
+        "buttonsGrouped": "Quick replies must be grouped together, separate from link buttons.",
+        "buttonTypeInvalid": "Invalid button type.",
+        "buttonTextRequired": "Button {index} has no text.",
+        "buttonTextTooLong": "Button text cannot exceed {max} characters.",
+        "buttonUrlInvalid": "Provide a valid URL (https://).",
+        "buttonUrlTooLong": "URL cannot exceed {max} characters.",
+        "buttonUrlSingleVariable": "The URL may only contain variable '{{'1'}}'.",
+        "buttonUrlVariableAtEnd": "Variable '{{'1'}}' must be at the end of the URL.",
+        "buttonUrlExampleRequired": "Provide an example for the URL variable."
+      }
+    },
     "title": "WhatsApp Templates",
     "tabList": "List",
     "tabCreate": "Create",
@@ -1160,7 +1233,6 @@
       "language": "Language",
       "category": "Category",
       "preset": "Model",
-      "components": "Components (JSON)",
       "submit": "Submit for approval",
       "reset": "Reset example",
       "creating": "Creating…"
@@ -1180,9 +1252,8 @@
     "errors": {
       "noOrg": "No organization found.",
       "fetch": "Failed to fetch templates: {message}",
-      "componentsArray": "Components must be an array.",
-      "invalidComponents": "Invalid components JSON: {message}",
       "nameRequired": "Name is required.",
+      "formInvalid": "Some template fields need fixing.",
       "createFailed": "Create failed: {message}",
       "sendFailed": "Send failed: {message}"
     },
@@ -1196,17 +1267,13 @@
         "title": "Templates synced",
         "message": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}"
       },
-      "invalidJson": {
-        "title": "Invalid JSON",
-        "message": "The Components field has a formatting error. Check commas, quotes and brackets."
-      },
-      "componentsNotArray": {
-        "title": "Invalid format",
-        "message": "Components must be inside a JSON array."
-      },
       "nameRequired": {
         "title": "Missing name",
         "message": "Fill in the template name before submitting."
+      },
+      "formInvalid": {
+        "title": "Incomplete template",
+        "message": "Fix the highlighted fields before submitting."
       },
       "templateSubmitted": {
         "title": "Template submitted",
