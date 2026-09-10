@@ -62,13 +62,13 @@ describe("registo de atividade na rota das etiquetas", () => {
     mocks.requireOrgForTag.mockResolvedValue({
       ...orgAuth,
       tagId: 12,
-      tag: { id: 12, org_id: 3, name: "Antiga" },
+      tag: { id: 12, org_id: 3, name: "Antiga", color: "#abc" },
     });
     mocks.recordAuditEvent.mockResolvedValue({});
   });
 
   it("regista tag.created depois de criar", async () => {
-    mocks.createTag.mockResolvedValue({ id: 12, name: "VIP" });
+    mocks.createTag.mockResolvedValue({ id: 12, name: "VIP", color: "#000" });
 
     const res = await POST(
       new Request("http://localhost/api/tags", {
@@ -85,6 +85,7 @@ describe("registo de atividade na rota das etiquetas", () => {
       action: "tag.created",
       entityId: 12,
       entityLabel: "VIP",
+      details: { color: "#000" },
     });
   });
 
@@ -116,6 +117,7 @@ describe("registo de atividade na rota das etiquetas", () => {
         action: "tag.deleted",
         entityId: 12,
         entityLabel: "Antiga",
+        details: { color: "#abc" },
       },
     );
   });

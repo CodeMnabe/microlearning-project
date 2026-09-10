@@ -121,6 +121,10 @@ export async function DELETE(_req, { params }) {
       entityType: "automation_rule",
       entityId: orgAuth.ruleId,
       entityLabel: orgAuth.rule?.name,
+      details: {
+        triggerType: orgAuth.rule?.trigger_type ?? null,
+        channel: orgAuth.rule?.channel ?? null,
+      },
     });
 
     return NextResponse.json({ ok: true });

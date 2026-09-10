@@ -7,6 +7,7 @@ import {
 } from "@/lib/repos/user.repo";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
 import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { lookupAssistantName } from "@/lib/services/audit/auditLookups";
 import { AUDIT_ACTIONS, providedFields } from "@/lib/audit/auditEvents";
 import {
   assertAssistantBelongsToOrg,
@@ -99,6 +100,14 @@ export async function POST(req) {
       action: AUDIT_ACTIONS.USER_CREATED,
       entityId: newUser?.id,
       entityLabel: newUser?.name ?? name,
+      details: {
+        email: newUser?.email ?? email ?? null,
+        phone: newUser?.phone_number ?? fullPhone ?? null,
+        assistantName: await lookupAssistantName(
+          orgAuth.admin,
+          safeAssistantId,
+        ),
+      },
     });
 
     return NextResponse.json(newUser, { status: 201 });
@@ -241,6 +250,10 @@ export async function DELETE(req) {
       action: AUDIT_ACTIONS.USER_DELETED,
       entityId: orgAuth.userId,
       entityLabel: orgAuth.targetUser?.name,
+      details: {
+        email: orgAuth.targetUser?.email ?? null,
+        phone: orgAuth.targetUser?.phone_number ?? null,
+      },
     });
 
     return NextResponse.json({ success: true });

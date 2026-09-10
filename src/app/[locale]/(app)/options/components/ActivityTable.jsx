@@ -4,7 +4,7 @@ import {
   actionLabelKey,
   actorLabel,
   areaOfAction,
-  describeDetails,
+  detailEntries,
   entityLabel,
   formatDateTime,
 } from "../helpers/activity.helpers";
@@ -54,7 +54,7 @@ export default function ActivityTable({
         <tbody>
           {items.map((item) => {
             const area = areaOfAction(item.action);
-            const details = describeDetails(item, translation, locale);
+            const details = detailEntries(item, translation, locale);
 
             return (
               <tr key={item.id}>
@@ -78,7 +78,18 @@ export default function ActivityTable({
                 <td className={styles.entityCell}>{entityLabel(item)}</td>
 
                 <td className={styles.detailsCell}>
-                  {details.length ? details.join(" · ") : "-"}
+                  {details.length ? (
+                    <dl className={styles.detailList}>
+                      {details.map((entry) => (
+                        <div key={entry.key} className={styles.detailItem}>
+                          <dt className={styles.detailLabel}>{entry.label}</dt>
+                          <dd className={styles.detailValue}>{entry.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <span className={styles.noDetails}>-</span>
+                  )}
                 </td>
 
                 <td className={styles.actorCell}>

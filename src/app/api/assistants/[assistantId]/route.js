@@ -175,6 +175,7 @@ export async function DELETE(_req, { params }) {
       action: AUDIT_ACTIONS.ASSISTANT_DELETED,
       entityId: orgAuth.assistantId,
       entityLabel: orgAuth.assistant?.name,
+      details: { model: orgAuth.assistant?.model ?? null },
     });
 
     return new NextResponse(null, {

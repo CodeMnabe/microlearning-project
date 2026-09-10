@@ -127,9 +127,10 @@ describe("página de Definições com o histórico de atividade", () => {
     expect(screen.getByText("Actions.broadcast_sent")).toBeInTheDocument();
     expect(screen.getByText("Actor.system")).toBeInTheDocument();
     expect(screen.getByText("#grp-1")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Channels\.whatsapp · Details\.recipients/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Details.labels.channel")).toBeInTheDocument();
+    expect(screen.getByText("Channels.whatsapp")).toBeInTheDocument();
+    expect(screen.getByText("Details.labels.recipients")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
 
     expect(mocks.stopLoading).toHaveBeenCalled();
   });

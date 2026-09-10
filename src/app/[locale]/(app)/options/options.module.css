@@ -244,7 +244,38 @@
 
 .detailsCell {
   color: #4b5563;
-  max-width: 420px;
+  max-width: 460px;
+}
+
+.detailList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detailItem {
+  display: grid;
+  grid-template-columns: minmax(96px, max-content) 1fr;
+  column-gap: 10px;
+  align-items: baseline;
+}
+
+.detailLabel {
+  margin: 0;
+  color: var(--ui-muted, #6b7280);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.detailValue {
+  margin: 0;
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.noDetails {
+  color: var(--ui-muted, #9aa3b2);
 }
 
 .actorCell {

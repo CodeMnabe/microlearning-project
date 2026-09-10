@@ -7,12 +7,24 @@ import {
   buildAreaOptions,
   buildQueryString,
   dateInputToIso,
-  describeDetails,
+  detailEntries,
   entityLabel,
   totalPages,
 } from "@/app/[locale]/(app)/options/helpers/activity.helpers";
 
 const t = (key, vars) => (vars ? `${key}(${JSON.stringify(vars)})` : key);
+
+/**
+ * Versão do tradutor com `has`, como o next-intl real, para testar
+ * o recurso quando uma chave não existe.
+ */
+function translatorWith(knownKeys) {
+  const fn = (key, vars) => t(key, vars);
+  fn.has = (key) => knownKeys.includes(key);
+  return fn;
+}
+
+const pairs = (entries) => entries.map((e) => [e.label, e.value]);
 
 describe("helpers do histórico de atividade", () => {
   it("constrói as opções de área com 'todas' em primeiro", () => {
@@ -87,8 +99,23 @@ describe("helpers do histórico de atividade", () => {
     expect(entityLabel({})).toBe("-");
   });
 
-  it("resume os detalhes conhecidos e ignora os restantes", () => {
-    const parts = describeDetails(
+  it("calcula o número de páginas", () => {
+    expect(totalPages(0, 25)).toBe(1);
+    expect(totalPages(25, 25)).toBe(1);
+    expect(totalPages(26, 25)).toBe(2);
+    expect(totalPages(60, 25)).toBe(3);
+  });
+});
+
+describe("detailEntries", () => {
+  it("devolve lista vazia sem detalhes", () => {
+    expect(detailEntries({ details: null }, t)).toEqual([]);
+    expect(detailEntries({}, t)).toEqual([]);
+    expect(detailEntries({ details: ["x"] }, t)).toEqual([]);
+  });
+
+  it("descreve um envio com um par por linha e esconde chaves técnicas", () => {
+    const entries = detailEntries(
       {
         details: {
           channel: "whatsapp",
@@ -96,91 +123,181 @@ describe("helpers do histórico de atividade", () => {
           ok: 10,
           failed: 2,
           hasTemplate: true,
-          somethingElse: "ignored",
+          userIds: [1, 2],
         },
       },
       t,
     );
 
-    expect(parts).toEqual([
-      "Channels.whatsapp",
-      'Details.recipients({"count":12})',
-      'Details.result({"ok":10,"failed":2})',
+    expect(pairs(entries)).toEqual([
+      ["Details.labels.channel", "Channels.whatsapp"],
+      ["Details.labels.recipients", "12"],
+      ["Details.labels.result", 'Details.sendSummary({"ok":10,"failed":2})'],
+      ["Details.labels.withTemplate", "Details.yes"],
     ]);
   });
 
-  it("descreve campos alterados, importações e definições", () => {
-    expect(
-      describeDetails({ details: { fields: ["name", "email"] } }, t),
-    ).toEqual(['Details.fields({"count":2,"list":"name, email"})']);
+  it("traduz os nomes dos campos alterados e junta os repetidos", () => {
+    const translation = translatorWith([
+      "Details.fieldNames.name",
+      "Details.fieldNames.phoneNumber",
+      "Details.fieldNames.phoneNational",
+    ]);
 
-    expect(
-      describeDetails({ details: { created: 3, updated: 1, failed: 0 } }, t),
-    ).toEqual(['Details.imported({"created":3,"updated":1,"failed":0})']);
+    const entries = detailEntries(
+      {
+        details: {
+          fields: ["name", "phoneNumber", "phoneNational", "custom_thing"],
+        },
+      },
+      translation,
+    );
 
+    expect(pairs(entries)).toEqual([
+      [
+        "Details.labels.fields",
+        "Details.fieldNames.name, Details.fieldNames.phoneNumber, Details.fieldNames.phoneNational, custom_thing",
+      ],
+    ]);
+  });
+
+  it("descreve colaboradores criados e apagados", () => {
     expect(
-      describeDetails(
-        { details: { setting: "read_chains_enabled", enabled: false } },
-        t,
+      pairs(
+        detailEntries(
+          {
+            details: {
+              email: "ana@x.pt",
+              phone: "+351912345678",
+              assistantName: "Onboarding",
+            },
+          },
+          t,
+        ),
       ),
-    ).toEqual(["Details.disabled"]);
+    ).toEqual([
+      ["Details.labels.email", "ana@x.pt"],
+      ["Details.labels.phone", "+351912345678"],
+      ["Details.labels.assistant", "Onboarding"],
+    ]);
+  });
+
+  it("descreve importações, operações em massa e tags", () => {
+    expect(
+      pairs(
+        detailEntries(
+          { details: { created: 3, updated: 1, failed: 0, skipped: 2 } },
+          t,
+        ),
+      ),
+    ).toEqual([
+      [
+        "Details.labels.result",
+        'Details.importSummary({"created":3,"updated":1,"failed":0})',
+      ],
+    ]);
 
     expect(
-      describeDetails({ details: { op: "set", userCount: 2 } }, t),
-    ).toEqual(["Details.tagOps.set"]);
+      pairs(
+        detailEntries(
+          { details: { op: "set", userCount: 2, userIds: [1, 2], tagIds: [] } },
+          t,
+        ),
+      ),
+    ).toEqual([
+      ["Details.labels.operation", "Details.tagOps.set"],
+      ["Details.labels.count", "2"],
+    ]);
+
+    expect(pairs(detailEntries({ details: { color: "#abc" } }, t))).toEqual([
+      ["Details.labels.color", "#abc"],
+    ]);
   });
 
   it("descreve automações disparadas e envios agendados pelo sistema", () => {
     expect(
-      describeDetails(
-        {
-          details: {
-            triggerType: "user.inactive",
-            channel: "whatsapp",
-            userId: 42,
-            userName: "Ana Silva",
+      pairs(
+        detailEntries(
+          {
+            details: {
+              triggerType: "user.inactive",
+              channel: "whatsapp",
+              userId: 42,
+              userName: "Ana Silva",
+            },
           },
-        },
-        t,
+          t,
+        ),
       ),
     ).toEqual([
-      "Channels.whatsapp",
-      "Details.triggers.user_inactive",
-      'Details.user({"name":"Ana Silva"})',
+      ["Details.labels.channel", "Channels.whatsapp"],
+      ["Details.labels.trigger", "Details.triggers.user_inactive"],
+      ["Details.labels.user", "Ana Silva"],
     ]);
 
     expect(
-      describeDetails(
-        {
-          details: {
-            channel: "teams",
-            recipientCount: 5,
-            ok: 5,
-            failed: 0,
-            status: "sent",
-            automation: true,
+      pairs(
+        detailEntries(
+          {
+            details: {
+              channel: "teams",
+              recipientCount: 5,
+              ok: 5,
+              failed: 0,
+              status: "sent",
+              automation: true,
+            },
           },
-        },
-        t,
+          t,
+        ),
       ),
     ).toEqual([
-      "Channels.teams",
-      'Details.recipients({"count":5})',
-      'Details.result({"ok":5,"failed":0})',
-      'Details.status({"status":"sent"})',
-      "Details.automation",
+      ["Details.labels.channel", "Channels.teams"],
+      ["Details.labels.recipients", "5"],
+      ["Details.labels.result", 'Details.sendSummary({"ok":5,"failed":0})'],
+      ["Details.labels.status", "Details.statuses.sent"],
+      ["Details.labels.source", "Details.sourceAutomation"],
     ]);
   });
 
-  it("devolve lista vazia sem detalhes", () => {
-    expect(describeDetails({ details: null }, t)).toEqual([]);
-    expect(describeDetails({}, t)).toEqual([]);
+  it("usa o valor cru quando não há tradução para o estado ou gatilho", () => {
+    const translation = translatorWith([]);
+
+    expect(
+      pairs(
+        detailEntries(
+          { details: { status: "WEIRD", triggerType: "custom.thing" } },
+          translation,
+        ),
+      ),
+    ).toEqual([
+      ["Details.labels.trigger", "custom.thing"],
+      ["Details.labels.status", "WEIRD"],
+    ]);
   });
 
-  it("calcula o número de páginas", () => {
-    expect(totalPages(0, 25)).toBe(1);
-    expect(totalPages(25, 25)).toBe(1);
-    expect(totalPages(26, 25)).toBe(2);
-    expect(totalPages(60, 25)).toBe(3);
+  it("mostra definições da organização e chaves desconhecidas", () => {
+    expect(
+      pairs(
+        detailEntries(
+          {
+            details: {
+              setting: "read_chains_enabled",
+              channel: "whatsapp",
+              enabled: false,
+              extra: "valor",
+              flag: true,
+              nested: { ignored: true },
+            },
+          },
+          t,
+        ),
+      ),
+    ).toEqual([
+      ["Details.labels.channel", "Channels.whatsapp"],
+      ["Details.labels.enabled", "Details.disabled"],
+      ["extra", "valor"],
+      ["flag", "Details.yes"],
+    ]);
   });
 });

@@ -169,6 +169,7 @@ export async function POST(req) {
       action: AUDIT_ACTIONS.TAG_CREATED,
       entityId: tag?.id,
       entityLabel: tag?.name ?? nameResult.value,
+      details: { color: tag?.color ?? colorResult.value },
     });
 
     return NextResponse.json(
@@ -325,6 +326,7 @@ export async function DELETE(req) {
       action: AUDIT_ACTIONS.TAG_DELETED,
       entityId: orgAuth.tagId,
       entityLabel: orgAuth.tag?.name,
+      details: { color: orgAuth.tag?.color ?? null },
     });
 
     return NextResponse.json({

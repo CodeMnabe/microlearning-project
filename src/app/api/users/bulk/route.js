@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteUser } from "@/lib/repos/user.repo";
 import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { lookupAssistantName } from "@/lib/services/audit/auditLookups";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertAssistantBelongsToOrg,
@@ -48,6 +49,10 @@ export async function PATCH(req) {
         count: safeUserIds.length,
         userIds: safeUserIds,
         assistantId: safeAssistantId,
+        assistantName: await lookupAssistantName(
+          orgAuth.admin,
+          safeAssistantId,
+        ),
       },
     });
 
