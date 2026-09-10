@@ -8,6 +8,8 @@ import {
   updateTag,
   deleteTag,
 } from "@/lib/repos/tag.repo.js";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   cleanPatch,
   handleApiError,
@@ -163,6 +165,12 @@ export async function POST(req) {
       color: colorResult.value,
     });
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_CREATED,
+      entityId: tag?.id,
+      entityLabel: tag?.name ?? nameResult.value,
+    });
+
     return NextResponse.json(
       tag,
       { status: 201 },
@@ -277,6 +285,13 @@ export async function PATCH(req) {
       patch,
     );
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_UPDATED,
+      entityId: orgAuth.tagId,
+      entityLabel: updated?.name ?? orgAuth.tag?.name,
+      details: { fields: Object.keys(patch) },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     return handleApiError(
@@ -305,6 +320,12 @@ export async function DELETE(req) {
       orgAuth.admin,
       orgAuth.tagId,
     );
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_DELETED,
+      entityId: orgAuth.tagId,
+      entityLabel: orgAuth.tag?.name,
+    });
 
     return NextResponse.json({
       success: true,

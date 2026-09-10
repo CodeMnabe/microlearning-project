@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { toE164 } from "@/lib/whatsapp/E164";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertUsersBelongToOrg,
   handleApiError,
@@ -308,6 +310,19 @@ export async function POST(req) {
     if (!res.ok) {
       console.error("Bird 4xx/5xx:", res.status, JSON.stringify(data, null, 2));
     }
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.MESSAGE_TEMPLATE_SENT,
+      entityType: "user",
+      entityId: safeUserId,
+      details: {
+        channel: "whatsapp",
+        projectId: String(projectId).trim(),
+        languageCode: String(languageCode).trim(),
+        ok: res.ok,
+        status: res.status,
+      },
+    });
 
     return NextResponse.json(
       { ok: res.ok, status: res.status, data },

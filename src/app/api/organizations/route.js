@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createOrganization } from "@/lib/repos/organizations.repo";
 import { handleApiError, requireUser } from "@/lib/auth/guards";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function parseUuid(value) {
   if (typeof value !== "string") return null;
@@ -79,6 +81,15 @@ export async function POST(request) {
       ownerUserId: auth.user.id,
       channelId,
     });
+
+    await recordAuditEvent(
+      { orgId: org?.id, user: auth.user },
+      {
+        action: AUDIT_ACTIONS.ORGANIZATION_CREATED,
+        entityId: org?.id,
+        entityLabel: org?.name ?? normalizedName,
+      },
+    );
 
     return NextResponse.json(
       { org },

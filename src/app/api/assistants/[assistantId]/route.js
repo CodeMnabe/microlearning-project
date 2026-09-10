@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { updateAssistant, deleteAssistant } from "@/lib/repos/assistants.repo";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 import {
   cleanPatch,
   handleApiError,
@@ -129,6 +132,13 @@ export async function PATCH(req, { params }) {
      */
     const updated = await updateAssistant(orgAuth.assistantId, patch);
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ASSISTANT_UPDATED,
+      entityId: orgAuth.assistantId,
+      entityLabel: updated?.name ?? orgAuth.assistant?.name,
+      details: { fields: Object.keys(patch) },
+    });
+
     return NextResponse.json(
       {
         ...updated,
@@ -160,6 +170,12 @@ export async function DELETE(_req, { params }) {
      * Delete only our DB Assistant.
      */
     await deleteAssistant(orgAuth.assistantId);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ASSISTANT_DELETED,
+      entityId: orgAuth.assistantId,
+      entityLabel: orgAuth.assistant?.name,
+    });
 
     return new NextResponse(null, {
       status: 204,

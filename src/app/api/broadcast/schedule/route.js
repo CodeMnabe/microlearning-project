@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertUsersBelongToOrg,
   assertWhatsappProviderTemplateBelongsToOrg,
@@ -124,6 +126,19 @@ export async function POST(req) {
       timezone: timezone || null,
       payload: cleanPayload,
       recipient_count: recipientUserIds.length,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SCHEDULED,
+      entityType: "scheduled_broadcast",
+      entityId: row?.id,
+      details: {
+        channel,
+        recipientCount: recipientUserIds.length,
+        scheduledFor: when.toISOString(),
+        timezone: timezone || null,
+        hasTemplate: Boolean(safeWhatsappTemplateId || safeTemplate),
+      },
     });
 
     return NextResponse.json({ ok: true, item: row });

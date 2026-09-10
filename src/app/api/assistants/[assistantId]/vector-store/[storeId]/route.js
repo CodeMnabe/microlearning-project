@@ -10,6 +10,9 @@ import { deleteOpenAiVectorStoreAndFiles } from "@/lib/services/openaiFiles.serv
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 /* =========================================================
    GET VECTOR STORE
    ========================================================= */
@@ -188,6 +191,18 @@ export async function DELETE(_req, { params }) {
      * Delete local Vector Store row.
      */
     await deleteStoreById(sId);
+
+    await recordAuditEvent(auth, {
+      action: AUDIT_ACTIONS.ASSISTANT_FILES_REMOVED,
+      entityId: auth.assistantId,
+      entityLabel: auth.assistant?.name,
+      details: {
+        storeId: sId,
+        storeName: store.store_name,
+        fileCount: (store.file ?? []).length,
+        fileNames: (store.file ?? []).map((file) => file.name),
+      },
+    });
 
     return NextResponse.json(
       {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteUser } from "@/lib/repos/user.repo";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertAssistantBelongsToOrg,
   assertUsersBelongToOrg,
@@ -40,6 +42,15 @@ export async function PATCH(req) {
 
     if (error) throw error;
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.USER_BULK_UPDATED,
+      details: {
+        count: safeUserIds.length,
+        userIds: safeUserIds,
+        assistantId: safeAssistantId,
+      },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error, "Failed to update users");
@@ -75,6 +86,19 @@ export async function DELETE(req) {
         id,
         error: result.reason?.message || "Failed to delete user",
       }));
+
+    if (failed.length < safeUserIds.length) {
+      const failedIds = new Set(failed.map((item) => item.id));
+
+      await recordAuditEvent(orgAuth, {
+        action: AUDIT_ACTIONS.USER_BULK_DELETED,
+        details: {
+          count: safeUserIds.length - failed.length,
+          userIds: safeUserIds.filter((id) => !failedIds.has(id)),
+          failedCount: failed.length,
+        },
+      });
+    }
 
     return NextResponse.json({
       ok: failed.length === 0,
