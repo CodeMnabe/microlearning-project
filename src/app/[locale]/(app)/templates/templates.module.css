@@ -242,6 +242,179 @@
   white-space: pre;
 }
 
+/* Editor + preview layout */
+
+.editorLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.editorColumn {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.preview {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.previewTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.previewUrlHint {
+  font-size: 12px;
+  color: #6b7280;
+  word-break: break-word;
+}
+
+/* WhatsApp-style frame (mirrors broadcast.module.css) */
+
+.waFrame {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ece5dd;
+}
+
+.waHeader {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 10px;
+  background: #075e54;
+  color: #fff;
+}
+
+.waAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #128c7e;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.waHeaderText {
+  display: grid;
+  line-height: 1.1;
+}
+
+.waTitle {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.waSubtitle {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.waChat {
+  padding: 12px;
+  min-height: 140px;
+}
+
+.waEmpty {
+  font-size: 12px;
+  color: #667781;
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.waRowOut {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.waBubble {
+  position: relative;
+  width: 100%;
+  max-width: 92%;
+  background: #dcf8c6;
+  border-radius: 10px 10px 0 10px;
+  padding: 8px 10px 18px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: grid;
+  gap: 6px;
+}
+
+.waImage {
+  height: 90px;
+  border-radius: 8px;
+  background: #c8e6c9;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: #33691e;
+}
+
+.waHeadline {
+  color: #111b21;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.waText {
+  color: #111b21;
+  font-size: 14px;
+}
+
+.waFooter {
+  color: #667781;
+  font-size: 12px;
+}
+
+.waMeta {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  font-size: 11px;
+  color: #667781;
+}
+
+.waButtons {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  margin-left: 8%;
+}
+
+.waButton {
+  background: #fff;
+  color: #128c7e;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: center;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .editorLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    position: static;
+  }
+}
+
 @media (max-width: 720px) {
   .exampleRow {
     grid-template-columns: 1fr;

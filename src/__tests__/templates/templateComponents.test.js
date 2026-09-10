@@ -6,8 +6,10 @@ import {
   emptyTemplateForm,
   extractVariables,
   formFromComponents,
+  interpolateExamples,
   makeButton,
   presetComponents,
+  previewFromForm,
   presetForm,
   sanitizeTemplateName,
   syncExamples,
@@ -269,5 +271,62 @@ describe("buildTemplateComponents", () => {
         original,
       );
     }
+  });
+});
+
+describe("previewFromForm", () => {
+  it("interpolates examples and keeps placeholders without a value", () => {
+    expect(interpolateExamples("Olá {{1}}, {{2}}", ["João", ""])).toBe(
+      "Olá João, {{2}}",
+    );
+  });
+
+  it("is empty for a blank form", () => {
+    expect(previewFromForm(emptyTemplateForm()).isEmpty).toBe(true);
+  });
+
+  it("renders header, body, footer and buttons with example values", () => {
+    const form = validForm();
+    form.header = {
+      type: "text",
+      text: "Olá {{1}}",
+      textExample: "João",
+      imageUrl: "",
+    };
+    form.footer = "Responda STOP";
+    form.buttons = [
+      makeButton("QUICK_REPLY", { text: "Ver mais" }),
+      makeButton("URL", {
+        text: "Abrir",
+        url: "https://x.com/{{1}}",
+        urlExample: "abc",
+      }),
+      makeButton("QUICK_REPLY", { text: "" }),
+    ];
+
+    expect(previewFromForm(form)).toEqual({
+      header: { type: "text", text: "Olá João" },
+      body: "Olá João, dica: Pneus",
+      footer: "Responda STOP",
+      buttons: [
+        { type: "QUICK_REPLY", text: "Ver mais", url: "" },
+        { type: "URL", text: "Abrir", url: "https://x.com/abc" },
+      ],
+      isEmpty: false,
+    });
+  });
+
+  it("describes an image header", () => {
+    const form = validForm();
+    form.header = {
+      type: "image",
+      text: "",
+      textExample: "",
+      imageUrl: "https://cdn.example.com/a.jpg",
+    };
+    expect(previewFromForm(form).header).toEqual({
+      type: "image",
+      url: "https://cdn.example.com/a.jpg",
+    });
   });
 });

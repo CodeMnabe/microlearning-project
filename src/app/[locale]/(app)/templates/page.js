@@ -6,6 +6,7 @@ import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert} from "@/app/components/Alert/AlertProvider";
 import TemplateComponentsEditor from "./components/TemplateComponentsEditor";
+import TemplatePreview from "./components/TemplatePreview";
 import {
   PRESET_KEYS,
   buildTemplateComponents,
@@ -40,6 +41,11 @@ export default function TemplatesPage() {
   const generatedComponents = useMemo(
     () => buildTemplateComponents(form),
     [form]
+  );
+
+  // Fixed at mount so the preview does not re-render every minute.
+  const [previewTime] = useState(() =>
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   );
 
   const [sendOpen, setSendOpen] = useState(false);
@@ -531,19 +537,25 @@ const refresh = useCallback(
               </div>
             </div>
 
-            <div style={{ gridColumn: "1 / span 2" }}>
-              <TemplateComponentsEditor
-                form={form}
-                onChange={onFormChange}
-                errors={formErrors}
-                disabled={loading}
-              />
-              <details className={styles.jsonDetails}>
-                <summary>{translation("editor.generatedJson")}</summary>
-                <pre className={styles.jsonPre}>
-                  {JSON.stringify(generatedComponents, null, 2)}
-                </pre>
-              </details>
+            <div
+              style={{ gridColumn: "1 / span 2" }}
+              className={styles.editorLayout}
+            >
+              <div className={styles.editorColumn}>
+                <TemplateComponentsEditor
+                  form={form}
+                  onChange={onFormChange}
+                  errors={formErrors}
+                  disabled={loading}
+                />
+                <details className={styles.jsonDetails}>
+                  <summary>{translation("editor.generatedJson")}</summary>
+                  <pre className={styles.jsonPre}>
+                    {JSON.stringify(generatedComponents, null, 2)}
+                  </pre>
+                </details>
+              </div>
+              <TemplatePreview form={form} time={previewTime} />
             </div>
 
             <div style={{ gridColumn: "1 / span 2", display: "flex", gap: 8 }}>

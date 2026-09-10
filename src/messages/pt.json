@@ -1121,6 +1121,12 @@
   },
 
   "Templates": {
+    "preview": {
+      "title": "Pré-visualização",
+      "contact": "Contacto",
+      "empty": "Preenche o corpo para veres a mensagem.",
+      "image": "Imagem"
+    },
     "editor": {
       "exampleHint": "Valor de exemplo usado pela Meta na aprovação.",
       "header": {

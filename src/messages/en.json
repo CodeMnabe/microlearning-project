@@ -1112,6 +1112,12 @@
   },
 
   "Templates": {
+    "preview": {
+      "title": "Preview",
+      "contact": "Contact",
+      "empty": "Fill in the body to see the message.",
+      "image": "Image"
+    },
     "editor": {
       "exampleHint": "Sample value Meta uses during approval.",
       "header": {

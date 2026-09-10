@@ -282,6 +282,51 @@ export function formFromComponents(components) {
   return form;
 }
 
+/** Replaces {{n}} with values[n-1] when available; keeps the placeholder otherwise. */
+export function interpolateExamples(text, values = []) {
+  return String(text || "").replace(VARIABLE_RE, (match, n) => {
+    const value = values[Number(n) - 1];
+    return value && String(value).trim() ? String(value).trim() : match;
+  });
+}
+
+/**
+ * What the template will look like on the phone, using the example values
+ * in place of the variables. Pure data so the preview component stays dumb.
+ */
+export function previewFromForm(form) {
+  const header = form.header || {};
+  let previewHeader = null;
+  if (header.type === "text") {
+    const text = interpolateExamples(header.text, [header.textExample]).trim();
+    if (text) previewHeader = { type: "text", text };
+  } else if (header.type === "image") {
+    previewHeader = { type: "image", url: String(header.imageUrl || "").trim() };
+  }
+
+  const body = interpolateExamples(form.body?.text, form.body?.examples).trim();
+  const footer = String(form.footer || "").trim();
+
+  const buttons = (form.buttons || [])
+    .map((b) => ({
+      type: b.type,
+      text: String(b.text || "").trim(),
+      url:
+        b.type === "URL"
+          ? interpolateExamples(b.url, [b.urlExample]).trim()
+          : "",
+    }))
+    .filter((b) => b.text);
+
+  return {
+    header: previewHeader,
+    body,
+    footer,
+    buttons,
+    isEmpty: !previewHeader && !body && !footer && buttons.length === 0,
+  };
+}
+
 // ---------- Presets shown in the "Modelo" select ----------
 export const PRESET_KEYS = [
   "text_quickreplies",
