@@ -51,6 +51,14 @@ export const AUDIT_ACTIONS = Object.freeze({
 
 export const AUDIT_ACTION_LIST = Object.freeze(Object.values(AUDIT_ACTIONS));
 
+/**
+ * Áreas do histórico: os prefixos únicos das ações, pela ordem
+ * em que aparecem no catálogo. Usadas para filtrar a lista.
+ */
+export const AUDIT_AREAS = Object.freeze([
+  ...new Set(AUDIT_ACTION_LIST.map((action) => action.split(".")[0])),
+]);
+
 export const AUDIT_ACTOR_TYPES = Object.freeze({
   USER: "user",
   SYSTEM: "system",

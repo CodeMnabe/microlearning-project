@@ -2320,9 +2320,110 @@
 }
 
 
+  },
+  "Options": {
+    "Title": "Definições",
+    "Subtitle": "Organização {organization}"
+  },
+  "ActivityLog": {
+    "Title": "Histórico de atividade",
+    "Subtitle": "Cronologia das ações feitas na organização, da mais recente para a mais antiga.",
+    "Loading": "A carregar histórico...",
+    "Refresh": "Atualizar",
+    "Filters": {
+      "from": "De",
+      "to": "Até",
+      "clear": "Limpar filtros"
+    },
+    "Areas": {
+      "all": "Todas as áreas",
+      "user": "Colaboradores",
+      "tag": "Tags",
+      "assistant": "Assistentes",
+      "automation": "Automações",
+      "broadcast": "Mensagens",
+      "message": "Mensagens individuais",
+      "template": "Templates",
+      "organization": "Organização"
+    },
+    "Channels": {
+      "whatsapp": "WhatsApp",
+      "teams": "Teams"
+    },
+    "Actions": {
+      "user_created": "Colaborador criado",
+      "user_updated": "Colaborador editado",
+      "user_deleted": "Colaborador eliminado",
+      "user_bulk_updated": "Assistente alterado em massa",
+      "user_bulk_deleted": "Colaboradores eliminados em massa",
+      "user_tags_updated": "Tags de colaboradores alteradas",
+      "user_imported": "Colaboradores importados",
+      "tag_created": "Tag criada",
+      "tag_updated": "Tag editada",
+      "tag_deleted": "Tag eliminada",
+      "assistant_created": "Assistente criado",
+      "assistant_updated": "Assistente editado",
+      "assistant_deleted": "Assistente eliminado",
+      "assistant_files_added": "Ficheiros adicionados ao assistente",
+      "assistant_files_removed": "Ficheiros removidos do assistente",
+      "automation_created": "Automação criada",
+      "automation_updated": "Automação editada",
+      "automation_deleted": "Automação eliminada",
+      "broadcast_sent": "Mensagem enviada",
+      "broadcast_scheduled": "Mensagem agendada",
+      "broadcast_schedule_updated": "Agendamento editado",
+      "broadcast_schedule_deleted": "Agendamento eliminado",
+      "broadcast_read_chain_created": "Sequência de leitura criada",
+      "message_template_sent": "Template enviado a um colaborador",
+      "template_created": "Template WhatsApp criado",
+      "organization_created": "Organização criada",
+      "organization_settings_updated": "Definições da organização alteradas",
+      "unknown": "Ação desconhecida"
+    },
+    "Table": {
+      "when": "Quando",
+      "action": "Ação",
+      "entity": "Elemento",
+      "details": "Detalhes",
+      "actor": "Autor"
+    },
+    "Actor": {
+      "system": "Sistema",
+      "unknown": "Desconhecido"
+    },
+    "Details": {
+      "fields": "{count, plural, =1 {1 campo} other {# campos}}: {list}",
+      "recipients": "{count, plural, =1 {1 destinatário} other {# destinatários}}",
+      "result": "{ok} com sucesso, {failed} falhados",
+      "delivered": "Entregue",
+      "notDelivered": "Não entregue",
+      "imported": "{created} criados, {updated} atualizados, {failed} falhados",
+      "count": "{count, plural, =1 {1 colaborador} other {# colaboradores}}",
+      "tagOps": {
+        "add": "tags adicionadas",
+        "remove": "tags removidas",
+        "set": "tags substituídas"
+      },
+      "files": "{count, plural, =1 {1 ficheiro} other {# ficheiros}}",
+      "scheduledFor": "para {date}",
+      "status": "estado: {status}",
+      "enabled": "ativado",
+      "disabled": "desativado"
+    },
+    "Empty": {
+      "title": "Ainda não há atividade",
+      "text": "As ações feitas na plataforma vão aparecer aqui.",
+      "filteredTitle": "Sem resultados",
+      "filteredText": "Nenhuma ação corresponde aos filtros escolhidos."
+    },
+    "Errors": {
+      "load": "Não foi possível carregar o histórico."
+    },
+    "Pagination": {
+      "total": "{count, plural, =1 {1 registo} other {# registos}}",
+      "pageOf": "Página {page} de {pages}",
+      "prev": "Página anterior",
+      "next": "Página seguinte"
+    }
   }
-
-
-
-
 }

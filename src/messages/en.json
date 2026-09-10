@@ -2320,14 +2320,110 @@
 
     
 
+  },
+  "Options": {
+    "Title": "Options",
+    "Subtitle": "Organization {organization}"
+  },
+  "ActivityLog": {
+    "Title": "Activity history",
+    "Subtitle": "Chronology of the actions made in the organization, newest first.",
+    "Loading": "Loading history...",
+    "Refresh": "Refresh",
+    "Filters": {
+      "from": "From",
+      "to": "To",
+      "clear": "Clear filters"
+    },
+    "Areas": {
+      "all": "All areas",
+      "user": "Users",
+      "tag": "Tags",
+      "assistant": "Assistants",
+      "automation": "Automations",
+      "broadcast": "Messages",
+      "message": "Individual messages",
+      "template": "Templates",
+      "organization": "Organization"
+    },
+    "Channels": {
+      "whatsapp": "WhatsApp",
+      "teams": "Teams"
+    },
+    "Actions": {
+      "user_created": "User created",
+      "user_updated": "User edited",
+      "user_deleted": "User deleted",
+      "user_bulk_updated": "Assistant changed in bulk",
+      "user_bulk_deleted": "Users deleted in bulk",
+      "user_tags_updated": "User tags changed",
+      "user_imported": "Users imported",
+      "tag_created": "Tag created",
+      "tag_updated": "Tag edited",
+      "tag_deleted": "Tag deleted",
+      "assistant_created": "Assistant created",
+      "assistant_updated": "Assistant edited",
+      "assistant_deleted": "Assistant deleted",
+      "assistant_files_added": "Files added to assistant",
+      "assistant_files_removed": "Files removed from assistant",
+      "automation_created": "Automation created",
+      "automation_updated": "Automation edited",
+      "automation_deleted": "Automation deleted",
+      "broadcast_sent": "Message sent",
+      "broadcast_scheduled": "Message scheduled",
+      "broadcast_schedule_updated": "Schedule edited",
+      "broadcast_schedule_deleted": "Schedule deleted",
+      "broadcast_read_chain_created": "Read chain created",
+      "message_template_sent": "Template sent to a user",
+      "template_created": "WhatsApp template created",
+      "organization_created": "Organization created",
+      "organization_settings_updated": "Organization settings changed",
+      "unknown": "Unknown action"
+    },
+    "Table": {
+      "when": "When",
+      "action": "Action",
+      "entity": "Item",
+      "details": "Details",
+      "actor": "Author"
+    },
+    "Actor": {
+      "system": "System",
+      "unknown": "Unknown"
+    },
+    "Details": {
+      "fields": "{count, plural, =1 {1 field} other {# fields}}: {list}",
+      "recipients": "{count, plural, =1 {1 recipient} other {# recipients}}",
+      "result": "{ok} succeeded, {failed} failed",
+      "delivered": "Delivered",
+      "notDelivered": "Not delivered",
+      "imported": "{created} created, {updated} updated, {failed} failed",
+      "count": "{count, plural, =1 {1 user} other {# users}}",
+      "tagOps": {
+        "add": "tags added",
+        "remove": "tags removed",
+        "set": "tags replaced"
+      },
+      "files": "{count, plural, =1 {1 file} other {# files}}",
+      "scheduledFor": "for {date}",
+      "status": "status: {status}",
+      "enabled": "enabled",
+      "disabled": "disabled"
+    },
+    "Empty": {
+      "title": "No activity yet",
+      "text": "Actions made on the platform will show up here.",
+      "filteredTitle": "No results",
+      "filteredText": "No action matches the selected filters."
+    },
+    "Errors": {
+      "load": "Could not load the activity history."
+    },
+    "Pagination": {
+      "total": "{count, plural, =1 {1 entry} other {# entries}}",
+      "pageOf": "Page {page} of {pages}",
+      "prev": "Previous page",
+      "next": "Next page"
+    }
   }
-
 }
-
-
-
-
-
-
-
-
