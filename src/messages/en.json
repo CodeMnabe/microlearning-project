@@ -1112,37 +1112,178 @@
   },
 
   "Templates": {
+    "builder": {
+      "steps": {
+        "start": "Start",
+        "compose": "Compose",
+        "review": "Review"
+      },
+      "start": {
+        "title": "How do you want to start?",
+        "hint": "Pick a starting point. You can change everything afterwards.",
+        "blank": "Blank",
+        "blankHint": "Just the message. Add an image, buttons and the rest whenever you like.",
+        "presetHints": {
+          "text_quickreplies": "Short text with two replies.",
+          "image_header_quickreplies": "Image on top, a tip and replies.",
+          "quiz_url_button": "A question with options and a link button."
+        }
+      },
+      "meta": {
+        "name": "Internal name",
+        "nameHint": "Lowercase letters, numbers and _ only. Contacts never see it.",
+        "language": "Language",
+        "category": "Category",
+        "categoryHints": {
+          "MARKETING": "Tips, news and content. The most common choice.",
+          "UTILITY": "Notices about something the contact asked for or bought.",
+          "AUTHENTICATION": "Verification codes. Rarely the case."
+        }
+      },
+      "languages": {
+        "pt": "Portuguese",
+        "pt_PT": "Portuguese (Portugal)",
+        "pt_BR": "Portuguese (Brazil)",
+        "en": "English",
+        "en_US": "English (US)",
+        "es": "Spanish",
+        "fr": "French"
+      },
+      "blocks": {
+        "image": {
+          "title": "Image on top",
+          "hint": "For approval a link to a similar image is enough. The real image is chosen when sending.",
+          "url": "Link to a sample image"
+        },
+        "title": {
+          "title": "Title",
+          "hint": "One bold line at the top of the message."
+        },
+        "body": {
+          "title": "Message",
+          "hint": "You can use *bold* and _italic_ like in WhatsApp.",
+          "insert": "Insert into the message:",
+          "placeholder": "Write the message here…"
+        },
+        "footer": {
+          "title": "Note at the end",
+          "hint": "Small, discreet text, for example how to opt out.",
+          "placeholder": "Reply STOP to unsubscribe"
+        },
+        "quick": {
+          "title": "Reply buttons",
+          "hint": "The contact taps a button to reply. Each button is one possible answer.",
+          "add": "Add reply",
+          "placeholder": "E.g. See more",
+          "item": "Reply {index}"
+        },
+        "link": {
+          "title": "Link button",
+          "hint": "Opens a page in the browser.",
+          "add": "Add another link",
+          "item": "Link {index}",
+          "text": "Button text",
+          "url": "Link",
+          "suffix": "per-contact value",
+          "dynamic": "The end of the link changes from contact to contact",
+          "dynamicHint": "Useful for quizzes or sessions. The real value is filled in when sending.",
+          "example": "Example for the end of the link"
+        }
+      },
+      "add": {
+        "label": "Add",
+        "onlyOneTop": "There can only be one image or one title on top.",
+        "maxButtons": "You already have the maximum of {max} buttons."
+      },
+      "remove": "Remove",
+      "removeItem": "Remove {index}",
+      "variables": {
+        "kinds": {
+          "contact_name": "Contact name",
+          "company": "Company name",
+          "custom": "Free text"
+        },
+        "inspector": {
+          "title": "Variable {index}",
+          "kind": "What it is",
+          "example": "Example",
+          "exampleHint": "Only so Meta understands the template during approval. The real value is used when sending.",
+          "remove": "Remove this variable",
+          "close": "Close"
+        }
+      },
+      "actions": {
+        "restart": "Pick another start",
+        "review": "Review",
+        "edit": "Back to editing",
+        "submit": "Submit for approval"
+      },
+      "review": {
+        "title": "Confirm before submitting",
+        "name": "Name",
+        "language": "Language",
+        "category": "Category",
+        "notice": "Meta usually approves in under 24 hours. Once submitted, the template cannot be edited: to change anything you will have to create a new one.",
+        "json": "View generated JSON"
+      }
+    },
+    "preview": {
+      "title": "Preview",
+      "contact": "Contact",
+      "empty": "Fill in the body to see the message.",
+      "image": "Image"
+    },
+    "editor": {
+      "errors": {
+        "nameRequired": "Name is required.",
+        "nameFormat": "Name may only contain lowercase letters, numbers and _.",
+        "headerTextRequired": "Header text is required.",
+        "headerTextTooLong": "Header cannot exceed {max} characters.",
+        "headerSingleVariable": "The header may only contain variable '{{'1'}}'.",
+        "headerExampleRequired": "Provide an example for the header variable.",
+        "headerImageUrl": "Provide a valid URL (https://) for the sample image.",
+        "headerTypeInvalid": "Invalid header type.",
+        "bodyRequired": "Message body is required.",
+        "bodyTooLong": "Body cannot exceed {max} characters.",
+        "bodySequential": "Variables must be sequential: '{{'1'}}', '{{'2'}}', '{{'3'}}'…",
+        "bodyExampleRequired": "Missing example for variable {index}.",
+        "footerTooLong": "Footer cannot exceed {max} characters.",
+        "footerNoVariables": "The footer does not accept variables.",
+        "tooManyButtons": "At most {max} buttons.",
+        "tooManyUrlButtons": "At most {max} link buttons.",
+        "buttonsGrouped": "Quick replies must be grouped together, separate from link buttons.",
+        "buttonTypeInvalid": "Invalid button type.",
+        "buttonTextRequired": "This button has no text.",
+        "buttonTextTooLong": "Button text cannot exceed {max} characters.",
+        "buttonUrlInvalid": "Provide a valid URL (https://).",
+        "buttonUrlTooLong": "URL cannot exceed {max} characters.",
+        "buttonUrlSingleVariable": "The URL may only contain variable '{{'1'}}'.",
+        "buttonUrlVariableAtEnd": "Variable '{{'1'}}' must be at the end of the URL.",
+        "buttonUrlExampleRequired": "Provide an example for the URL variable."
+      }
+    },
     "title": "WhatsApp Templates",
     "tabList": "List",
     "tabCreate": "Create",
     "sync": "Sync",
     "syncing": "Syncing…",
-
     "name": "Name",
     "language": "Language",
     "category": "Category",
     "status": "Status",
-
     "noTemplates": "No templates. Go to \"Create\" to add one.",
     "sendTest": "Send test",
-
     "MARKETING": "Marketing",
     "UTILITY": "Utility",
     "AUTHENTICATION": "Authentication",
-
-    "model": "Model",
-    "Model": "Model",
-
     "text_quickreplies": "Text + quick replies",
     "image_header_quickreplies": "Image header + quick replies",
     "quiz_url_button": "Quiz with variable URL button",
-
     "notices": {
       "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
       "submitted": "Template \"{name}\" submitted. Status: {status}",
       "sent": "Template sent."
     },
-
     "statuses": {
       "new": "New",
       "approved": "Approved",
@@ -1154,18 +1295,13 @@
       "pending_deletion": "Pending deletion",
       "unknown": "Unknown"
     },
-
     "createForm": {
       "name": "Name",
       "language": "Language",
       "category": "Category",
-      "preset": "Model",
-      "components": "Components (JSON)",
       "submit": "Submit for approval",
-      "reset": "Reset example",
       "creating": "Creating…"
     },
-
     "modal": {
       "title": "Send test",
       "to": "To (E.164 or national)",
@@ -1176,17 +1312,14 @@
       "sending": "Sending…",
       "close": "Close"
     },
-
     "errors": {
       "noOrg": "No organization found.",
       "fetch": "Failed to fetch templates: {message}",
-      "componentsArray": "Components must be an array.",
-      "invalidComponents": "Invalid components JSON: {message}",
       "nameRequired": "Name is required.",
+      "formInvalid": "Some template fields need fixing.",
       "createFailed": "Create failed: {message}",
       "sendFailed": "Send failed: {message}"
     },
-
     "alerts": {
       "syncFailed": {
         "title": "Failed to sync templates",
@@ -1196,17 +1329,13 @@
         "title": "Templates synced",
         "message": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}"
       },
-      "invalidJson": {
-        "title": "Invalid JSON",
-        "message": "The Components field has a formatting error. Check commas, quotes and brackets."
-      },
-      "componentsNotArray": {
-        "title": "Invalid format",
-        "message": "Components must be inside a JSON array."
-      },
       "nameRequired": {
         "title": "Missing name",
         "message": "Fill in the template name before submitting."
+      },
+      "formInvalid": {
+        "title": "Incomplete template",
+        "message": "Fix the highlighted fields before submitting."
       },
       "templateSubmitted": {
         "title": "Template submitted",

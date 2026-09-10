@@ -5,6 +5,20 @@ import { useAuth } from "../../../AuthContext";
 import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert} from "@/app/components/Alert/AlertProvider";
+import TemplateBlocksEditor from "./components/TemplateBlocksEditor";
+import TemplatePreview from "./components/TemplatePreview";
+import {
+  PRESET_KEYS,
+  buildTemplateComponents,
+  emptyTemplateForm,
+  presetForm,
+  sanitizeTemplateName,
+  validateTemplateForm,
+} from "./lib/templateComponents";
+import styles from "./templates.module.css";
+
+const STEPS = ["start", "compose", "review"];
+const LANGUAGES = ["pt", "pt_PT", "pt_BR", "en", "en_US", "es", "fr"];
 
 export default function TemplatesPage() {
   const translation = useTranslations("Templates");
@@ -22,10 +36,21 @@ export default function TemplatesPage() {
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("pt");
   const [category, setCategory] = useState("MARKETING");
-  const [componentsText, setComponentsText] = useState(() =>
-    JSON.stringify(preset("text_quickreplies"), null, 2)
+  const [form, setForm] = useState(() => emptyTemplateForm());
+  const [formErrors, setFormErrors] = useState([]);
+  const [step, setStep] = useState("start");
+  // Bumped whenever a new starting point is chosen so the editor remounts.
+  const [formSeed, setFormSeed] = useState(0);
+
+  const generatedComponents = useMemo(
+    () => buildTemplateComponents(form),
+    [form]
   );
-  const [presetKey, setPresetKey] = useState("text_quickreplies");
+
+  // Fixed at mount so the preview does not re-render every minute.
+  const [previewTime] = useState(() =>
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
 
   const [sendOpen, setSendOpen] = useState(false);
   const [sendTo, setSendTo] = useState("");
@@ -121,10 +146,41 @@ const refresh = useCallback(
     if (org?.id) refresh();
   }, [org?.id, refresh]);
 
-  function onPresetChange(key) {
-    setPresetKey(key);
-    const data = preset(key);
-    setComponentsText(JSON.stringify(data, null, 2));
+  function startFrom(presetKey) {
+    setForm(presetKey ? presetForm(presetKey) : emptyTemplateForm());
+    setFormErrors([]);
+    setFormSeed((s) => s + 1);
+    setStep("compose");
+  }
+
+  function onFormChange(next) {
+    setForm(next);
+    if (formErrors.length) setFormErrors([]);
+  }
+
+  const nameErrors = formErrors
+    .filter((err) => err.field === "name")
+    .map((err) => translation(`editor.errors.${err.key}`, err.params));
+
+  // The name is asked for in the review step, so it is not checked here.
+  async function goToReview() {
+    const errors = validateTemplateForm(form);
+    setFormErrors(errors);
+
+    if (errors.length > 0) {
+      setError(translation("errors.formInvalid"));
+
+      await showAlert({
+        title: translation("alerts.formInvalid.title"),
+        message: translation("alerts.formInvalid.message"),
+        tone: "warning",
+      });
+
+      return;
+    }
+
+    clearMessages();
+    setStep("review");
   }
 
   async function createTemplate(e) {
@@ -132,48 +188,37 @@ const refresh = useCallback(
     if (!org?.id) return;
     clearMessages();
 
-   let components;
+    const errors = validateTemplateForm(form, { name });
+    setFormErrors(errors);
+    // Name problems are fixed on the review step itself; anything else
+    // belongs to the blocks, so go back to compose.
+    if (errors.some((err) => err.field !== "name")) setStep("compose");
 
-      try {
-        components = JSON.parse(componentsText);
-      } catch (err) {
-        setError(
-          translation("errors.invalidComponents", {
-            message: err.message,
-          })
-        );
+    if (errors.some((err) => err.field === "name")) {
+      setError(translation("errors.nameRequired"));
 
-        await showAlert({
-          title: translation("alerts.invalidJson.title"),
-          message: translation("alerts.invalidJson.message"),
-          tone: "warning",
-        });
+      await showAlert({
+        title: translation("alerts.nameRequired.title"),
+        message: translation("alerts.nameRequired.message"),
+        tone: "warning",
+      });
 
-        return;
-      }
+      return;
+    }
 
-      if (!Array.isArray(components)) {
-        setError(translation("errors.componentsArray"));
+    if (errors.length > 0) {
+      setError(translation("errors.formInvalid"));
 
-        await showAlert({
-          title: translation("alerts.componentsNotArray.title"),
-          message: translation("alerts.componentsNotArray.message"),
-          tone: "warning",
-        });
+      await showAlert({
+        title: translation("alerts.formInvalid.title"),
+        message: translation("alerts.formInvalid.message"),
+        tone: "warning",
+      });
 
-        return;
-      }
-              if (!name.trim()) {
-        setError(translation("errors.nameRequired"));
+      return;
+    }
 
-        await showAlert({
-          title: translation("alerts.nameRequired.title"),
-          message: translation("alerts.nameRequired.message"),
-          tone: "warning",
-        });
-
-        return;
-      }
+    const components = buildTemplateComponents(form);
 
     setLoading(true);
     try {
@@ -213,6 +258,7 @@ const refresh = useCallback(
         tone: "success",
       });
       setView("list");
+      setStep("start");
       refresh();
 
 
@@ -387,7 +433,9 @@ const refresh = useCallback(
       </header>
 
       {error && <div style={alertBox("#FFEBEE", "#C62828")}>{error}</div>}
-      {notice && <div style={alertBox("#E8F5E9", "#2E7D32")}>{notice}</div>}
+      {notice && view === "list" && (
+        <div style={alertBox("#E8F5E9", "#2E7D32")}>{notice}</div>
+      )}
 
       {view === "list" ? (
         <section>
@@ -467,99 +515,228 @@ const refresh = useCallback(
         </section>
       ) : (
         <section>
-          <form
-            onSubmit={createTemplate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-          >
-            <div
-              style={{
-                gridColumn: "1 / span 2",
-                display: "grid",
-                gridTemplateColumns: "1fr 160px 200px 1fr",
-                gap: 12,
+          <ol className={styles.steps}>
+            {STEPS.map((key, i) => {
+              const current = STEPS.indexOf(step);
+              const state =
+                i < current ? "done" : i === current ? "active" : "todo";
+              return (
+                <li key={key} className={styles.stepItem} data-state={state}>
+                  <button
+                    type="button"
+                    className={styles.step}
+                    disabled={state !== "done" || loading}
+                    aria-current={state === "active" ? "step" : undefined}
+                    onClick={() => setStep(key)}
+                  >
+                    <span className={styles.stepNumber}>
+                      {state === "done" ? "✓" : i + 1}
+                    </span>
+                    <span>{translation(`builder.steps.${key}`)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+
+          {step === "start" && (
+            <>
+              <div className={styles.startIntro}>
+                <div className={styles.startTitle}>
+                  {translation("builder.start.title")}
+                </div>
+                <div className={styles.hint}>
+                  {translation("builder.start.hint")}
+                </div>
+              </div>
+              <div className={styles.startGrid}>
+                {PRESET_KEYS.map((key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={styles.startCard}
+                    onClick={() => startFrom(key)}
+                  >
+                    <div className={styles.startThumb}>
+                      <TemplatePreview
+                        form={presetForm(key)}
+                        time={previewTime}
+                        compact
+                      />
+                    </div>
+                    <div className={styles.startCardTitle}>
+                      {translation(key)}
+                    </div>
+                    <div className={styles.startCardHint}>
+                      {translation(`builder.start.presetHints.${key}`)}
+                    </div>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={styles.startCard}
+                  onClick={() => startFrom(null)}
+                >
+                  <div className={styles.startThumb}>
+                    <TemplatePreview
+                      form={emptyTemplateForm()}
+                      time={previewTime}
+                      compact
+                    />
+                  </div>
+                  <div className={styles.startCardTitle}>
+                    {translation("builder.start.blank")}
+                  </div>
+                  <div className={styles.startCardHint}>
+                    {translation("builder.start.blankHint")}
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === "compose" && (
+            <form
+              className={styles.compose}
+              onSubmit={(e) => {
+                e.preventDefault();
+                goToReview();
               }}
             >
-              <div>
-                <label style={label()}> {translation("name")}</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="ml_tip_image_v1"
-                  style={input()}
-                />
+              <div className={styles.editorLayout}>
+                <div className={styles.editorColumn}>
+                  <TemplateBlocksEditor
+                    key={formSeed}
+                    form={form}
+                    onChange={onFormChange}
+                    errors={formErrors}
+                    disabled={loading}
+                    context={{ companyName: org?.name }}
+                  />
+                </div>
+                <TemplatePreview form={form} time={previewTime} />
               </div>
-              <div>
-                <label style={label()}> {translation("language")}</label>
-                <input
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  placeholder="pt"
-                  style={input()}
-                />
-              </div>
-              <div>
-                <label style={label()}> {translation("category")}</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  style={input()}
-                >
-                  <option value="MARKETING">{translation("MARKETING")}</option>
-                  <option value="UTILITY">{translation("UTILITY")}</option>
-                  <option value="AUTHENTICATION">{translation("AUTHENTICATION")}</option>
-                </select>
-              </div>
-              <div>
-                <label style={label()}> {translation("Model")}</label>
-                <select
-                  value={presetKey}
-                  onChange={(e) => onPresetChange(e.target.value)}
-                  style={input()}
-                >
-                  <option value="text_quickreplies">
-                    {translation("text_quickreplies")}
-                  </option>
-                  <option value="image_header_quickreplies">
-                    {translation("image_header_quickreplies")}
-                  </option>
-                  <option value="quiz_url_button">
-                    {translation("quiz_url_button")}
-                  </option>
-                </select>
-              </div>
-            </div>
 
-            <div style={{ gridColumn: "1 / span 2" }}>
-              <label style={label()}>Components (JSON)</label>
-              <textarea
-                value={componentsText}
-                onChange={(e) => setComponentsText(e.target.value)}
-                spellCheck={false}
-                rows={18}
-                style={{
-                  ...input(),
-                  fontFamily:
-                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                  minHeight: 320,
-                }}
-              />
-            </div>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  style={secondaryBtn()}
+                  onClick={() => setStep("start")}
+                >
+                  {translation("builder.actions.restart")}
+                </button>
+                <button type="submit" style={primaryBtn()}>
+                  {translation("builder.actions.review")}
+                </button>
+              </div>
+            </form>
+          )}
 
-            <div style={{ gridColumn: "1 / span 2", display: "flex", gap: 8 }}>
-              <button type="submit" disabled={loading} style={primaryBtn()}>
-                {loading ? "A criar…" : "Submeter para aprovação"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setComponentsText(JSON.stringify(preset(presetKey), null, 2))
-                }
-                style={secondaryBtn()}
-              >
-                Repor exemplo
-              </button>
-            </div>
-          </form>
+          {step === "review" && (
+            <form onSubmit={createTemplate} className={styles.reviewLayout}>
+              <div className={styles.reviewCard}>
+                <div className={styles.reviewTitle}>
+                  {translation("builder.review.title")}
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="tpl-name">
+                    {translation("builder.meta.name")}
+                  </label>
+                  <input
+                    id="tpl-name"
+                    className={styles.input}
+                    value={name}
+                    placeholder="dica_semanal_v1"
+                    disabled={loading}
+                    onChange={(e) =>
+                      setName(sanitizeTemplateName(e.target.value))
+                    }
+                  />
+                  <div className={styles.hint}>
+                    {translation("builder.meta.nameHint")}
+                  </div>
+                  {nameErrors.length > 0 && (
+                    <ul className={styles.errorList} role="alert">
+                      {nameErrors.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className={styles.reviewRow}>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="tpl-language">
+                      {translation("builder.meta.language")}
+                    </label>
+                    <select
+                      id="tpl-language"
+                      className={styles.input}
+                      value={language}
+                      disabled={loading}
+                      onChange={(e) => setLanguage(e.target.value)}
+                    >
+                      {LANGUAGES.map((code) => (
+                        <option key={code} value={code}>
+                          {translation(`builder.languages.${code}`)}
+                        </option>
+                      ))}
+                      {!LANGUAGES.includes(language) && (
+                        <option value={language}>{language}</option>
+                      )}
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="tpl-category">
+                      {translation("builder.meta.category")}
+                    </label>
+                    <select
+                      id="tpl-category"
+                      className={styles.input}
+                      value={category}
+                      disabled={loading}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="MARKETING">
+                        {translation("MARKETING")}
+                      </option>
+                      <option value="UTILITY">{translation("UTILITY")}</option>
+                      <option value="AUTHENTICATION">
+                        {translation("AUTHENTICATION")}
+                      </option>
+                    </select>
+                    <div className={styles.hint}>
+                      {translation(`builder.meta.categoryHints.${category}`)}
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.notice}>
+                  {translation("builder.review.notice")}
+                </div>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    style={secondaryBtn()}
+                    disabled={loading}
+                    onClick={() => setStep("compose")}
+                  >
+                    {translation("builder.actions.edit")}
+                  </button>
+                  <button type="submit" disabled={loading} style={primaryBtn()}>
+                    {loading
+                      ? translation("createForm.creating")
+                      : translation("builder.actions.submit")}
+                  </button>
+                </div>
+                <details className={styles.jsonDetails}>
+                  <summary>{translation("builder.review.json")}</summary>
+                  <pre className={styles.jsonPre}>
+                    {JSON.stringify(generatedComponents, null, 2)}
+                  </pre>
+                </details>
+              </div>
+              <TemplatePreview form={form} time={previewTime} />
+            </form>
+          )}
         </section>
       )}
 
@@ -749,69 +926,3 @@ function modalCard() {
   };
 }
 
-// ---------- Presets ----------
-function preset(key) {
-  switch (key) {
-    case "image_header_quickreplies":
-      return [
-        {
-          type: "HEADER",
-          format: "IMAGE",
-          example: { header_url: ["https://cdn.example.com/tip1.jpg"] },
-        },
-        {
-          type: "BODY",
-          text: "Olá {{1}}! 🎓 Dica de hoje: {{2}}",
-          example: { body_text: [["João", "Verificar pressão dos pneus"]] },
-        },
-        { type: "FOOTER", text: "Responda para saber mais" },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "Quiz rápido" },
-            { type: "QUICK_REPLY", text: "Parar" },
-          ],
-        },
-      ];
-    case "quiz_url_button":
-      return [
-        {
-          type: "BODY",
-          text: "Pergunta: {{1}}",
-          example: { body_text: [["Qual a autonomia em WLTP?"]] },
-        },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "A" },
-            { type: "QUICK_REPLY", text: "B" },
-            { type: "QUICK_REPLY", text: "C" },
-            {
-              type: "URL",
-              text: "Abrir Quiz",
-              url: "https://example.com/quiz/{{1}}",
-              example: { button_url: ["session-12345"] },
-            },
-          ],
-        },
-      ];
-    case "text_quickreplies":
-    default:
-      return [
-        {
-          type: "BODY",
-          text: "Olá {{1}}! 🎓 Microlearning: {{2}}. Dica: {{3}}",
-          example: {
-            body_text: [["João", "Baterias", "Evite cargas 100% diárias"]],
-          },
-        },
-        {
-          type: "BUTTONS",
-          buttons: [
-            { type: "QUICK_REPLY", text: "Ver mais" },
-            { type: "QUICK_REPLY", text: "Parar" },
-          ],
-        },
-      ];
-  }
-}
