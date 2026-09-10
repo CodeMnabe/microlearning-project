@@ -10,6 +10,8 @@ import {
   requireOrgForAutomationRule,
 } from "@/lib/auth/guards";
 import { sanitizeAutomationPayload } from "@/lib/services/automations/automationEngine";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function normalizeAssistantId(value, fallback) {
   if (value === undefined) return fallback;
@@ -84,6 +86,15 @@ export async function PATCH(req, { params }) {
     }
 
     const updated = await updateAutomationRule(orgAuth.ruleId, patch);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.AUTOMATION_UPDATED,
+      entityType: "automation_rule",
+      entityId: orgAuth.ruleId,
+      entityLabel: updated?.name ?? existing?.name,
+      details: { fields: Object.keys(patch) },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     const status =
@@ -104,6 +115,17 @@ export async function DELETE(_req, { params }) {
     if (orgAuth.error) return orgAuth.error;
 
     await deleteAutomationRule(orgAuth.ruleId);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.AUTOMATION_DELETED,
+      entityType: "automation_rule",
+      entityId: orgAuth.ruleId,
+      entityLabel: orgAuth.rule?.name,
+      details: {
+        triggerType: orgAuth.rule?.trigger_type ?? null,
+        channel: orgAuth.rule?.channel ?? null,
+      },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

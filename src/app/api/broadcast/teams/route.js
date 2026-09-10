@@ -8,6 +8,9 @@ import {
 
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 function getRecipientUserIds(recipients = []) {
   return recipients
     .map((recipient) => Number(recipient?.userId ?? recipient?.id))
@@ -73,6 +76,17 @@ export async function POST(req) {
       scheduledBroadcastId: null,
 
       createdByUserId: null,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SENT,
+      entityId: result?.sendGroupId,
+      details: {
+        channel: "teams",
+        recipientCount: userIds.length,
+        ok: result?.ok ?? 0,
+        failed: result?.failed ?? 0,
+      },
     });
 
     return NextResponse.json(result, {

@@ -2320,14 +2320,195 @@
 
     
 
+  },
+  "Options": {
+    "Title": "Options",
+    "Subtitle": "Organization {organization}"
+  },
+  "ActivityLog": {
+    "Title": "Activity history",
+    "Subtitle": "Chronology of the actions made in the organization, newest first.",
+    "Loading": "Loading history...",
+    "Refresh": "Refresh",
+    "Filters": {
+      "from": "From",
+      "to": "To",
+      "clear": "Clear filters"
+    },
+    "Areas": {
+      "all": "All areas",
+      "user": "Users",
+      "tag": "Tags",
+      "assistant": "Assistants",
+      "automation": "Automations",
+      "broadcast": "Messages",
+      "message": "Individual messages",
+      "template": "Templates",
+      "organization": "Organization"
+    },
+    "Channels": {
+      "whatsapp": "WhatsApp",
+      "teams": "Teams"
+    },
+    "Actions": {
+      "user_created": "User created",
+      "user_updated": "User edited",
+      "user_deleted": "User deleted",
+      "user_bulk_updated": "Assistant changed in bulk",
+      "user_bulk_deleted": "Users deleted in bulk",
+      "user_tags_updated": "User tags changed",
+      "user_imported": "Users imported",
+      "tag_created": "Tag created",
+      "tag_updated": "Tag edited",
+      "tag_deleted": "Tag deleted",
+      "assistant_created": "Assistant created",
+      "assistant_updated": "Assistant edited",
+      "assistant_deleted": "Assistant deleted",
+      "assistant_files_added": "Files added to assistant",
+      "assistant_files_removed": "Files removed from assistant",
+      "automation_created": "Automation created",
+      "automation_updated": "Automation edited",
+      "automation_deleted": "Automation deleted",
+      "broadcast_sent": "Message sent",
+      "broadcast_scheduled": "Message scheduled",
+      "broadcast_schedule_updated": "Schedule edited",
+      "broadcast_schedule_deleted": "Schedule deleted",
+      "broadcast_read_chain_created": "Read chain created",
+      "message_template_sent": "Template sent to a user",
+      "template_created": "WhatsApp template created",
+      "organization_created": "Organization created",
+      "organization_settings_updated": "Organization settings changed",
+      "automation_triggered": "Automation triggered",
+      "broadcast_scheduled_sent": "Scheduled message sent",
+      "message_received": "Message received",
+      "unknown": "Unknown action"
+    },
+    "Table": {
+      "when": "When",
+      "action": "Action",
+      "entity": "Item",
+      "details": "Details",
+      "actor": "Author"
+    },
+    "Actor": {
+      "system": "System",
+      "unknown": "Unknown"
+    },
+    "Details": {
+      "yes": "Yes",
+      "no": "No",
+      "delivered": "Delivered",
+      "notDelivered": "Not delivered",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "sourceAutomation": "Automation",
+      "importSummary": "{created} created, {updated} updated, {failed} failed",
+      "sendSummary": "{ok} succeeded, {failed} failed",
+      "labels": {
+        "channel": "Channel",
+        "scope": "Scope",
+        "trigger": "Trigger",
+        "user": "User",
+        "email": "Email",
+        "phone": "Phone",
+        "assistant": "Assistant",
+        "fields": "Changed fields",
+        "recipients": "Recipients",
+        "result": "Result",
+        "count": "Users",
+        "failedCount": "Failed",
+        "operation": "Operation",
+        "files": "Files",
+        "store": "Knowledge base",
+        "scheduledFor": "Scheduled for",
+        "timezone": "Timezone",
+        "status": "Status",
+        "enabled": "Read chains",
+        "withTemplate": "With template",
+        "scheduled": "Scheduled",
+        "source": "Source",
+        "model": "Model",
+        "language": "Language",
+        "category": "Category",
+        "color": "Color",
+        "active": "Active",
+        "steps": "Messages in chain",
+        "sent": "Sent",
+        "waitingForReply": "Waiting for reply",
+        "error": "Error"
+      },
+      "fieldNames": {
+        "name": "Name",
+        "email": "Email",
+        "phoneNumber": "Phone",
+        "phoneCountryCode": "Phone",
+        "phoneNational": "Phone",
+        "teamsAadObjectId": "Teams identity",
+        "teamsFromId": "Teams identity",
+        "assistantId": "Assistant",
+        "tagIds": "Tags",
+        "color": "Color",
+        "is_archived": "Archived",
+        "description": "Description",
+        "instructions": "Instructions",
+        "model": "Model",
+        "top_p": "Top P",
+        "temperature": "Temperature",
+        "vector_store_id": "Knowledge base",
+        "trigger_type": "Trigger",
+        "assistant_id": "Assistant",
+        "channel": "Channel",
+        "delay_minutes": "Delay",
+        "payload": "Content",
+        "is_active": "Active",
+        "whatsapp_template_id": "Template",
+        "scheduled_for": "Send date",
+        "timezone": "Timezone",
+        "status": "Status"
+      },
+      "tagOps": {
+        "add": "Tags added",
+        "remove": "Tags removed",
+        "set": "Tags replaced"
+      },
+      "triggers": {
+        "user_created": "User created",
+        "user_inactive": "User inactive",
+        "message_read": "Message read",
+        "message_unread": "Message not read"
+      },
+      "scopes": {
+        "user": "Direct conversation",
+        "group": "Group"
+      },
+      "statuses": {
+        "queued": "Queued",
+        "scheduled": "Scheduled",
+        "processing": "Sending",
+        "sent": "Sent",
+        "partial": "Partially sent",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "new": "New",
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "Empty": {
+      "title": "No activity yet",
+      "text": "Actions made on the platform will show up here.",
+      "filteredTitle": "No results",
+      "filteredText": "No action matches the selected filters."
+    },
+    "Errors": {
+      "load": "Could not load the activity history."
+    },
+    "Pagination": {
+      "total": "{count, plural, =1 {1 entry} other {# entries}}",
+      "pageOf": "Page {page} of {pages}",
+      "prev": "Previous page",
+      "next": "Next page"
+    }
   }
-
 }
-
-
-
-
-
-
-
-
