@@ -8,7 +8,10 @@ vi.mock("@/lib/repos/auditLog.repo", () => ({
   insertAuditLog: (...args) => mocks.insertAuditLog(...args),
 }));
 
-import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import {
+  recordAuditEvent,
+  recordSystemAuditEvent,
+} from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 const orgAuth = {
@@ -80,6 +83,45 @@ describe("recordAuditEvent", () => {
         organizationId: 5,
         message: "db down",
       }),
+    );
+  });
+
+  it("regista eventos de sistema sem utilizador", async () => {
+    mocks.insertAuditLog.mockResolvedValue({});
+
+    const row = await recordSystemAuditEvent(9, {
+      action: AUDIT_ACTIONS.MESSAGE_RECEIVED,
+      entityType: "user",
+      entityId: 42,
+      entityLabel: "Ana",
+      details: { channel: "whatsapp" },
+    });
+
+    expect(mocks.insertAuditLog).toHaveBeenCalledWith({
+      organization_id: 9,
+      actor_type: "system",
+      actor_user_id: null,
+      actor_email: null,
+      action: "message.received",
+      entity_type: "user",
+      entity_id: "42",
+      entity_label: "Ana",
+      details: { channel: "whatsapp" },
+    });
+
+    expect(row.actor_type).toBe("system");
+  });
+
+  it("eventos de sistema também não lançam quando a base de dados falha", async () => {
+    mocks.insertAuditLog.mockRejectedValue(new Error("db down"));
+
+    await expect(
+      recordSystemAuditEvent(9, { action: AUDIT_ACTIONS.AUTOMATION_TRIGGERED }),
+    ).resolves.toBeNull();
+
+    expect(consoleError).toHaveBeenCalledWith(
+      "[Audit] failed to record event",
+      expect.objectContaining({ actorType: "system", organizationId: 9 }),
     );
   });
 

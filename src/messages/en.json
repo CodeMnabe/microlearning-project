@@ -2378,6 +2378,9 @@
       "template_created": "WhatsApp template created",
       "organization_created": "Organization created",
       "organization_settings_updated": "Organization settings changed",
+      "automation_triggered": "Automation triggered",
+      "broadcast_scheduled_sent": "Scheduled message sent",
+      "message_received": "Message received",
       "unknown": "Unknown action"
     },
     "Table": {
@@ -2408,7 +2411,15 @@
       "scheduledFor": "for {date}",
       "status": "status: {status}",
       "enabled": "enabled",
-      "disabled": "disabled"
+      "disabled": "disabled",
+      "automation": "by automation",
+      "user": "user: {name}",
+      "triggers": {
+        "user_created": "trigger: user created",
+        "user_inactive": "trigger: user inactive",
+        "message_read": "trigger: message read",
+        "message_unread": "trigger: message not read"
+      }
     },
     "Empty": {
       "title": "No activity yet",

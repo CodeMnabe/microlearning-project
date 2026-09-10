@@ -130,6 +130,48 @@ describe("helpers do histórico de atividade", () => {
     ).toEqual(["Details.tagOps.set"]);
   });
 
+  it("descreve automações disparadas e envios agendados pelo sistema", () => {
+    expect(
+      describeDetails(
+        {
+          details: {
+            triggerType: "user.inactive",
+            channel: "whatsapp",
+            userId: 42,
+            userName: "Ana Silva",
+          },
+        },
+        t,
+      ),
+    ).toEqual([
+      "Channels.whatsapp",
+      "Details.triggers.user_inactive",
+      'Details.user({"name":"Ana Silva"})',
+    ]);
+
+    expect(
+      describeDetails(
+        {
+          details: {
+            channel: "teams",
+            recipientCount: 5,
+            ok: 5,
+            failed: 0,
+            status: "sent",
+            automation: true,
+          },
+        },
+        t,
+      ),
+    ).toEqual([
+      "Channels.teams",
+      'Details.recipients({"count":5})',
+      'Details.result({"ok":5,"failed":0})',
+      'Details.status({"status":"sent"})',
+      "Details.automation",
+    ]);
+  });
+
   it("devolve lista vazia sem detalhes", () => {
     expect(describeDetails({ details: null }, t)).toEqual([]);
     expect(describeDetails({}, t)).toEqual([]);

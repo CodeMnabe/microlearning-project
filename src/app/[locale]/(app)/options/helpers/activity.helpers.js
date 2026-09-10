@@ -143,6 +143,18 @@ export function describeDetails(item, translation, locale = "pt") {
     parts.push(translation(`Channels.${details.channel}`));
   }
 
+  if (has(details, "triggerType") && typeof details.triggerType === "string") {
+    parts.push(
+      translation(
+        `Details.triggers.${details.triggerType.replace(/\./g, "_")}`,
+      ),
+    );
+  }
+
+  if (has(details, "userName")) {
+    parts.push(translation("Details.user", { name: details.userName }));
+  }
+
   if (Array.isArray(details.fields) && details.fields.length) {
     parts.push(
       translation("Details.fields", {
@@ -219,6 +231,10 @@ export function describeDetails(item, translation, locale = "pt") {
     parts.push(
       translation(details.enabled ? "Details.enabled" : "Details.disabled"),
     );
+  }
+
+  if (details.automation === true) {
+    parts.push(translation("Details.automation"));
   }
 
   if (has(details, "model")) {

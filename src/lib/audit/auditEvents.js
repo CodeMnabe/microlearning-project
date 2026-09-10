@@ -34,14 +34,17 @@ export const AUDIT_ACTIONS = Object.freeze({
   AUTOMATION_CREATED: "automation.created",
   AUTOMATION_UPDATED: "automation.updated",
   AUTOMATION_DELETED: "automation.deleted",
+  AUTOMATION_TRIGGERED: "automation.triggered",
 
   BROADCAST_SENT: "broadcast.sent",
   BROADCAST_SCHEDULED: "broadcast.scheduled",
   BROADCAST_SCHEDULE_UPDATED: "broadcast.schedule_updated",
   BROADCAST_SCHEDULE_DELETED: "broadcast.schedule_deleted",
+  BROADCAST_SCHEDULED_SENT: "broadcast.scheduled_sent",
   BROADCAST_READ_CHAIN_CREATED: "broadcast.read_chain_created",
 
   MESSAGE_TEMPLATE_SENT: "message.template_sent",
+  MESSAGE_RECEIVED: "message.received",
 
   TEMPLATE_CREATED: "template.created",
 

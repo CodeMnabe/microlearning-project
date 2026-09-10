@@ -2378,6 +2378,9 @@
       "template_created": "Template WhatsApp criado",
       "organization_created": "Organização criada",
       "organization_settings_updated": "Definições da organização alteradas",
+      "automation_triggered": "Automação disparada",
+      "broadcast_scheduled_sent": "Mensagem agendada enviada",
+      "message_received": "Mensagem recebida",
       "unknown": "Ação desconhecida"
     },
     "Table": {
@@ -2408,7 +2411,15 @@
       "scheduledFor": "para {date}",
       "status": "estado: {status}",
       "enabled": "ativado",
-      "disabled": "desativado"
+      "disabled": "desativado",
+      "automation": "por automação",
+      "user": "colaborador: {name}",
+      "triggers": {
+        "user_created": "gatilho: colaborador criado",
+        "user_inactive": "gatilho: colaborador inativo",
+        "message_read": "gatilho: mensagem lida",
+        "message_unread": "gatilho: mensagem não lida"
+      }
     },
     "Empty": {
       "title": "Ainda não há atividade",
