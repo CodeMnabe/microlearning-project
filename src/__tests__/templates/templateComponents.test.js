@@ -3,8 +3,11 @@ import { describe, it, expect } from "vitest";
 import {
   appendVariable,
   buildTemplateComponents,
+  defaultExampleFor,
   emptyTemplateForm,
   extractVariables,
+  removeVariable,
+  syncKinds,
   formFromComponents,
   interpolateExamples,
   makeButton,
@@ -271,6 +274,45 @@ describe("buildTemplateComponents", () => {
         original,
       );
     }
+  });
+});
+
+describe("variable kinds", () => {
+  it("keeps kinds aligned with the variable count", () => {
+    expect(syncKinds("{{1}} {{2}}", ["contact_name"])).toEqual([
+      "contact_name",
+      "custom",
+    ]);
+    expect(syncKinds("{{1}}", ["bogus"])).toEqual(["custom"]);
+  });
+
+  it("suggests example values per kind", () => {
+    expect(defaultExampleFor("contact_name")).toBe("João");
+    expect(defaultExampleFor("company", { companyName: "Digik" })).toBe("Digik");
+    expect(defaultExampleFor("custom")).toBe("");
+  });
+
+  it("presets carry kinds", () => {
+    expect(presetForm("text_quickreplies").body.kinds).toEqual([
+      "contact_name",
+      "custom",
+      "custom",
+    ]);
+    expect(emptyTemplateForm().body.kinds).toEqual([]);
+  });
+
+  it("removes a variable and renumbers the rest", () => {
+    const body = {
+      text: "Olá {{1}}, hoje {{2}} e {{3}}",
+      examples: ["João", "sol", "chuva"],
+      kinds: ["contact_name", "custom", "custom"],
+    };
+    expect(removeVariable(body, 1)).toEqual({
+      text: "Olá {{1}}, hoje e {{2}}",
+      examples: ["João", "chuva"],
+      kinds: ["contact_name", "custom"],
+    });
+    expect(removeVariable(body, 5)).toBe(body);
   });
 });
 

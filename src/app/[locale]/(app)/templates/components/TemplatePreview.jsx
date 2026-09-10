@@ -6,15 +6,22 @@ import styles from "../templates.module.css";
 import { previewFromForm } from "../lib/templateComponents";
 
 /** Phone-style preview of the template being created, using example values. */
-export default function TemplatePreview({ form, time }) {
+export default function TemplatePreview({ form, time, compact = false }) {
   const t = useTranslations("Templates");
   const preview = useMemo(() => previewFromForm(form), [form]);
 
-  const urlButtons = preview.buttons.filter((b) => b.type === "URL" && b.url);
+  const urlButtons = compact
+    ? []
+    : preview.buttons.filter((b) => b.type === "URL" && b.url);
 
   return (
-    <div className={styles.preview} data-testid="template-preview">
-      <div className={styles.previewTitle}>{t("preview.title")}</div>
+    <div
+      className={compact ? styles.previewCompact : styles.preview}
+      data-testid="template-preview"
+    >
+      {!compact && (
+        <div className={styles.previewTitle}>{t("preview.title")}</div>
+      )}
 
       <div className={styles.waFrame}>
         <div className={styles.waHeader}>

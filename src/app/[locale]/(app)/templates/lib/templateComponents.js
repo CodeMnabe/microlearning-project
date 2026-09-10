@@ -16,6 +16,29 @@ export const LIMITS = {
 export const HEADER_TYPES = ["none", "text", "image"];
 export const BUTTON_TYPES = ["QUICK_REPLY", "URL"];
 
+/**
+ * What a body variable means to the person writing the template. Purely a UI
+ * concept: the provider still receives positional {{n}} placeholders.
+ */
+export const VARIABLE_KINDS = ["contact_name", "company", "custom"];
+
+/** Suggested example value for a variable kind. */
+export function defaultExampleFor(kind, context = {}) {
+  if (kind === "contact_name") return context.contactName || "João";
+  if (kind === "company") return context.companyName || "A sua empresa";
+  return "";
+}
+
+/** Keeps the kinds array aligned with the variable count. */
+export function syncKinds(text, kinds = []) {
+  const count = variableCount(text);
+  const next = [];
+  for (let i = 0; i < count; i += 1) {
+    next.push(VARIABLE_KINDS.includes(kinds[i]) ? kinds[i] : "custom");
+  }
+  return next;
+}
+
 const VARIABLE_RE = /\{\{\s*(\d+)\s*\}\}/g;
 
 let buttonSeq = 0;
@@ -38,7 +61,7 @@ export function makeButton(type, overrides = {}) {
 export function emptyTemplateForm() {
   return {
     header: { type: "none", text: "", textExample: "", imageUrl: "" },
-    body: { text: "", examples: [] },
+    body: { text: "", examples: [], kinds: [] },
     footer: "",
     buttons: [],
   };
@@ -82,6 +105,32 @@ export function syncExamples(text, examples = []) {
     next.push(examples[i] ?? "");
   }
   return next;
+}
+
+/**
+ * Removes the variable at `index` (0-based, by order of appearance) from the
+ * body and renumbers the remaining ones so they stay sequential.
+ */
+export function removeVariable(body, index) {
+  const text = String(body.text || "");
+  const matches = [...text.matchAll(VARIABLE_RE)];
+  const target = matches[index];
+  if (!target) return body;
+
+  let next = text.slice(0, target.index) + text.slice(target.index + target[0].length);
+  // Collapse the double space a removed chip usually leaves behind.
+  next = next.replace(/  +/g, " ");
+
+  let counter = 0;
+  next = next.replace(VARIABLE_RE, () => `{{${(counter += 1)}}}`);
+
+  const drop = (list = []) => list.filter((_, i) => i !== index);
+  return {
+    ...body,
+    text: next,
+    examples: syncExamples(next, drop(body.examples)),
+    kinds: syncKinds(next, drop(body.kinds)),
+  };
 }
 
 /** Meta only accepts lowercase letters, digits and underscores in names. */
@@ -264,6 +313,7 @@ export function formFromComponents(components) {
       form.body = {
         text,
         examples: syncExamples(text, c.example?.body_text?.[0] || []),
+        kinds: syncKinds(text, []),
       };
     } else if (type === "FOOTER") {
       form.footer = c.text || "";
@@ -400,8 +450,16 @@ export function presetComponents(key) {
   }
 }
 
+const PRESET_KINDS = {
+  text_quickreplies: ["contact_name", "custom", "custom"],
+  image_header_quickreplies: ["contact_name", "custom"],
+  quiz_url_button: ["custom"],
+};
+
 export function presetForm(key) {
-  return formFromComponents(presetComponents(key));
+  const form = formFromComponents(presetComponents(key));
+  form.body.kinds = syncKinds(form.body.text, PRESET_KINDS[key] || []);
+  return form;
 }
 
 // ---------- internals ----------

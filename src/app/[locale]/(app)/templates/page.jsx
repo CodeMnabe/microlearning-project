@@ -5,18 +5,20 @@ import { useAuth } from "../../../AuthContext";
 import useOrganization from "../../../hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert} from "@/app/components/Alert/AlertProvider";
-import TemplateComponentsEditor from "./components/TemplateComponentsEditor";
+import TemplateBlocksEditor from "./components/TemplateBlocksEditor";
 import TemplatePreview from "./components/TemplatePreview";
 import {
   PRESET_KEYS,
   buildTemplateComponents,
+  emptyTemplateForm,
   presetForm,
   sanitizeTemplateName,
   validateTemplateForm,
 } from "./lib/templateComponents";
 import styles from "./templates.module.css";
 
-const DEFAULT_PRESET = "text_quickreplies";
+const STEPS = ["start", "compose", "review"];
+const LANGUAGES = ["pt", "pt_PT", "pt_BR", "en", "en_US", "es", "fr"];
 
 export default function TemplatesPage() {
   const translation = useTranslations("Templates");
@@ -34,9 +36,11 @@ export default function TemplatesPage() {
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("pt");
   const [category, setCategory] = useState("MARKETING");
-  const [form, setForm] = useState(() => presetForm(DEFAULT_PRESET));
+  const [form, setForm] = useState(() => emptyTemplateForm());
   const [formErrors, setFormErrors] = useState([]);
-  const [presetKey, setPresetKey] = useState(DEFAULT_PRESET);
+  const [step, setStep] = useState("start");
+  // Bumped whenever a new starting point is chosen so the editor remounts.
+  const [formSeed, setFormSeed] = useState(0);
 
   const generatedComponents = useMemo(
     () => buildTemplateComponents(form),
@@ -142,15 +146,40 @@ const refresh = useCallback(
     if (org?.id) refresh();
   }, [org?.id, refresh]);
 
-  function onPresetChange(key) {
-    setPresetKey(key);
-    setForm(presetForm(key));
+  function startFrom(presetKey) {
+    setForm(presetKey ? presetForm(presetKey) : emptyTemplateForm());
     setFormErrors([]);
+    setFormSeed((s) => s + 1);
+    setStep("compose");
   }
 
   function onFormChange(next) {
     setForm(next);
     if (formErrors.length) setFormErrors([]);
+  }
+
+  const nameErrors = formErrors
+    .filter((err) => err.field === "name")
+    .map((err) => translation(`editor.errors.${err.key}`, err.params));
+
+  async function goToReview() {
+    const errors = validateTemplateForm(form, { name });
+    setFormErrors(errors);
+
+    if (errors.length > 0) {
+      setError(translation("errors.formInvalid"));
+
+      await showAlert({
+        title: translation("alerts.formInvalid.title"),
+        message: translation("alerts.formInvalid.message"),
+        tone: "warning",
+      });
+
+      return;
+    }
+
+    clearMessages();
+    setStep("review");
   }
 
   async function createTemplate(e) {
@@ -160,6 +189,7 @@ const refresh = useCallback(
 
     const errors = validateTemplateForm(form, { name });
     setFormErrors(errors);
+    if (errors.length > 0) setStep("compose");
 
     if (errors.some((err) => err.field === "name")) {
       setError(translation("errors.nameRequired"));
@@ -225,6 +255,7 @@ const refresh = useCallback(
         tone: "success",
       });
       setView("list");
+      setStep("start");
       refresh();
 
 
@@ -479,100 +510,228 @@ const refresh = useCallback(
         </section>
       ) : (
         <section>
-          <form
-            onSubmit={createTemplate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
-          >
-            <div
-              style={{
-                gridColumn: "1 / span 2",
-                display: "grid",
-                gridTemplateColumns: "1fr 160px 200px 1fr",
-                gap: 12,
+          <div className={styles.steps}>
+            {STEPS.map((key, i) => (
+              <div
+                key={key}
+                className={
+                  step === key
+                    ? `${styles.step} ${styles.stepActive}`
+                    : styles.step
+                }
+              >
+                <span className={styles.stepNumber}>{i + 1}</span>
+                <span>{translation(`builder.steps.${key}`)}</span>
+              </div>
+            ))}
+          </div>
+
+          {step === "start" && (
+            <>
+              <div className={styles.startIntro}>
+                <div className={styles.startTitle}>
+                  {translation("builder.start.title")}
+                </div>
+                <div className={styles.hint}>
+                  {translation("builder.start.hint")}
+                </div>
+              </div>
+              <div className={styles.startGrid}>
+                {PRESET_KEYS.map((key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={styles.startCard}
+                    onClick={() => startFrom(key)}
+                  >
+                    <div className={styles.startThumb}>
+                      <TemplatePreview
+                        form={presetForm(key)}
+                        time={previewTime}
+                        compact
+                      />
+                    </div>
+                    <div className={styles.startCardTitle}>
+                      {translation(key)}
+                    </div>
+                    <div className={styles.startCardHint}>
+                      {translation(`builder.start.presetHints.${key}`)}
+                    </div>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={styles.startCard}
+                  onClick={() => startFrom(null)}
+                >
+                  <div className={styles.startThumb}>
+                    <TemplatePreview
+                      form={emptyTemplateForm()}
+                      time={previewTime}
+                      compact
+                    />
+                  </div>
+                  <div className={styles.startCardTitle}>
+                    {translation("builder.start.blank")}
+                  </div>
+                  <div className={styles.startCardHint}>
+                    {translation("builder.start.blankHint")}
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === "compose" && (
+            <form
+              className={styles.compose}
+              onSubmit={(e) => {
+                e.preventDefault();
+                goToReview();
               }}
             >
-              <div>
-                <label style={label()}> {translation("name")}</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(sanitizeTemplateName(e.target.value))}
-                  placeholder="ml_tip_image_v1"
-                  style={input()}
-                />
-              </div>
-              <div>
-                <label style={label()}> {translation("language")}</label>
-                <input
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  placeholder="pt"
-                  style={input()}
-                />
-              </div>
-              <div>
-                <label style={label()}> {translation("category")}</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  style={input()}
-                >
-                  <option value="MARKETING">{translation("MARKETING")}</option>
-                  <option value="UTILITY">{translation("UTILITY")}</option>
-                  <option value="AUTHENTICATION">{translation("AUTHENTICATION")}</option>
-                </select>
-              </div>
-              <div>
-                <label style={label()}> {translation("Model")}</label>
-                <select
-                  value={presetKey}
-                  onChange={(e) => onPresetChange(e.target.value)}
-                  style={input()}
-                >
-                  {PRESET_KEYS.map((key) => (
-                    <option key={key} value={key}>
-                      {translation(key)}
+              <div className={styles.metaRow}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="tpl-name">
+                    {translation("builder.meta.name")}
+                  </label>
+                  <input
+                    id="tpl-name"
+                    className={styles.input}
+                    value={name}
+                    placeholder="dica_semanal_v1"
+                    onChange={(e) =>
+                      setName(sanitizeTemplateName(e.target.value))
+                    }
+                  />
+                  <div className={styles.hint}>
+                    {translation("builder.meta.nameHint")}
+                  </div>
+                  {nameErrors.length > 0 && (
+                    <ul className={styles.errorList} role="alert">
+                      {nameErrors.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="tpl-language">
+                    {translation("builder.meta.language")}
+                  </label>
+                  <select
+                    id="tpl-language"
+                    className={styles.input}
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    {LANGUAGES.map((code) => (
+                      <option key={code} value={code}>
+                        {translation(`builder.languages.${code}`)}
+                      </option>
+                    ))}
+                    {!LANGUAGES.includes(language) && (
+                      <option value={language}>{language}</option>
+                    )}
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="tpl-category">
+                    {translation("builder.meta.category")}
+                  </label>
+                  <select
+                    id="tpl-category"
+                    className={styles.input}
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    <option value="MARKETING">{translation("MARKETING")}</option>
+                    <option value="UTILITY">{translation("UTILITY")}</option>
+                    <option value="AUTHENTICATION">
+                      {translation("AUTHENTICATION")}
                     </option>
-                  ))}
-                </select>
+                  </select>
+                  <div className={styles.hint}>
+                    {translation(`builder.meta.categoryHints.${category}`)}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div
-              style={{ gridColumn: "1 / span 2" }}
-              className={styles.editorLayout}
-            >
-              <div className={styles.editorColumn}>
-                <TemplateComponentsEditor
-                  form={form}
-                  onChange={onFormChange}
-                  errors={formErrors}
-                  disabled={loading}
-                />
+              <div className={styles.editorLayout}>
+                <div className={styles.editorColumn}>
+                  <TemplateBlocksEditor
+                    key={formSeed}
+                    form={form}
+                    onChange={onFormChange}
+                    errors={formErrors}
+                    disabled={loading}
+                    context={{ companyName: org?.name }}
+                  />
+                </div>
+                <TemplatePreview form={form} time={previewTime} />
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  style={secondaryBtn()}
+                  onClick={() => setStep("start")}
+                >
+                  {translation("builder.actions.restart")}
+                </button>
+                <button type="submit" style={primaryBtn()}>
+                  {translation("builder.actions.review")}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === "review" && (
+            <form onSubmit={createTemplate} className={styles.reviewLayout}>
+              <div className={styles.reviewCard}>
+                <div className={styles.reviewTitle}>
+                  {translation("builder.review.title")}
+                </div>
+                <dl className={styles.reviewList}>
+                  <dt>{translation("builder.review.name")}</dt>
+                  <dd>{name}</dd>
+                  <dt>{translation("builder.review.language")}</dt>
+                  <dd>
+                    {LANGUAGES.includes(language)
+                      ? translation(`builder.languages.${language}`)
+                      : language}
+                  </dd>
+                  <dt>{translation("builder.review.category")}</dt>
+                  <dd>{translation(category)}</dd>
+                </dl>
+                <div className={styles.notice}>
+                  {translation("builder.review.notice")}
+                </div>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    style={secondaryBtn()}
+                    disabled={loading}
+                    onClick={() => setStep("compose")}
+                  >
+                    {translation("builder.actions.edit")}
+                  </button>
+                  <button type="submit" disabled={loading} style={primaryBtn()}>
+                    {loading
+                      ? translation("createForm.creating")
+                      : translation("builder.actions.submit")}
+                  </button>
+                </div>
                 <details className={styles.jsonDetails}>
-                  <summary>{translation("editor.generatedJson")}</summary>
+                  <summary>{translation("builder.review.json")}</summary>
                   <pre className={styles.jsonPre}>
                     {JSON.stringify(generatedComponents, null, 2)}
                   </pre>
                 </details>
               </div>
               <TemplatePreview form={form} time={previewTime} />
-            </div>
-
-            <div style={{ gridColumn: "1 / span 2", display: "flex", gap: 8 }}>
-              <button type="submit" disabled={loading} style={primaryBtn()}>
-                {loading
-                  ? translation("createForm.creating")
-                  : translation("createForm.submit")}
-              </button>
-              <button
-                type="button"
-                onClick={() => onPresetChange(presetKey)}
-                style={secondaryBtn()}
-              >
-                {translation("createForm.reset")}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
         </section>
       )}
 
