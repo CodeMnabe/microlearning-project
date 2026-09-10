@@ -257,7 +257,9 @@ export default function TemplateBlocksEditor({
           onChange={onBodyChange}
           onChipClick={(index) => setActiveVar(index)}
         />
-        <Counter count={body.text.length} max={LIMITS.bodyMax} />
+        <div className={styles.counterRow}>
+          <Counter count={body.text.length} max={LIMITS.bodyMax} />
+        </div>
 
         {activeVarValid && (
           <div className={styles.inspector} data-testid="variable-inspector">

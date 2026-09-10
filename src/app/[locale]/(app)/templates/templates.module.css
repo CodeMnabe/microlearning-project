@@ -123,31 +123,71 @@
 
 .steps {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #9ca3af;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+}
+
+.stepItem + .stepItem::before {
+  content: "";
+  width: 40px;
+  height: 1px;
+  margin: 0 10px;
+  background: #e5e7eb;
 }
 
 .step {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: #9ca3af;
+  cursor: default;
 }
 
-.stepActive {
+.stepItem[data-state="done"] .step {
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.stepItem[data-state="done"] .step:hover {
   color: #111827;
-  font-weight: 600;
+}
+
+.stepItem[data-state="active"] .step {
+  color: #111827;
+  font-weight: 700;
 }
 
 .stepNumber {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   border: 1px solid currentColor;
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 12px;
+}
+
+.stepItem[data-state="active"] .stepNumber {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.stepItem[data-state="done"] .stepNumber {
+  border-color: #6b7280;
 }
 
 /* ---------- Start cards ---------- */
@@ -219,16 +259,6 @@
   gap: 16px;
 }
 
-.metaRow {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr);
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
-}
-
 .editorLayout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -242,10 +272,26 @@
   min-width: 0;
 }
 
+/* Back on the left, forward on the right. */
 .actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.counterRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+}
+
+.reviewRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
 }
 
 /* ---------- Blocks ---------- */
@@ -752,7 +798,7 @@
     grid-template-columns: 1fr;
   }
 
-  .metaRow {
+  .reviewRow {
     grid-template-columns: 1fr;
   }
 

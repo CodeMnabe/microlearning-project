@@ -162,8 +162,9 @@ const refresh = useCallback(
     .filter((err) => err.field === "name")
     .map((err) => translation(`editor.errors.${err.key}`, err.params));
 
+  // The name is asked for in the review step, so it is not checked here.
   async function goToReview() {
-    const errors = validateTemplateForm(form, { name });
+    const errors = validateTemplateForm(form);
     setFormErrors(errors);
 
     if (errors.length > 0) {
@@ -189,7 +190,9 @@ const refresh = useCallback(
 
     const errors = validateTemplateForm(form, { name });
     setFormErrors(errors);
-    if (errors.length > 0) setStep("compose");
+    // Name problems are fixed on the review step itself; anything else
+    // belongs to the blocks, so go back to compose.
+    if (errors.some((err) => err.field !== "name")) setStep("compose");
 
     if (errors.some((err) => err.field === "name")) {
       setError(translation("errors.nameRequired"));
@@ -430,7 +433,9 @@ const refresh = useCallback(
       </header>
 
       {error && <div style={alertBox("#FFEBEE", "#C62828")}>{error}</div>}
-      {notice && <div style={alertBox("#E8F5E9", "#2E7D32")}>{notice}</div>}
+      {notice && view === "list" && (
+        <div style={alertBox("#E8F5E9", "#2E7D32")}>{notice}</div>
+      )}
 
       {view === "list" ? (
         <section>
@@ -510,21 +515,29 @@ const refresh = useCallback(
         </section>
       ) : (
         <section>
-          <div className={styles.steps}>
-            {STEPS.map((key, i) => (
-              <div
-                key={key}
-                className={
-                  step === key
-                    ? `${styles.step} ${styles.stepActive}`
-                    : styles.step
-                }
-              >
-                <span className={styles.stepNumber}>{i + 1}</span>
-                <span>{translation(`builder.steps.${key}`)}</span>
-              </div>
-            ))}
-          </div>
+          <ol className={styles.steps}>
+            {STEPS.map((key, i) => {
+              const current = STEPS.indexOf(step);
+              const state =
+                i < current ? "done" : i === current ? "active" : "todo";
+              return (
+                <li key={key} className={styles.stepItem} data-state={state}>
+                  <button
+                    type="button"
+                    className={styles.step}
+                    disabled={state !== "done" || loading}
+                    aria-current={state === "active" ? "step" : undefined}
+                    onClick={() => setStep(key)}
+                  >
+                    <span className={styles.stepNumber}>
+                      {state === "done" ? "✓" : i + 1}
+                    </span>
+                    <span>{translation(`builder.steps.${key}`)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
 
           {step === "start" && (
             <>
@@ -590,73 +603,6 @@ const refresh = useCallback(
                 goToReview();
               }}
             >
-              <div className={styles.metaRow}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="tpl-name">
-                    {translation("builder.meta.name")}
-                  </label>
-                  <input
-                    id="tpl-name"
-                    className={styles.input}
-                    value={name}
-                    placeholder="dica_semanal_v1"
-                    onChange={(e) =>
-                      setName(sanitizeTemplateName(e.target.value))
-                    }
-                  />
-                  <div className={styles.hint}>
-                    {translation("builder.meta.nameHint")}
-                  </div>
-                  {nameErrors.length > 0 && (
-                    <ul className={styles.errorList} role="alert">
-                      {nameErrors.map((m, i) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="tpl-language">
-                    {translation("builder.meta.language")}
-                  </label>
-                  <select
-                    id="tpl-language"
-                    className={styles.input}
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                  >
-                    {LANGUAGES.map((code) => (
-                      <option key={code} value={code}>
-                        {translation(`builder.languages.${code}`)}
-                      </option>
-                    ))}
-                    {!LANGUAGES.includes(language) && (
-                      <option value={language}>{language}</option>
-                    )}
-                  </select>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="tpl-category">
-                    {translation("builder.meta.category")}
-                  </label>
-                  <select
-                    id="tpl-category"
-                    className={styles.input}
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="MARKETING">{translation("MARKETING")}</option>
-                    <option value="UTILITY">{translation("UTILITY")}</option>
-                    <option value="AUTHENTICATION">
-                      {translation("AUTHENTICATION")}
-                    </option>
-                  </select>
-                  <div className={styles.hint}>
-                    {translation(`builder.meta.categoryHints.${category}`)}
-                  </div>
-                </div>
-              </div>
-
               <div className={styles.editorLayout}>
                 <div className={styles.editorColumn}>
                   <TemplateBlocksEditor
@@ -692,18 +638,77 @@ const refresh = useCallback(
                 <div className={styles.reviewTitle}>
                   {translation("builder.review.title")}
                 </div>
-                <dl className={styles.reviewList}>
-                  <dt>{translation("builder.review.name")}</dt>
-                  <dd>{name}</dd>
-                  <dt>{translation("builder.review.language")}</dt>
-                  <dd>
-                    {LANGUAGES.includes(language)
-                      ? translation(`builder.languages.${language}`)
-                      : language}
-                  </dd>
-                  <dt>{translation("builder.review.category")}</dt>
-                  <dd>{translation(category)}</dd>
-                </dl>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="tpl-name">
+                    {translation("builder.meta.name")}
+                  </label>
+                  <input
+                    id="tpl-name"
+                    className={styles.input}
+                    value={name}
+                    placeholder="dica_semanal_v1"
+                    disabled={loading}
+                    onChange={(e) =>
+                      setName(sanitizeTemplateName(e.target.value))
+                    }
+                  />
+                  <div className={styles.hint}>
+                    {translation("builder.meta.nameHint")}
+                  </div>
+                  {nameErrors.length > 0 && (
+                    <ul className={styles.errorList} role="alert">
+                      {nameErrors.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className={styles.reviewRow}>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="tpl-language">
+                      {translation("builder.meta.language")}
+                    </label>
+                    <select
+                      id="tpl-language"
+                      className={styles.input}
+                      value={language}
+                      disabled={loading}
+                      onChange={(e) => setLanguage(e.target.value)}
+                    >
+                      {LANGUAGES.map((code) => (
+                        <option key={code} value={code}>
+                          {translation(`builder.languages.${code}`)}
+                        </option>
+                      ))}
+                      {!LANGUAGES.includes(language) && (
+                        <option value={language}>{language}</option>
+                      )}
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label} htmlFor="tpl-category">
+                      {translation("builder.meta.category")}
+                    </label>
+                    <select
+                      id="tpl-category"
+                      className={styles.input}
+                      value={category}
+                      disabled={loading}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="MARKETING">
+                        {translation("MARKETING")}
+                      </option>
+                      <option value="UTILITY">{translation("UTILITY")}</option>
+                      <option value="AUTHENTICATION">
+                        {translation("AUTHENTICATION")}
+                      </option>
+                    </select>
+                    <div className={styles.hint}>
+                      {translation(`builder.meta.categoryHints.${category}`)}
+                    </div>
+                  </div>
+                </div>
                 <div className={styles.notice}>
                   {translation("builder.review.notice")}
                 </div>

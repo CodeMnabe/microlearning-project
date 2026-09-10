@@ -63,6 +63,8 @@ describe("TemplatesPage create flow", () => {
         `/api/template/list?orgId=${ORG_ID}`,
       ),
     );
+    // The sync button reads "syncing" until the initial list load finishes.
+    await screen.findByText("sync");
     fireEvent.click(screen.getByText("tabCreate"));
     expect(screen.getByText("builder.start.title")).toBeInTheDocument();
   }
@@ -76,6 +78,10 @@ describe("TemplatesPage create flow", () => {
       screen.getAllByText("builder.variables.kinds.contact_name").length,
     ).toBeGreaterThan(0);
 
+    fireEvent.click(screen.getByText("builder.actions.review"));
+    expect(await screen.findByText("builder.review.title")).toBeInTheDocument();
+
+    // The name is asked for on the review step and normalised as you type.
     fireEvent.change(screen.getByLabelText("builder.meta.name"), {
       target: { value: "Dica Semanal" },
     });
@@ -83,11 +89,9 @@ describe("TemplatesPage create flow", () => {
       "dica_semanal",
     );
 
-    fireEvent.click(screen.getByText("builder.actions.review"));
-    expect(await screen.findByText("builder.review.title")).toBeInTheDocument();
-    expect(screen.getByText("dica_semanal")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("builder.actions.submit"));
+    // The mocked next-intl returns a new function each render, which makes the
+    // page's list refresh re-run and flip `loading`; wait for the idle label.
+    fireEvent.click(await screen.findByText("builder.actions.submit"));
 
     await waitFor(() =>
       expect(mocks.fetch).toHaveBeenCalledWith(
@@ -112,7 +116,7 @@ describe("TemplatesPage create flow", () => {
     );
   });
 
-  it("stays on compose and shows the name error when the name is missing", async () => {
+  it("stays on compose with the block error when the message is empty", async () => {
     await openCreateTab();
 
     fireEvent.click(screen.getByText("builder.start.blank"));
@@ -120,7 +124,29 @@ describe("TemplatesPage create flow", () => {
 
     await waitFor(() => expect(alertMock).toHaveBeenCalled());
     expect(screen.queryByText("builder.review.title")).toBeNull();
-    expect(screen.getByText("editor.errors.nameRequired")).toBeInTheDocument();
     expect(screen.getByText("editor.errors.bodyRequired")).toBeInTheDocument();
+  });
+
+  it("keeps the review step open when only the name is missing", async () => {
+    await openCreateTab();
+
+    fireEvent.click(screen.getByText("text_quickreplies"));
+    fireEvent.click(screen.getByText("builder.actions.review"));
+    expect(await screen.findByText("builder.review.title")).toBeInTheDocument();
+
+    // The mocked next-intl returns a new function each render, which makes the
+    // page's list refresh re-run and flip `loading`; wait for the idle label.
+    fireEvent.click(await screen.findByText("builder.actions.submit"));
+
+    await waitFor(() => expect(alertMock).toHaveBeenCalled());
+    expect(screen.getByText("builder.review.title")).toBeInTheDocument();
+    expect(screen.getByText("editor.errors.nameRequired")).toBeInTheDocument();
+    expect(
+      mocks.fetch.mock.calls.some(([url]) => url === "/api/template/create"),
+    ).toBe(false);
+
+    // Completed steps stay reachable from the indicator.
+    fireEvent.click(screen.getByText("builder.steps.compose"));
+    expect(screen.getByText("builder.blocks.body.title")).toBeInTheDocument();
   });
 });
