@@ -1,5 +1,3 @@
-import { COMPANY_KEYS, NAME_KEYS, STATUS_RANK } from "./constants";
-
 export function getInitial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }
@@ -53,81 +51,6 @@ export function makeChainStep(overrides = {}) {
     delayAfterPreviousReadMinutes: 0,
     ...overrides,
   };
-}
-
-export const byBestStatus = (a, b) => {
-  const ra = STATUS_RANK[a.status] || 0;
-  const rb = STATUS_RANK[b.status] || 0;
-
-  if (ra !== rb) return rb - ra;
-
-  const ta = new Date(a.updatedAt || a.createdAt || 0).getTime();
-  const tb = new Date(b.updatedAt || b.createdAt || 0).getTime();
-
-  return tb - ta;
-};
-
-export function interpolate(str, values) {
-  if (!str) return "";
-
-  return str.replace(/\{\{\s*([.\w-]+)\s*\}\}/g, (_, rawKey) => {
-    const k = String(rawKey).toLowerCase();
-
-    if (NAME_KEYS.includes(k)) {
-      return values.recipientName ?? values[rawKey] ?? values[k] ?? "";
-    }
-
-    if (COMPANY_KEYS.includes(k)) {
-      return values.orgName ?? values[rawKey] ?? values[k] ?? "";
-    }
-
-    return values[rawKey] ?? values[k] ?? "";
-  });
-}
-
-export function extractText(node, out = []) {
-  if (!node) return out;
-
-  if (Array.isArray(node)) {
-    node.forEach((n) => extractText(n, out));
-    return out;
-  }
-
-  if (typeof node === "object") {
-    for (const [k, v] of Object.entries(node)) {
-      if (
-        typeof v === "string" &&
-        (k === "text" || k === "title" || k === "content")
-      ) {
-        out.push(v);
-      } else {
-        extractText(v, out);
-      }
-    }
-  }
-
-  return out;
-}
-
-export function blocksHaveUrlVariable(blocks) {
-  const visit = (n) => {
-    if (!n) return false;
-    if (Array.isArray(n)) return n.some(visit);
-
-    if (typeof n === "object") {
-      for (const [k, v] of Object.entries(n)) {
-        if (k === "url" && typeof v === "string" && v.includes("{{")) {
-          return true;
-        }
-
-        if (visit(v)) return true;
-      }
-    }
-
-    return false;
-  };
-
-  return visit(blocks);
 }
 
 export function isImageContentType(ct = "") {

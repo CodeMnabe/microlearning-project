@@ -96,37 +96,7 @@
   border: 1px solid var(--ui-border);
   background: #fff;
   resize: vertical;
-}
-
-.placeholderHint {
-  margin-top: 10px;
-  font-size: 13px;
-  color: #666;
-  display: grid;
-  gap: 6px;
-}
-
-.messagePreviewBox {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  background: #fafafa;
-}
-
-.messagePreviewTitle {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #666;
-}
-
-.messagePreviewText {
-  white-space: pre-wrap;
-  font-size: 14px;
-}
-
-.messageToolsRow {
+}.messageToolsRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -180,37 +150,9 @@
   place-items: center;
   font-size: 12px;
   font-weight: 700;
-}
-
-.toolsGrid {
-  display: grid;
-  gap: var(--gutter-x);
-  align-items: start;
-}
-
-.toolsGridOne {
-  grid-template-columns: 280px;
-}
-
-.toolsGridTwo {
-  grid-template-columns: 280px minmax(0, 1fr);
-}
-
-.toolCard {
+}.toolCard {
   min-height: 100%;
-}
-
-.toolCardSchedule {
-  width: 100%;
-  max-width: none;
-  padding-bottom: 10px;
-}
-
-.toolCardTemplate {
-  overflow: hidden;
-}
-
-.label,
+}.label,
 .smallLabel {
   font-size: 12px;
   font-weight: 700;
@@ -221,18 +163,7 @@
 .fieldWide {
   display: grid;
   gap: 4px;
-}
-
-.input,
-.select {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid var(--ui-border);
-  background: #fff;
-}
-
-.scheduleModeRow {
+}.scheduleModeRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -424,121 +355,14 @@
 
 .calendarWrap :global(.react-datepicker-time__header) {
   font-weight: 700;
-}
-
-.imagesRow {
-  display: grid;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.filesStack {
-  display: grid;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.thumbStrip {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.thumbWrap {
-  position: relative;
-}
-
-.imageThumb {
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.thumbClose {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.fileList {
+}.fileList {
   display: grid;
   gap: 10px;
   margin-top: 8px;
-}
-
-.fileItem {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: #fff;
-}
-
-.fileMeta {
-  display: grid;
-  gap: 4px;
-}
-
-.fileName {
-  font-weight: 600;
-  color: #0f1c3f;
-}
-
-.fileType {
-  font-size: 12px;
-  color: var(--ui-muted);
-  word-break: break-word;
-}
-
-.fileActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.emptyMini {
+}.emptyMini {
   color: #888;
   font-size: 13px;
-}
-
-.templateCardBody {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 14px;
-  align-items: start;
-}
-
-.templateFields {
-  display: grid;
-  gap: 12px;
-}
-
-.gridSingle {
-  display: grid;
-  gap: 12px;
-}
-
-.lockedField {
-  padding: 10px 12px;
-  border: 1px dashed #e5e7eb;
-  border-radius: 10px;
-  background: #f9fafb;
-  color: #111827;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  white-space: pre-wrap;
-}
-
-.errorBox {
+}.errorBox {
   padding: 10px;
   border-radius: 8px;
   background: #ffefef;
@@ -549,160 +373,7 @@
 .helpDanger {
   color: #c00;
   font-size: 12px;
-}
-
-.templatePreviewCol {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.previewPlaceholder {
-  width: 100%;
-  border: 1px dashed var(--ui-border);
-  border-radius: 12px;
-  padding: 16px;
-  color: var(--ui-muted);
-  font-size: 12px;
-}
-
-.previewUrlHint {
-  color: #6b7280;
-  font-size: 12px;
-  margin-top: 4px;
-  width: 100%;
-  word-break: break-word;
-}
-
-.waFrame {
-  width: 100%;
-  border: 1px solid var(--ui-border);
-  border-radius: 22px;
-  overflow: hidden;
-  background: #ece5dd;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-}
-
-.waFrameSmall {
-  width: 100%;
-  max-width: 260px;
-}
-
-.waHeader {
-  display: grid;
-  grid-template-columns: 44px 1fr 36px;
-  align-items: center;
-  gap: 8px;
-  height: 52px;
-  padding: 0 10px;
-  background: #075e54;
-  color: #fff;
-}
-
-.waAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: #128c7e;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-}
-
-.waHeaderText {
-  display: grid;
-  line-height: 1.05;
-}
-
-.waTitle {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.waSubtitle {
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-.waIcons {
-  text-align: right;
-  font-size: 18px;
-  opacity: 0.9;
-}
-
-.waChat {
-  padding: 12px;
-  min-height: 120px;
-  background:
-    radial-gradient(
-        circle at 10px 10px,
-        rgba(255, 255, 255, 0.25) 2px,
-        transparent 2px
-      )
-      0 0/28px 28px,
-    radial-gradient(
-        circle at 20px 20px,
-        rgba(255, 255, 255, 0.18) 2px,
-        transparent 2px
-      )
-      0 0/28px 28px,
-    #ece5dd;
-}
-
-.waRowOut {
-  display: flex;
-  justify-content: flex-end;
-  margin: 6px 0;
-}
-
-.waBubbleOut {
-  position: relative;
-  max-width: 80%;
-  background: #dcf8c6;
-  border-radius: 10px 10px 0 10px;
-  padding: 8px 52px 8px 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.waBubbleOut::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  width: 0;
-  height: 0;
-  border-left: 6px solid #dcf8c6;
-  border-top: 6px solid transparent;
-}
-
-.waText {
-  color: #111b21;
-  font-size: 14px;
-}
-
-.waMeta {
-  position: absolute;
-  right: 8px;
-  bottom: 4px;
-  font-size: 11px;
-  color: #667781;
-}
-
-.waCtaBtn {
-  border: 1px solid #128c7e;
-  background: #ffffff;
-  color: #128c7e;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: default;
-}
-
-.channelSwitch {
+}.channelSwitch {
   display: inline-flex;
   height: 45px;
   padding: 2px;
@@ -986,46 +657,7 @@
   border-radius: 16px;
   padding: 16px;
   background: #fff;
-}
-
-.placeholderHintTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #666;
-}
-
-.placeholderInsertBtn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: fit-content;
-  max-width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: #fff;
-  color: #0f172a;
-  cursor: pointer;
-  text-align: left;
-}
-
-.placeholderInsertBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.placeholderInsertBtn code {
-  background: #f1f5f9;
-  padding: 3px 6px;
-  border-radius: 6px;
-}
-
-.placeholderInsertBtn span {
-  color: #475569;
-  font-size: 13px;
-}
-
-.chainBox {
+}.chainBox {
   display: grid;
   gap: 12px;
   padding: 12px;
