@@ -11,7 +11,6 @@ export default function ChainMessagesBar({
   addChainStep,
   duplicateChainStep,
   removeChainStep,
-  hasFallbackTemplate,
   translation,
 }) {
   if (!enabled && !chainMode) {
@@ -56,12 +55,6 @@ export default function ChainMessagesBar({
       {!enabled && chainMode && (
         <div className={styles.chainWarning}>
           {translation("Broadcast.broadcastChain.chainOff")}
-        </div>
-      )}
-
-      {chainMode && !hasFallbackTemplate && (
-        <div className={styles.chainWarning}>
-          {translation("Broadcast.broadcastChain.chainTemplate")}
         </div>
       )}
 

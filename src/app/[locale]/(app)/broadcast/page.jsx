@@ -10,12 +10,14 @@ import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
-import AttachmentsPanel from "./components/panels/AttachmentsPanel";
+import PhoneComposer from "./components/PhoneComposer";
+import OpeningComposer from "./components/OpeningComposer";
+import StartMenu from "./components/StartMenu";
 import SchedulePanel from "./components/panels/SchedulePanel";
-import TemplatePanel from "./components/panels/TemplatePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
@@ -23,18 +25,13 @@ import ChainMessagesBar from "./components/ChainMessagesBar";
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import {
   asList,
-  blocksHaveUrlVariable,
   buildInitialScheduledDate,
-  byBestStatus,
-  extractText,
   formatHour,
   formatMinute,
   guessContentTypeFromName,
-  interpolate,
   isImageContentType,
   isVideoContentType,
   makeTrackedLinkDraft,
-  replaceTrackedPlaceholders,
   sanitizeTrackedKey,
   makeChainStep,
   formatDelayLabel,
@@ -110,31 +107,28 @@ export default function BroadcastPage() {
 
   const fileInputRef = useRef(null);
   const thumbInputRef = useRef(null);
+  const editorRef = useRef(null);
   const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
 
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
   const [trackedLinks, setTrackedLinks] = useState([]);
-  const [selectedTrackedUrlKey, setSelectedTrackedUrlKey] = useState("");
 
   const [sending, setSending] = useState(false);
-
-  const [templates, setTemplates] = useState([]);
-  const [tplLoading, setTplLoading] = useState(false);
-  const [tplErr, setTplErr] = useState(null);
-
-  const [tplName, setTplName] = useState("");
-  const [tplLang, setTplLang] = useState("pt-PT");
-
-  const [tplDetails, setTplDetails] = useState(null);
-  const [varDefs, setVarDefs] = useState([]);
-  const [varValues, setVarValues] = useState({});
-  const [needsUrlVar, setNeedsUrlVar] = useState(false);
-  const [tplParamsManual, setTplParamsManual] = useState("");
 
   const [channel, setChannel] = useState("teams");
   const [deliveryMode, setDeliveryMode] = useState("now");
   const [activeToolPanel, setActiveToolPanel] = useState(null);
+
+  /*
+   * Tipo de mensagem WhatsApp: null mostra o menu de arranque, "opening" é
+   * a mensagem de abertura (template) e "blank" é a mensagem livre.
+   */
+  const [composeMode, setComposeMode] = useState(null);
+  const [openingInfo, setOpeningInfo] = useState(null);
+  const [openingBody, setOpeningBody] = useState("");
+  const [openingLoading, setOpeningLoading] = useState(false);
+  const [openingFailed, setOpeningFailed] = useState(false);
 
   const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
@@ -155,12 +149,14 @@ export default function BroadcastPage() {
     makeChainStep(),
   ]);
 
-  const messageInputRef = useRef(null);
-
   const browserTimeZone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     [],
   );
+
+  const isWhatsapp = channel === "whatsapp";
+  const showStartMenu = isWhatsapp && composeMode === null;
+  const isOpeningMode = isWhatsapp && composeMode === "opening";
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -173,9 +169,6 @@ export default function BroadcastPage() {
   const composerTrackedLinks = chainMode
     ? activeChainStepTrackedLinks
     : trackedLinks;
-  const composerSelectedTrackedUrlKey = chainMode
-    ? activeChainStep?.selectedTrackedUrlKey || ""
-    : selectedTrackedUrlKey;
 
   const updateActiveChainStep = useCallback(
     (patchOrUpdater) => {
@@ -249,23 +242,6 @@ export default function BroadcastPage() {
     [chainMode, updateActiveChainStep],
   );
 
-  const setComposerSelectedTrackedUrlKey = useCallback(
-    (nextValue) => {
-      if (!chainMode) {
-        setSelectedTrackedUrlKey(nextValue);
-        return;
-      }
-
-      updateActiveChainStep((step) => ({
-        selectedTrackedUrlKey:
-          typeof nextValue === "function"
-            ? nextValue(step.selectedTrackedUrlKey || "")
-            : nextValue,
-      }));
-    },
-    [chainMode, updateActiveChainStep],
-  );
-
   function addChainStep() {
     setChainSteps((prev) => {
       if (prev.length >= 10) return prev;
@@ -292,7 +268,6 @@ export default function BroadcastPage() {
               id: makeTrackedLinkDraft().id,
             }))
           : [],
-        selectedTrackedUrlKey: current.selectedTrackedUrlKey || "",
         delayAfterPreviousReadMinutes: Number(
           current.delayAfterPreviousReadMinutes || 0,
         ),
@@ -325,24 +300,6 @@ export default function BroadcastPage() {
 
       return next;
     });
-  }
-
-  function updateChainStepDelay(indexToUpdate, value) {
-    const raw = Number(value);
-    const delay = Number.isFinite(raw)
-      ? Math.min(Math.max(Math.floor(raw), 0), MAX_CHAIN_DELAY_MINUTES)
-      : 0;
-
-    setChainSteps((prev) =>
-      prev.map((step, index) => {
-        if (index !== indexToUpdate) return step;
-
-        return {
-          ...step,
-          delayAfterPreviousReadMinutes: index === 0 ? 0 : delay,
-        };
-      }),
-    );
   }
 
   function updateChainStepDelay(indexToUpdate, value) {
@@ -404,19 +361,6 @@ export default function BroadcastPage() {
 
   const imageUrls = useMemo(() => imageFiles.map((f) => f.url), [imageFiles]);
 
-  const trackedLinkOptions = useMemo(
-    () =>
-      composerTrackedLinks
-        .map((l) => ({
-          value: sanitizeTrackedKey(l.key),
-          label: l.key
-            ? `${sanitizeTrackedKey(l.key)}${l.label ? ` — ${l.label}` : ""}`
-            : "",
-        }))
-        .filter((l) => l.value),
-    [composerTrackedLinks],
-  );
-
   const normalizedTrackedLinks = useMemo(
     () =>
       composerTrackedLinks
@@ -429,7 +373,6 @@ export default function BroadcastPage() {
     [composerTrackedLinks],
   );
 
-  const attachmentsCount = composerFiles.length;
   const trackedLinksCount = normalizedTrackedLinks.length;
 
   const getUsers = useCallback(async () => {
@@ -528,49 +471,39 @@ export default function BroadcastPage() {
     };
   }, [org?.id]);
 
-  const loadTemplates = useCallback(async () => {
+  /*
+   * Mensagem de abertura da organização: início, fim e corpo por omissão.
+   * O corpo pode ser ajustado só para este envio.
+   */
+  const loadOpening = useCallback(async () => {
     if (!org?.id) return;
 
-    setTplLoading(true);
-    setTplErr(null);
+    setOpeningLoading(true);
+    setOpeningFailed(false);
 
     try {
-      const res = await fetch(`/api/template/list?orgId=${org.id}`);
-      const data = await res.json();
+      const res = await fetch(
+        `/api/organizations/opening-message?orgId=${org.id}`,
+      );
+      const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to fetch templates");
+      if (!res.ok || !data?.item) {
+        throw new Error(data?.error || "Failed to load opening message");
       }
 
-      const items = asList(data, "items").map((t) => ({
-        ...t,
-        createdAt: t.createdAt || null,
-        updatedAt: t.updatedAt || null,
-      }));
-
-      setTemplates(items);
-
-      const best = [...items].sort(byBestStatus)[0];
-
-      if (best) {
-        setTplName(best.name);
-        setTplLang("pt-PT");
-      }
+      setOpeningInfo(data.item);
+      setOpeningBody((current) => current || data.item.body || "");
     } catch (err) {
-      console.warn("[Broadcast] templates load error:", err);
-
-      setTplErr(err.message);
-
-      await showAlertRef.current({
-        title: translation("Broadcast.alerts.templatesLoadFailed.title"),
-        message: translation("Broadcast.alerts.templatesLoadFailed.message"),
-        tone: "danger",
-      });
+      console.warn("[Broadcast] opening message load error:", err);
+      setOpeningFailed(true);
     } finally {
-      setTplLoading(false);
-      stopLoading();
+      setOpeningLoading(false);
     }
-  }, [org?.id, stopLoading, translation]);
+  }, [org?.id]);
+
+  useEffect(() => {
+    loadOpening();
+  }, [loadOpening]);
 
   useEffect(() => {
     if (!org?.id) return;
@@ -580,27 +513,19 @@ export default function BroadcastPage() {
     (async () => {
       await getUsers();
 
-      if (channel === "whatsapp") {
-        await loadTemplates();
-      }
-
       if (alive) stopLoading();
     })();
 
     return () => {
       alive = false;
     };
-  }, [org?.id, channel, getUsers, loadTemplates, stopLoading]);
+  }, [org?.id, getUsers, stopLoading]);
 
   useEffect(() => {
-    if (channel === "teams" && activeToolPanel === "template") {
-      setActiveToolPanel(null);
-    }
-
     if (channel !== "whatsapp" && chainMode) {
       setChainMode(false);
     }
-  }, [channel, activeToolPanel, chainMode]);
+  }, [channel, chainMode]);
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -637,6 +562,17 @@ export default function BroadcastPage() {
       });
     }
 
+    if (isOpeningMode) {
+      return confirm({
+        title: translation("Broadcast.confirmSend.opening.title"),
+        message: translation("Broadcast.confirmSend.opening.message", {
+          recipientLabel,
+        }),
+        confirmText: translation("Broadcast.confirmSend.confirm"),
+        cancelText: translation("Broadcast.confirmSend.cancel"),
+      });
+    }
+
     return confirm({
       title: translation("Broadcast.confirmSend.title"),
       message: translation("Broadcast.confirmSend.message", {
@@ -659,7 +595,6 @@ export default function BroadcastPage() {
     if (isChain) {
       return confirm({
         title: translation("Broadcast.confirmSchedule.isChain.title"),
-        // message: `You are about to schedule a WhatsApp read chain for ${recipientLabel}. Message 1 will send on ${formattedDate}. The next messages will send after read receipts and configured delays.`,
         message: translation("Broadcast.confirmSchedule.isChain.message", {
           recipientLabel,
           formattedDate,
@@ -669,9 +604,20 @@ export default function BroadcastPage() {
       });
     }
 
+    if (isOpeningMode) {
+      return confirm({
+        title: translation("Broadcast.confirmSchedule.opening.title"),
+        message: translation("Broadcast.confirmSchedule.opening.message", {
+          recipientLabel,
+          formattedDate,
+        }),
+        confirmText: translation("Broadcast.confirmSchedule.confirm"),
+        cancelText: translation("Broadcast.confirmSchedule.cancel"),
+      });
+    }
+
     return confirm({
       title: translation("Broadcast.confirmSchedule.title"),
-      // message: `You are about to schedule this ${channelLabel} broadcast for ${recipientLabel} on ${formattedDate}.`,
       message: translation("Broadcast.confirmSchedule.message", {
         channelLabel,
         recipientLabel,
@@ -682,135 +628,11 @@ export default function BroadcastPage() {
     });
   }
 
-  const templatesByName = useMemo(() => {
-    const map = new Map();
-
-    for (const t of templates) {
-      if (!map.has(t.name)) map.set(t.name, []);
-      map.get(t.name).push(t);
-    }
-
-    for (const [k, arr] of map) {
-      map.set(k, arr.sort(byBestStatus));
-    }
-
-    return map;
-  }, [templates]);
-
-  const nameOptions = useMemo(
-    () => Array.from(templatesByName.keys()).sort((a, b) => a.localeCompare(b)),
-    [templatesByName],
-  );
-
-  const languagesForChosenName = useMemo(
-    () => (tplName ? templatesByName.get(tplName) || [] : []),
-    [tplName, templatesByName],
-  );
-
-  useEffect(() => {
-    if (!tplName) return;
-
-    const list = templatesByName.get(tplName) || [];
-    const pt = list.find((t) =>
-      (t.language || "").toLowerCase().startsWith("pt"),
-    );
-
-    setTplLang(pt?.language || list[0]?.language || "pt-PT");
-  }, [tplName, templatesByName]);
-
-  const chosenTemplate = useMemo(() => {
-    const list = languagesForChosenName;
-
-    return (
-      list.find((t) => t.language === tplLang) ||
-      list.find((t) => (t.language || "").toLowerCase().startsWith("pt")) ||
-      list[0] ||
-      null
-    );
-  }, [languagesForChosenName, tplLang]);
-
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      setTplDetails(null);
-      setVarDefs([]);
-      setVarValues({});
-      setNeedsUrlVar(false);
-      setSelectedTrackedUrlKey("");
-
-      if (!org?.id || !chosenTemplate || channel !== "whatsapp") return;
-
-      try {
-        const res = await fetch(
-          `/api/template?orgId=${org.id}&projectId=${chosenTemplate.projectId}&id=${chosenTemplate.id}`,
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Failed to fetch template");
-        }
-
-        if (!alive) return;
-
-        setTplDetails(data);
-
-        const defs = Array.isArray(data.variables) ? data.variables : [];
-        const defaults = {};
-
-        for (const v of defs) {
-          const examples = v.examplesLocale?.[tplLang]?.exampleValueStrings;
-          defaults[v.key] = examples?.[0] ?? "";
-        }
-
-        setVarDefs(defs);
-        setVarValues(defaults);
-
-        const blocksForLocale =
-          (data.platformContent || []).find(
-            (pc) => (pc.locale || data.defaultLocale) === tplLang,
-          ) || (data.platformContent || [])[0];
-
-        setNeedsUrlVar(blocksHaveUrlVariable(blocksForLocale?.blocks || []));
-      } catch (err) {
-        console.warn("[Broadcast] template details load error:", err);
-
-        if (!alive) return;
-
-        await showAlertRef.current({
-          title: translation("Broadcast.alerts.templateDetailsFailed.title"),
-          message: translation(
-            "Broadcast.alerts.templateDetailsFailed.message",
-          ),
-          tone: "danger",
-        });
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [org?.id, chosenTemplate, tplLang, channel, translation]);
-
-  useEffect(() => {
-    if (!needsUrlVar) return;
-    if (!trackedLinkOptions.length) return;
-    if (composerSelectedTrackedUrlKey) return;
-
-    setComposerSelectedTrackedUrlKey(trackedLinkOptions[0].value);
-  }, [
-    needsUrlVar,
-    trackedLinkOptions,
-    composerSelectedTrackedUrlKey,
-    setComposerSelectedTrackedUrlKey,
-  ]);
-
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
 
     return normalizedUsers.filter((u) => {
-      const textHay = `${u.name || ""} ${u.phone_number || ""} 
+      const textHay = `${u.name || ""} ${u.phone_number || ""}
         ${u.whatsapp_username || ""} ${u.whatsapp_bsuid}
          ${u.email || ""}`.toLowerCase();
 
@@ -884,23 +706,7 @@ export default function BroadcastPage() {
   }
 
   function removeTrackedLink(id) {
-    const removed = composerTrackedLinks.find((x) => x.id === id);
-
-    const removedSelectedUrlLink =
-      removed &&
-      composerSelectedTrackedUrlKey === sanitizeTrackedKey(removed.key);
-
     setComposerTrackedLinks((prev) => prev.filter((x) => x.id !== id));
-
-    if (removedSelectedUrlLink) {
-      setComposerSelectedTrackedUrlKey("");
-
-      void showAlert({
-        title: translation("Broadcast.alerts.trackedLinkRemoved.title"),
-        message: translation("Broadcast.alerts.trackedLinkRemoved.message"),
-        tone: "warning",
-      });
-    }
   }
 
   function toggleToolPanel(panel) {
@@ -912,7 +718,7 @@ export default function BroadcastPage() {
     const uploaded = [];
 
     const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      let safe = name.normalize("NFD").replace(/[̀-ͯ]/g, "");
       safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
       if (!safe) safe = "file";
       return safe;
@@ -966,6 +772,10 @@ export default function BroadcastPage() {
     }
   }
 
+  function openFilePicker() {
+    fileInputRef.current?.click?.();
+  }
+
   function openThumbnailPicker(videoUrl) {
     setThumbForVideoUrl(videoUrl);
 
@@ -1012,121 +822,73 @@ export default function BroadcastPage() {
     );
   }
 
-  const orderedParamValues = useMemo(() => {
-    if (varDefs.length === 0) {
-      const map = new Map(
-        tplParamsManual
-          .split(",")
-          .map((kv) => kv.trim())
-          .filter(Boolean)
-          .map((kv) => {
-            const [k, ...rest] = kv.split("=");
-            return [k.trim(), rest.join("=").trim()];
-          }),
-      );
-
-      return Array.from(map.values());
-    }
-
-    return varDefs.map((v) => (varValues[v.key] ?? "").trim());
-  }, [varDefs, varValues, tplParamsManual]);
-
   const sampleRecipient = selectedUsers[0] || null;
+  const sampleName =
+    sampleRecipient?.name || translation("Broadcast.composer.contact");
 
-  const previewVars = useMemo(() => {
-    const map = {};
+  /*
+   * Rótulos das pastilhas no balão. Nome e empresa são preenchidos no envio;
+   * os links rastreados vêm da lista de links desta mensagem.
+   */
+  const tokenLabel = useCallback(
+    (key) => {
+      const k = String(key || "").toLowerCase();
 
-    for (const v of varDefs) {
-      map[v.key] = varValues[v.key] ?? "";
-    }
-
-    map.recipientName = sampleRecipient?.name || map.name || map.nome || "";
-    map.orgName =
-      org?.name || map.empresa || map.company || map.organization || "";
-    map.urlVar =
-      needsUrlVar && composerSelectedTrackedUrlKey
-        ? `{{link.${composerSelectedTrackedUrlKey}}}`
-        : "";
-
-    return map;
-  }, [
-    varDefs,
-    varValues,
-    sampleRecipient,
-    org?.name,
-    needsUrlVar,
-    composerSelectedTrackedUrlKey,
-  ]);
-
-  const preview = useMemo(() => {
-    if (!tplDetails) {
-      return { body: "", buttonText: "", buttonUrl: "" };
-    }
-
-    const pc =
-      (tplDetails.platformContent || []).find(
-        (x) => (x.locale || tplDetails.defaultLocale) === tplLang,
-      ) || (tplDetails.platformContent || [])[0];
-
-    const blocks = pc?.blocks?.length
-      ? pc.blocks
-      : tplDetails.genericContent?.[0]?.blocks || [];
-
-    const bodyRaw = extractText(blocks).join("\n\n");
-    const body = interpolate(bodyRaw, previewVars);
-
-    let buttonText = "";
-    let buttonUrl = "";
-
-    (function scan(n) {
-      if (!n) return;
-      if (Array.isArray(n)) return n.forEach(scan);
-
-      if (typeof n === "object") {
-        if (n.action?.type === "link" && n.action.link) {
-          buttonText = n.action.link.text || buttonText;
-          buttonUrl = n.action.link.url || buttonUrl;
-        }
-
-        for (const v of Object.values(n)) {
-          scan(v);
-        }
+      if (NAME_KEYS.includes(k)) {
+        return translation("Broadcast.composer.variableName");
       }
-    })(blocks);
 
-    buttonText = interpolate(buttonText, previewVars);
-    buttonUrl = interpolate(buttonUrl, {
-      ...previewVars,
-      urlVar: previewVars.urlVar,
-    });
+      if (COMPANY_KEYS.includes(k)) {
+        return translation("Broadcast.composer.variableCompany");
+      }
 
-    return { body, buttonText, buttonUrl };
-  }, [tplDetails, tplLang, previewVars]);
+      if (k.startsWith("link.")) {
+        const linkKey = k.slice("link.".length);
+        const link = normalizedTrackedLinks.find((l) => l.key === linkKey);
+        return `Link: ${link?.label || linkKey}`;
+      }
 
-  const previewMessageWithTrackedLinks = useMemo(() => {
-    return replaceTrackedPlaceholders(
-      composerMessage,
-      normalizedTrackedLinks,
-      channel,
-    );
-  }, [composerMessage, normalizedTrackedLinks, channel]);
+      return null;
+    },
+    [normalizedTrackedLinks, translation],
+  );
 
-  const paramsComplete =
-    (varDefs.length === 0 && tplParamsManual.trim().length > 0) ||
-    (varDefs.length > 0 && orderedParamValues.every((v) => v !== ""));
+  const composerVariables = useMemo(
+    () => [
+      {
+        key: "nome",
+        kind: "name",
+        label: translation("Broadcast.composer.variableName"),
+      },
+      {
+        key: "empresa",
+        kind: "company",
+        label: translation("Broadcast.composer.variableCompany"),
+      },
+      ...normalizedTrackedLinks.map((l) => ({
+        key: `link.${l.key}`,
+        kind: "link",
+        label: `Link: ${l.label}`,
+      })),
+    ],
+    [normalizedTrackedLinks, translation],
+  );
+
+  function insertToken(key) {
+    editorRef.current?.insertToken?.(key);
+  }
 
   const trackedLinksValid =
     normalizedTrackedLinks.length === composerTrackedLinks.length &&
     new Set(normalizedTrackedLinks.map((l) => l.key)).size ===
       normalizedTrackedLinks.length;
 
-  const whatsappUrlBindingValid =
-    !needsUrlVar ||
-    trackedLinkOptions.length === 0 ||
-    Boolean(composerSelectedTrackedUrlKey);
-
-  const hasFallbackTemplate =
-    channel === "whatsapp" && tplName && tplLang && paramsComplete;
+  const cleanOpeningBody = sanitizeOpeningBody(openingBody);
+  const openingMaxLength = openingInfo?.maxLength || 600;
+  const openingBodyValid =
+    Boolean(openingInfo) &&
+    cleanOpeningBody.length > 0 &&
+    cleanOpeningBody.length <= openingMaxLength;
 
   function normalizeTrackedLinksForStep(step) {
     return (step.trackedLinks || [])
@@ -1178,33 +940,11 @@ export default function BroadcastPage() {
     !chainMode ||
     (readChainsFeatureEnabled &&
       channel === "whatsapp" &&
-      hasFallbackTemplate &&
       chainSteps.length >= 2 &&
       chainSteps.length <= 10 &&
       chainSteps.every(chainStepHasContent) &&
       chainSteps.every(trackedLinksValidForStep) &&
       chainSteps.every(chainStepDelayValid));
-
-  useEffect(() => {
-    if (varDefs.length === 0) return;
-
-    setVarValues((prev) => {
-      const next = { ...prev };
-      const recName = sampleRecipient?.name || "";
-
-      for (const v of varDefs) {
-        const key = v.key || "";
-        const k = key.toLowerCase();
-
-        if (!next[key]) {
-          if (NAME_KEYS.includes(k)) next[key] = recName;
-          if (COMPANY_KEYS.includes(k)) next[key] = org?.name || "";
-        }
-      }
-
-      return next;
-    });
-  }, [varDefs, sampleRecipient?.name, org?.name]);
 
   useEffect(() => {
     setHourDraft(formatHour(scheduledFor));
@@ -1295,65 +1035,58 @@ export default function BroadcastPage() {
     return () => clearTimeout(timeout);
   }, [commitTimeParts, hourDraft, minuteDraft, scheduledFor]);
 
+  const hasManualContent =
+    composerMessage.trim().length > 0 || composerFiles.length > 0;
+
   const baseCanSend =
     selected.size > 0 &&
-    (chainMode
-      ? chainValid
-      : trackedLinksValid &&
-        whatsappUrlBindingValid &&
-        (channel === "whatsapp"
-          ? (tplName && tplLang && paramsComplete) ||
-            composerMessage.trim().length > 0 ||
-            composerFiles.length > 0
-          : composerMessage.trim().length > 0 || composerFiles.length > 0));
+    (isOpeningMode
+      ? openingBodyValid
+      : chainMode
+        ? chainValid
+        : trackedLinksValid && hasManualContent);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
     (!scheduledFor || scheduledFor.getTime() <= Date.now() || !!timeError);
 
-  const canSend = baseCanSend && !scheduleInvalid;
+  const canSend = baseCanSend && !scheduleInvalid && !showStartMenu;
 
-  function buildFallbackTemplatePayload() {
-    if (!tplName || !tplLang || !paramsComplete) return null;
-
-    return {
-      projectId: chosenTemplate?.projectId,
-      name: tplName.trim(),
-      languageCode: (tplLang || "pt-PT").trim(),
-      params: orderedParamValues,
-      varKeys: varDefs.length ? varDefs.map((v) => v.key) : [],
-      manualParams: varDefs.length ? undefined : tplParamsManual,
-      trackedUrlKey:
-        needsUrlVar && composerSelectedTrackedUrlKey
-          ? composerSelectedTrackedUrlKey
-          : null,
-    };
+  function buildRecipients(chosen) {
+    return chosen
+      .filter((u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id)
+      .map((u) => ({
+        userId: u.id,
+        name: u.name || null,
+        phoneNumber: u.phone_number || null,
+        whatsappBsuid: u.whatsapp_bsuid || null,
+        whatsappUsername: u.whatsapp_username || null,
+        birdContactId: u.bird_contact_id || null,
+      }));
   }
 
   function buildBroadcastPayload(chosen) {
     if (channel === "whatsapp") {
+      if (isOpeningMode) {
+        return {
+          orgId: org?.id,
+          message: "",
+          imageUrls: [],
+          files: [],
+          trackedLinks: [],
+          recipients: buildRecipients(chosen),
+          openingOnly: true,
+          openingBody: cleanOpeningBody,
+        };
+      }
+
       return {
         orgId: org?.id,
         message: composerMessage,
         imageUrls,
         files: composerFiles,
         trackedLinks: normalizedTrackedLinks,
-        recipients: chosen
-          .filter(
-            (u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id,
-          )
-          .map((u) => ({
-            userId: u.id,
-            name: u.name || null,
-            phoneNumber: u.phone_number || null,
-            whatsappBsuid: u.whatsapp_bsuid || null,
-            whatsappUsername: u.whatsapp_username || null,
-            birdContactId: u.bird_contact_id || null,
-          })),
-        template:
-          tplName && tplLang && paramsComplete
-            ? buildFallbackTemplatePayload()
-            : null,
+        recipients: buildRecipients(chosen),
       };
     }
 
@@ -1371,17 +1104,7 @@ export default function BroadcastPage() {
       orgId: org?.id,
       createdByUserId: user?.id || null,
       channel: "whatsapp",
-      fallbackTemplate: buildFallbackTemplatePayload(),
-      recipients: chosen
-        .filter((u) => u.phone_number || u.whatsapp_bsuid || u.bird_contact_id)
-        .map((u) => ({
-          userId: u.id,
-          name: u.name || null,
-          phoneNumber: u.phone_number || null,
-          whatsappBsuid: u.whatsapp_bsuid || null,
-          whatsappUsername: u.whatsapp_username || null,
-          birdContactId: u.bird_contact_id || null,
-        })),
+      recipients: buildRecipients(chosen),
       steps: chainSteps.map((step, index) => ({
         message: step.message || "",
         files: Array.isArray(step.files) ? step.files : [],
@@ -1577,26 +1300,19 @@ export default function BroadcastPage() {
   }
 
   async function validateContentBeforeAction(action) {
-    const hasManualContent =
-      composerMessage.trim().length > 0 || composerFiles.length > 0;
+    if (isOpeningMode) {
+      if (openingBodyValid) return true;
 
-    const hasValidTemplate =
-      channel === "whatsapp" && tplName && tplLang && paramsComplete;
-
-    const hasSelectedIncompleteTemplate =
-      channel === "whatsapp" && tplName && tplLang && !paramsComplete;
-
-    if (hasSelectedIncompleteTemplate && !hasManualContent && !chainMode) {
       await showAlert({
-        title: translation("Broadcast.alerts.templateParamsMissing.title"),
-        message: translation("Broadcast.alerts.templateParamsMissing.message"),
+        title: translation("Broadcast.alerts.openingMissing.title"),
+        message: translation("Broadcast.alerts.openingMissing.message"),
         tone: "warning",
       });
 
       return false;
     }
 
-    if (!hasManualContent && !hasValidTemplate && !chainMode) {
+    if (!hasManualContent && !chainMode) {
       await showAlert({
         title: translation("Broadcast.alerts.contentMissing.title"),
         message:
@@ -1636,16 +1352,6 @@ export default function BroadcastPage() {
         await showAlert({
           title: "Read chains are disabled",
           message: "Enable read chain messages in Automations first.",
-          tone: "warning",
-        });
-        return;
-      }
-
-      if (!hasFallbackTemplate) {
-        await showAlert({
-          title: "Choose fallback template",
-          message:
-            "Select a WhatsApp template. It is used only when the user's 24h window is closed.",
           tone: "warning",
         });
         return;
@@ -1699,7 +1405,7 @@ export default function BroadcastPage() {
             failed: counts.failed,
             note:
               data?.note ||
-              "Message 1 was sent if the 24h window was open. If not, the fallback template was sent and the chain waits for a reply.",
+              "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply.",
             failedRecipients,
           }),
           tone: counts.failed > 0 ? "warning" : "success",
@@ -1721,20 +1427,10 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("send"))) return;
 
-    if (!trackedLinksValid) {
+    if (!isOpeningMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
-        tone: "warning",
-      });
-      return;
-    }
-
-    if (!whatsappUrlBindingValid) {
-      await showAlert({
-        title: "Missing WhatsApp URL button link",
-        message:
-          "Please choose which tracked link should be used for the WhatsApp template URL button.",
         tone: "warning",
       });
       return;
@@ -1879,16 +1575,6 @@ export default function BroadcastPage() {
         return;
       }
 
-      if (!hasFallbackTemplate) {
-        await showAlert({
-          title: "Choose fallback template",
-          message:
-            "Select a WhatsApp template. It is used only when the user's 24h window is closed.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!chainValid) {
         await showAlert({
           title: "Complete the chain",
@@ -1968,20 +1654,10 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("schedule"))) return;
 
-    if (!trackedLinksValid) {
+    if (!isOpeningMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
-        tone: "warning",
-      });
-      return;
-    }
-
-    if (!whatsappUrlBindingValid) {
-      await showAlert({
-        title: "Missing WhatsApp URL button link",
-        message:
-          "Please choose which tracked link should be used for the WhatsApp template URL button.",
         tone: "warning",
       });
       return;
@@ -2063,41 +1739,6 @@ export default function BroadcastPage() {
     }
   }
 
-  function insertTrackedPlaceholder(key) {
-    const token = `{{link.${key}}}`;
-    const textArea = messageInputRef.current;
-
-    if (!textArea) {
-      setComposerMessage(
-        (prev) => `${prev}${prev && !prev.endsWith(" ") ? " " : ""}${token}`,
-      );
-      return;
-    }
-
-    const start = textArea.selectionStart ?? composerMessage.length;
-    const end = textArea.selectionEnd ?? composerMessage.length;
-
-    const before = composerMessage.slice(0, start);
-    const after = composerMessage.slice(end);
-
-    const prefix =
-      before && !before.endsWith(" ") && !before.endsWith("\n") ? " " : "";
-
-    const suffix =
-      after && !after.startsWith(" ") && !after.startsWith("\n") ? " " : "";
-
-    const inserted = `${prefix}${token}${suffix}`;
-    const nextValue = before + inserted + after;
-
-    setComposerMessage(nextValue);
-
-    requestAnimationFrame(() => {
-      textArea.focus();
-      const nextCursor = before.length + inserted.length;
-      textArea.setSelectionRange(nextCursor, nextCursor);
-    });
-  }
-
   const allOnPageSelected =
     filtered.length > 0 && filtered.every((u) => selected.has(u.id));
 
@@ -2116,9 +1757,6 @@ export default function BroadcastPage() {
           scheduledFor,
         )}:${formatMinute(scheduledFor)}`
       : translation("Broadcast.sendnow");
-
-  const templateButtonLabel =
-    channel === "whatsapp" && tplName ? tplName : "No template";
 
   const activeDelay = Number(
     activeChainStep?.delayAfterPreviousReadMinutes || 0,
@@ -2184,6 +1822,133 @@ export default function BroadcastPage() {
       </div>
     ) : null;
 
+  const schedulePanel = activeToolPanel === "schedule" && (
+    <SchedulePanel
+      deliveryMode={deliveryMode}
+      setDeliveryMode={setDeliveryMode}
+      scheduledFor={scheduledFor}
+      setScheduledFor={setScheduledFor}
+      hourDraft={hourDraft}
+      minuteDraft={minuteDraft}
+      handleHourChange={handleHourChange}
+      handleMinuteChange={handleMinuteChange}
+      commitTimeParts={commitTimeParts}
+      timeError={timeError}
+      scheduleInvalid={scheduleInvalid}
+      browserTimeZone={browserTimeZone}
+      translation={translation}
+    />
+  );
+
+  let composer = null;
+
+  if (showStartMenu) {
+    composer = (
+      <StartMenu
+        onChoose={setComposeMode}
+        sampleName={sampleName}
+        orgName={org?.name || ""}
+        openingBody={openingBody}
+        previewTime={previewTime}
+        translation={translation}
+      />
+    );
+  } else if (isOpeningMode) {
+    composer = (
+      <MessageComposer
+        title={translation("Broadcast.composer.openingTitle")}
+        onBack={() => setComposeMode(null)}
+        showLinks={false}
+        activeToolPanel={activeToolPanel}
+        toggleToolPanel={toggleToolPanel}
+        scheduleButtonLabel={scheduleButtonLabel}
+        trackedLinksCount={0}
+        translation={translation}
+        phone={
+          <OpeningComposer
+            info={openingInfo}
+            body={openingBody}
+            onBodyChange={setOpeningBody}
+            loading={openingLoading}
+            failed={openingFailed}
+            onRetry={loadOpening}
+            sampleName={sampleName}
+            orgName={org?.name || ""}
+            previewTime={previewTime}
+            translation={translation}
+          />
+        }
+      >
+        {schedulePanel}
+      </MessageComposer>
+    );
+  } else {
+    composer = (
+      <MessageComposer
+        title={translation("Broadcast.message")}
+        onBack={isWhatsapp ? () => setComposeMode(null) : null}
+        hint={translation("Broadcast.composer.hint")}
+        activeToolPanel={activeToolPanel}
+        toggleToolPanel={toggleToolPanel}
+        scheduleButtonLabel={scheduleButtonLabel}
+        trackedLinksCount={trackedLinksCount}
+        translation={translation}
+        leftToolsContent={chainDelayTools}
+        chainControls={
+          isWhatsapp ? (
+            <ChainMessagesBar
+              enabled={readChainsFeatureEnabled}
+              chainMode={chainMode}
+              setChainMode={setChainMode}
+              chainSteps={chainSteps}
+              activeChainStepIndex={activeChainStepIndex}
+              setActiveChainStepIndex={setActiveChainStepIndex}
+              addChainStep={addChainStep}
+              duplicateChainStep={duplicateChainStep}
+              removeChainStep={removeChainStep}
+              translation={translation}
+            />
+          ) : null
+        }
+        phone={
+          <PhoneComposer
+            channel={channel}
+            contactName={sampleName}
+            message={composerMessage}
+            onMessageChange={setComposerMessage}
+            editorRef={editorRef}
+            tokenLabel={tokenLabel}
+            variables={composerVariables}
+            onInsertToken={insertToken}
+            imageFiles={imageFiles}
+            videoFiles={videoFiles}
+            otherFiles={otherFiles}
+            onRemoveFile={removeFile}
+            onPickThumbnail={openThumbnailPicker}
+            onRemoveThumbnail={removeThumbnail}
+            onAddFile={openFilePicker}
+            onAddLink={() => setActiveToolPanel("links")}
+            previewTime={previewTime}
+            translation={translation}
+          />
+        }
+      >
+        {schedulePanel}
+
+        {activeToolPanel === "links" && (
+          <TrackedLinksPanel
+            trackedLinks={composerTrackedLinks}
+            trackedLinksValid={trackedLinksValid}
+            addTrackedLink={addTrackedLink}
+            updateTrackedLink={updateTrackedLink}
+            removeTrackedLink={removeTrackedLink}
+            translation={translation}
+          />
+        )}
+      </MessageComposer>
+    );
+  }
+
   return (
     <div className={styles.screen}>
       <BroadcastHeader
@@ -2199,118 +1964,26 @@ export default function BroadcastPage() {
         translation={translation}
       />
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="*/*"
+        multiple
+        hidden
+        data-testid="file-input"
+        onChange={handlePickFiles}
+      />
+
+      <input
+        ref={thumbInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={handlePickThumbnail}
+      />
+
       <div className={styles.columns}>
-        <div className={styles.leftCol}>
-          <MessageComposer
-            messageInputRef={messageInputRef}
-            message={composerMessage}
-            setMessage={setComposerMessage}
-            normalizedTrackedLinks={normalizedTrackedLinks}
-            previewMessageWithTrackedLinks={previewMessageWithTrackedLinks}
-            insertTrackedPlaceholder={insertTrackedPlaceholder}
-            activeToolPanel={activeToolPanel}
-            toggleToolPanel={toggleToolPanel}
-            scheduleButtonLabel={scheduleButtonLabel}
-            attachmentsCount={attachmentsCount}
-            trackedLinksCount={trackedLinksCount}
-            channel={channel}
-            templateButtonLabel={templateButtonLabel}
-            translation={translation}
-            leftToolsContent={chainDelayTools}
-            chainControls={
-              channel === "whatsapp" ? (
-                <ChainMessagesBar
-                  enabled={readChainsFeatureEnabled}
-                  chainMode={chainMode}
-                  setChainMode={setChainMode}
-                  chainSteps={chainSteps}
-                  activeChainStepIndex={activeChainStepIndex}
-                  setActiveChainStepIndex={setActiveChainStepIndex}
-                  addChainStep={addChainStep}
-                  duplicateChainStep={duplicateChainStep}
-                  removeChainStep={removeChainStep}
-                  hasFallbackTemplate={Boolean(hasFallbackTemplate)}
-                  translation={translation}
-                />
-              ) : null
-            }
-          >
-            {activeToolPanel === "schedule" && (
-              <SchedulePanel
-                deliveryMode={deliveryMode}
-                setDeliveryMode={setDeliveryMode}
-                scheduledFor={scheduledFor}
-                setScheduledFor={setScheduledFor}
-                hourDraft={hourDraft}
-                minuteDraft={minuteDraft}
-                handleHourChange={handleHourChange}
-                handleMinuteChange={handleMinuteChange}
-                commitTimeParts={commitTimeParts}
-                timeError={timeError}
-                scheduleInvalid={scheduleInvalid}
-                browserTimeZone={browserTimeZone}
-                translation={translation}
-              />
-            )}
-
-            {activeToolPanel === "attachments" && (
-              <AttachmentsPanel
-                channel={channel}
-                fileInputRef={fileInputRef}
-                thumbInputRef={thumbInputRef}
-                handlePickFiles={handlePickFiles}
-                handlePickThumbnail={handlePickThumbnail}
-                imageFiles={imageFiles}
-                videoFiles={videoFiles}
-                otherFiles={otherFiles}
-                files={composerFiles}
-                removeFile={removeFile}
-                openThumbnailPicker={openThumbnailPicker}
-                removeThumbnail={removeThumbnail}
-                translation={translation}
-              />
-            )}
-
-            {activeToolPanel === "links" && (
-              <TrackedLinksPanel
-                channel={channel}
-                needsUrlVar={needsUrlVar}
-                trackedLinks={composerTrackedLinks}
-                trackedLinksValid={trackedLinksValid}
-                trackedLinkOptions={trackedLinkOptions}
-                selectedTrackedUrlKey={composerSelectedTrackedUrlKey}
-                setSelectedTrackedUrlKey={setComposerSelectedTrackedUrlKey}
-                whatsappUrlBindingValid={whatsappUrlBindingValid}
-                addTrackedLink={addTrackedLink}
-                updateTrackedLink={updateTrackedLink}
-                removeTrackedLink={removeTrackedLink}
-                translation={translation}
-              />
-            )}
-
-            {activeToolPanel === "template" && channel === "whatsapp" && (
-              <TemplatePanel
-                tplErr={tplErr}
-                tplLoading={tplLoading}
-                nameOptions={nameOptions}
-                tplName={tplName}
-                setTplName={setTplName}
-                varDefs={varDefs}
-                varValues={varValues}
-                setVarValues={setVarValues}
-                tplLang={tplLang}
-                tplParamsManual={tplParamsManual}
-                setTplParamsManual={setTplParamsManual}
-                paramsComplete={paramsComplete}
-                org={org}
-                sampleRecipient={sampleRecipient}
-                preview={preview}
-                previewTime={previewTime}
-                translation={translation}
-              />
-            )}
-          </MessageComposer>
-        </div>
+        <div className={styles.leftCol}>{composer}</div>
 
         <div className={styles.rightCol}>
           <RecipientsPanel

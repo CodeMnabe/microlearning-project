@@ -76,35 +76,6 @@
   }
 }
 
-.fixedText {
-  color: #4b5563;
-}
-
-.bodyInput {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 6px 8px;
-  border: 1px dashed #128c7e;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.55);
-  color: #111b21;
-  font: inherit;
-  line-height: inherit;
-  resize: none;
-  overflow: hidden;
-  outline: none;
-}
-
-.bodyInput:focus {
-  border-style: solid;
-  background: #fff;
-}
-
-.bodyInput:disabled {
-  opacity: 0.7;
-}
-
 .side {
   display: grid;
   gap: 12px;
