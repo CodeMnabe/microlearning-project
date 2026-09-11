@@ -1,6 +1,10 @@
 "use client";
 
+import { createContext, useContext } from "react";
+
 import styles from "./whatsAppPhone.module.css";
+
+const VariantContext = createContext("whatsapp");
 
 /**
  * Moldura de telemóvel com o aspeto de uma conversa WhatsApp (ou Teams, com
@@ -12,7 +16,7 @@ import styles from "./whatsAppPhone.module.css";
  */
 export default function WhatsAppPhone({
   contactName,
-  subtitle = "online",
+  subtitle,
   compact = false,
   variant = "whatsapp",
   className = "",
@@ -30,29 +34,40 @@ export default function WhatsAppPhone({
     .filter(Boolean)
     .join(" ");
 
+  const status = subtitle ?? (variant === "teams" ? "Disponível" : "online");
+
   return (
-    <div className={classes} data-testid="whatsapp-phone">
-      <div className={styles.header}>
-        <div className={styles.avatar}>{initial}</div>
-        <div className={styles.headerText}>
-          <div className={styles.title}>{contactName || "Contacto"}</div>
-          <div className={styles.subtitle}>{subtitle}</div>
+    <VariantContext.Provider value={variant}>
+      <div className={classes} data-testid="whatsapp-phone">
+        <div className={styles.header}>
+          <div className={styles.avatar}>{initial}</div>
+          <div className={styles.headerText}>
+            <div className={styles.title}>{contactName || "Contacto"}</div>
+            <div className={styles.subtitle}>{status}</div>
+          </div>
         </div>
+
+        <div className={styles.chat}>{children}</div>
+
+        {footer ? <div className={styles.bar}>{footer}</div> : null}
       </div>
-
-      <div className={styles.chat}>{children}</div>
-
-      {footer ? <div className={styles.bar}>{footer}</div> : null}
-    </div>
+    </VariantContext.Provider>
   );
 }
 
 export function WhatsAppBubble({ time, className = "", children }) {
+  const variant = useContext(VariantContext);
+
   return (
     <div className={styles.rowOut}>
       <div className={`${styles.bubble} ${className}`}>
         {children}
-        {time ? <span className={styles.meta}>{time} ✓✓</span> : null}
+        {time ? (
+          <span className={styles.meta}>
+            {time}
+            {variant === "teams" ? "" : " ✓✓"}
+          </span>
+        ) : null}
       </div>
     </div>
   );

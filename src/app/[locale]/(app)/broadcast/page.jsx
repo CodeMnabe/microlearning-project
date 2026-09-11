@@ -774,8 +774,11 @@ export default function BroadcastPage() {
     }
   }
 
-  function openFilePicker() {
-    fileInputRef.current?.click?.();
+  function openFilePicker(accept = "*/*") {
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.accept = accept;
+    input.click?.();
   }
 
   function openThumbnailPicker(videoUrl) {
@@ -844,6 +847,14 @@ export default function BroadcastPage() {
         return translation("Broadcast.composer.variableCompany");
       }
 
+      if (k === "user_email") {
+        return translation("Broadcast.composer.variableEmail");
+      }
+
+      if (k === "user_phone") {
+        return translation("Broadcast.composer.variablePhone");
+      }
+
       if (k.startsWith("link.")) {
         const linkKey = k.slice("link.".length);
         const link = normalizedTrackedLinks.find((l) => l.key === linkKey);
@@ -866,6 +877,16 @@ export default function BroadcastPage() {
         key: "empresa",
         kind: "company",
         label: translation("Broadcast.composer.variableCompany"),
+      },
+      {
+        key: "user_email",
+        kind: "email",
+        label: translation("Broadcast.composer.variableEmail"),
+      },
+      {
+        key: "user_phone",
+        kind: "phone",
+        label: translation("Broadcast.composer.variablePhone"),
       },
       ...normalizedTrackedLinks.map((l) => ({
         key: `link.${l.key}`,
