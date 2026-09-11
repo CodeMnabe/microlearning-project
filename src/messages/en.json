@@ -1333,16 +1333,8 @@
       "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
       "delay": "Delay (minutes)",
       "message": "Message",
-      "whatsappTemplate": "WhatsApp template",
-      "noTemplate": "No template",
-      "templateBindings": "Template bindings",
+      "openingHint": "If the contact is outside the 24-hour window, they first receive the opening message and this message waits until they reply.",
       "comingSoon": "coming soon",
-      "staticText": "Static text",
-      "systemUserName": "System: user.name",
-      "systemOrganizationName": "System: organization.name",
-      "systemUserEmail": "System: user.email",
-      "systemUserPhone": "System: user.phone",
-      "valueFor": "Value for {key}",
       "createAutomation": "Create automation",
       "save": "Save",
       "saving": "Saving...",
@@ -1364,14 +1356,6 @@
         "contentRequired": {
           "title": "Missing content",
           "message": "Write a message or choose a WhatsApp template before saving."
-        },
-        "templateRequired": {
-          "title": "Missing template",
-          "message": "Choose a WhatsApp template or write a manual message."
-        },
-        "templateBindingsRequired": {
-          "title": "Missing template fields",
-          "message": "Fill in the required template fields: {fields}."
         }
       }
     },

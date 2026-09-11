@@ -10,8 +10,6 @@ import {
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
 import {
   assertUsersBelongToOrg,
-  assertWhatsappProviderTemplateBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
@@ -28,11 +26,11 @@ function normalizeRecipient(raw) {
   };
 }
 
-function normalizeSteps(
-  steps,
-  fallbackTemplate = null,
-  fallbackWhatsappTemplateId = null,
-) {
+/*
+ * Cada passo é uma mensagem livre. Quando a janela de 24h está fechada, o
+ * envio usa o template de abertura da organização de forma implícita.
+ */
+function normalizeSteps(steps) {
   if (!Array.isArray(steps)) return [];
 
   return steps.map((step) => ({
@@ -43,9 +41,6 @@ function normalizeSteps(
     delayAfterPreviousReadMinutes: normalizeDelayMinutes(
       step?.delayAfterPreviousReadMinutes,
     ),
-    template: step?.template || fallbackTemplate || null,
-    whatsappTemplateId:
-      step?.whatsappTemplateId || fallbackWhatsappTemplateId || null,
   }));
 }
 
@@ -54,19 +49,6 @@ function stepHasFreeformContent(step) {
     String(step?.message || "").trim().length > 0 ||
     (Array.isArray(step?.files) && step.files.length > 0) ||
     (Array.isArray(step?.imageUrls) && step.imageUrls.length > 0)
-  );
-}
-
-function hasFallbackTemplate({
-  fallbackTemplate,
-  fallbackWhatsappTemplateId,
-  steps,
-}) {
-  if (fallbackTemplate?.projectId) return true;
-  if (fallbackWhatsappTemplateId) return true;
-
-  return steps.some(
-    (step) => step?.template?.projectId || step?.whatsappTemplateId,
   );
 }
 
@@ -101,8 +83,6 @@ export async function POST(req) {
       channel = "whatsapp",
       recipients: rawRecipients = [],
       steps: rawSteps = [],
-      fallbackTemplate = null,
-      fallbackWhatsappTemplateId = null,
       scheduledFor = null,
       timezone = null,
     } = body || {};
@@ -158,101 +138,7 @@ export async function POST(req) {
       dedupedRecipients.map((recipient) => recipient.userId),
     );
 
-    if (
-      !hasFallbackTemplate({
-        fallbackTemplate,
-        fallbackWhatsappTemplateId,
-        steps: rawSteps,
-      })
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "A fallback WhatsApp template is required for read chains, so the system can reopen the conversation window when needed.",
-        },
-        { status: 400 },
-      );
-    }
-    const safeFallbackWhatsappTemplateId =
-      await assertWhatsappTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        fallbackWhatsappTemplateId,
-      );
-
-    let safeFallbackTemplate = null;
-    if (!safeFallbackWhatsappTemplateId && fallbackTemplate?.projectId) {
-      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        fallbackTemplate.projectId,
-      );
-
-      safeFallbackTemplate = {
-        projectId: templateRow.provider_template_id,
-        languageCode: fallbackTemplate.languageCode,
-        varKeys: Array.isArray(fallbackTemplate.varKeys)
-          ? fallbackTemplate.varKeys
-          : [],
-        params: Array.isArray(fallbackTemplate.params)
-          ? fallbackTemplate.params
-          : [],
-        manualParams: fallbackTemplate.manualParams || "",
-        trackedUrlKey: fallbackTemplate.trackedUrlKey || null,
-      };
-    }
-
-    const safeStepWhatsappTemplateIds = new Map();
-    const safeStepTemplates = new Map();
-
-    for (const step of rawSteps) {
-      if (!step?.whatsappTemplateId) continue;
-
-      const safeTemplateId = await assertWhatsappTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        step.whatsappTemplateId,
-      );
-
-      safeStepWhatsappTemplateIds.set(step.whatsappTemplateId, safeTemplateId);
-    }
-
-    for (const [index, step] of rawSteps.entries()) {
-      if (step?.whatsappTemplateId || !step?.template?.projectId) continue;
-
-      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        step.template.projectId,
-      );
-
-      safeStepTemplates.set(index, {
-        projectId: templateRow.provider_template_id,
-        languageCode: step.template.languageCode,
-        varKeys: Array.isArray(step.template.varKeys) ? step.template.varKeys : [],
-        params: Array.isArray(step.template.params) ? step.template.params : [],
-        manualParams: step.template.manualParams || "",
-        trackedUrlKey: step.template.trackedUrlKey || null,
-      });
-    }
-
-    const safeSteps = rawSteps.map((step, index) => ({
-      message: step?.message || "",
-      files: Array.isArray(step?.files) ? step.files : [],
-      imageUrls: Array.isArray(step?.imageUrls) ? step.imageUrls : [],
-      trackedLinks: Array.isArray(step?.trackedLinks) ? step.trackedLinks : [],
-      delayAfterPreviousReadMinutes: step?.delayAfterPreviousReadMinutes,
-      template: safeStepTemplates.get(index) || null,
-      whatsappTemplateId: step?.whatsappTemplateId
-        ? safeStepWhatsappTemplateIds.get(step.whatsappTemplateId)
-        : null,
-    }));
-
-    const steps = normalizeSteps(
-      safeSteps,
-      safeFallbackTemplate,
-      safeFallbackWhatsappTemplateId,
-    );
+    const steps = normalizeSteps(rawSteps);
 
     if (steps.length < 2 || steps.length > 10) {
       return NextResponse.json(
@@ -268,7 +154,7 @@ export async function POST(req) {
     if (emptyStepIndex !== -1) {
       return NextResponse.json(
         {
-          error: `Message ${emptyStepIndex + 1} is empty. Add text, files, or images. The fallback template does not count as the chain message content.`,
+          error: `Message ${emptyStepIndex + 1} is empty. Add text, files, or images.`,
         },
         { status: 400 },
       );

@@ -25,18 +25,6 @@ function getStepContentForMessageRow({ stepPayload, result, stepIndex }) {
   const raw = String(stepPayload?.message || "").trim();
   if (raw) return raw;
 
-  if (stepPayload?.template?.name) {
-    return `[WhatsApp template: ${stepPayload.template.name}]`;
-  }
-
-  if (stepPayload?.template?.projectId) {
-    return `[WhatsApp template: ${stepPayload.template.projectId}]`;
-  }
-
-  if (stepPayload?.whatsappTemplateId) {
-    return `[WhatsApp template id: ${stepPayload.whatsappTemplateId}]`;
-  }
-
   return `[Read chain step ${stepIndex}]`;
 }
 
@@ -72,8 +60,6 @@ export async function sendReadChainStep({
         userId: chainRecipient.user_id,
       },
     ],
-    template: stepPayload.template || null,
-    whatsappTemplateId: stepPayload.whatsappTemplateId || null,
     trackedLinks: Array.isArray(stepPayload.trackedLinks)
       ? stepPayload.trackedLinks
       : [],

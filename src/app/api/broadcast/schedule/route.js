@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
 import {
   assertUsersBelongToOrg,
-  assertWhatsappProviderTemplateBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { parseOpeningOptions } from "@/lib/services/broadcast/openingOptions";
 
 export async function POST(req) {
   try {
@@ -66,35 +65,13 @@ export async function POST(req) {
       recipientUserIds,
     );
 
-    let safeWhatsappTemplateId = null;
-    let safeTemplate = null;
+    let opening = { openingBody: null, openingOnly: false };
 
     if (channel === "whatsapp") {
-      safeWhatsappTemplateId = await assertWhatsappTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        payload?.whatsappTemplateId,
-      );
+      opening = parseOpeningOptions(payload);
 
-      if (!safeWhatsappTemplateId && payload?.template?.projectId) {
-        const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
-          orgAuth.admin,
-          orgAuth.orgId,
-          payload.template.projectId,
-        );
-
-        safeTemplate = {
-          projectId: templateRow.provider_template_id,
-          languageCode: payload.template.languageCode,
-          varKeys: Array.isArray(payload.template.varKeys)
-            ? payload.template.varKeys
-            : [],
-          params: Array.isArray(payload.template.params)
-            ? payload.template.params
-            : [],
-          manualParams: payload.template.manualParams || "",
-          trackedUrlKey: payload.template.trackedUrlKey || null,
-        };
+      if (opening.error) {
+        return NextResponse.json({ error: opening.error }, { status: 400 });
       }
     }
 
@@ -110,8 +87,8 @@ export async function POST(req) {
         ? { userIds: recipientUserIds }
         : {
             recipients: recipientUserIds.map((userId) => ({ userId })),
-            template: safeTemplate,
-            whatsappTemplateId: safeWhatsappTemplateId,
+            openingBody: opening.openingBody,
+            openingOnly: opening.openingOnly,
           }),
     };
 

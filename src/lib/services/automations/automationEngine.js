@@ -33,6 +33,8 @@ const CLIENT_CONTROLLED_SECURITY_FIELDS = new Set([
   "userIds",
   "template",
   "whatsappTemplateId",
+  "openingBody",
+  "openingOnly",
 ]);
 
 export function sanitizeAutomationPayload(payload) {
@@ -117,7 +119,6 @@ export async function queueAutomationRunForRule({
 
   const mergedPayload = {
     ...sanitizeAutomationPayload(rule.payload),
-    whatsappTemplateId: rule.whatsapp_template_id ?? null,
     _automation: {
       triggerType: rule.trigger_type,
       triggerAt: new Date(baseTime).toISOString(),

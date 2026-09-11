@@ -1341,16 +1341,8 @@
       "assistantFallbackHelp": "As regras de inatividade específicas por assistente têm prioridade. “Qualquer assistente (fallback)” só se aplica quando o assistente atual do utilizador não tem uma regra de inatividade específica neste canal.",
       "delay": "Atraso (minutos)",
       "message": "Mensagem",
-      "whatsappTemplate": "Template WhatsApp",
-      "noTemplate": "Sem template",
-      "templateBindings": "Variáveis do template",
+      "openingHint": "Se o contacto estiver fora da janela de 24 horas, recebe primeiro a mensagem de abertura e esta mensagem fica em espera até responder.",
       "comingSoon": "em breve",
-      "staticText": "Texto fixo",
-      "systemUserName": "Sistema: nome do utilizador",
-      "systemOrganizationName": "Sistema: nome da organização",
-      "systemUserEmail": "Sistema: email do utilizador",
-      "systemUserPhone": "Sistema: telefone do utilizador",
-      "valueFor": "Valor para {key}",
       "createAutomation": "Criar automação",
       "save": "Guardar",
       "saving": "A guardar...",
@@ -1372,14 +1364,6 @@
         "contentRequired": {
           "title": "Conteúdo em falta",
           "message": "Escreve uma mensagem ou escolhe um template WhatsApp antes de guardar."
-        },
-        "templateRequired": {
-          "title": "Template em falta",
-          "message": "Escolhe um template WhatsApp ou escreve uma mensagem manual."
-        },
-        "templateBindingsRequired": {
-          "title": "Campos do template em falta",
-          "message": "Preenche os campos obrigatórios do template: {fields}."
         }
       }
     },

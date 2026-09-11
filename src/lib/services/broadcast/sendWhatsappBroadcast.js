@@ -6,9 +6,10 @@ import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
-  getWhatsappTemplateById,
-  getWhatsappTemplateByProviderId,
-} from "@/lib/repos/whatsappTemplates.repo";
+  buildOpeningTemplateParams,
+  getOpeningTemplateConfig,
+  sanitizeOpeningBody,
+} from "@/lib/whatsapp/openingTemplate";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,
@@ -20,29 +21,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
-
-const NAME_KEYS = [
-  "name",
-  "nome",
-  "firstname",
-  "first_name",
-  "utilizador",
-  "user",
-];
-
-const COMPANY_KEYS = [
-  "empresa",
-  "company",
-  "organization",
-  "organização",
-  "organizacao",
-  "org",
-  "orgname",
-  "companyname",
-  "organizationname",
-];
-
-const isIn = (arr, k) => arr.includes(String(k || "").toLowerCase());
 
 function cleanText(value) {
   if (value === undefined || value === null) return null;
@@ -126,58 +104,12 @@ function getRecipientLabel(recipient, user, to) {
   );
 }
 
-function buildKvParamsForUser({
-  varKeys = [],
-  baseValues = [],
-  manualParams,
-  userName,
-  urlVar,
-  orgName,
-}) {
-  if (Array.isArray(varKeys) && varKeys.length) {
-    const pairs = varKeys.map((k, i) => {
-      let v = baseValues[i] ?? "";
-
-      if (isIn(NAME_KEYS, k)) v = userName ?? v ?? "";
-      if (isIn(COMPANY_KEYS, k)) v = orgName ?? v ?? "";
-
-      return `${k}=${v}`;
-    });
-
-    if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
-      pairs.push(`url=${urlVar}`);
-    }
-
-    return pairs;
-  }
-
-  const pairs = (manualParams || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((kv) => {
-      const [k, ...rest] = kv.split("=");
-      const key = (k || "").trim();
-
-      let value = (rest.join("=") || "").trim();
-
-      if (isIn(NAME_KEYS, key)) value = userName || value;
-      if (isIn(COMPANY_KEYS, key)) value = orgName || value;
-
-      return `${key}=${value}`;
-    });
-
-  if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
-    pairs.push(`url=${urlVar}`);
-  }
-
-  return pairs;
-}
-
 async function loadOrgForWhatsapp(orgId) {
   const { data: org, error } = await supabaseAdmin
     .from("organization")
-    .select("id, name, channel_id, waba_namespace, default_phone_country_code")
+    .select(
+      "id, name, channel_id, waba_namespace, default_phone_country_code, whatsapp_opening_body",
+    )
     .eq("id", orgId)
     .single();
 
@@ -248,11 +180,15 @@ async function sendFreeform({
   };
 }
 
-async function sendTemplate({
+/**
+ * Envia o template de abertura. É sempre o mesmo projeto do Bird, na versão
+ * mais recente; só os valores das variáveis mudam por destinatário.
+ */
+async function sendOpeningTemplate({
   endpoint,
   accessKey,
   contact,
-  template,
+  config,
   kvPairs,
 }) {
   const payload = {
@@ -260,9 +196,9 @@ async function sendTemplate({
       contacts: [contact],
     },
     template: {
-      projectId: template.projectId,
+      projectId: config.projectId,
       version: "latest",
-      locale: template.languageCode || "pt-PT",
+      locale: config.locale,
       parameters: kvPairs.map((kv) => {
         const [k, ...rest] = kv.split("=");
 
@@ -294,6 +230,16 @@ async function sendTemplate({
   };
 }
 
+/**
+ * Envio WhatsApp em massa.
+ *
+ * - Contacto com a janela de 24h aberta: recebe a mensagem livre.
+ * - Contacto fora da janela: recebe o template de abertura e a mensagem
+ *   fica em espera até responder.
+ * - `openingOnly`: envia só o template de abertura, sem mensagem em espera.
+ * - `openingBody`: corpo do template só para este envio; sem ele usa-se o
+ *   corpo guardado na organização.
+ */
 export async function sendWhatsappBroadcast(input = {}) {
   const {
     orgId,
@@ -301,8 +247,8 @@ export async function sendWhatsappBroadcast(input = {}) {
     files = [],
     imageUrls = [],
     recipients = [],
-    template = null,
-    whatsappTemplateId = null,
+    openingBody = null,
+    openingOnly = false,
     trackedLinks = [],
     scheduledBroadcastId = null,
     sendGroupId = crypto.randomUUID(),
@@ -323,76 +269,35 @@ export async function sendWhatsappBroadcast(input = {}) {
     .filter((f) => isImageType(f.contentType))
     .map((f) => f.url);
 
-  let resolvedTemplate = null;
-
-  if (template?.projectId && !whatsappTemplateId) {
-    const allowedTemplate = await getWhatsappTemplateByProviderId(
-      template.projectId,
-      orgId,
-    );
-
-    if (!allowedTemplate) {
-      throw new BroadcastError(
-        "WhatsApp template does not belong to this organization",
-        403,
-      );
-    }
-
-    resolvedTemplate = {
-      projectId: String(allowedTemplate.provider_template_id || "").trim(),
-      languageCode: String(
-        template.languageCode || allowedTemplate.language || "pt-PT",
-      ).trim(),
-      varKeys: Array.isArray(template.varKeys) ? template.varKeys : [],
-      params: Array.isArray(template.params) ? template.params : [],
-      manualParams: String(template.manualParams || ""),
-      trackedUrlKey: cleanText(template.trackedUrlKey),
-    };
-  }
-
-  if (!resolvedTemplate && whatsappTemplateId) {
-    const tpl = await getWhatsappTemplateById(whatsappTemplateId);
-
-    if (!tpl) {
-      throw new BroadcastError("WhatsApp template not found", 400);
-    }
-
-    if (tpl.org_id != null && Number(tpl.org_id) !== Number(orgId)) {
-      throw new BroadcastError(
-        "WhatsApp template does not belong to this organization",
-        400,
-      );
-    }
-
-    const order = Array.isArray(tpl.components?.order)
-      ? tpl.components.order
-      : [];
-
-    resolvedTemplate = {
-      projectId: String(tpl.provider_template_id || "").trim(),
-      languageCode: String(tpl.language || "pt-PT").trim(),
-      varKeys: order,
-      params: order.map(() => ""),
-      manualParams: "",
-      trackedUrlKey: tpl.components?.urlButtonVarKey || null,
-    };
-  }
-
-  const hasTemplate = Boolean(resolvedTemplate?.projectId);
+  const sendOpeningOnly = Boolean(openingOnly);
   const hasInitialFreeformContent =
     String(message || "").trim().length > 0 || onlyImageUrls.length > 0;
 
-  if (!hasInitialFreeformContent && !hasTemplate) {
-    throw new BroadcastError(
-      "Missing message/images and no template provided",
-      400,
-    );
+  if (!hasInitialFreeformContent && !sendOpeningOnly) {
+    throw new BroadcastError("Missing message/images", 400);
   }
 
   const org = await loadOrgForWhatsapp(orgId);
   const { url: messagesEndpoint, accessKey } = getMessagesEndpoint(
     org.channel_id,
   );
+
+  const resolvedOpeningBody =
+    sanitizeOpeningBody(openingBody) || org.whatsapp_opening_body || null;
+
+  /*
+   * A configuração do template só é obrigatória quando há mesmo um template
+   * para enviar, por isso é lida uma única vez, na primeira necessidade.
+   */
+  let openingConfig = null;
+
+  function getOpeningConfig() {
+    if (!openingConfig) {
+      openingConfig = getOpeningTemplateConfig();
+    }
+
+    return openingConfig;
+  }
 
   const defaultCc =
     org.default_phone_country_code ||
@@ -453,15 +358,19 @@ export async function sendWhatsappBroadcast(input = {}) {
       label,
     } = resolved;
 
+    const base = {
+      recipient: label,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      userId: user?.id || recipient.userId || null,
+      userName: user?.name || recipient.name || null,
+    };
+
     if (!contact) {
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "none",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage: "",
         providerMessageId: null,
         ok: false,
@@ -501,7 +410,8 @@ export async function sendWhatsappBroadcast(input = {}) {
       String(resolvedMessage || "").trim().length > 0 ||
       onlyImageUrls.length > 0;
 
-    const windowOpen = user ? await isWindowOpenForUser(user.id) : false;
+    const windowOpen =
+      !sendOpeningOnly && user ? await isWindowOpenForUser(user.id) : false;
 
     if (windowOpen && hasResolvedFreeformContent) {
       const r = await sendFreeform({
@@ -526,127 +436,92 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "freeform",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage,
         ...r,
       };
     }
 
-    if (hasTemplate) {
-      const orderedKeys = Array.isArray(resolvedTemplate.varKeys)
-        ? resolvedTemplate.varKeys
-        : [];
+    let config;
 
-      const baseValues = Array.isArray(resolvedTemplate.params)
-        ? resolvedTemplate.params
-        : [];
-
-      let trackedUrlForTemplate = null;
-
-      if (resolvedTemplate.trackedUrlKey) {
-        const found = resolvedTrackedLinks.find(
-          (x) => x.key === resolvedTemplate.trackedUrlKey,
-        );
-        trackedUrlForTemplate = found?.trackedUrl || null;
-      }
-
-      const kvPairs = buildKvParamsForUser({
-        varKeys: orderedKeys,
-        baseValues,
-        manualParams: resolvedTemplate.manualParams,
-        userName: user?.name || "",
-        orgName: org?.name || "",
-        urlVar: trackedUrlForTemplate,
-      });
-
-      console.log("[WA template final]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        orderedKeys,
-        baseValues,
-        trackedUrlForTemplate,
-        kvPairs,
-        resolvedTemplate,
-      });
-
-      const r = await sendTemplate({
-        endpoint: messagesEndpoint,
-        accessKey,
-        contact,
-        template: resolvedTemplate,
-        kvPairs,
-      });
-
-      console.log("[WA template result]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        ok: r.ok,
-        status: r.status,
-        providerMessageId: r.providerMessageId,
-        data: r.data,
-      });
-
-      if (r.ok && user && hasResolvedFreeformContent) {
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const templateMessageId = r.providerMessageId;
-
-        await createPendingOutreach({
-          orgId,
-          userId: user.id,
-          payload: {
-            message: resolvedMessage,
-            imageUrls: onlyImageUrls,
-          },
-          expiresAt,
-          templateMessageId,
-          messageChainId: chainMetadata?.messageChainId || null,
-          messageChainStepId: chainMetadata?.messageChainStepId || null,
-          messageChainRecipientId:
-            chainMetadata?.messageChainRecipientId || null,
-          messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
-        });
-      }
-
+    try {
+      config = getOpeningConfig();
+    } catch (err) {
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "template",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage,
-        ...r,
+        providerMessageId: null,
+        ok: false,
+        status: 500,
+        data: { error: err.message },
       };
     }
 
-    return {
+    const kvPairs = buildOpeningTemplateParams({
+      userName: user?.name || "",
+      orgName: org?.name || "",
+      body: resolvedOpeningBody,
+    });
+
+    console.log("[WA template final]", {
+      sendGroupId,
       recipient: label,
       to,
       whatsappBsuid,
       birdContactId,
-      kind: "freeform",
-      userId: user?.id || recipient.userId || null,
-      userName: user?.name || recipient.name || null,
+      contact,
+      projectId: config.projectId,
+      kvPairs,
+    });
+
+    const r = await sendOpeningTemplate({
+      endpoint: messagesEndpoint,
+      accessKey,
+      contact,
+      config,
+      kvPairs,
+    });
+
+    console.log("[WA template result]", {
+      sendGroupId,
+      recipient: label,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      contact,
+      ok: r.ok,
+      status: r.status,
+      providerMessageId: r.providerMessageId,
+      data: r.data,
+    });
+
+    if (r.ok && user && !sendOpeningOnly && hasResolvedFreeformContent) {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const templateMessageId = r.providerMessageId;
+
+      await createPendingOutreach({
+        orgId,
+        userId: user.id,
+        payload: {
+          message: resolvedMessage,
+          imageUrls: onlyImageUrls,
+        },
+        expiresAt,
+        templateMessageId,
+        messageChainId: chainMetadata?.messageChainId || null,
+        messageChainStepId: chainMetadata?.messageChainStepId || null,
+        messageChainRecipientId: chainMetadata?.messageChainRecipientId || null,
+        messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
+      });
+    }
+
+    return {
+      ...base,
+      kind: "template",
       resolvedMessage,
-      providerMessageId: null,
-      ok: false,
-      status: 412,
-      data: { error: "24h window closed and no template provided." },
+      ...r,
     };
   }
 
@@ -687,11 +562,15 @@ export async function sendWhatsappBroadcast(input = {}) {
 
   const okCount = results.filter((r) => r.ok).length;
   const failedCount = results.length - okCount;
+  const queuedCount = results.filter(
+    (r) => r.ok && r.kind === "template" && !sendOpeningOnly,
+  ).length;
 
   return {
     sendGroupId,
     ok: okCount,
     failed: failedCount,
+    queued: queuedCount,
     results,
     error:
       okCount === 0
@@ -700,8 +579,8 @@ export async function sendWhatsappBroadcast(input = {}) {
           "WhatsApp broadcast failed for all recipients."
         : null,
     note:
-      hasTemplate && hasInitialFreeformContent
-        ? "If a contact was outside the 24h window, we sent the selected template and queued your message to be delivered on their first reply."
+      queuedCount > 0
+        ? "Some contacts were outside the 24h window: they received the opening message and your message will be delivered on their first reply."
         : null,
   };
 }
