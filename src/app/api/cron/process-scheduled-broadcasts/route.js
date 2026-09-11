@@ -156,8 +156,8 @@ async function processOneBroadcast(broadcast) {
             recipients: Array.isArray(storedPayload.recipients)
               ? storedPayload.recipients
               : [],
-            template: storedPayload.template || null,
-            whatsappTemplateId: storedPayload.whatsappTemplateId || null,
+            openingBody: storedPayload.openingBody || null,
+            openingOnly: storedPayload.openingOnly === true,
             chainMetadata: null,
           }
         : {
