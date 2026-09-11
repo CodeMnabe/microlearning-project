@@ -8,5 +8,9 @@ export default function MarketingLayout({ children }) {
     return <SiteUnavailable />;
   }
 
-  return <div className={styles.shell}>{children}</div>;
+  return (
+    <div className={styles.shell} data-marketing-shell>
+      {children}
+    </div>
+  );
 }

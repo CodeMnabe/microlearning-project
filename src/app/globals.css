@@ -127,6 +127,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Marketing pages are scroll-driven (GSAP ScrollTrigger). The 100% heights
+   above turn <body> into a nested scroll container whose scroll events never
+   reach the viewport listeners ScrollTrigger relies on, so only wheel input
+   (which bubbles to window) drove the scenes; dragging the scrollbar,
+   keyboard and programmatic scrolling left them frozen (#92). On those pages
+   let the viewport itself scroll instead. */
+html:has([data-marketing-shell]) {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+html:has([data-marketing-shell]) > body {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
