@@ -1111,6 +1111,31 @@
     "removeLabel": "Remove {name}"
   },
 
+  "Options": {
+    "Title": "Settings",
+    "Subtitle": "Organization {organization}"
+  },
+
+  "OpeningMessage": {
+    "title": "WhatsApp opening message",
+    "subtitle": "Sent automatically when a contact is outside the 24-hour window. The start and the end are fixed and approved by Meta; only the body can be changed.",
+    "bodyLabel": "Message body",
+    "bodyPlaceholder": "Write the message body...",
+    "sampleName": "Maria",
+    "counter": "{count} of {max} characters",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved.",
+    "reset": "Restore default text",
+    "usingDefault": "You have not set your own body yet. The default text is being used.",
+    "loading": "Loading...",
+    "loadFailed": "Could not load the opening message.",
+    "saveFailed": "Could not save. Please try again.",
+    "empty": "The body cannot be empty.",
+    "tooLong": "The body has more than {max} characters.",
+    "retry": "Try again"
+  },
+
   "Templates": {
     "title": "WhatsApp Templates",
     "tabList": "List",
