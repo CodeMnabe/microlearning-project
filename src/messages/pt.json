@@ -2115,6 +2115,8 @@
       "title": "Entrar",
       "email": "E-mail",
       "password": "Palavra-Passe",
+      "showPassword": "Mostrar palavra-passe",
+      "hidePassword": "Ocultar palavra-passe",
       "login": "Iniciar sessão",
       "forgot": "Esqueceu a palavra-passe?",
       "working": "A trabalhar…",

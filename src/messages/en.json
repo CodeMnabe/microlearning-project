@@ -2106,6 +2106,8 @@
       "title": "Sign in",
       "email": "E-mail",
       "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "login": "Sign in",
       "forgot": "Forgot your password?",
       "working": "Working…",

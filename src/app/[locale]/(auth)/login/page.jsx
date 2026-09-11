@@ -7,7 +7,7 @@ import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { Check, Globe } from "lucide-react";
+import { Check, Eye, EyeOff, Globe } from "lucide-react";
 import { localeOptions } from "@/i18n/localeMeta";
 
 function LoginLanguageMenu({ locale }) {
@@ -177,6 +177,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -255,16 +256,36 @@ export default function LoginPage() {
         <label className={styles.label} htmlFor="password">
           {t("Auth.login.password")}
         </label>
-        <input
-          id="password"
-          className={styles.input}
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={disabled}
-        />
+        <div className={styles.passwordField}>
+          <input
+            id="password"
+            className={`${styles.input} ${styles.passwordInput}`}
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={disabled}
+          />
+          <button
+            type="button"
+            className={styles.togglePassword}
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={t(
+              showPassword
+                ? "Auth.login.hidePassword"
+                : "Auth.login.showPassword",
+            )}
+            aria-pressed={showPassword}
+            disabled={disabled}
+          >
+            {showPassword ? (
+              <EyeOff size={18} strokeWidth={1.8} aria-hidden="true" />
+            ) : (
+              <Eye size={18} strokeWidth={1.8} aria-hidden="true" />
+            )}
+          </button>
+        </div>
 
         <button
           type="submit"

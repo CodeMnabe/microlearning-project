@@ -129,6 +129,50 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
 }
 
+/* Password field with show/hide toggle */
+.passwordField {
+  position: relative;
+  display: flex;
+}
+
+.passwordInput {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.togglePassword {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ui-muted);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.togglePassword:hover {
+  color: var(--ink);
+  background: rgba(15, 28, 63, 0.06);
+}
+
+.togglePassword:focus-visible {
+  outline: none;
+  color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+}
+
+.togglePassword:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Buttons */
 .btnPrimary,
 .btnSecondary {
