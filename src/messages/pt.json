@@ -1120,6 +1120,31 @@
     "removeLabel": "Remover {name}"
   },
 
+  "Options": {
+    "Title": "Definições",
+    "Subtitle": "Organização {organization}"
+  },
+
+  "OpeningMessage": {
+    "title": "Mensagem de abertura WhatsApp",
+    "subtitle": "Enviada automaticamente quando um contacto está fora da janela de 24 horas. O início e o fim são fixos e aprovados pela Meta; só o corpo pode ser alterado.",
+    "bodyLabel": "Corpo da mensagem",
+    "bodyPlaceholder": "Escreve o corpo da mensagem...",
+    "sampleName": "Maria",
+    "counter": "{count} de {max} caracteres",
+    "save": "Guardar",
+    "saving": "A guardar...",
+    "saved": "Guardado.",
+    "reset": "Repor texto por omissão",
+    "usingDefault": "Ainda não definiste um corpo próprio. Está a ser usado o texto por omissão.",
+    "loading": "A carregar...",
+    "loadFailed": "Não foi possível carregar a mensagem de abertura.",
+    "saveFailed": "Não foi possível guardar. Tenta novamente.",
+    "empty": "O corpo não pode ficar vazio.",
+    "tooLong": "O corpo tem mais de {max} caracteres.",
+    "retry": "Tentar novamente"
+  },
+
   "Templates": {
     "title": "WhatsApp Templates",
     "tabList": "Lista",
