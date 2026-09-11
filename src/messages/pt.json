@@ -1501,6 +1501,36 @@
       "first": "Adiciona o placeholder tipo",
       "second": "dentro da mensagem"
     },
+    "start": {
+      "title": "Como queres começar?",
+      "hint": "Escolhe um ponto de partida. Podes voltar aqui a qualquer altura.",
+      "opening": "Abertura da janela",
+      "openingHint": "Reabre a conversa com quem não responde há mais de 24 horas. Só o corpo é editável.",
+      "blank": "Em branco",
+      "blankHint": "Mensagem livre com texto, imagens e links. Quem estiver fora da janela recebe primeiro a abertura.",
+      "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar."
+    },
+    "composer": {
+      "contact": "Contacto",
+      "back": "Mudar o tipo de mensagem",
+      "hint": "Escreve diretamente no balão. Usa o + para juntar imagens, links e variáveis.",
+      "placeholder": "Escreve a mensagem aqui...",
+      "barHint": "Toca no balão para escrever",
+      "add": "Adicionar",
+      "addFile": "Imagem ou ficheiro",
+      "addLink": "Link rastreado",
+      "variables": "Variáveis",
+      "variableName": "Nome",
+      "variableCompany": "Empresa",
+      "openingTitle": "Mensagem de abertura",
+      "openingHint": "É enviado só o template aprovado. O início e o fim são fixos; o corpo pode ser ajustado para este envio.",
+      "openingBody": "Corpo da mensagem de abertura",
+      "openingPlaceholder": "Escreve o corpo da mensagem...",
+      "openingCounter": "{count} de {max} caracteres",
+      "openingLoading": "A carregar a mensagem de abertura...",
+      "openingLoadFailed": "Não foi possível carregar a mensagem de abertura.",
+      "retry": "Tentar novamente"
+    },
     "alerts": {
       "usersLoadFailed": {
         "title": "Erro ao carregar destinatários",
@@ -1520,8 +1550,12 @@
       },
       "contentMissing": {
         "title": "Conteúdo em falta",
-        "sendMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de enviar.",
-        "scheduleMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de agendar."
+        "sendMessage": "Escreve uma mensagem ou adiciona um ficheiro antes de enviar.",
+        "scheduleMessage": "Escreve uma mensagem ou adiciona um ficheiro antes de agendar."
+      },
+      "openingMissing": {
+        "title": "Corpo em falta",
+        "message": "Escreve o corpo da mensagem de abertura antes de continuar."
       },
       "templateParamsMissing": {
         "title": "Parâmetros em falta",
@@ -1541,6 +1575,10 @@
         "confirm": "Confirmar",
         "cancel": "Cancelar"
       },
+      "opening": {
+        "title": "Enviar mensagem de abertura?",
+        "message": "Estás prestes a enviar a mensagem de abertura para {recipientLabel}."
+      },
       "title": "Mandar Mensagem?",
       "message": "Estás prestes a mandar esta mensagem no {channelLabel} para {recipientLabel}",
       "confirm": "Confirmar",
@@ -1552,6 +1590,10 @@
         "message": "Estás a agendar uma corrente de mensagens para {recipientLabel}. A primeira mensagem vai ser mandada a {formattedDate}. As próximas vão ser mandadas depois de lidas e só depois do atraso. ",
         "confirm": "Confirmar",
         "cancel": "Cancelar"
+      },
+      "opening": {
+        "title": "Agendar mensagem de abertura?",
+        "message": "Estás a agendar a mensagem de abertura para {recipientLabel} nesta data {formattedDate}."
       },
       "title": "Agendar Mensagem?",
       "message": "Estás prestes a agendar esta mensagem no {channelLabel} para {recipientLabel} nesta data {formattedDate}",

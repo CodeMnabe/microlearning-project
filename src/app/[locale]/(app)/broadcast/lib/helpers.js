@@ -50,7 +50,6 @@ export function makeChainStep(overrides = {}) {
     message: "",
     files: [],
     trackedLinks: [],
-    selectedTrackedUrlKey: "",
     delayAfterPreviousReadMinutes: 0,
     ...overrides,
   };

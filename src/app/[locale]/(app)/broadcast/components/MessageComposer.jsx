@@ -1,114 +1,61 @@
-import {
-  CalendarDays,
-  Link2,
-  MessageSquareText,
-  Paperclip,
-} from "lucide-react";
+import { CalendarDays, Link2 } from "lucide-react";
 
 import styles from "../broadcast.module.css";
 import ToolToggleButton from "./ToolToggleButton";
 
+/**
+ * Painel de composição. Recebe o telemóvel (ou a mensagem de abertura) já
+ * montado e junta-lhe as ferramentas: corrente, links rastreados e agendar.
+ */
 export default function MessageComposer({
-  messageInputRef,
-  message,
-  setMessage,
-  normalizedTrackedLinks,
-  previewMessageWithTrackedLinks,
-  insertTrackedPlaceholder,
+  title,
+  onBack,
+  hint,
+  chainControls = null,
+  leftToolsContent = null,
+  showLinks = true,
   activeToolPanel,
   toggleToolPanel,
   scheduleButtonLabel,
-  attachmentsCount,
   trackedLinksCount,
-  channel,
-  templateButtonLabel,
   translation,
-  chainControls = null,
-  leftToolsContent = null,
+  phone,
   children,
 }) {
   return (
     <div className={styles.panel}>
-      <div className={styles.panelTitle}>
-        {translation("Broadcast.message")}
+      <div className={styles.composerHead}>
+        <div className={styles.panelTitle} style={{ marginBottom: 0 }}>
+          {title}
+        </div>
+
+        {onBack && (
+          <button type="button" className={styles.backBtn} onClick={onBack}>
+            {translation("Broadcast.composer.back")}
+          </button>
+        )}
       </div>
 
       {chainControls}
 
-      <textarea
-        ref={messageInputRef}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        rows={10}
-        placeholder={translation("Broadcast.messagePlaceholder")}
-        className={styles.textarea}
-      />
+      {hint ? <div className={styles.composerHint}>{hint}</div> : null}
 
-      {normalizedTrackedLinks.length > 0 && (
-        <div className={styles.placeholderHint}>
-          <div className={styles.placeholderHintTitle}>
-            {translation("Broadcast.trackedPlaceholders")}:
-          </div>
-
-          {normalizedTrackedLinks.map((link) => {
-            const token = `{{link.${link.key}}}`;
-
-            return (
-              <button
-                key={link.key}
-                type="button"
-                className={styles.placeholderInsertBtn}
-                onClick={() => insertTrackedPlaceholder(link.key)}
-                title={`Insert ${token}`}
-              >
-                <code>{token}</code>
-                <span>→ {link.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {!!message.trim() && normalizedTrackedLinks.length > 0 && (
-        <div className={styles.messagePreviewBox}>
-          <div className={styles.messagePreviewTitle}>
-            {translation("Broadcast.messagePreview")}
-          </div>
-          <div className={styles.messagePreviewText}>
-            {previewMessageWithTrackedLinks}
-          </div>
-        </div>
-      )}
+      {phone}
 
       <div className={styles.messageToolsRow}>
         <div className={styles.messageToolsLeft}>{leftToolsContent}</div>
 
         <div className={styles.messageToolsActions}>
-          <ToolToggleButton
-            active={activeToolPanel === "attachments"}
-            icon={<Paperclip size={16} />}
-            label={translation("Broadcast.attachments")}
-            badge={attachmentsCount > 0 ? attachmentsCount : null}
-            onClick={() => toggleToolPanel("attachments")}
-          />
-
-          <ToolToggleButton
-            active={activeToolPanel === "links"}
-            icon={<Link2 size={16} />}
-            label="Links"
-            badge={trackedLinksCount > 0 ? trackedLinksCount : null}
-            onClick={() => toggleToolPanel("links")}
-          />
-
-          {channel === "whatsapp" && (
+          {showLinks && (
             <ToolToggleButton
-              active={activeToolPanel === "template"}
-              icon={<MessageSquareText size={16} />}
-              label="Template"
-              badge={templateButtonLabel}
-              onClick={() => toggleToolPanel("template")}
+              active={activeToolPanel === "links"}
+              icon={<Link2 size={16} />}
+              label={translation("Broadcast.trackedLinks")}
+              badge={trackedLinksCount > 0 ? trackedLinksCount : null}
+              onClick={() => toggleToolPanel("links")}
             />
           )}
+
           <ToolToggleButton
             active={activeToolPanel === "schedule"}
             icon={<CalendarDays size={16} />}

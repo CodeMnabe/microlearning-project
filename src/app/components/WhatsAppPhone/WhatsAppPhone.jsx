@@ -3,25 +3,35 @@
 import styles from "./whatsAppPhone.module.css";
 
 /**
- * Moldura de telemóvel com o aspeto de uma conversa WhatsApp.
+ * Moldura de telemóvel com o aspeto de uma conversa WhatsApp (ou Teams, com
+ * `variant="teams"`).
  *
  * Os filhos são as linhas da conversa. Usa WhatsAppBubble para um balão
- * enviado e WhatsAppButton para os botões por baixo do balão.
+ * enviado e WhatsAppButton para os botões por baixo do balão. `footer` é a
+ * barra inferior, onde no WhatsApp fica a caixa de escrita.
  */
 export default function WhatsAppPhone({
   contactName,
   subtitle = "online",
   compact = false,
+  variant = "whatsapp",
   className = "",
+  footer = null,
   children,
 }) {
   const initial = (String(contactName || "").trim()[0] || "U").toUpperCase();
 
+  const classes = [
+    styles.frame,
+    compact ? styles.frameCompact : "",
+    variant === "teams" ? styles.frameTeams : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div
-      className={`${styles.frame} ${compact ? styles.frameCompact : ""} ${className}`}
-      data-testid="whatsapp-phone"
-    >
+    <div className={classes} data-testid="whatsapp-phone">
       <div className={styles.header}>
         <div className={styles.avatar}>{initial}</div>
         <div className={styles.headerText}>
@@ -31,6 +41,8 @@ export default function WhatsAppPhone({
       </div>
 
       <div className={styles.chat}>{children}</div>
+
+      {footer ? <div className={styles.bar}>{footer}</div> : null}
     </div>
   );
 }

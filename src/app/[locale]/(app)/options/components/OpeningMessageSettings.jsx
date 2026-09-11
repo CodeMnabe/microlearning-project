@@ -1,21 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import WhatsAppPhone, {
-  WhatsAppBubble,
-  WhatsAppButton,
-} from "@/app/components/WhatsAppPhone/WhatsAppPhone";
+import OpeningMessageEditor from "@/app/components/WhatsAppPhone/OpeningMessageEditor";
 import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
 
 import styles from "../options.module.css";
-
-function fillSample(text, values) {
-  return String(text || "").replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) =>
-    values[key] == null ? "" : String(values[key]),
-  );
-}
 
 /**
  * Edição do corpo do template de abertura WhatsApp.
@@ -33,8 +24,6 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [savedRecently, setSavedRecently] = useState(false);
-
-  const inputRef = useRef(null);
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -64,14 +53,6 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
     load();
   }, [load]);
 
-  // O campo cresce com o texto para o balão parecer uma mensagem real.
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [draft, item]);
-
   useEffect(() => {
     if (!savedRecently) return;
     const timeout = setTimeout(() => setSavedRecently(false), 3000);
@@ -84,14 +65,6 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
   const isEmpty = cleanDraft.length === 0;
   const isTooLong = cleanDraft.length > maxLength;
   const canSave = isDirty && !isEmpty && !isTooLong && !saving;
-
-  const sampleValues = useMemo(
-    () => ({
-      nome: translation("sampleName"),
-      empresa: orgName || "",
-    }),
-    [translation, orgName],
-  );
 
   async function handleSave() {
     if (!canSave) return;
@@ -126,7 +99,7 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
   function handleReset() {
     if (!item) return;
     setDraft(item.defaultBody || "");
-    inputRef.current?.focus();
+    document.getElementById("opening-body")?.focus();
   }
 
   if (loading) {
@@ -148,29 +121,19 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
 
   return (
     <div className={styles.opening}>
-      <WhatsAppPhone contactName={translation("sampleName")}>
-        <WhatsAppBubble>
-          <span className={styles.fixedText}>
-            {fillSample(item.intro, sampleValues)}
-          </span>
-
-          <textarea
-            ref={inputRef}
-            id="opening-body"
-            aria-label={translation("bodyLabel")}
-            className={styles.bodyInput}
-            rows={3}
-            value={draft}
-            disabled={saving}
-            placeholder={translation("bodyPlaceholder")}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-
-          <span className={styles.fixedText}>{item.outro}</span>
-        </WhatsAppBubble>
-
-        <WhatsAppButton>{item.button}</WhatsAppButton>
-      </WhatsAppPhone>
+      <OpeningMessageEditor
+        intro={item.intro}
+        outro={item.outro}
+        button={item.button}
+        body={draft}
+        onBodyChange={setDraft}
+        disabled={saving}
+        sampleName={translation("sampleName")}
+        orgName={orgName}
+        placeholder={translation("bodyPlaceholder")}
+        ariaLabel={translation("bodyLabel")}
+        inputId="opening-body"
+      />
 
       <div className={styles.side}>
         <label htmlFor="opening-body" className={styles.sideLabel}>

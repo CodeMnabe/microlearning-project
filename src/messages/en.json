@@ -1493,6 +1493,36 @@
       "second": "inside the message."
     },
 
+    "start": {
+      "title": "How do you want to start?",
+      "hint": "Pick a starting point. You can come back here at any time.",
+      "opening": "Open the window",
+      "openingHint": "Reopens the conversation with contacts who have not replied for over 24 hours. Only the body can be edited.",
+      "blank": "Blank",
+      "blankHint": "Free message with text, images and links. Contacts outside the window receive the opening message first.",
+      "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip."
+    },
+    "composer": {
+      "contact": "Contact",
+      "back": "Change message type",
+      "hint": "Write directly in the bubble. Use + to add images, links and variables.",
+      "placeholder": "Write your message here...",
+      "barHint": "Tap the bubble to write",
+      "add": "Add",
+      "addFile": "Image or file",
+      "addLink": "Tracked link",
+      "variables": "Variables",
+      "variableName": "Name",
+      "variableCompany": "Company",
+      "openingTitle": "Opening message",
+      "openingHint": "Only the approved template is sent. The start and the end are fixed; the body can be adjusted for this send.",
+      "openingBody": "Opening message body",
+      "openingPlaceholder": "Write the message body...",
+      "openingCounter": "{count} of {max} characters",
+      "openingLoading": "Loading the opening message...",
+      "openingLoadFailed": "Could not load the opening message.",
+      "retry": "Try again"
+    },
     "alerts": {
       "usersLoadFailed": {
         "title": "Failed to load recipients",
@@ -1512,8 +1542,12 @@
       },
       "contentMissing": {
         "title": "Missing content",
-        "sendMessage": "Write a message, add a file or choose a valid template before sending.",
-        "scheduleMessage": "Write a message, add a file or choose a valid template before scheduling."
+        "sendMessage": "Write a message or add a file before sending.",
+        "scheduleMessage": "Write a message or add a file before scheduling."
+      },
+      "openingMissing": {
+        "title": "Missing body",
+        "message": "Write the opening message body before continuing."
       },
       "templateParamsMissing": {
         "title": "Missing parameters",
@@ -1533,6 +1567,10 @@
         "confirm": "Confirm",
         "cancel": "Cancel"
       },
+      "opening": {
+        "title": "Send opening message?",
+        "message": "You are about to send the opening message to {recipientLabel}."
+      },
       "title": "Send message?",
       "message": "You are about to send this {channelLabel} broadcast to {recipientLabel}.",
       "confirm": "Confirm",
@@ -1544,6 +1582,10 @@
         "message": "You are about to schedule a WhatsApp read chain for {recipientLabel}. Message 1 will send on {formattedDate}. The next messages will send after read receipts and configured delays.",
         "confirm": "Confirm",
         "cancel": "Cancel"
+      },
+      "opening": {
+        "title": "Schedule opening message?",
+        "message": "You are scheduling the opening message for {recipientLabel} on {formattedDate}."
       },
       "title": "Schedule message?",
       "message": "You are about to schedule this {channelLabel} broadcast for {recipientLabel} on {formattedDate}.",

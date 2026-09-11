@@ -122,3 +122,71 @@
   text-align: center;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
 }
+
+/* Template de abertura: início e fim fixos, corpo editável no balão */
+
+.fixedText {
+  color: #4b5563;
+}
+
+.bodyInput {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 6px 8px;
+  border: 1px dashed #128c7e;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #111b21;
+  font: inherit;
+  line-height: inherit;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+}
+
+.bodyInput:focus {
+  border-style: solid;
+  background: #fff;
+}
+
+.bodyInput:disabled {
+  opacity: 0.7;
+}
+
+/* Barra inferior, onde no WhatsApp fica a caixa de escrita */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #f0f2f5;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Variante Teams */
+
+.frameTeams {
+  background: #f3f2f1;
+}
+
+.frameTeams .header {
+  background: #464775;
+}
+
+.frameTeams .avatar {
+  background: #6264a7;
+}
+
+.frameTeams .chat {
+  background: #f3f2f1;
+}
+
+.frameTeams .bubble {
+  background: #e8ebfa;
+}
+
+.frameTeams .button {
+  color: #464775;
+}
