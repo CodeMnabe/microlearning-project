@@ -61,7 +61,7 @@
 
 .opening {
   display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 480px) minmax(260px, 1fr);
   gap: 24px;
   align-items: start;
   padding: 18px;

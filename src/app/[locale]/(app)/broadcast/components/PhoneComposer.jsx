@@ -1,6 +1,24 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { FileText, FileVideo, Image as ImageIcon, Link2, Plus, User, Building2 } from "lucide-react";
+import {
+  AtSign,
+  Building2,
+  FileText,
+  FileVideo,
+  Image as ImageIcon,
+  Link2,
+  Phone,
+  Plus,
+  User,
+} from "lucide-react";
+
+const VARIABLE_ICONS = {
+  name: User,
+  company: Building2,
+  email: AtSign,
+  phone: Phone,
+  link: Link2,
+};
 
 import WhatsAppPhone, {
   WhatsAppBubble,
@@ -58,10 +76,30 @@ function PlusMenu({ onAddFile, onAddLink, variables, onInsertToken, translation 
             type="button"
             role="menuitem"
             className={styles.plusItem}
-            onClick={() => pick(onAddFile)}
+            onClick={() => pick(() => onAddFile("image/*"))}
           >
             <ImageIcon size={16} />
-            <span>{translation("Broadcast.composer.addFile")}</span>
+            <span>{translation("Broadcast.composer.addImage")}</span>
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.plusItem}
+            onClick={() => pick(() => onAddFile("video/*"))}
+          >
+            <FileVideo size={16} />
+            <span>{translation("Broadcast.composer.addVideo")}</span>
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.plusItem}
+            onClick={() => pick(() => onAddFile("*/*"))}
+          >
+            <FileText size={16} />
+            <span>{translation("Broadcast.composer.addDocument")}</span>
           </button>
 
           {onAddLink && (
@@ -82,18 +120,22 @@ function PlusMenu({ onAddFile, onAddLink, variables, onInsertToken, translation 
             </div>
           )}
 
-          {variables.map((v) => (
-            <button
-              key={v.key}
-              type="button"
-              role="menuitem"
-              className={styles.plusItem}
-              onClick={() => pick(() => onInsertToken(v.key))}
-            >
-              {v.kind === "company" ? <Building2 size={16} /> : v.kind === "link" ? <Link2 size={16} /> : <User size={16} />}
-              <span>{v.label}</span>
-            </button>
-          ))}
+          {variables.map((v) => {
+            const Icon = VARIABLE_ICONS[v.kind] || User;
+
+            return (
+              <button
+                key={v.key}
+                type="button"
+                role="menuitem"
+                className={styles.plusItem}
+                onClick={() => pick(() => onInsertToken(v.key))}
+              >
+                <Icon size={16} />
+                <span>{v.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
