@@ -4,7 +4,7 @@ WhatsApp inbound webhook + read receipt webhook
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import crypto from "crypto";
 
 import {
@@ -680,39 +680,32 @@ export async function POST(req) {
     });
   }
 
-  try {
-    await handleEvent(rawBody);
+  /*
+   * O Bird espera 15 segundos pela resposta e depois dá a entrega como
+   * falhada e repete-a. O trabalho (Supabase, OpenAI, envios) pode demorar
+   * mais do que isso, por isso respondemos já e continuamos em segundo
+   * plano. Erros ficam nos logs, como antes; a resposta é sempre 200 para o
+   * Bird não repetir o evento e gerar respostas duplicadas da IA.
+   */
+  after(async () => {
+    try {
+      await handleEvent(rawBody);
+    } catch (err) {
+      console.error("MessageBird webhook failed", {
+        message: err?.message,
 
-    return NextResponse.json({
-      ok: true,
-    });
-  } catch (err) {
-    console.error("MessageBird webhook failed", {
-      message: err?.message,
+        status: err?.status,
 
-      status: err?.status,
+        type: err?.type,
 
-      type: err?.type,
+        request_id: err?.request_id,
+      });
+    }
+  });
 
-      request_id: err?.request_id,
-    });
-
-    /*
-     * Return 200 so Bird doesn't continually
-     * retry the same event and potentially
-     * produce duplicate AI messages.
-     */
-    return NextResponse.json(
-      {
-        ok: false,
-
-        error: err?.message || String(err),
-      },
-      {
-        status: 200,
-      },
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+  });
 }
 
 /* =========================================================
@@ -968,19 +961,31 @@ async function handleEvent(rawJSON) {
             const history = existingThread
               ? buildConversationHistoryItems(await getMessagesInThread(existingThread.id))
               : [];
-            const conversation = await createConversation({
-              assistantId: assistant.id, organizationId: user.organization_id,
-              userId: user.id, channel: "whatsapp", scope: "user",
-            }, history);
+            const conversation = await createConversation(
+              {
+                assistantId: assistant.id,
+                organizationId: user.organization_id,
+                userId: user.id,
+                channel: "whatsapp",
+                scope: "user",
+              },
+              history,
+            );
             conversationId = conversation.id;
             existingThread = existingThread
               ? await setThreadConversationId(existingThread.id, conversationId)
               : await createThread({
-                  userId: user.id, assistantId: assistant.id,
-                  openAiConversationId: conversationId, channel: "whatsapp", scope: "user",
+                  userId: user.id,
+                  assistantId: assistant.id,
+                  openAiConversationId: conversationId,
+                  channel: "whatsapp",
+                  scope: "user",
                 });
           } catch (error) {
-            console.warn("Falha ao preparar a conversa da pergunta", { userId: user.id, error: error.message });
+            console.warn("Falha ao preparar a conversa da pergunta", {
+              userId: user.id,
+              error: error.message,
+            });
             conversationId = null;
           }
         }
