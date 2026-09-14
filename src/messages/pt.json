@@ -1369,8 +1369,6 @@
     "start": {
       "title": "Como queres começar?",
       "hint": "Escolhe um ponto de partida. Podes voltar aqui a qualquer altura.",
-      "opening": "Abertura da janela",
-      "openingHint": "Reabre a conversa com quem não responde há mais de 24 horas. Só o corpo é editável.",
       "blank": "Em branco",
       "blankHint": "Mensagem livre com texto, imagens e links. Quem estiver fora da janela recebe primeiro a abertura.",
       "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar.",
@@ -1380,6 +1378,12 @@
       "quizOptionA": "2,2 bar",
       "quizOptionB": "2,8 bar",
       "quizOptionC": "3,5 bar",
+      "survey": "Sondagem",
+      "surveyHint": "Pergunta com até 3 opções, sem resposta certa. Regista só a escolha de cada contacto.",
+      "surveySample": "Olá {name}! Qual o melhor horário para a próxima formação?",
+      "surveyOptionA": "Manhã",
+      "surveyOptionB": "Tarde",
+      "surveyOptionC": "Noite",
       "question": "Pergunta aberta",
       "questionHint": "Pergunta de resposta livre. As respostas ficam guardadas na conversa.",
       "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
@@ -1427,7 +1431,16 @@
       "quizFeedbackCorrect": "Resposta quando acerta",
       "quizFeedbackIncorrect": "Resposta quando erra",
       "quizFeedbackHint": "Se ficarem vazios, envia-se o texto por omissão. Podes escrever '{{'certa'}}' para incluir a opção certa.",
-      "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta."
+      "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta.",
+      "surveyTitle": "Sondagem",
+      "surveyHint": "Escreve a pergunta no balão e as opções nos botões. Não há resposta certa: regista-se só a escolha.",
+      "surveyBody": "Pergunta da sondagem",
+      "surveyPlaceholder": "Escreve a pergunta...",
+      "surveyOption": "Opção {index}",
+      "surveyRemoveOption": "Remover a opção {index}",
+      "surveyThanks": "Mensagem depois da escolha",
+      "surveyThanksHint": "Se ficar vazia, envia-se o agradecimento por omissão.",
+      "surveyValidity": "A sondagem aceita respostas durante {days} dias. Só a primeira escolha de cada contacto conta."
     },
     "alerts": {
       "openQuestionInvalid": {"title":"Completa a pergunta aberta","message":"Escreve a pergunta e a resposta esperada, com até 1024 caracteres cada."},
@@ -1447,6 +1460,10 @@
       "openingMissing": {
         "title": "Corpo em falta",
         "message": "Escreve o corpo da mensagem de abertura antes de continuar."
+      },
+      "surveyInvalid": {
+        "title": "Sondagem incompleta",
+        "message": "Escreve a pergunta e preenche 2 a 3 opções diferentes com até 20 caracteres."
       },
       "quizInvalid": {
         "title": "Quiz incompleto",
@@ -1502,6 +1519,7 @@
       "stepKind": "Tipo desta mensagem",
       "stepKindMessage": "Mensagem",
       "stepKindQuiz": "Quiz",
+      "stepKindSurvey": "Sondagem",
       "stepKindOpen": "Pergunta aberta",
       "chainDelayBefore": "Atraso antes da Mensagem ",
       "chainHour": "Horas",
@@ -1730,6 +1748,7 @@
     "noQuestions": "Ainda não foi enviada nenhuma pergunta nesta organização.",
     "kind": {
       "quiz": "Quiz",
+      "survey": "Sondagem",
       "open": "Pergunta aberta"
     },
     "table": {
@@ -1785,6 +1804,7 @@
         "answer": "Resposta",
         "result": "Resultado",
         "verdict": "Veredicto",
+        "choice": "Escolha",
         "aiVerdict": "IA: {verdict}",
         "feedback": "Feedback enviado",
         "answeredAt": "Respondida",

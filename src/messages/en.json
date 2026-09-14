@@ -1361,8 +1361,6 @@
     "start": {
       "title": "How do you want to start?",
       "hint": "Pick a starting point. You can come back here at any time.",
-      "opening": "Open the window",
-      "openingHint": "Reopens the conversation with contacts who have not replied for over 24 hours. Only the body can be edited.",
       "blank": "Blank",
       "blankHint": "Free message with text, images and links. Contacts outside the window receive the opening message first.",
       "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip.",
@@ -1372,6 +1370,12 @@
       "quizOptionA": "2.2 bar",
       "quizOptionB": "2.8 bar",
       "quizOptionC": "3.5 bar",
+      "survey": "Survey",
+      "surveyHint": "Question with up to 3 options and no right answer. Only the choice of each contact is recorded.",
+      "surveySample": "Hi {name}! What is the best time for the next training?",
+      "surveyOptionA": "Morning",
+      "surveyOptionB": "Afternoon",
+      "surveyOptionC": "Evening",
       "question": "Open question",
       "questionHint": "Free-text question. Replies are kept in the conversation.",
       "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
@@ -1419,7 +1423,16 @@
       "quizFeedbackCorrect": "Reply when correct",
       "quizFeedbackIncorrect": "Reply when wrong",
       "quizFeedbackHint": "If left empty, the default text is sent. Write '{{'certa'}}' to include the correct option.",
-      "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts."
+      "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts.",
+      "surveyTitle": "Survey",
+      "surveyHint": "Write the question in the bubble and the options in the buttons. There is no right answer: only the choice is recorded.",
+      "surveyBody": "Survey question",
+      "surveyPlaceholder": "Write the question...",
+      "surveyOption": "Option {index}",
+      "surveyRemoveOption": "Remove option {index}",
+      "surveyThanks": "Message after the choice",
+      "surveyThanksHint": "If left empty, the default thank-you text is sent.",
+      "surveyValidity": "The survey accepts answers for {days} days. Only the first choice of each contact counts."
     },
     "alerts": {
       "openQuestionInvalid": {"title":"Complete the open question","message":"Write the question and expected answer, using up to 1024 characters each."},
@@ -1439,6 +1452,10 @@
       "openingMissing": {
         "title": "Missing body",
         "message": "Write the opening message body before continuing."
+      },
+      "surveyInvalid": {
+        "title": "Incomplete survey",
+        "message": "Write the question and fill in 2 to 3 different options of up to 20 characters."
       },
       "quizInvalid": {
         "title": "Incomplete quiz",
@@ -1494,6 +1511,7 @@
       "stepKind": "Type of this message",
       "stepKindMessage": "Message",
       "stepKindQuiz": "Quiz",
+      "stepKindSurvey": "Survey",
       "stepKindOpen": "Open question",
       "chainDelayBefore": "Delay before Message ",
       "chainHour": "Hours",
@@ -1721,6 +1739,7 @@
     "noQuestions": "No question has been sent in this organization yet.",
     "kind": {
       "quiz": "Quiz",
+      "survey": "Survey",
       "open": "Open question"
     },
     "table": {
@@ -1776,6 +1795,7 @@
         "answer": "Answer",
         "result": "Result",
         "verdict": "Verdict",
+        "choice": "Choice",
         "aiVerdict": "AI: {verdict}",
         "feedback": "Feedback sent",
         "answeredAt": "Answered",

@@ -56,8 +56,17 @@ function summarizeQuestion(question, messages, answers) {
   for (const id of answered) recipients.add(id);
 
   const isQuiz = question.kind === "quiz";
+  const options = Array.isArray(question.options) ? question.options : [];
   const correctCount = isQuiz
     ? answers.filter((answer) => answer.is_correct === true).length
+    : null;
+
+  /* Quiz e sondagem: quantas escolhas teve cada opção, pela ordem. */
+  const optionCounts = options.length
+    ? options.map(
+        (_, index) =>
+          answers.filter((answer) => answer.option_index === index).length,
+      )
     : null;
 
   const sentAt = messages.reduce((earliest, row) => {
@@ -69,7 +78,8 @@ function summarizeQuestion(question, messages, answers) {
     id: question.id,
     kind: question.kind,
     body: question.body,
-    options: Array.isArray(question.options) ? question.options : [],
+    options,
+    optionCounts,
     expectedAnswer: question.expected_answer || null,
     aiEvaluation: question.ai_evaluation !== false,
     createdAt: question.created_at || null,
@@ -82,7 +92,7 @@ function summarizeQuestion(question, messages, answers) {
     responseRate: percent(answered.size, recipients.size),
     correctCount,
     correctRate: isQuiz ? percent(correctCount, answered.size) : null,
-    verdicts: isQuiz ? null : countVerdicts(answers),
+    verdicts: question.kind === "open" ? countVerdicts(answers) : null,
     reviewNeededCount: answers.filter((answer) => answer.review_needed === true)
       .length,
   };

@@ -14,20 +14,21 @@ import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
 import {
   isQuizValid,
+  isSurveyValid,
   makeEmptyQuiz,
   makeEmptyOpenQuestion,
+  makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
 import PhoneComposer from "./components/PhoneComposer";
-import OpeningComposer from "./components/OpeningComposer";
 import StartMenu from "./components/StartMenu";
 import QuizComposer from "./components/QuizComposer";
+import SurveyComposer from "./components/SurveyComposer";
 import OpenQuestionComposer from "./components/OpenQuestionComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
@@ -133,16 +134,14 @@ export default function BroadcastPage() {
   const [activeToolPanel, setActiveToolPanel] = useState(null);
 
   /*
-   * Tipo de mensagem WhatsApp: null mostra o menu de arranque, "opening" é
-   * a mensagem de abertura (template), "blank" é a mensagem livre e "quiz"
-   * é a pergunta com botões de resposta rápida.
+   * Tipo de mensagem WhatsApp: null mostra o menu de arranque, "blank" é a
+   * mensagem livre, "quiz" e "survey" são perguntas com botões de resposta
+   * rápida (com e sem resposta certa) e "question" é a pergunta aberta. A
+   * abertura da janela vai automaticamente a quem está fora das 24 horas.
    */
   const [composeMode, setComposeMode] = useState(null);
-  const [openingInfo, setOpeningInfo] = useState(null);
-  const [openingBody, setOpeningBody] = useState("");
-  const [openingLoading, setOpeningLoading] = useState(false);
-  const [openingFailed, setOpeningFailed] = useState(false);
   const [quiz, setQuiz] = useState(() => makeEmptyQuiz());
+  const [survey, setSurvey] = useState(() => makeEmptySurvey());
   const [openQuestion, setOpenQuestion] = useState(() =>
     makeEmptyOpenQuestion(),
   );
@@ -173,7 +172,7 @@ export default function BroadcastPage() {
 
   const isWhatsapp = channel === "whatsapp";
   const showStartMenu = isWhatsapp && composeMode === null;
-  const isOpeningMode = isWhatsapp && composeMode === "opening";
+  const isSurveyMode = isWhatsapp && composeMode === "survey";
   const isQuizMode = isWhatsapp && composeMode === "quiz";
   const isOpenQuestionMode = isWhatsapp && composeMode === "question";
 
@@ -185,7 +184,7 @@ export default function BroadcastPage() {
 
   /* Numa cadeia, o passo ativo pode ser um quiz ou uma pergunta aberta. */
   const chainQuestionKind =
-    chainMode && ["quiz", "open"].includes(activeChainStep?.kind)
+    chainMode && ["quiz", "survey", "open"].includes(activeChainStep?.kind)
       ? activeChainStep.kind
       : null;
 
@@ -290,6 +289,14 @@ export default function BroadcastPage() {
           ? {
               ...current.quiz,
               options: (current.quiz.options || []).map((option) => ({
+                ...option,
+              })),
+            }
+          : undefined,
+        survey: current.survey
+          ? {
+              ...current.survey,
+              options: (current.survey.options || []).map((option) => ({
                 ...option,
               })),
             }
@@ -516,40 +523,6 @@ export default function BroadcastPage() {
     };
   }, [org?.id]);
 
-  /*
-   * Mensagem de abertura da organização: início, fim e corpo por omissão.
-   * O corpo pode ser ajustado só para este envio.
-   */
-  const loadOpening = useCallback(async () => {
-    if (!org?.id) return;
-
-    setOpeningLoading(true);
-    setOpeningFailed(false);
-
-    try {
-      const res = await fetch(
-        `/api/organizations/opening-message?orgId=${org.id}`,
-      );
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data?.item) {
-        throw new Error(data?.error || "Failed to load opening message");
-      }
-
-      setOpeningInfo(data.item);
-      setOpeningBody((current) => current || data.item.body || "");
-    } catch (err) {
-      console.warn("[Broadcast] opening message load error:", err);
-      setOpeningFailed(true);
-    } finally {
-      setOpeningLoading(false);
-    }
-  }, [org?.id]);
-
-  useEffect(() => {
-    loadOpening();
-  }, [loadOpening]);
-
   useEffect(() => {
     if (!org?.id) return;
 
@@ -612,17 +585,6 @@ export default function BroadcastPage() {
       });
     }
 
-    if (isOpeningMode) {
-      return confirm({
-        title: translation("Broadcast.confirmSend.opening.title"),
-        message: translation("Broadcast.confirmSend.opening.message", {
-          recipientLabel,
-        }),
-        confirmText: translation("Broadcast.confirmSend.confirm"),
-        cancelText: translation("Broadcast.confirmSend.cancel"),
-      });
-    }
-
     return confirm({
       title: translation("Broadcast.confirmSend.title"),
       message: translation("Broadcast.confirmSend.message", {
@@ -651,18 +613,6 @@ export default function BroadcastPage() {
         }),
         confirmText: translation("Broadcast.confirmSchedule.isChain.confirm"),
         cancelText: translation("Broadcast.confirmSchedule.isChain.cancel"),
-      });
-    }
-
-    if (isOpeningMode) {
-      return confirm({
-        title: translation("Broadcast.confirmSchedule.opening.title"),
-        message: translation("Broadcast.confirmSchedule.opening.message", {
-          recipientLabel,
-          formattedDate,
-        }),
-        confirmText: translation("Broadcast.confirmSchedule.confirm"),
-        cancelText: translation("Broadcast.confirmSchedule.cancel"),
       });
     }
 
@@ -952,13 +902,6 @@ export default function BroadcastPage() {
     new Set(normalizedTrackedLinks.map((l) => l.key)).size ===
       normalizedTrackedLinks.length;
 
-  const cleanOpeningBody = sanitizeOpeningBody(openingBody);
-  const openingMaxLength = openingInfo?.maxLength || 600;
-  const openingBodyValid =
-    Boolean(openingInfo) &&
-    cleanOpeningBody.length > 0 &&
-    cleanOpeningBody.length <= openingMaxLength;
-
   function normalizeTrackedLinksForStep(step) {
     return (step.trackedLinks || [])
       .map((link) => ({
@@ -980,6 +923,7 @@ export default function BroadcastPage() {
 
   function chainStepHasContent(step) {
     if (step.kind === "quiz") return isQuizValid(step.quiz);
+    if (step.kind === "survey") return isSurveyValid(step.survey);
     if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
 
     return (
@@ -994,6 +938,7 @@ export default function BroadcastPage() {
    */
   function chainStepQuestionPayload(step) {
     if (step.kind === "quiz") return { kind: "quiz", ...step.quiz };
+    if (step.kind === "survey") return { kind: "survey", ...step.survey };
     if (step.kind === "open") return { kind: "open", ...step.openQuestion };
     return null;
   }
@@ -1121,12 +1066,13 @@ export default function BroadcastPage() {
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
   const quizValid = isQuizValid(quiz);
+  const surveyValid = isSurveyValid(survey);
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
 
   const baseCanSend =
     selected.size > 0 &&
-    (isOpeningMode
-      ? openingBodyValid
+    (isSurveyMode
+      ? surveyValid
       : isOpenQuestionMode
         ? openQuestionValid
         : isQuizMode
@@ -1156,7 +1102,7 @@ export default function BroadcastPage() {
 
   function buildBroadcastPayload(chosen) {
     if (channel === "whatsapp") {
-      if (isOpeningMode) {
+      if (isSurveyMode) {
         return {
           orgId: org?.id,
           message: "",
@@ -1164,8 +1110,7 @@ export default function BroadcastPage() {
           files: [],
           trackedLinks: [],
           recipients: buildRecipients(chosen),
-          openingOnly: true,
-          openingBody: cleanOpeningBody,
+          question: { kind: "survey", ...survey },
         };
       }
 
@@ -1424,12 +1369,12 @@ export default function BroadcastPage() {
   }
 
   async function validateContentBeforeAction(action) {
-    if (isOpeningMode) {
-      if (openingBodyValid) return true;
+    if (isSurveyMode) {
+      if (surveyValid) return true;
 
       await showAlert({
-        title: translation("Broadcast.alerts.openingMissing.title"),
-        message: translation("Broadcast.alerts.openingMissing.message"),
+        title: translation("Broadcast.alerts.surveyInvalid.title"),
+        message: translation("Broadcast.alerts.surveyInvalid.message"),
         tone: "warning",
       });
 
@@ -1574,7 +1519,7 @@ export default function BroadcastPage() {
     if (!(await validateContentBeforeAction("send"))) return;
 
     if (
-      !isOpeningMode &&
+      !isSurveyMode &&
       !isQuizMode &&
       !isOpenQuestionMode &&
       !trackedLinksValid
@@ -1806,7 +1751,7 @@ export default function BroadcastPage() {
     if (!(await validateContentBeforeAction("schedule"))) return;
 
     if (
-      !isOpeningMode &&
+      !isSurveyMode &&
       !isQuizMode &&
       !isOpenQuestionMode &&
       !trackedLinksValid
@@ -2003,16 +1948,14 @@ export default function BroadcastPage() {
       <StartMenu
         onChoose={setComposeMode}
         sampleName={sampleName}
-        orgName={org?.name || ""}
-        openingBody={openingBody}
         previewTime={previewTime}
         translation={translation}
       />
     );
-  } else if (isOpeningMode) {
+  } else if (isSurveyMode) {
     composer = (
       <MessageComposer
-        title={translation("Broadcast.composer.openingTitle")}
+        title={translation("Broadcast.composer.surveyTitle")}
         onBack={() => setComposeMode(null)}
         showLinks={false}
         activeToolPanel={activeToolPanel}
@@ -2021,15 +1964,10 @@ export default function BroadcastPage() {
         trackedLinksCount={0}
         translation={translation}
         phone={
-          <OpeningComposer
-            info={openingInfo}
-            body={openingBody}
-            onBodyChange={setOpeningBody}
-            loading={openingLoading}
-            failed={openingFailed}
-            onRetry={loadOpening}
-            sampleName={sampleName}
-            orgName={org?.name || ""}
+          <SurveyComposer
+            survey={survey}
+            onChange={setSurvey}
+            contactName={sampleName}
             previewTime={previewTime}
             translation={translation}
           />
@@ -2124,6 +2062,14 @@ export default function BroadcastPage() {
             <QuizComposer
               quiz={activeChainStep.quiz}
               onChange={(next) => updateActiveChainStep({ quiz: next })}
+              contactName={sampleName}
+              previewTime={previewTime}
+              translation={translation}
+            />
+          ) : chainQuestionKind === "survey" ? (
+            <SurveyComposer
+              survey={activeChainStep.survey}
+              onChange={(next) => updateActiveChainStep({ survey: next })}
               contactName={sampleName}
               previewTime={previewTime}
               translation={translation}

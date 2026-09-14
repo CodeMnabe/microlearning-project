@@ -114,8 +114,11 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
 
     expect(screen.getByTestId("start-menu")).toBeInTheDocument();
-    expect(screen.getByText("Broadcast.start.opening")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Broadcast.start.opening"),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Broadcast.start.blank")).toBeInTheDocument();
+    expect(screen.getByText("Broadcast.start.survey")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Broadcast.send" }),
     ).toBeDisabled();
@@ -249,18 +252,31 @@ describe("BroadcastPage", () => {
     expect(send).toBeDisabled();
   });
 
-  it("sends only the opening template with the edited body", async () => {
+  it("sends a survey with its options and thanks text, without a correct option", async () => {
     await openWhatsapp();
 
-    fireEvent.click(screen.getByText("Broadcast.start.opening"));
+    fireEvent.click(screen.getByTestId("start-card-survey"));
 
-    const body = await screen.findByLabelText("Broadcast.composer.openingBody");
-    expect(body).toHaveValue(OPENING.body);
-    expect(screen.getByTestId("whatsapp-phone")).toHaveTextContent(
-      "Desejas receber comunicações da Digik?",
-    );
+    const body = await screen.findByLabelText("Broadcast.composer.surveyBody");
+    fireEvent.change(body, {
+      target: { value: "Qual o melhor horário para a formação?" },
+    });
 
-    fireEvent.change(body, { target: { value: "  Corpo\n\nsó hoje " } });
+    const optionInputs = screen.getAllByRole("textbox", {
+      name: "Broadcast.composer.surveyOption",
+    });
+    expect(optionInputs).toHaveLength(3);
+    fireEvent.change(optionInputs[0], { target: { value: "Manhã" } });
+    fireEvent.change(optionInputs[1], { target: { value: "Tarde" } });
+    fireEvent.change(optionInputs[2], { target: { value: "Noite" } });
+
+    /* Não há resposta certa a marcar. */
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText("Broadcast.composer.surveyThanks"), {
+      target: { value: "Obrigado, {{nome}}!" },
+    });
+
     fireEvent.click(screen.getByText("Pedro Silva"));
 
     const send = screen.getByRole("button", { name: "Broadcast.send" });
@@ -273,11 +289,16 @@ describe("BroadcastPage", () => {
 
     expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
       orgId: ORG_ID,
-      openingOnly: true,
-      openingBody: "Corpo só hoje",
       message: "",
       recipients: [{ userId: 1 }],
+      question: {
+        kind: "survey",
+        body: "Qual o melhor horário para a formação?",
+        options: [{ label: "Manhã" }, { label: "Tarde" }, { label: "Noite" }],
+        thanksText: "Obrigado, {{nome}}!",
+      },
     });
+    expect(lastPostTo("/api/broadcast/whatsapp").openingOnly).toBeUndefined();
   });
 
   it("sends a blank message written in the bubble with a variable chip", async () => {

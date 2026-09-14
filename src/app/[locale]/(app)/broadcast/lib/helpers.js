@@ -1,4 +1,8 @@
-import { makeEmptyOpenQuestion, makeEmptyQuiz } from "@/lib/whatsapp/question";
+import {
+  makeEmptyOpenQuestion,
+  makeEmptyQuiz,
+  makeEmptySurvey,
+} from "@/lib/whatsapp/question";
 
 export function getInitial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
@@ -46,7 +50,7 @@ export function makeTrackedLinkDraft() {
  * uma pergunta aberta ("open"). Guarda os três rascunhos para se poder
  * trocar de tipo sem perder o que já estava escrito.
  */
-export const CHAIN_STEP_KINDS = ["message", "quiz", "open"];
+export const CHAIN_STEP_KINDS = ["message", "quiz", "survey", "open"];
 
 export function makeChainStep(overrides = {}) {
   return {
@@ -59,6 +63,7 @@ export function makeChainStep(overrides = {}) {
     files: [],
     trackedLinks: [],
     quiz: makeEmptyQuiz(),
+    survey: makeEmptySurvey(),
     openQuestion: makeEmptyOpenQuestion(),
     delayAfterPreviousReadMinutes: 0,
     ...overrides,

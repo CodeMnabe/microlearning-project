@@ -118,6 +118,9 @@ export default function QuestionDetailPage() {
   const answered = useMemo(() => data?.answered || [], [data]);
   const notAnswered = useMemo(() => data?.notAnswered || [], [data]);
   const isQuiz = summary?.kind === "quiz";
+  const isSurvey = summary?.kind === "survey";
+  const isOpen = summary?.kind === "open";
+  const hasOptions = isQuiz || isSurvey;
 
   /*
    * Corrige o veredicto de uma resposta aberta. Vazio volta ao veredicto
@@ -228,7 +231,7 @@ export default function QuestionDetailPage() {
                   {translation("Questions.detail.expiresAt")}:{" "}
                   {formatDate(summary.expiresAt)}
                 </span>
-                {!isQuiz && (
+                {isOpen && (
                   <span className={styles.metaPill}>
                     {translation("Questions.detail.aiEvaluation")}:{" "}
                     {translation(
@@ -242,12 +245,12 @@ export default function QuestionDetailPage() {
 
               <div className={styles.destinationBox}>
                 <div className={styles.destinationLabel}>
-                  {isQuiz
+                  {hasOptions
                     ? translation("Questions.detail.options")
                     : translation("Questions.detail.expectedAnswer")}
                 </div>
 
-                {isQuiz ? (
+                {hasOptions ? (
                   <ul className={own.optionList}>
                     {summary.options.map((option, index) => (
                       <li key={index} className={own.optionItem}>
@@ -310,6 +313,15 @@ export default function QuestionDetailPage() {
                     </div>
                   </div>
                 </>
+              ) : isSurvey ? (
+                summary.options.map((option, index) => (
+                  <div key={index} className={styles.kpiCard}>
+                    <div className={styles.kpiLabel}>{option.label}</div>
+                    <div className={styles.kpiValue}>
+                      {summary.optionCounts?.[index] ?? 0}
+                    </div>
+                  </div>
+                ))
               ) : (
                 VERDICTS.map((verdict) => (
                   <div key={verdict} className={styles.kpiCard}>
@@ -354,7 +366,9 @@ export default function QuestionDetailPage() {
                       <th>
                         {isQuiz
                           ? translation("Questions.detail.table.result")
-                          : translation("Questions.detail.table.verdict")}
+                          : isSurvey
+                            ? translation("Questions.detail.table.choice")
+                            : translation("Questions.detail.table.verdict")}
                       </th>
                       <th>
                         {translation("Questions.detail.table.answeredAt")}
@@ -373,7 +387,7 @@ export default function QuestionDetailPage() {
                         <td>{item.phoneNumber || "-"}</td>
                         <td className={own.answerCell}>
                           {item.answerText || item.optionLabel || "-"}
-                          {!isQuiz && item.aiFeedback ? (
+                          {isOpen && item.aiFeedback ? (
                             <div className={own.feedbackText}>
                               {translation("Questions.detail.table.feedback")}:{" "}
                               {item.aiFeedback}
@@ -381,7 +395,11 @@ export default function QuestionDetailPage() {
                           ) : null}
                         </td>
                         <td>
-                          {isQuiz ? (
+                          {isSurvey ? (
+                            <span>
+                              {item.optionLabel || item.answerText || "-"}
+                            </span>
+                          ) : isQuiz ? (
                             <span
                               className={
                                 item.isCorrect ? own.resultOk : own.resultBad
