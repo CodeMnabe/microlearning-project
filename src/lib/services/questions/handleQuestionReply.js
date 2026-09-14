@@ -14,7 +14,10 @@ import {
   createQuestionAnswer,
   getQuestionAnswer,
   getQuestionById,
+  updateQuestionAnswerEvaluation,
 } from "@/lib/repos/questions.repo";
+import { evaluateOpenQuestion } from "./evaluateOpenQuestion";
+import { appendQuestionContext } from "./appendQuestionContext";
 
 const defaultDeps = {
   createMessage,
@@ -23,6 +26,9 @@ const defaultDeps = {
   createQuestionAnswer,
   getQuestionAnswer,
   getQuestionById,
+  updateQuestionAnswerEvaluation,
+  evaluateOpenQuestion,
+  appendQuestionContext,
 };
 
 /**
@@ -30,12 +36,12 @@ const defaultDeps = {
  *
  * 1. Um toque num botão traz `replyTo.id`, o id da mensagem que enviámos.
  *    Se essa mensagem tiver pergunta, é essa.
- * 2. Texto escrito à mão: conta como resposta se for igual a uma opção da
- *    pergunta mais recente ainda por responder.
+ * 2. Texto escrito à mão: responde à pergunta aberta mais recente ainda por
+ *    responder, ou a uma opção do quiz mais recente com texto igual.
  *
  * Devolve null quando a mensagem não é resposta a nenhuma pergunta.
  */
-export async function findQuestionForReply({ user, payload, deps }) {
+export async function findQuestionForReply({ user, payload, inboundMsgId = null, deps }) {
   const d = { ...defaultDeps, ...deps };
   const reply = extractInboundReply(payload);
 
@@ -45,10 +51,10 @@ export async function findQuestionForReply({ user, payload, deps }) {
       user.organization_id,
     );
 
-    if (message?.question_id) {
+    if (message?.question_id && Number(message.user_id) === Number(user.id)) {
       const question = await d.getQuestionById(message.question_id);
 
-      if (question) {
+      if (question && Number(question.organization_id) === Number(user.organization_id)) {
         return { reply, question, message };
       }
     }
@@ -69,8 +75,15 @@ export async function findQuestionForReply({ user, payload, deps }) {
 
   const question = await d.getQuestionById(message.question_id);
 
-  if (!question || question.kind !== "quiz" || isQuestionExpired(question)) {
+  if (!question || Number(question.organization_id) !== Number(user.organization_id) || isQuestionExpired(question)) {
     return null;
+  }
+
+  if (question.kind === "open") {
+    // Depois da primeira resposta, texto livre volta à conversa normal.
+    const previous = await d.getQuestionAnswer(question.id, user.id);
+    if (previous && (!inboundMsgId || previous.inbound_message_id !== inboundMsgId)) return null;
+    return { reply, question, message };
   }
 
   if (!resolveQuizOption({ reply, options: question.options })) {
@@ -101,20 +114,21 @@ export async function handleQuestionReply({
 }) {
   const d = { ...defaultDeps, ...deps };
 
-  const found = await findQuestionForReply({ user, payload, deps: d });
+  const found = await findQuestionForReply({ user, payload, inboundMsgId, deps: d });
 
   if (!found) return { handled: false };
 
   const { reply, question, message } = found;
 
-  /* Perguntas abertas são tratadas na issue #102. */
-  if (question.kind !== "quiz") return { handled: false };
+  const isOpen = question.kind === "open";
+  if (!isOpen && question.kind !== "quiz") return { handled: false };
+  if (isOpen && (reply.isTap || !reply.text.trim())) return { handled: false };
 
   const option = resolveQuizOption({ reply, options: question.options });
 
-  if (!option) return { handled: false };
+  if (!isOpen && !option) return { handled: false };
 
-  const thread = (await resolveThread?.()) || {};
+  const thread = (await resolveThread?.({ question })) || {};
 
   const inboundRow = await d.createMessage({
     threadId: thread.threadId ?? null,
@@ -158,7 +172,7 @@ export async function handleQuestionReply({
     };
   }
 
-  const isCorrect = Boolean(question.options?.[option.index]?.correct);
+  const isCorrect = isOpen ? null : Boolean(question.options?.[option.index]?.correct);
 
   const answer = await d.createQuestionAnswer({
     questionId: question.id,
@@ -167,8 +181,9 @@ export async function handleQuestionReply({
     messageId: message?.id ?? null,
     inboundMessageId: inboundMsgId,
     answerText: reply.text,
-    optionIndex: option.index,
+    optionIndex: option?.index ?? null,
     isCorrect,
+    ...(isOpen ? { reviewNeeded: true } : {}),
   });
 
   if (!answer) {
@@ -178,6 +193,58 @@ export async function handleQuestionReply({
       questionId: question.id,
       inboundMessageRowId: inboundRow?.id ?? null,
     };
+  }
+
+  if (isOpen) {
+    let evaluation = null;
+    let reviewNeeded = false;
+    if (question.options?.aiEvaluation !== false) {
+      try {
+        evaluation = await d.evaluateOpenQuestion({
+          assistant: thread.assistant,
+          question: { ...question, body: message.content || question.body },
+          answerText: reply.text,
+        });
+      } catch (error) {
+        reviewNeeded = true;
+        console.warn("Falha na avaliação da pergunta", { questionId: question.id, error: error.message });
+      }
+    }
+
+    const replies = [];
+    async function sendOpenReply(text) {
+      try {
+        const result = await reply_(text);
+        if (result?.ok) replies.push(text);
+        else reviewNeeded = true;
+      } catch (error) {
+        reviewNeeded = true;
+        console.warn("Falha no envio da resposta à pergunta", { questionId: question.id, error: error.message });
+      }
+    }
+    if (evaluation) {
+      await sendOpenReply(evaluation.feedback);
+    }
+    const expected = `Resposta esperada:\n${question.expected_answer}`;
+    await sendOpenReply(expected);
+
+    try {
+      await d.appendQuestionContext({
+        conversationId: thread.conversationId,
+        question: { ...question, body: message.content || question.body },
+        answerText: reply.text,
+        replies,
+      });
+    } catch (error) {
+      reviewNeeded = true;
+      console.warn("Falha ao guardar o contexto da pergunta", { questionId: question.id, error: error.message });
+    }
+    await d.updateQuestionAnswerEvaluation(answer.id, {
+      verdict: evaluation?.verdict ?? null,
+      aiFeedback: evaluation?.feedback ?? null,
+      reviewNeeded,
+    });
+    return { handled: true, outcome: "answered", questionId: question.id, answerId: answer.id, verdict: evaluation?.verdict ?? null, reviewNeeded };
   }
 
   const feedback = quizFeedbackText(question, isCorrect);

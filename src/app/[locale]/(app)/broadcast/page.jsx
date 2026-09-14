@@ -15,7 +15,12 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
-import { isQuizValid, makeEmptyQuiz } from "@/lib/whatsapp/question";
+import {
+  isQuizValid,
+  makeEmptyQuiz,
+  makeEmptyOpenQuestion,
+  normalizeOpenQuestion,
+} from "@/lib/whatsapp/question";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -23,6 +28,7 @@ import PhoneComposer from "./components/PhoneComposer";
 import OpeningComposer from "./components/OpeningComposer";
 import StartMenu from "./components/StartMenu";
 import QuizComposer from "./components/QuizComposer";
+import OpenQuestionComposer from "./components/OpenQuestionComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
@@ -137,6 +143,7 @@ export default function BroadcastPage() {
   const [openingLoading, setOpeningLoading] = useState(false);
   const [openingFailed, setOpeningFailed] = useState(false);
   const [quiz, setQuiz] = useState(() => makeEmptyQuiz());
+  const [openQuestion, setOpenQuestion] = useState(() => makeEmptyOpenQuestion());
 
   const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
@@ -166,6 +173,7 @@ export default function BroadcastPage() {
   const showStartMenu = isWhatsapp && composeMode === null;
   const isOpeningMode = isWhatsapp && composeMode === "opening";
   const isQuizMode = isWhatsapp && composeMode === "quiz";
+  const isOpenQuestionMode = isWhatsapp && composeMode === "question";
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -1072,16 +1080,19 @@ export default function BroadcastPage() {
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
   const quizValid = isQuizValid(quiz);
+  const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
 
   const baseCanSend =
     selected.size > 0 &&
     (isOpeningMode
       ? openingBodyValid
-      : isQuizMode
-        ? quizValid
-        : chainMode
-          ? chainValid
-          : trackedLinksValid && hasManualContent);
+      : isOpenQuestionMode
+        ? openQuestionValid
+        : isQuizMode
+          ? quizValid
+          : chainMode
+            ? chainValid
+            : trackedLinksValid && hasManualContent);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -1114,6 +1125,18 @@ export default function BroadcastPage() {
           recipients: buildRecipients(chosen),
           openingOnly: true,
           openingBody: cleanOpeningBody,
+        };
+      }
+
+      if (isOpenQuestionMode) {
+        return {
+          orgId: org?.id,
+          message: "",
+          imageUrls: [],
+          files: [],
+          trackedLinks: [],
+          recipients: buildRecipients(chosen),
+          question: { kind: "open", ...openQuestion },
         };
       }
 
@@ -1367,6 +1390,16 @@ export default function BroadcastPage() {
       return false;
     }
 
+    if (isOpenQuestionMode) {
+      if (openQuestionValid) return true;
+      await showAlert({
+        title: translation("Broadcast.alerts.openQuestionInvalid.title"),
+        message: translation("Broadcast.alerts.openQuestionInvalid.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
     if (isQuizMode) {
       if (quizValid) return true;
 
@@ -1494,7 +1527,7 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("send"))) return;
 
-    if (!isOpeningMode && !isQuizMode && !trackedLinksValid) {
+    if (!isOpeningMode && !isQuizMode && !isOpenQuestionMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
@@ -1721,7 +1754,7 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("schedule"))) return;
 
-    if (!isOpeningMode && !isQuizMode && !trackedLinksValid) {
+    if (!isOpeningMode && !isQuizMode && !isOpenQuestionMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
@@ -1941,6 +1974,30 @@ export default function BroadcastPage() {
             onRetry={loadOpening}
             sampleName={sampleName}
             orgName={org?.name || ""}
+            previewTime={previewTime}
+            translation={translation}
+          />
+        }
+      >
+        {schedulePanel}
+      </MessageComposer>
+    );
+  } else if (isOpenQuestionMode) {
+    composer = (
+      <MessageComposer
+        title={translation("Broadcast.start.question")}
+        onBack={() => setComposeMode(null)}
+        showLinks={false}
+        activeToolPanel={activeToolPanel}
+        toggleToolPanel={toggleToolPanel}
+        scheduleButtonLabel={scheduleButtonLabel}
+        trackedLinksCount={0}
+        translation={translation}
+        phone={
+          <OpenQuestionComposer
+            question={openQuestion}
+            onChange={setOpenQuestion}
+            contactName={sampleName}
             previewTime={previewTime}
             translation={translation}
           />

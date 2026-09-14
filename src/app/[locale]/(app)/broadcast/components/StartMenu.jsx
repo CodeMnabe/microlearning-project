@@ -12,8 +12,7 @@ import {
 import styles from "../broadcast.module.css";
 
 /**
- * Cartões para escolher como começar a mensagem WhatsApp. A pergunta aberta
- * fica visível mas desativada até ser implementada.
+ * Cartões para escolher como começar a mensagem WhatsApp.
  */
 export default function StartMenu({
   onChoose,
@@ -74,7 +73,6 @@ export default function StartMenu({
     },
     {
       key: "question",
-      soon: true,
       title: translation("Broadcast.start.question"),
       hint: translation("Broadcast.start.questionHint"),
       preview: (

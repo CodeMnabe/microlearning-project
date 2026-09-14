@@ -948,13 +948,13 @@ async function handleEvent(rawJSON) {
         },
       }),
 
-    resolveThread: async () => {
+    resolveThread: async ({ question }) => {
       try {
         const assistant = await getAssistantFromUser(user, organization);
 
         if (!assistant) return null;
 
-        const existingThread = await getUserThreadForChannel({
+        let existingThread = await getUserThreadForChannel({
           userId: user.id,
 
           assistantId: assistant.id,
@@ -962,10 +962,34 @@ async function handleEvent(rawJSON) {
           channel: "whatsapp",
         });
 
+        let conversationId = existingThread?.openai_conversation_id ?? null;
+        if (question.kind === "open" && !conversationId) {
+          try {
+            const history = existingThread
+              ? buildConversationHistoryItems(await getMessagesInThread(existingThread.id))
+              : [];
+            const conversation = await createConversation({
+              assistantId: assistant.id, organizationId: user.organization_id,
+              userId: user.id, channel: "whatsapp", scope: "user",
+            }, history);
+            conversationId = conversation.id;
+            existingThread = existingThread
+              ? await setThreadConversationId(existingThread.id, conversationId)
+              : await createThread({
+                  userId: user.id, assistantId: assistant.id,
+                  openAiConversationId: conversationId, channel: "whatsapp", scope: "user",
+                });
+          } catch (error) {
+            console.warn("Falha ao preparar a conversa da pergunta", { userId: user.id, error: error.message });
+            conversationId = null;
+          }
+        }
+
         return {
           threadId: existingThread?.id ?? null,
-
           assistantId: assistant.id,
+          assistant,
+          conversationId,
         };
       } catch {
         return null;

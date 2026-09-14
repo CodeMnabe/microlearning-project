@@ -119,18 +119,36 @@ describe("BroadcastPage", () => {
     expect(screen.getByRole("button", { name: "Broadcast.send" })).toBeDisabled();
   });
 
-  it("shows the open question as a disabled placeholder and the quiz as available", async () => {
+  it("disponibiliza a pergunta aberta e o quiz", async () => {
     await openWhatsapp();
 
     const quiz = screen.getByTestId("start-card-quiz");
     const question = screen.getByTestId("start-card-question");
     expect(quiz).toBeEnabled();
     expect(quiz).not.toHaveTextContent("Broadcast.start.soon");
-    expect(question).toBeDisabled();
-    expect(question).toHaveTextContent("Broadcast.start.soon");
+    expect(question).toBeEnabled();
+    expect(question).not.toHaveTextContent("Broadcast.start.soon");
 
     fireEvent.click(question);
-    expect(screen.getByTestId("start-menu")).toBeInTheDocument();
+    expect(screen.getByLabelText("Broadcast.composer.openQuestionBody")).toBeInTheDocument();
+  });
+
+
+  it("exige resposta esperada e envia a pergunta com avaliação por omissão", async () => {
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-question"));
+    fireEvent.click(screen.getByText("Pedro Silva"));
+    const send = screen.getByRole("button", { name: "Broadcast.send" });
+    fireEvent.change(screen.getByLabelText("Broadcast.composer.openQuestionBody"), { target: { value: "Como verificas os pneus?" } });
+    expect(send).toBeDisabled();
+    expect(screen.getByLabelText("Broadcast.composer.aiEvaluation")).toBeChecked();
+    fireEvent.change(screen.getByLabelText("Broadcast.composer.expectedAnswer"), { target: { value: "Com os pneus frios." } });
+    expect(send).toBeEnabled();
+    fireEvent.click(send);
+    await waitFor(() => expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull());
+    expect(lastPostTo("/api/broadcast/whatsapp").question).toEqual({
+      kind: "open", body: "Como verificas os pneus?", expectedAnswer: "Com os pneus frios.", aiEvaluation: true,
+    });
   });
 
   it("sends a quiz with its options, the correct one and the feedback", async () => {

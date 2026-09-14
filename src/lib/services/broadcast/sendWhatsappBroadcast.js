@@ -13,6 +13,7 @@ import {
   sanitizeOpeningBody,
 } from "@/lib/whatsapp/openingTemplate";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
+import { parseQuestionOptions } from "./questionOptions";
 import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
@@ -249,8 +250,7 @@ async function sendOpeningTemplate({
  * - `openingOnly`: envia só o template de abertura, sem mensagem em espera.
  * - `openingBody`: corpo do template só para este envio; sem ele usa-se o
  *   corpo guardado na organização.
- * - `question`: quiz ({ kind: "quiz", body, options, feedback* }). O corpo
- *   é a mensagem, enviada com botões de resposta rápida. Cria uma linha em
+ * - `question`: quiz com botões ou pergunta aberta em texto simples. Cria uma linha em
  *   `question` e liga-lhe cada mensagem entregue (message.question_id).
  */
 export async function sendWhatsappBroadcast(input = {}) {
@@ -267,7 +267,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
     chainMetadata = null,
-    question = null,
+    question: rawQuestion = null,
   } = input;
 
   if (!orgId) {
@@ -285,18 +285,17 @@ export async function sendWhatsappBroadcast(input = {}) {
 
   const sendOpeningOnly = Boolean(openingOnly);
 
+  const parsed = parseQuestionOptions({ question: rawQuestion });
+  if (parsed.error) throw new BroadcastError(parsed.error, 400);
+  const question = parsed.question;
   const quiz = question?.kind === "quiz" ? question : null;
 
-  if (question && !quiz) {
-    throw new BroadcastError("Unsupported question kind", 400);
+  if (question && (normalizedFiles.length > 0 || sendOpeningOnly)) {
+    throw new BroadcastError("Uma pergunta não pode ter anexos nem ser apenas uma abertura.", 400);
   }
 
-  if (quiz && normalizedFiles.length > 0) {
-    throw new BroadcastError("A quiz cannot have attachments", 400);
-  }
-
-  /* Num quiz, a pergunta é a própria mensagem. */
-  const messageText = quiz ? quiz.body : message;
+  /* A pergunta é a própria mensagem. */
+  const messageText = question ? question.body : message;
 
   const hasInitialFreeformContent =
     String(messageText || "").trim().length > 0 || onlyImageUrls.length > 0;
@@ -336,14 +335,16 @@ export async function sendWhatsappBroadcast(input = {}) {
    * Uma linha em `question` por envio. Cada mensagem entregue fica ligada a
    * ela, e um toque num botão chega com a referência a essa mensagem.
    */
-  const questionRow = quiz
+  const questionRow = question
     ? await createQuestion({
         organizationId: orgId,
-        kind: "quiz",
-        body: quiz.body,
-        options: quiz.options,
-        feedbackCorrect: quiz.feedbackCorrect,
-        feedbackIncorrect: quiz.feedbackIncorrect,
+        kind: question.kind,
+        body: question.body,
+        // O JSON existente guarda também a preferência de avaliação da pergunta aberta.
+        options: quiz ? quiz.options : { aiEvaluation: question.aiEvaluation },
+        feedbackCorrect: quiz?.feedbackCorrect,
+        feedbackIncorrect: quiz?.feedbackIncorrect,
+        expectedAnswer: question.expectedAnswer,
         scheduledBroadcastId,
         sendGroupId,
         createdByUserId,
@@ -576,7 +577,7 @@ export async function sendWhatsappBroadcast(input = {}) {
           imageUrls: onlyImageUrls,
           ...(questionRow
             ? {
-                type: "quiz",
+                type: question.kind,
                 questionId: questionRow.id,
                 actions: quizActions,
               }

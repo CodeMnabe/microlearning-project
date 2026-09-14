@@ -1385,6 +1385,12 @@
       "soon": "Em breve"
     },
     "composer": {
+      "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo.",
+      "openQuestionBody": "Pergunta aberta",
+      "openQuestionPlaceholder": "O que queres perguntar?",
+      "expectedAnswer": "Resposta esperada (obrigatória)",
+      "aiEvaluation": "Avaliar a resposta com IA",
+      "expectedAnswerHint": "O contacto recebe o feedback da IA e depois a resposta esperada. Se desligares a avaliação, recebe apenas a resposta esperada.",
       "contact": "Contacto",
       "back": "Mudar o tipo de mensagem",
       "hint": "Escreve diretamente no balão. Usa o + para juntar imagens, links e variáveis.",
@@ -1423,6 +1429,7 @@
       "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta."
     },
     "alerts": {
+      "openQuestionInvalid": {"title":"Completa a pergunta aberta","message":"Escreve a pergunta e a resposta esperada, com até 1024 caracteres cada."},
       "usersLoadFailed": {
         "title": "Erro ao carregar destinatários",
         "message": "Não foi possível carregar a lista de utilizadores. Tenta novamente dentro de alguns segundos."

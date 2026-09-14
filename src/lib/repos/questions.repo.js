@@ -123,6 +123,16 @@ export async function getQuestionAnswer(questionId, userId) {
   return data ?? null;
 }
 
+/** Guarda a avaliação depois de reservar atomicamente a primeira resposta. */
+export async function updateQuestionAnswerEvaluation(id, {
+  verdict = null, aiFeedback = null, reviewNeeded = false,
+}) {
+  const { error } = await supabase.from("question_answer")
+    .update({ verdict, ai_feedback: aiFeedback, review_needed: reviewNeeded })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 /**
  * Regista a primeira resposta de um contacto. Devolve null quando já havia
  * uma resposta a esta pergunta (violação da chave única).
