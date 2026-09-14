@@ -119,18 +119,100 @@ describe("BroadcastPage", () => {
     expect(screen.getByRole("button", { name: "Broadcast.send" })).toBeDisabled();
   });
 
-  it("shows quiz and open question as disabled placeholders", async () => {
+  it("shows the open question as a disabled placeholder and the quiz as available", async () => {
     await openWhatsapp();
 
     const quiz = screen.getByTestId("start-card-quiz");
     const question = screen.getByTestId("start-card-question");
-    expect(quiz).toBeDisabled();
+    expect(quiz).toBeEnabled();
+    expect(quiz).not.toHaveTextContent("Broadcast.start.soon");
     expect(question).toBeDisabled();
-    expect(quiz).toHaveTextContent("Broadcast.start.soon");
+    expect(question).toHaveTextContent("Broadcast.start.soon");
 
-    fireEvent.click(quiz);
     fireEvent.click(question);
     expect(screen.getByTestId("start-menu")).toBeInTheDocument();
+  });
+
+  it("sends a quiz with its options, the correct one and the feedback", async () => {
+    await openWhatsapp();
+
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    const body = await screen.findByLabelText("Broadcast.composer.quizBody");
+    fireEvent.change(body, {
+      target: { value: "Qual é a pressão certa dos pneus?" },
+    });
+
+    const optionInputs = screen.getAllByRole("textbox", {
+      name: "Broadcast.composer.quizOption",
+    });
+    expect(optionInputs).toHaveLength(3);
+
+    fireEvent.change(optionInputs[0], { target: { value: "2,2 bar" } });
+    fireEvent.change(optionInputs[1], { target: { value: "2,8 bar" } });
+
+    /* A terceira opção fica vazia: sai. */
+    fireEvent.click(
+      screen.getAllByRole("button", {
+        name: "Broadcast.composer.quizRemoveOption",
+      })[2],
+    );
+
+    /* A certa é a segunda. */
+    fireEvent.click(
+      screen.getAllByRole("radio", {
+        name: "Broadcast.composer.quizMarkCorrect",
+      })[1],
+    );
+
+    fireEvent.change(
+      screen.getByLabelText("Broadcast.composer.quizFeedbackIncorrect"),
+      { target: { value: "Quase. A certa é {{certa}}." } },
+    );
+
+    fireEvent.click(screen.getByText("Pedro Silva"));
+
+    const send = screen.getByRole("button", { name: "Broadcast.send" });
+    expect(send).toBeEnabled();
+    fireEvent.click(send);
+
+    await waitFor(() => {
+      expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+    });
+
+    expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
+      orgId: ORG_ID,
+      message: "",
+      recipients: [{ userId: 1 }],
+      question: {
+        kind: "quiz",
+        body: "Qual é a pressão certa dos pneus?",
+        options: [
+          { label: "2,2 bar", correct: false },
+          { label: "2,8 bar", correct: true },
+        ],
+        feedbackCorrect: "",
+        feedbackIncorrect: "Quase. A certa é {{certa}}.",
+      },
+    });
+  });
+
+  it("keeps the send button disabled while the quiz is incomplete", async () => {
+    await openWhatsapp();
+
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+    fireEvent.click(screen.getByText("Pedro Silva"));
+
+    const send = screen.getByRole("button", { name: "Broadcast.send" });
+    expect(send).toBeDisabled();
+
+    fireEvent.change(
+      await screen.findByLabelText("Broadcast.composer.quizBody"),
+      { target: { value: "Pergunta" } },
+    );
+
+    /* Falta preencher as opções. */
+    expect(send).toBeDisabled();
   });
 
   it("sends only the opening template with the edited body", async () => {

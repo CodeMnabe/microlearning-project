@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   getUserById: vi.fn(),
   isWindowOpenForUser: vi.fn(),
   createPendingOutreach: vi.fn(),
+  createMessage: vi.fn(),
+  createQuestion: vi.fn(),
   fetch: vi.fn(),
 }));
 
@@ -26,10 +28,15 @@ vi.mock("@/lib/repos/user.repo", () => ({
 
 vi.mock("@/lib/repos/messages.repo", () => ({
   isWindowOpenForUser: (...args) => mocks.isWindowOpenForUser(...args),
+  createMessage: (...args) => mocks.createMessage(...args),
 }));
 
 vi.mock("@/lib/repos/pendingOutreach.repo", () => ({
   createPendingOutreach: (...args) => mocks.createPendingOutreach(...args),
+}));
+
+vi.mock("@/lib/repos/questions.repo", () => ({
+  createQuestion: (...args) => mocks.createQuestion(...args),
 }));
 
 vi.mock("@/lib/services/broadcast/trackedLinks", () => ({
@@ -78,6 +85,8 @@ describe("sendWhatsappBroadcast", () => {
     mocks.getUserById.mockResolvedValue({ ...USER });
     mocks.isWindowOpenForUser.mockResolvedValue(false);
     mocks.createPendingOutreach.mockResolvedValue({ id: "po-1" });
+    mocks.createMessage.mockResolvedValue({ id: 900 });
+    mocks.createQuestion.mockResolvedValue({ id: 10 });
     mocks.fetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -222,5 +231,121 @@ describe("sendWhatsappBroadcast", () => {
     });
 
     expect(result.ok).toBe(1);
+  });
+
+  describe("quiz", () => {
+    const QUIZ = {
+      kind: "quiz",
+      body: "Olá {{nome}}, qual é a pressão certa?",
+      options: [
+        { label: "2,2 bar", correct: false },
+        { label: "2,8 bar", correct: true },
+      ],
+      feedbackCorrect: "Boa!",
+      feedbackIncorrect: "",
+    };
+
+    it("creates the question once and sends it with reply buttons inside the window", async () => {
+      mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+      const result = await sendWhatsappBroadcast({
+        orgId: 1,
+        recipients: [{ userId: 42 }],
+        question: QUIZ,
+        scheduledBroadcastId: "sb-1",
+      });
+
+      expect(result.ok).toBe(1);
+      expect(result.questionId).toBe(10);
+      expect(result.results[0]).toMatchObject({
+        kind: "freeform",
+        questionId: 10,
+      });
+
+      expect(mocks.createQuestion).toHaveBeenCalledTimes(1);
+      expect(mocks.createQuestion.mock.calls[0][0]).toMatchObject({
+        organizationId: 1,
+        kind: "quiz",
+        body: QUIZ.body,
+        options: QUIZ.options,
+        feedbackCorrect: "Boa!",
+        scheduledBroadcastId: "sb-1",
+        sendGroupId: result.sendGroupId,
+      });
+      expect(
+        mocks.createQuestion.mock.calls[0][0].expiresAt.getTime(),
+      ).toBeGreaterThan(Date.now());
+
+      const { body } = birdCall();
+      expect(body.body).toEqual({
+        type: "text",
+        text: {
+          text: "Olá Pedro, qual é a pressão certa?",
+          actions: [
+            { type: "reply", reply: { text: "2,2 bar" } },
+            { type: "reply", reply: { text: "2,8 bar" } },
+          ],
+        },
+      });
+
+      /* A mensagem entregue fica ligada à pergunta pelo id do Bird. */
+      expect(mocks.createMessage).toHaveBeenCalledTimes(1);
+      expect(mocks.createMessage.mock.calls[0][0]).toMatchObject({
+        userId: 42,
+        organizationId: 1,
+        channel: "whatsapp",
+        messageId: "bird-msg-1",
+        content: "Olá Pedro, qual é a pressão certa?",
+        role: "assistant",
+        questionId: 10,
+        scheduledBroadcastId: "sb-1",
+      });
+      expect(mocks.createPendingOutreach).not.toHaveBeenCalled();
+    });
+
+    it("queues the quiz with its buttons behind the opening template when the window is closed", async () => {
+      const result = await sendWhatsappBroadcast({
+        orgId: 1,
+        recipients: [{ userId: 42 }],
+        question: QUIZ,
+      });
+
+      expect(result.queued).toBe(1);
+      expect(birdCall().body.template).toBeTruthy();
+      expect(mocks.createMessage).not.toHaveBeenCalled();
+
+      expect(mocks.createPendingOutreach).toHaveBeenCalledTimes(1);
+      expect(mocks.createPendingOutreach.mock.calls[0][0].payload).toEqual({
+        message: "Olá Pedro, qual é a pressão certa?",
+        imageUrls: [],
+        type: "quiz",
+        questionId: 10,
+        actions: [
+          { type: "reply", reply: { text: "2,2 bar" } },
+          { type: "reply", reply: { text: "2,8 bar" } },
+        ],
+      });
+    });
+
+    it("rejects attachments and unknown question kinds", async () => {
+      await expect(
+        sendWhatsappBroadcast({
+          orgId: 1,
+          recipients: [{ userId: 42 }],
+          question: QUIZ,
+          imageUrls: ["https://x/img.png"],
+        }),
+      ).rejects.toThrow(/attachments/);
+
+      await expect(
+        sendWhatsappBroadcast({
+          orgId: 1,
+          recipients: [{ userId: 42 }],
+          question: { kind: "open", body: "?" },
+        }),
+      ).rejects.toThrow(/Unsupported question kind/);
+
+      expect(mocks.createQuestion).not.toHaveBeenCalled();
+    });
   });
 });

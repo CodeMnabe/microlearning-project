@@ -15,12 +15,14 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
+import { isQuizValid, makeEmptyQuiz } from "@/lib/whatsapp/question";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
 import PhoneComposer from "./components/PhoneComposer";
 import OpeningComposer from "./components/OpeningComposer";
 import StartMenu from "./components/StartMenu";
+import QuizComposer from "./components/QuizComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
@@ -126,13 +128,15 @@ export default function BroadcastPage() {
 
   /*
    * Tipo de mensagem WhatsApp: null mostra o menu de arranque, "opening" é
-   * a mensagem de abertura (template) e "blank" é a mensagem livre.
+   * a mensagem de abertura (template), "blank" é a mensagem livre e "quiz"
+   * é a pergunta com botões de resposta rápida.
    */
   const [composeMode, setComposeMode] = useState(null);
   const [openingInfo, setOpeningInfo] = useState(null);
   const [openingBody, setOpeningBody] = useState("");
   const [openingLoading, setOpeningLoading] = useState(false);
   const [openingFailed, setOpeningFailed] = useState(false);
+  const [quiz, setQuiz] = useState(() => makeEmptyQuiz());
 
   const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
@@ -161,6 +165,7 @@ export default function BroadcastPage() {
   const isWhatsapp = channel === "whatsapp";
   const showStartMenu = isWhatsapp && composeMode === null;
   const isOpeningMode = isWhatsapp && composeMode === "opening";
+  const isQuizMode = isWhatsapp && composeMode === "quiz";
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -525,11 +530,16 @@ export default function BroadcastPage() {
     };
   }, [org?.id, getUsers, stopLoading]);
 
+  /*
+   * A corrente só existe na mensagem livre WhatsApp. Sair dela (mudar de
+   * canal ou de tipo de mensagem) desliga-a, senão o envio seguia pela
+   * corrente.
+   */
   useEffect(() => {
-    if (channel !== "whatsapp" && chainMode) {
+    if (chainMode && (channel !== "whatsapp" || composeMode !== "blank")) {
       setChainMode(false);
     }
-  }, [channel, chainMode]);
+  }, [channel, chainMode, composeMode]);
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -1061,13 +1071,17 @@ export default function BroadcastPage() {
   const hasManualContent =
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
+  const quizValid = isQuizValid(quiz);
+
   const baseCanSend =
     selected.size > 0 &&
     (isOpeningMode
       ? openingBodyValid
-      : chainMode
-        ? chainValid
-        : trackedLinksValid && hasManualContent);
+      : isQuizMode
+        ? quizValid
+        : chainMode
+          ? chainValid
+          : trackedLinksValid && hasManualContent);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -1100,6 +1114,24 @@ export default function BroadcastPage() {
           recipients: buildRecipients(chosen),
           openingOnly: true,
           openingBody: cleanOpeningBody,
+        };
+      }
+
+      if (isQuizMode) {
+        return {
+          orgId: org?.id,
+          message: "",
+          imageUrls: [],
+          files: [],
+          trackedLinks: [],
+          recipients: buildRecipients(chosen),
+          question: {
+            kind: "quiz",
+            body: quiz.body,
+            options: quiz.options,
+            feedbackCorrect: quiz.feedbackCorrect,
+            feedbackIncorrect: quiz.feedbackIncorrect,
+          },
         };
       }
 
@@ -1335,6 +1367,18 @@ export default function BroadcastPage() {
       return false;
     }
 
+    if (isQuizMode) {
+      if (quizValid) return true;
+
+      await showAlert({
+        title: translation("Broadcast.alerts.quizInvalid.title"),
+        message: translation("Broadcast.alerts.quizInvalid.message"),
+        tone: "warning",
+      });
+
+      return false;
+    }
+
     if (!hasManualContent && !chainMode) {
       await showAlert({
         title: translation("Broadcast.alerts.contentMissing.title"),
@@ -1450,7 +1494,7 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("send"))) return;
 
-    if (!isOpeningMode && !trackedLinksValid) {
+    if (!isOpeningMode && !isQuizMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
@@ -1677,7 +1721,7 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("schedule"))) return;
 
-    if (!isOpeningMode && !trackedLinksValid) {
+    if (!isOpeningMode && !isQuizMode && !trackedLinksValid) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
@@ -1897,6 +1941,30 @@ export default function BroadcastPage() {
             onRetry={loadOpening}
             sampleName={sampleName}
             orgName={org?.name || ""}
+            previewTime={previewTime}
+            translation={translation}
+          />
+        }
+      >
+        {schedulePanel}
+      </MessageComposer>
+    );
+  } else if (isQuizMode) {
+    composer = (
+      <MessageComposer
+        title={translation("Broadcast.composer.quizTitle")}
+        onBack={() => setComposeMode(null)}
+        showLinks={false}
+        activeToolPanel={activeToolPanel}
+        toggleToolPanel={toggleToolPanel}
+        scheduleButtonLabel={scheduleButtonLabel}
+        trackedLinksCount={0}
+        translation={translation}
+        phone={
+          <QuizComposer
+            quiz={quiz}
+            onChange={setQuiz}
+            contactName={sampleName}
             previewTime={previewTime}
             translation={translation}
           />

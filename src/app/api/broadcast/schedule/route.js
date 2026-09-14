@@ -67,11 +67,19 @@ export async function POST(req) {
 
     let opening = { openingBody: null, openingOnly: false };
 
+    let question = { question: null };
+
     if (channel === "whatsapp") {
       opening = parseOpeningOptions(payload);
 
       if (opening.error) {
         return NextResponse.json({ error: opening.error }, { status: 400 });
+      }
+
+      question = parseQuestionOptions(payload);
+
+      if (question.error) {
+        return NextResponse.json({ error: question.error }, { status: 400 });
       }
     }
 
@@ -89,6 +97,7 @@ export async function POST(req) {
             recipients: recipientUserIds.map((userId) => ({ userId })),
             openingBody: opening.openingBody,
             openingOnly: opening.openingOnly,
+            question: question.question,
           }),
     };
 

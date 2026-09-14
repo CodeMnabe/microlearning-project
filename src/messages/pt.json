@@ -1407,7 +1407,20 @@
       "openingCounter": "{count} de {max} caracteres",
       "openingLoading": "A carregar a mensagem de abertura...",
       "openingLoadFailed": "Não foi possível carregar a mensagem de abertura.",
-      "retry": "Tentar novamente"
+      "retry": "Tentar novamente",
+      "quizTitle": "Quiz",
+      "quizHint": "Escreve a pergunta no balão e as opções nos botões. Marca a certa no círculo. Quem estiver fora da janela recebe primeiro a abertura.",
+      "quizBody": "Pergunta do quiz",
+      "quizPlaceholder": "Escreve a pergunta...",
+      "quizOption": "Opção {index}",
+      "quizMarkCorrect": "Marcar a opção {index} como certa",
+      "quizRemoveOption": "Remover a opção {index}",
+      "quizAddOption": "Adicionar opção",
+      "quizOptionLimit": "Até {max} opções, com {chars} caracteres cada, como o WhatsApp exige.",
+      "quizFeedbackCorrect": "Resposta quando acerta",
+      "quizFeedbackIncorrect": "Resposta quando erra",
+      "quizFeedbackHint": "Se ficarem vazios, envia-se o texto por omissão. Podes escrever '{{'certa'}}' para incluir a opção certa.",
+      "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta."
     },
     "alerts": {
       "usersLoadFailed": {
@@ -1426,6 +1439,10 @@
       "openingMissing": {
         "title": "Corpo em falta",
         "message": "Escreve o corpo da mensagem de abertura antes de continuar."
+      },
+      "quizInvalid": {
+        "title": "Quiz incompleto",
+        "message": "Escreve a pergunta, preenche 2 a 3 opções diferentes com até 20 caracteres e marca a certa."
       }
     },
     "recipient": "recipiente",

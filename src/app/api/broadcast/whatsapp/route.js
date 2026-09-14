@@ -7,6 +7,7 @@ import {
   requireOwnedOrg,
 } from "@/lib/auth/guards";
 import { parseOpeningOptions } from "@/lib/services/broadcast/openingOptions";
+import { parseQuestionOptions } from "@/lib/services/broadcast/questionOptions";
 
 export async function POST(req) {
   try {
@@ -30,6 +31,12 @@ export async function POST(req) {
       return NextResponse.json({ error: opening.error }, { status: 400 });
     }
 
+    const question = parseQuestionOptions(body);
+
+    if (question.error) {
+      return NextResponse.json({ error: question.error }, { status: 400 });
+    }
+
     const result = await sendWhatsappBroadcast({
       orgId: orgAuth.orgId,
       message: body?.message || "",
@@ -42,6 +49,7 @@ export async function POST(req) {
       scheduledBroadcastId: null,
       createdByUserId: null,
       chainMetadata: null,
+      question: question.question,
     });
 
     return NextResponse.json(result);
