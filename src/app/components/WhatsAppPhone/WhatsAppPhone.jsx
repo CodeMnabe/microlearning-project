@@ -12,12 +12,14 @@ const VariantContext = createContext("whatsapp");
  *
  * Os filhos são as linhas da conversa. Usa WhatsAppBubble para um balão
  * enviado e WhatsAppButton para os botões por baixo do balão. `footer` é a
- * barra inferior, onde no WhatsApp fica a caixa de escrita.
+ * barra inferior, onde no WhatsApp fica a caixa de escrita. `centered` alinha
+ * os balões ao centro em vez de à direita (pré-visualizações).
  */
 export default function WhatsAppPhone({
   contactName,
   subtitle,
   compact = false,
+  centered = false,
   variant = "whatsapp",
   className = "",
   footer = null,
@@ -28,6 +30,7 @@ export default function WhatsAppPhone({
   const classes = [
     styles.frame,
     compact ? styles.frameCompact : "",
+    centered ? styles.frameCentered : "",
     variant === "teams" ? styles.frameTeams : "",
     className,
   ]

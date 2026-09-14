@@ -1364,7 +1364,17 @@
       "openingHint": "Reopens the conversation with contacts who have not replied for over 24 hours. Only the body can be edited.",
       "blank": "Blank",
       "blankHint": "Free message with text, images and links. Contacts outside the window receive the opening message first.",
-      "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip."
+      "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip.",
+      "quiz": "Quiz",
+      "quizHint": "Question with up to 3 quick-reply options. Ideal to check what was retained.",
+      "quizSample": "Hi {name}! What is the right tyre pressure?",
+      "quizOptionA": "2.2 bar",
+      "quizOptionB": "2.8 bar",
+      "quizOptionC": "3.5 bar",
+      "question": "Open question",
+      "questionHint": "Free-text question. Replies are kept in the conversation.",
+      "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
+      "soon": "Coming soon"
     },
     "composer": {
       "contact": "Contact",

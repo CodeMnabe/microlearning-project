@@ -119,6 +119,20 @@ describe("BroadcastPage", () => {
     expect(screen.getByRole("button", { name: "Broadcast.send" })).toBeDisabled();
   });
 
+  it("shows quiz and open question as disabled placeholders", async () => {
+    await openWhatsapp();
+
+    const quiz = screen.getByTestId("start-card-quiz");
+    const question = screen.getByTestId("start-card-question");
+    expect(quiz).toBeDisabled();
+    expect(question).toBeDisabled();
+    expect(quiz).toHaveTextContent("Broadcast.start.soon");
+
+    fireEvent.click(quiz);
+    fireEvent.click(question);
+    expect(screen.getByTestId("start-menu")).toBeInTheDocument();
+  });
+
   it("sends only the opening template with the edited body", async () => {
     await openWhatsapp();
 

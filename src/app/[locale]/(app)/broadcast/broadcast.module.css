@@ -980,13 +980,20 @@
 
 .startGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .startGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .startCard {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
   padding: 12px;
   border: 1px solid var(--ui-border);
   border-radius: 12px;
@@ -1003,30 +1010,70 @@
   outline: none;
 }
 
+.startCardSoon {
+  cursor: default;
+}
+
+.startCardSoon:hover,
+.startCardSoon:focus-visible {
+  border-color: var(--ui-border);
+}
+
+.startCardSoon .startThumb,
+.startCardSoon .startCardHint {
+  opacity: 0.55;
+}
+
 .startThumb {
-  height: 230px;
-  overflow: hidden;
+  min-height: 300px;
   border-radius: 8px;
   background: #f3f4f6;
   pointer-events: none;
   display: flex;
   justify-content: center;
-  padding-top: 8px;
+  padding: 10px;
 }
 
-.startThumb > * {
-  transform: scale(0.8);
-  transform-origin: top center;
+.startCard .startThumb > * {
+  width: 100%;
+  max-width: 300px;
+  font-size: 13.5px;
+  border-radius: 16px;
+}
+
+.startCardText {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding-top: 4px;
 }
 
 .startCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   font-weight: 700;
+}
+
+.startCardBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  padding: 1px 8px;
 }
 
 .startCardHint {
   font-size: 12px;
   color: #6b7280;
+}
+
+@media (max-width: 560px) {
+  .startCard {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------- Compor dentro do telemóvel ---------- */
