@@ -105,26 +105,54 @@ describe("sendWhatsappBroadcast", () => {
     vi.unstubAllEnvs();
   });
 
-
-  it.each([true, false])("envia pergunta aberta sem botões ou guarda-a em espera (janela=%s)", async (windowOpen) => {
-    mocks.isWindowOpenForUser.mockResolvedValue(windowOpen);
-    const result = await sendWhatsappBroadcast({
-      orgId: 1, recipients: [{ userId: 42 }], scheduledBroadcastId: "schedule-1",
-      question: { kind: "open", body: "Como verificas os pneus?", expectedAnswer: "A frio.", aiEvaluation: false },
-    });
-    expect(result.questionId).toBe(10);
-    expect(mocks.createQuestion).toHaveBeenCalledWith(expect.objectContaining({
-      kind: "open", expectedAnswer: "A frio.", options: { aiEvaluation: false }, scheduledBroadcastId: "schedule-1",
-    }));
-    if (windowOpen) {
-      expect(birdCall().body.body).toEqual({ type: "text", text: { text: "Como verificas os pneus?" } });
-      expect(mocks.createMessage).toHaveBeenCalledWith(expect.objectContaining({ questionId: 10 }));
-    } else {
-      expect(mocks.createPendingOutreach).toHaveBeenCalledWith(expect.objectContaining({ payload: {
-        type: "open", questionId: 10, message: "Como verificas os pneus?", imageUrls: [], actions: null,
-      } }));
-    }
-  });
+  it.each([true, false])(
+    "envia pergunta aberta sem botões ou guarda-a em espera (janela=%s)",
+    async (windowOpen) => {
+      mocks.isWindowOpenForUser.mockResolvedValue(windowOpen);
+      const result = await sendWhatsappBroadcast({
+        orgId: 1,
+        recipients: [{ userId: 42 }],
+        scheduledBroadcastId: "schedule-1",
+        question: {
+          kind: "open",
+          body: "Como verificas os pneus?",
+          expectedAnswer: "A frio.",
+          aiEvaluation: false,
+        },
+      });
+      expect(result.questionId).toBe(10);
+      expect(mocks.createQuestion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "open",
+          expectedAnswer: "A frio.",
+          options: null,
+          aiEvaluation: false,
+          scheduledBroadcastId: "schedule-1",
+        }),
+      );
+      if (windowOpen) {
+        expect(birdCall().body.body).toEqual({
+          type: "text",
+          text: { text: "Como verificas os pneus?" },
+        });
+        expect(mocks.createMessage).toHaveBeenCalledWith(
+          expect.objectContaining({ questionId: 10 }),
+        );
+      } else {
+        expect(mocks.createPendingOutreach).toHaveBeenCalledWith(
+          expect.objectContaining({
+            payload: {
+              type: "open",
+              questionId: 10,
+              message: "Como verificas os pneus?",
+              imageUrls: [],
+              actions: null,
+            },
+          }),
+        );
+      }
+    },
+  );
 
   it("sends the message directly when the 24h window is open", async () => {
     mocks.isWindowOpenForUser.mockResolvedValue(true);
