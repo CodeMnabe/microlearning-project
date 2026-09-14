@@ -4,7 +4,7 @@ import { toE164 } from "@/lib/whatsapp/E164";
 import { getUserById } from "@/lib/repos/user.repo";
 import { createMessage, isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
-import { createQuestion } from "@/lib/repos/questions.repo";
+import { createQuestion, getQuestionById } from "@/lib/repos/questions.repo";
 import { getLatestUserThreadForChannel } from "@/lib/repos/threads.repo";
 import { buildQuizActions, questionExpiryDate } from "@/lib/whatsapp/question";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
@@ -269,6 +269,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     createdByUserId = null,
     chainMetadata = null,
     question: rawQuestion = null,
+    questionId: existingQuestionId = null,
   } = input;
 
   if (!orgId) {
@@ -288,7 +289,34 @@ export async function sendWhatsappBroadcast(input = {}) {
 
   const parsed = parseQuestionOptions({ question: rawQuestion });
   if (parsed.error) throw new BroadcastError(parsed.error, 400);
-  const question = parsed.question;
+
+  /*
+   * Uma pergunta já criada (passo de uma cadeia de leitura, partilhada por
+   * todos os destinatários) chega por `questionId`; um envio normal traz a
+   * pergunta por definir em `question`.
+   */
+  let questionRow = null;
+  let question = parsed.question;
+
+  if (existingQuestionId) {
+    questionRow = await getQuestionById(existingQuestionId);
+
+    if (
+      !questionRow ||
+      Number(questionRow.organization_id) !== Number(orgId)
+    ) {
+      throw new BroadcastError("Question not found", 404);
+    }
+
+    question = {
+      kind: questionRow.kind,
+      body: questionRow.body,
+      options: questionRow.options,
+      expectedAnswer: questionRow.expected_answer,
+      aiEvaluation: questionRow.ai_evaluation !== false,
+    };
+  }
+
   const quiz = question?.kind === "quiz" ? question : null;
 
   if (question && (normalizedFiles.length > 0 || sendOpeningOnly)) {
@@ -339,22 +367,22 @@ export async function sendWhatsappBroadcast(input = {}) {
    * Uma linha em `question` por envio. Cada mensagem entregue fica ligada a
    * ela, e um toque num botão chega com a referência a essa mensagem.
    */
-  const questionRow = question
-    ? await createQuestion({
-        organizationId: orgId,
-        kind: question.kind,
-        body: question.body,
-        options: quiz ? quiz.options : null,
-        feedbackCorrect: quiz?.feedbackCorrect,
-        feedbackIncorrect: quiz?.feedbackIncorrect,
-        expectedAnswer: question.expectedAnswer,
-        aiEvaluation: quiz ? true : question.aiEvaluation !== false,
-        scheduledBroadcastId,
-        sendGroupId,
-        createdByUserId,
-        expiresAt: questionExpiryDate(),
-      })
-    : null;
+  if (question && !questionRow) {
+    questionRow = await createQuestion({
+      organizationId: orgId,
+      kind: question.kind,
+      body: question.body,
+      options: quiz ? quiz.options : null,
+      feedbackCorrect: quiz?.feedbackCorrect,
+      feedbackIncorrect: quiz?.feedbackIncorrect,
+      expectedAnswer: question.expectedAnswer,
+      aiEvaluation: quiz ? true : question.aiEvaluation !== false,
+      scheduledBroadcastId,
+      sendGroupId,
+      createdByUserId,
+      expiresAt: questionExpiryDate(),
+    });
+  }
 
   const quizActions = quiz ? buildQuizActions(quiz.options) : null;
 
@@ -477,7 +505,11 @@ export async function sendWhatsappBroadcast(input = {}) {
         actions: quizActions,
       });
 
-      if (r.ok && questionRow && user) {
+      /*
+       * Regista a mensagem da pergunta. Numa cadeia de leitura é o passo
+       * que a regista, com os dados da cadeia.
+       */
+      if (r.ok && questionRow && user && !chainMetadata) {
         /* Liga a pergunta à conversa do contacto, quando já existe. */
         const thread = await getLatestUserThreadForChannel(
           user.id,

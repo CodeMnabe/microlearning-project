@@ -86,7 +86,7 @@ export async function findQuestionForReply({
   if (
     !question ||
     Number(question.organization_id) !== Number(user.organization_id) ||
-    isQuestionExpired(question)
+    isQuestionExpired(question, Date.now(), message.created_at)
   ) {
     return null;
   }
@@ -183,7 +183,7 @@ export async function handleQuestionReply({
     return sendRes;
   }
 
-  if (isQuestionExpired(question)) {
+  if (isQuestionExpired(question, Date.now(), message?.created_at)) {
     await reply_(EXPIRED_QUESTION_TEXT);
 
     return {

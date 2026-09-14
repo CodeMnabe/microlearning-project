@@ -124,11 +124,10 @@ describe("QuestionsPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByRole("row").slice(1)).toHaveLength(1);
+      const table = screen.getByTestId("questions-table");
+      expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
+      expect(table).toHaveTextContent("Qual é a pressão certa dos pneus?");
     });
-    expect(screen.getByRole("table")).toHaveTextContent(
-      "Qual é a pressão certa dos pneus?",
-    );
   });
 
   it("shows an empty state when there are no questions", async () => {

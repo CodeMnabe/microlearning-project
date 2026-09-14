@@ -179,6 +179,12 @@ export default function BroadcastPage() {
   const activeChainStepTrackedLinks =
     activeChainStep?.trackedLinks || EMPTY_ARRAY;
 
+  /* Numa cadeia, o passo ativo pode ser um quiz ou uma pergunta aberta. */
+  const chainQuestionKind =
+    chainMode && ["quiz", "open"].includes(activeChainStep?.kind)
+      ? activeChainStep.kind
+      : null;
+
   const composerMessage = chainMode ? activeChainStep?.message || "" : message;
   const composerFiles = chainMode ? activeChainStepFiles : files;
   const composerTrackedLinks = chainMode
@@ -275,6 +281,18 @@ export default function BroadcastPage() {
       const current = prev[activeChainStepIndex] || makeChainStep();
 
       const copy = makeChainStep({
+        kind: current.kind || "message",
+        quiz: current.quiz
+          ? {
+              ...current.quiz,
+              options: (current.quiz.options || []).map((option) => ({
+                ...option,
+              })),
+            }
+          : undefined,
+        openQuestion: current.openQuestion
+          ? { ...current.openQuestion }
+          : undefined,
         message: current.message || "",
         files: Array.isArray(current.files) ? [...current.files] : [],
         trackedLinks: Array.isArray(current.trackedLinks)
@@ -315,6 +333,14 @@ export default function BroadcastPage() {
 
       return next;
     });
+  }
+
+  function updateChainStepKind(indexToUpdate, kind) {
+    setChainSteps((prev) =>
+      prev.map((step, index) =>
+        index === indexToUpdate ? { ...step, kind } : step,
+      ),
+    );
   }
 
   function updateChainStepDelay(indexToUpdate, value) {
@@ -951,10 +977,23 @@ export default function BroadcastPage() {
   }
 
   function chainStepHasContent(step) {
+    if (step.kind === "quiz") return isQuizValid(step.quiz);
+    if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
+
     return (
       String(step.message || "").trim().length > 0 ||
       (Array.isArray(step.files) && step.files.length > 0)
     );
+  }
+
+  /*
+   * Payload de um passo com pergunta: a pergunta é a própria mensagem, sem
+   * anexos nem links.
+   */
+  function chainStepQuestionPayload(step) {
+    if (step.kind === "quiz") return { kind: "quiz", ...step.quiz };
+    if (step.kind === "open") return { kind: "open", ...step.openQuestion };
+    return null;
   }
 
   function normalizeDelayMinutes(value) {
@@ -1183,15 +1222,20 @@ export default function BroadcastPage() {
       createdByUserId: user?.id || null,
       channel: "whatsapp",
       recipients: buildRecipients(chosen),
-      steps: chainSteps.map((step, index) => ({
-        message: step.message || "",
-        files: Array.isArray(step.files) ? step.files : [],
-        trackedLinks: normalizeTrackedLinksForStep(step),
-        delayAfterPreviousReadMinutes:
-          index === 0
-            ? 0
-            : normalizeDelayMinutes(step.delayAfterPreviousReadMinutes),
-      })),
+      steps: chainSteps.map((step, index) => {
+        const question = chainStepQuestionPayload(step);
+
+        return {
+          message: question ? "" : step.message || "",
+          files: question ? [] : Array.isArray(step.files) ? step.files : [],
+          trackedLinks: question ? [] : normalizeTrackedLinksForStep(step),
+          question,
+          delayAfterPreviousReadMinutes:
+            index === 0
+              ? 0
+              : normalizeDelayMinutes(step.delayAfterPreviousReadMinutes),
+        };
+      }),
     };
   }
 
@@ -2045,7 +2089,8 @@ export default function BroadcastPage() {
       <MessageComposer
         title={translation("Broadcast.message")}
         onBack={isWhatsapp ? () => setComposeMode(null) : null}
-        hint={translation("Broadcast.composer.hint")}
+        hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
+        showLinks={!chainQuestionKind}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
@@ -2064,11 +2109,32 @@ export default function BroadcastPage() {
               addChainStep={addChainStep}
               duplicateChainStep={duplicateChainStep}
               removeChainStep={removeChainStep}
+              activeStepKind={activeChainStep?.kind || "message"}
+              onChangeStepKind={(kind) =>
+                updateChainStepKind(activeChainStepIndex, kind)
+              }
               translation={translation}
             />
           ) : null
         }
         phone={
+          chainQuestionKind === "quiz" ? (
+            <QuizComposer
+              quiz={activeChainStep.quiz}
+              onChange={(next) => updateActiveChainStep({ quiz: next })}
+              contactName={sampleName}
+              previewTime={previewTime}
+              translation={translation}
+            />
+          ) : chainQuestionKind === "open" ? (
+            <OpenQuestionComposer
+              question={activeChainStep.openQuestion}
+              onChange={(next) => updateActiveChainStep({ openQuestion: next })}
+              contactName={sampleName}
+              previewTime={previewTime}
+              translation={translation}
+            />
+          ) : (
           <PhoneComposer
             channel={channel}
             contactName={sampleName}
@@ -2089,11 +2155,12 @@ export default function BroadcastPage() {
             previewTime={previewTime}
             translation={translation}
           />
+          )
         }
       >
         {schedulePanel}
 
-        {activeToolPanel === "links" && (
+        {activeToolPanel === "links" && !chainQuestionKind && (
           <TrackedLinksPanel
             trackedLinks={composerTrackedLinks}
             trackedLinksValid={trackedLinksValid}

@@ -28,7 +28,11 @@ const TAP_PAYLOAD = {
       ],
     },
   },
-  replyTo: { id: "2635e77b-8ead-4668-9650-5a0bacadcb97", order: 0, type: "click" },
+  replyTo: {
+    id: "2635e77b-8ead-4668-9650-5a0bacadcb97",
+    order: 0,
+    type: "click",
+  },
 };
 
 describe("normalizeQuiz", () => {
@@ -53,10 +57,12 @@ describe("normalizeQuiz", () => {
   });
 
   it("rejects an empty question, missing labels and wrong option counts", () => {
-    expect(normalizeQuiz({ body: "", options: OPTIONS }).error).toMatch(/empty/);
-    expect(
-      normalizeQuiz({ body: "Q", options: [OPTIONS[1]] }).error,
-    ).toMatch(/between 2 and 3/);
+    expect(normalizeQuiz({ body: "", options: OPTIONS }).error).toMatch(
+      /empty/,
+    );
+    expect(normalizeQuiz({ body: "Q", options: [OPTIONS[1]] }).error).toMatch(
+      /between 2 and 3/,
+    );
     expect(
       normalizeQuiz({ body: "Q", options: [...OPTIONS, OPTIONS[0]] }).error,
     ).toMatch(/between 2 and 3/);
@@ -169,7 +175,9 @@ describe("quizFeedbackText", () => {
   it("uses the default texts and fills in the correct option", () => {
     const question = { options: OPTIONS };
 
-    expect(quizFeedbackText(question, true)).toBe(DEFAULT_QUIZ_FEEDBACK_CORRECT);
+    expect(quizFeedbackText(question, true)).toBe(
+      DEFAULT_QUIZ_FEEDBACK_CORRECT,
+    );
     expect(quizFeedbackText(question, false)).toBe(
       "Não é essa. A resposta certa é: 2,8 bar",
     );
@@ -191,12 +199,30 @@ describe("isQuestionExpired", () => {
   it("compares expires_at with now", () => {
     const now = Date.parse("2026-09-14T12:00:00Z");
 
-    expect(
-      isQuestionExpired({ expires_at: "2026-09-21T12:00:00Z" }, now),
-    ).toBe(false);
-    expect(
-      isQuestionExpired({ expires_at: "2026-09-14T11:59:59Z" }, now),
-    ).toBe(true);
+    expect(isQuestionExpired({ expires_at: "2026-09-21T12:00:00Z" }, now)).toBe(
+      false,
+    );
+    expect(isQuestionExpired({ expires_at: "2026-09-14T11:59:59Z" }, now)).toBe(
+      true,
+    );
     expect(isQuestionExpired({}, now)).toBe(false);
+  });
+});
+
+describe("isQuestionExpired with a delivery date", () => {
+  it("counts the validity from the delivery, not from the question", () => {
+    const now = Date.parse("2026-09-30T12:00:00Z");
+    const question = { expires_at: "2026-09-21T00:00:00Z" };
+
+    /* Entregue há 3 dias: ainda aceita, mesmo com expires_at já passado. */
+    expect(isQuestionExpired(question, now, "2026-09-27T12:00:00Z")).toBe(
+      false,
+    );
+
+    /* Entregue há 8 dias: expirou. */
+    expect(isQuestionExpired(question, now, "2026-09-22T11:00:00Z")).toBe(true);
+
+    /* Sem data de entrega volta ao limite da pergunta. */
+    expect(isQuestionExpired(question, now, null)).toBe(true);
   });
 });
