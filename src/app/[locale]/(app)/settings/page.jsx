@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import phoneCountryCodes from "@/messages/phoneCountryCodes.json";
 import { useAuth } from "@/app/AuthContext";
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   const loadErrorMessage = t("loadError");
   const organizationMissingMessage = t("organizationMissing");
   const showAlert = useAlert();
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const { stopLoading } = useGlobalLoader();
@@ -157,6 +159,7 @@ export default function SettingsPage() {
       setLogoUrl(getOrganizationLogoUrl(payload.item?.logo_url || logoUrl));
       applyThemeVariables(payload.item?.theme);
       window.dispatchEvent(new CustomEvent("organization:updated"));
+      router.refresh(); // re-resolve tab title/favicon metadata
       setFeedback({ tone: "success", message: t("saveSuccess") });
       void showAlert({
         title: t("saveSuccessTitle"),
@@ -178,6 +181,7 @@ export default function SettingsPage() {
   function handleLogoChange(item) {
     setLogoUrl(getOrganizationLogoUrl(item?.logo_url));
     window.dispatchEvent(new CustomEvent("organization:updated"));
+    router.refresh(); // re-resolve tab title/favicon metadata
   }
 
   if (authLoading || loading || orgLoading) {
