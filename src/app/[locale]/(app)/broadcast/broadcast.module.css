@@ -1297,3 +1297,104 @@
 .counterOver {
   color: #b91c1c;
 }
+
+/* ---------- Quiz ---------- */
+
+/* Cada opção é um botão do WhatsApp com o texto editável lá dentro. */
+.quizOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.quizOptionCorrect {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #128c7e;
+  cursor: pointer;
+}
+
+.quizOptionInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+}
+
+.quizOptionInput::placeholder {
+  color: #8696a0;
+  font-weight: 500;
+}
+
+.quizOptionRemove {
+  flex: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  color: #8696a0;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quizOptionRemove:hover,
+.quizOptionRemove:focus-visible {
+  color: #b91c1c;
+}
+
+.quizAddOption {
+  width: 100%;
+  max-width: 88%;
+  padding: 6px 12px;
+  border: 1px dashed #128c7e;
+  border-radius: 8px;
+  background: transparent;
+  color: #128c7e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quizAddOption:hover,
+.quizAddOption:focus-visible {
+  background: rgba(18, 140, 126, 0.08);
+}
+
+.quizMeta {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quizField {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.quizField textarea {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+  min-height: 40px;
+}
+
+.quizFieldHint {
+  font-size: 12px;
+  color: #6b7280;
+}

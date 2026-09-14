@@ -159,6 +159,7 @@ async function processOneBroadcast(broadcast) {
             openingBody: storedPayload.openingBody || null,
             openingOnly: storedPayload.openingOnly === true,
             chainMetadata: null,
+            question: storedPayload.question || null,
           }
         : {
             userIds: Array.isArray(storedPayload.userIds)

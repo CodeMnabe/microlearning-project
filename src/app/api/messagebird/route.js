@@ -56,6 +56,8 @@ import { splitE164 } from "@/lib/whatsapp/E164";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 
+import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
+
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 
 import { getSupabaseAdminClient } from "@/lib/db/admin";
@@ -910,6 +912,81 @@ async function handleEvent(rawJSON) {
 
   /*
    * =========================================================
+   * QUIZ / PERGUNTA
+   * =========================================================
+   *
+   * Um toque num botão de quiz (ou o texto de uma
+   * opção) regista a resposta e envia o feedback.
+   * Não passa pelo assistente. Só a primeira
+   * resposta de cada contacto conta.
+   */
+  const questionResult = await handleQuestionReply({
+    user,
+
+    payload: evt.payload,
+
+    inboundMsgId,
+
+    contactId,
+
+    sendText: (replyText) =>
+      sendBirdMessage({
+        channelId: normalizeId(organization.channel_id) || sentChannelId,
+
+        contactId,
+
+        phoneNumber: identity.phoneNumber || user.phone_number,
+
+        whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
+
+        body: {
+          type: "text",
+
+          text: {
+            text: replyText,
+          },
+        },
+      }),
+
+    resolveThread: async () => {
+      try {
+        const assistant = await getAssistantFromUser(user, organization);
+
+        if (!assistant) return null;
+
+        const existingThread = await getUserThreadForChannel({
+          userId: user.id,
+
+          assistantId: assistant.id,
+
+          channel: "whatsapp",
+        });
+
+        return {
+          threadId: existingThread?.id ?? null,
+
+          assistantId: assistant.id,
+        };
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  if (questionResult.handled) {
+    console.log("Question reply handled", {
+      userId: user.id,
+
+      inboundMsgId,
+
+      ...questionResult,
+    });
+
+    return;
+  }
+
+  /*
+   * =========================================================
    * DATABASE ASSISTANT
    * =========================================================
    *
@@ -1245,6 +1322,13 @@ async function handlePendingMessages({
 
     const hasText = Boolean(String(p.message || "").trim());
 
+    /*
+     * Quiz em espera: a mensagem leva os botões
+     * de resposta rápida.
+     */
+    const actions =
+      Array.isArray(p.actions) && p.actions.length > 0 ? p.actions : null;
+
     if (!hasImages && !hasText) {
       console.warn("Skipping empty pending outreach", {
         pendingOutreachId: row.id,
@@ -1276,6 +1360,8 @@ async function handlePendingMessages({
 
           text: {
             text: p.message || "",
+
+            ...(actions ? { actions } : {}),
           },
         };
 
@@ -1354,6 +1440,8 @@ async function handlePendingMessages({
       role: "assistant",
 
       deliveryStatus: "accepted",
+
+      questionId: p.questionId ?? null,
 
       messageChainId: chainContext?.chain.id || null,
 

@@ -2,8 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { toE164 } from "@/lib/whatsapp/E164";
 import { getUserById } from "@/lib/repos/user.repo";
-import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
+import { createMessage, isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
+import { createQuestion } from "@/lib/repos/questions.repo";
+import { buildQuizActions, questionExpiryDate } from "@/lib/whatsapp/question";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
   buildOpeningTemplateParams,
@@ -143,6 +145,7 @@ async function sendFreeform({
   contact,
   message,
   imageUrls,
+  actions = null,
 }) {
   const payload = {
     receiver: {
@@ -158,7 +161,14 @@ async function sendFreeform({
             ...(message ? { text: message } : {}),
           },
         }
-      : { type: "text", text: { text: message } },
+      : {
+          type: "text",
+          text: {
+            text: message,
+            /* Botões de resposta rápida (quiz). */
+            ...(actions?.length ? { actions } : {}),
+          },
+        },
   };
 
   const res = await fetch(endpoint, {
@@ -239,6 +249,9 @@ async function sendOpeningTemplate({
  * - `openingOnly`: envia só o template de abertura, sem mensagem em espera.
  * - `openingBody`: corpo do template só para este envio; sem ele usa-se o
  *   corpo guardado na organização.
+ * - `question`: quiz ({ kind: "quiz", body, options, feedback* }). O corpo
+ *   é a mensagem, enviada com botões de resposta rápida. Cria uma linha em
+ *   `question` e liga-lhe cada mensagem entregue (message.question_id).
  */
 export async function sendWhatsappBroadcast(input = {}) {
   const {
@@ -254,6 +267,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
     chainMetadata = null,
+    question = null,
   } = input;
 
   if (!orgId) {
@@ -270,8 +284,22 @@ export async function sendWhatsappBroadcast(input = {}) {
     .map((f) => f.url);
 
   const sendOpeningOnly = Boolean(openingOnly);
+
+  const quiz = question?.kind === "quiz" ? question : null;
+
+  if (question && !quiz) {
+    throw new BroadcastError("Unsupported question kind", 400);
+  }
+
+  if (quiz && normalizedFiles.length > 0) {
+    throw new BroadcastError("A quiz cannot have attachments", 400);
+  }
+
+  /* Num quiz, a pergunta é a própria mensagem. */
+  const messageText = quiz ? quiz.body : message;
+
   const hasInitialFreeformContent =
-    String(message || "").trim().length > 0 || onlyImageUrls.length > 0;
+    String(messageText || "").trim().length > 0 || onlyImageUrls.length > 0;
 
   if (!hasInitialFreeformContent && !sendOpeningOnly) {
     throw new BroadcastError("Missing message/images", 400);
@@ -303,6 +331,27 @@ export async function sendWhatsappBroadcast(input = {}) {
     org.default_phone_country_code ||
     process.env.DEFAULT_COUNTRY_CODE ||
     "+351";
+
+  /*
+   * Uma linha em `question` por envio. Cada mensagem entregue fica ligada a
+   * ela, e um toque num botão chega com a referência a essa mensagem.
+   */
+  const questionRow = quiz
+    ? await createQuestion({
+        organizationId: orgId,
+        kind: "quiz",
+        body: quiz.body,
+        options: quiz.options,
+        feedbackCorrect: quiz.feedbackCorrect,
+        feedbackIncorrect: quiz.feedbackIncorrect,
+        scheduledBroadcastId,
+        sendGroupId,
+        createdByUserId,
+        expiresAt: questionExpiryDate(),
+      })
+    : null;
+
+  const quizActions = quiz ? buildQuizActions(quiz.options) : null;
 
   async function resolveRecipient(rawRecipient) {
     const recipient = normalizeRecipient(rawRecipient);
@@ -393,7 +442,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     });
 
     const messageWithTrackedLinks = replaceTrackedPlaceholders(
-      message,
+      messageText,
       resolvedTrackedLinks,
     );
 
@@ -420,7 +469,24 @@ export async function sendWhatsappBroadcast(input = {}) {
         contact,
         message: resolvedMessage,
         imageUrls: onlyImageUrls,
+        actions: quizActions,
       });
+
+      if (r.ok && questionRow && user) {
+        await createMessage({
+          threadId: null,
+          userId: user.id,
+          organizationId: orgId,
+          assistantId: user.assistant_id ?? null,
+          channel: "whatsapp",
+          messageId: r.providerMessageId,
+          content: resolvedMessage,
+          role: "assistant",
+          deliveryStatus: "accepted",
+          scheduledBroadcastId,
+          questionId: questionRow.id,
+        });
+      }
 
       console.log("[WA freeform result]", {
         sendGroupId,
@@ -439,6 +505,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         ...base,
         kind: "freeform",
         resolvedMessage,
+        questionId: questionRow?.id ?? null,
         ...r,
       };
     }
@@ -507,6 +574,13 @@ export async function sendWhatsappBroadcast(input = {}) {
         payload: {
           message: resolvedMessage,
           imageUrls: onlyImageUrls,
+          ...(questionRow
+            ? {
+                type: "quiz",
+                questionId: questionRow.id,
+                actions: quizActions,
+              }
+            : {}),
         },
         expiresAt,
         templateMessageId,
@@ -521,6 +595,7 @@ export async function sendWhatsappBroadcast(input = {}) {
       ...base,
       kind: "template",
       resolvedMessage,
+      questionId: questionRow?.id ?? null,
       ...r,
     };
   }
@@ -568,6 +643,7 @@ export async function sendWhatsappBroadcast(input = {}) {
 
   return {
     sendGroupId,
+    questionId: questionRow?.id ?? null,
     ok: okCount,
     failed: failedCount,
     queued: queuedCount,

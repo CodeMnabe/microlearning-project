@@ -1399,7 +1399,20 @@
       "openingCounter": "{count} of {max} characters",
       "openingLoading": "Loading the opening message...",
       "openingLoadFailed": "Could not load the opening message.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "quizTitle": "Quiz",
+      "quizHint": "Write the question in the bubble and the options in the buttons. Mark the right one in the circle. Contacts outside the window receive the opening message first.",
+      "quizBody": "Quiz question",
+      "quizPlaceholder": "Write the question...",
+      "quizOption": "Option {index}",
+      "quizMarkCorrect": "Mark option {index} as correct",
+      "quizRemoveOption": "Remove option {index}",
+      "quizAddOption": "Add option",
+      "quizOptionLimit": "Up to {max} options of {chars} characters each, as WhatsApp requires.",
+      "quizFeedbackCorrect": "Reply when correct",
+      "quizFeedbackIncorrect": "Reply when wrong",
+      "quizFeedbackHint": "If left empty, the default text is sent. Write '{{'certa'}}' to include the correct option.",
+      "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts."
     },
     "alerts": {
       "usersLoadFailed": {
@@ -1418,6 +1431,10 @@
       "openingMissing": {
         "title": "Missing body",
         "message": "Write the opening message body before continuing."
+      },
+      "quizInvalid": {
+        "title": "Incomplete quiz",
+        "message": "Write the question, fill in 2 to 3 different options of up to 20 characters and mark the correct one."
       }
     },
     "recipient": "recipient",
