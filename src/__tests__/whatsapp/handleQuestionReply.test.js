@@ -1,6 +1,12 @@
-vi.mock("@/lib/services/questions/evaluateOpenQuestion", () => ({ evaluateOpenQuestion: vi.fn() }));
-vi.mock("@/lib/services/questions/appendQuestionContext", () => ({ appendQuestionContext: vi.fn() }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/services/questions/evaluateOpenQuestion", () => ({
+  evaluateOpenQuestion: vi.fn(),
+}));
+
+vi.mock("@/lib/services/questions/appendQuestionContext", () => ({
+  appendQuestionContext: vi.fn(),
+}));
 
 vi.mock("@/lib/repos/messages.repo", () => ({
   createMessage: vi.fn(),
@@ -59,7 +65,10 @@ function tap(index, label, replyToId = "bird-out-1") {
       text: {
         text: label,
         actions: [
-          { type: "postback", postback: { text: label, payload: `item_${index}` } },
+          {
+            type: "postback",
+            postback: { text: label, payload: `item_${index}` },
+          },
         ],
       },
     },
@@ -84,7 +93,10 @@ describe("handleQuestionReply", () => {
     getQuestionById.mockResolvedValue(QUESTION);
     createQuestionAnswer.mockResolvedValue({ id: 77 });
 
-    sendText = vi.fn(async () => ({ ok: true, providerMessageId: "bird-out-2" }));
+    sendText = vi.fn(async () => ({
+      ok: true,
+      providerMessageId: "bird-out-2",
+    }));
     resolveThread = vi.fn(async () => ({ threadId: 3, assistantId: 7 }));
   });
 

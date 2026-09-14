@@ -15,6 +15,7 @@ const QUESTION_SELECT = `
   feedback_correct,
   feedback_incorrect,
   expected_answer,
+  ai_evaluation,
   scheduled_broadcast_id,
   send_group_id,
   created_by_user_id,
@@ -53,6 +54,7 @@ export async function createQuestion({
   feedbackCorrect = null,
   feedbackIncorrect = null,
   expectedAnswer = null,
+  aiEvaluation = true,
   scheduledBroadcastId = null,
   sendGroupId = null,
   createdByUserId = null,
@@ -69,6 +71,7 @@ export async function createQuestion({
         feedback_correct: feedbackCorrect || null,
         feedback_incorrect: feedbackIncorrect || null,
         expected_answer: expectedAnswer || null,
+        ai_evaluation: aiEvaluation !== false,
         scheduled_broadcast_id: scheduledBroadcastId,
         send_group_id: sendGroupId,
         created_by_user_id: createdByUserId,
@@ -124,10 +127,12 @@ export async function getQuestionAnswer(questionId, userId) {
 }
 
 /** Guarda a avaliação depois de reservar atomicamente a primeira resposta. */
-export async function updateQuestionAnswerEvaluation(id, {
-  verdict = null, aiFeedback = null, reviewNeeded = false,
-}) {
-  const { error } = await supabase.from("question_answer")
+export async function updateQuestionAnswerEvaluation(
+  id,
+  { verdict = null, aiFeedback = null, reviewNeeded = false },
+) {
+  const { error } = await supabase
+    .from("question_answer")
     .update({ verdict, ai_feedback: aiFeedback, review_needed: reviewNeeded })
     .eq("id", id);
   if (error) throw error;

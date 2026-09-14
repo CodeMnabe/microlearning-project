@@ -41,7 +41,12 @@ const defaultDeps = {
  *
  * Devolve null quando a mensagem não é resposta a nenhuma pergunta.
  */
-export async function findQuestionForReply({ user, payload, inboundMsgId = null, deps }) {
+export async function findQuestionForReply({
+  user,
+  payload,
+  inboundMsgId = null,
+  deps,
+}) {
   const d = { ...defaultDeps, ...deps };
   const reply = extractInboundReply(payload);
 
@@ -54,7 +59,10 @@ export async function findQuestionForReply({ user, payload, inboundMsgId = null,
     if (message?.question_id && Number(message.user_id) === Number(user.id)) {
       const question = await d.getQuestionById(message.question_id);
 
-      if (question && Number(question.organization_id) === Number(user.organization_id)) {
+      if (
+        question &&
+        Number(question.organization_id) === Number(user.organization_id)
+      ) {
         return { reply, question, message };
       }
     }
@@ -75,14 +83,22 @@ export async function findQuestionForReply({ user, payload, inboundMsgId = null,
 
   const question = await d.getQuestionById(message.question_id);
 
-  if (!question || Number(question.organization_id) !== Number(user.organization_id) || isQuestionExpired(question)) {
+  if (
+    !question ||
+    Number(question.organization_id) !== Number(user.organization_id) ||
+    isQuestionExpired(question)
+  ) {
     return null;
   }
 
   if (question.kind === "open") {
     // Depois da primeira resposta, texto livre volta à conversa normal.
     const previous = await d.getQuestionAnswer(question.id, user.id);
-    if (previous && (!inboundMsgId || previous.inbound_message_id !== inboundMsgId)) return null;
+    if (
+      previous &&
+      (!inboundMsgId || previous.inbound_message_id !== inboundMsgId)
+    )
+      return null;
     return { reply, question, message };
   }
 
@@ -114,7 +130,12 @@ export async function handleQuestionReply({
 }) {
   const d = { ...defaultDeps, ...deps };
 
-  const found = await findQuestionForReply({ user, payload, inboundMsgId, deps: d });
+  const found = await findQuestionForReply({
+    user,
+    payload,
+    inboundMsgId,
+    deps: d,
+  });
 
   if (!found) return { handled: false };
 
@@ -172,7 +193,9 @@ export async function handleQuestionReply({
     };
   }
 
-  const isCorrect = isOpen ? null : Boolean(question.options?.[option.index]?.correct);
+  const isCorrect = isOpen
+    ? null
+    : Boolean(question.options?.[option.index]?.correct);
 
   const answer = await d.createQuestionAnswer({
     questionId: question.id,
@@ -198,7 +221,7 @@ export async function handleQuestionReply({
   if (isOpen) {
     let evaluation = null;
     let reviewNeeded = false;
-    if (question.options?.aiEvaluation !== false) {
+    if (question.ai_evaluation !== false) {
       try {
         evaluation = await d.evaluateOpenQuestion({
           assistant: thread.assistant,
@@ -207,7 +230,10 @@ export async function handleQuestionReply({
         });
       } catch (error) {
         reviewNeeded = true;
-        console.warn("Falha na avaliação da pergunta", { questionId: question.id, error: error.message });
+        console.warn("Falha na avaliação da pergunta", {
+          questionId: question.id,
+          error: error.message,
+        });
       }
     }
 
@@ -219,7 +245,10 @@ export async function handleQuestionReply({
         else reviewNeeded = true;
       } catch (error) {
         reviewNeeded = true;
-        console.warn("Falha no envio da resposta à pergunta", { questionId: question.id, error: error.message });
+        console.warn("Falha no envio da resposta à pergunta", {
+          questionId: question.id,
+          error: error.message,
+        });
       }
     }
     if (evaluation) {
@@ -237,14 +266,24 @@ export async function handleQuestionReply({
       });
     } catch (error) {
       reviewNeeded = true;
-      console.warn("Falha ao guardar o contexto da pergunta", { questionId: question.id, error: error.message });
+      console.warn("Falha ao guardar o contexto da pergunta", {
+        questionId: question.id,
+        error: error.message,
+      });
     }
     await d.updateQuestionAnswerEvaluation(answer.id, {
       verdict: evaluation?.verdict ?? null,
       aiFeedback: evaluation?.feedback ?? null,
       reviewNeeded,
     });
-    return { handled: true, outcome: "answered", questionId: question.id, answerId: answer.id, verdict: evaluation?.verdict ?? null, reviewNeeded };
+    return {
+      handled: true,
+      outcome: "answered",
+      questionId: question.id,
+      answerId: answer.id,
+      verdict: evaluation?.verdict ?? null,
+      reviewNeeded,
+    };
   }
 
   const feedback = quizFeedbackText(question, isCorrect);

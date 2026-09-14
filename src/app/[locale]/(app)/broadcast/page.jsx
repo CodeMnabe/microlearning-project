@@ -139,7 +139,9 @@ export default function BroadcastPage() {
   const [openingLoading, setOpeningLoading] = useState(false);
   const [openingFailed, setOpeningFailed] = useState(false);
   const [quiz, setQuiz] = useState(() => makeEmptyQuiz());
-  const [openQuestion, setOpenQuestion] = useState(() => makeEmptyOpenQuestion());
+  const [openQuestion, setOpenQuestion] = useState(() =>
+    makeEmptyOpenQuestion(),
+  );
 
   const initialScheduledDate = useMemo(() => buildInitialScheduledDate(), []);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledDate);
@@ -1525,7 +1527,12 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("send"))) return;
 
-    if (!isOpeningMode && !isQuizMode && !isOpenQuestionMode && !trackedLinksValid) {
+    if (
+      !isOpeningMode &&
+      !isQuizMode &&
+      !isOpenQuestionMode &&
+      !trackedLinksValid
+    ) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",
@@ -1752,7 +1759,12 @@ export default function BroadcastPage() {
 
     if (!(await validateContentBeforeAction("schedule"))) return;
 
-    if (!isOpeningMode && !isQuizMode && !isOpenQuestionMode && !trackedLinksValid) {
+    if (
+      !isOpeningMode &&
+      !isQuizMode &&
+      !isOpenQuestionMode &&
+      !trackedLinksValid
+    ) {
       await showAlert({
         title: "Invalid tracked links",
         message: "Please complete all tracked links and avoid duplicate keys.",

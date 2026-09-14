@@ -291,7 +291,10 @@ export async function sendWhatsappBroadcast(input = {}) {
   const quiz = question?.kind === "quiz" ? question : null;
 
   if (question && (normalizedFiles.length > 0 || sendOpeningOnly)) {
-    throw new BroadcastError("Uma pergunta não pode ter anexos nem ser apenas uma abertura.", 400);
+    throw new BroadcastError(
+      "Uma pergunta não pode ter anexos nem ser apenas uma abertura.",
+      400,
+    );
   }
 
   /* A pergunta é a própria mensagem. */
@@ -340,11 +343,11 @@ export async function sendWhatsappBroadcast(input = {}) {
         organizationId: orgId,
         kind: question.kind,
         body: question.body,
-        // O JSON existente guarda também a preferência de avaliação da pergunta aberta.
-        options: quiz ? quiz.options : { aiEvaluation: question.aiEvaluation },
+        options: quiz ? quiz.options : null,
         feedbackCorrect: quiz?.feedbackCorrect,
         feedbackIncorrect: quiz?.feedbackIncorrect,
         expectedAnswer: question.expectedAnswer,
+        aiEvaluation: quiz ? true : question.aiEvaluation !== false,
         scheduledBroadcastId,
         sendGroupId,
         createdByUserId,
