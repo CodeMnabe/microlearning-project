@@ -1377,6 +1377,12 @@
       "soon": "Coming soon"
     },
     "composer": {
+      "openQuestionHint": "Write the question in the bubble and set the expected answer below.",
+      "openQuestionBody": "Open question",
+      "openQuestionPlaceholder": "What would you like to ask?",
+      "expectedAnswer": "Expected answer (required)",
+      "aiEvaluation": "Evaluate the answer with AI",
+      "expectedAnswerHint": "The contact receives AI feedback followed by the expected answer. With evaluation disabled, only the expected answer is sent.",
       "contact": "Contact",
       "back": "Change message type",
       "hint": "Write directly in the bubble. Use + to add images, links and variables.",
@@ -1415,6 +1421,7 @@
       "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts."
     },
     "alerts": {
+      "openQuestionInvalid": {"title":"Complete the open question","message":"Write the question and expected answer, using up to 1024 characters each."},
       "usersLoadFailed": {
         "title": "Failed to load recipients",
         "message": "The user list could not be loaded. Please try again in a few seconds."

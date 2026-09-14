@@ -1,7 +1,7 @@
-import { normalizeQuiz } from "@/lib/whatsapp/question";
+import { normalizeQuiz, normalizeOpenQuestion } from "@/lib/whatsapp/question";
 
 /**
- * Lê a pergunta (quiz) vinda do cliente ou de um payload agendado.
+ * Lê a pergunta vinda do cliente ou de um payload agendado.
  *
  * Devolve `{ question: null }` quando o envio não tem pergunta e
  * `{ error }` quando a pergunta não é válida.
@@ -24,6 +24,8 @@ export function parseQuestionOptions(body = {}) {
 
     return { question: result.quiz };
   }
+
+  if (raw.kind === "open") return normalizeOpenQuestion(raw);
 
   return { error: "Unsupported question kind" };
 }

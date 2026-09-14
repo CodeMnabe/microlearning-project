@@ -1,3 +1,5 @@
+vi.mock("@/lib/services/questions/evaluateOpenQuestion", () => ({ evaluateOpenQuestion: vi.fn() }));
+vi.mock("@/lib/services/questions/appendQuestionContext", () => ({ appendQuestionContext: vi.fn() }));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/repos/messages.repo", () => ({
@@ -8,6 +10,7 @@ vi.mock("@/lib/repos/messages.repo", () => ({
 
 vi.mock("@/lib/repos/questions.repo", () => ({
   createQuestionAnswer: vi.fn(),
+  updateQuestionAnswerEvaluation: vi.fn(),
   getQuestionAnswer: vi.fn(),
   getQuestionById: vi.fn(),
 }));
@@ -42,6 +45,7 @@ const QUESTION = {
 };
 
 const QUESTION_MESSAGE = {
+  user_id: 42,
   id: 500,
   message_id: "bird-out-1",
   question_id: 10,

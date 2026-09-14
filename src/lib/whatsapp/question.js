@@ -140,6 +140,27 @@ export function isQuizValid(input) {
   return !normalizeQuiz(input).error;
 }
 
+export function makeEmptyOpenQuestion() {
+  return { body: "", expectedAnswer: "", aiEvaluation: true };
+}
+
+export function normalizeOpenQuestion(input) {
+  const body = typeof input?.body === "string" ? cleanMultiline(input.body) : "";
+  const expectedAnswer = typeof input?.expectedAnswer === "string"
+    ? cleanMultiline(input.expectedAnswer) : "";
+
+  if (!body || body.length > QUESTION_BODY_MAX_LENGTH) {
+    return { error: `Escreve uma pergunta com até ${QUESTION_BODY_MAX_LENGTH} caracteres.` };
+  }
+  if (!expectedAnswer || expectedAnswer.length > QUESTION_FEEDBACK_MAX_LENGTH) {
+    return { error: `Escreve a resposta esperada com até ${QUESTION_FEEDBACK_MAX_LENGTH} caracteres.` };
+  }
+  if (input.aiEvaluation !== undefined && typeof input.aiEvaluation !== "boolean") {
+    return { error: "A avaliação pela IA tem de ser um valor booleano." };
+  }
+  return { question: { kind: "open", body, expectedAnswer, aiEvaluation: input.aiEvaluation !== false } };
+}
+
 export function getCorrectOptionIndex(options = []) {
   return (options || []).findIndex((option) => option?.correct === true);
 }
