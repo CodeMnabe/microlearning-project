@@ -122,6 +122,17 @@ export default function QuestionsPage() {
       return translation("Questions.correctRate", { rate: item.correctRate });
     }
 
+    /* Sondagem: escolhas por opção. */
+    if (item.kind === "survey") {
+      if (!item.answeredCount) return "-";
+      return (item.options || [])
+        .map(
+          (option, index) =>
+            `${option.label}: ${item.optionCounts?.[index] ?? 0}`,
+        )
+        .join(" · ");
+    }
+
     const v = item.verdicts || {};
     return translation("Questions.verdictSummary", {
       completa: v.completa || 0,

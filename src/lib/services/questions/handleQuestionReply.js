@@ -4,6 +4,7 @@ import {
   isQuestionExpired,
   quizFeedbackText,
   resolveQuizOption,
+  surveyThanksText,
 } from "@/lib/whatsapp/question";
 import {
   createMessage,
@@ -16,6 +17,7 @@ import {
   getQuestionById,
   updateQuestionAnswerEvaluation,
 } from "@/lib/repos/questions.repo";
+import { interpolateBroadcastMessage } from "@/lib/services/broadcast/interpolateMessage";
 import { evaluateOpenQuestion } from "./evaluateOpenQuestion";
 import { appendQuestionContext } from "./appendQuestionContext";
 
@@ -124,11 +126,16 @@ export async function handleQuestionReply({
   payload,
   inboundMsgId = null,
   contactId = null,
+  organization = null,
   sendText,
   resolveThread,
   deps,
 }) {
   const d = { ...defaultDeps, ...deps };
+
+  /* Variáveis do contacto ({{nome}}, {{empresa}}) nos textos de feedback. */
+  const personalize = (text) =>
+    interpolateBroadcastMessage(text, { user, org: organization });
 
   const found = await findQuestionForReply({
     user,
@@ -142,7 +149,10 @@ export async function handleQuestionReply({
   const { reply, question, message } = found;
 
   const isOpen = question.kind === "open";
-  if (!isOpen && question.kind !== "quiz") return { handled: false };
+  const isSurvey = question.kind === "survey";
+  if (!isOpen && !isSurvey && question.kind !== "quiz") {
+    return { handled: false };
+  }
   if (isOpen && (reply.isTap || !reply.text.trim())) return { handled: false };
 
   const option = resolveQuizOption({ reply, options: question.options });
@@ -193,9 +203,11 @@ export async function handleQuestionReply({
     };
   }
 
-  const isCorrect = isOpen
-    ? null
-    : Boolean(question.options?.[option.index]?.correct);
+  /* Na sondagem não há resposta certa. */
+  const isCorrect =
+    isOpen || isSurvey
+      ? null
+      : Boolean(question.options?.[option.index]?.correct);
 
   const answer = await d.createQuestionAnswer({
     questionId: question.id,
@@ -286,7 +298,11 @@ export async function handleQuestionReply({
     };
   }
 
-  const feedback = quizFeedbackText(question, isCorrect);
+  const feedback = personalize(
+    isSurvey
+      ? surveyThanksText(question)
+      : quizFeedbackText(question, isCorrect),
+  );
 
   await reply_(feedback);
 

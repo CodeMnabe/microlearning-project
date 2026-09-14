@@ -923,6 +923,8 @@ async function handleEvent(rawJSON) {
 
     contactId,
 
+    organization,
+
     sendText: (replyText) =>
       sendBirdMessage({
         channelId: normalizeId(organization.channel_id) || sentChannelId,

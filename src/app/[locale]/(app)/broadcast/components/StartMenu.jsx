@@ -4,42 +4,22 @@ import WhatsAppPhone, {
   WhatsAppBubble,
   WhatsAppButton,
 } from "@/app/components/WhatsAppPhone/WhatsAppPhone";
-import {
-  OPENING_TEMPLATE_BUTTON,
-  renderOpeningMessage,
-} from "@/lib/whatsapp/openingTemplate";
 
 import styles from "../broadcast.module.css";
 
 /**
- * Cartões para escolher como começar a mensagem WhatsApp.
+ * Cartões para escolher como começar a mensagem WhatsApp: mensagem livre,
+ * quiz, sondagem ou pergunta aberta. A abertura da janela não é um ponto de
+ * partida: vai automaticamente a quem está fora das 24 horas, e o corpo
+ * edita-se em Definições.
  */
 export default function StartMenu({
   onChoose,
   sampleName,
-  orgName,
-  openingBody,
   previewTime,
   translation,
 }) {
-  const openingText = renderOpeningMessage({
-    name: sampleName,
-    orgName,
-    body: openingBody,
-  });
-
   const cards = [
-    {
-      key: "opening",
-      title: translation("Broadcast.start.opening"),
-      hint: translation("Broadcast.start.openingHint"),
-      preview: (
-        <>
-          <WhatsAppBubble time={previewTime}>{openingText}</WhatsAppBubble>
-          <WhatsAppButton>{OPENING_TEMPLATE_BUTTON}</WhatsAppButton>
-        </>
-      ),
-    },
     {
       key: "blank",
       title: translation("Broadcast.start.blank"),
@@ -72,6 +52,27 @@ export default function StartMenu({
       ),
     },
     {
+      key: "survey",
+      title: translation("Broadcast.start.survey"),
+      hint: translation("Broadcast.start.surveyHint"),
+      preview: (
+        <>
+          <WhatsAppBubble time={previewTime}>
+            {translation("Broadcast.start.surveySample", { name: sampleName })}
+          </WhatsAppBubble>
+          <WhatsAppButton>
+            {translation("Broadcast.start.surveyOptionA")}
+          </WhatsAppButton>
+          <WhatsAppButton>
+            {translation("Broadcast.start.surveyOptionB")}
+          </WhatsAppButton>
+          <WhatsAppButton>
+            {translation("Broadcast.start.surveyOptionC")}
+          </WhatsAppButton>
+        </>
+      ),
+    },
+    {
       key: "question",
       title: translation("Broadcast.start.question"),
       hint: translation("Broadcast.start.questionHint"),
@@ -99,10 +100,9 @@ export default function StartMenu({
           <button
             key={card.key}
             type="button"
-            className={`${styles.startCard} ${card.soon ? styles.startCardSoon : ""}`}
-            disabled={Boolean(card.soon)}
+            className={styles.startCard}
             data-testid={`start-card-${card.key}`}
-            onClick={card.soon ? undefined : () => onChoose(card.key)}
+            onClick={() => onChoose(card.key)}
           >
             <div className={styles.startThumb}>
               <WhatsAppPhone contactName={sampleName} compact centered>
@@ -112,11 +112,6 @@ export default function StartMenu({
             <div className={styles.startCardText}>
               <div className={styles.startCardTitle}>
                 <span>{card.title}</span>
-                {card.soon ? (
-                  <span className={styles.startCardBadge}>
-                    {translation("Broadcast.start.soon")}
-                  </span>
-                ) : null}
               </div>
               <div className={styles.startCardHint}>{card.hint}</div>
             </div>

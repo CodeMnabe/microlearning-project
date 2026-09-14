@@ -22,6 +22,7 @@ export default function ChainMessagesBar({
   const stepKinds = [
     ["message", "Broadcast.broadcastChain.stepKindMessage"],
     ["quiz", "Broadcast.broadcastChain.stepKindQuiz"],
+    ["survey", "Broadcast.broadcastChain.stepKindSurvey"],
     ["open", "Broadcast.broadcastChain.stepKindOpen"],
   ];
 

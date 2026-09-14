@@ -6,7 +6,11 @@ import { createMessage, isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { createQuestion, getQuestionById } from "@/lib/repos/questions.repo";
 import { getLatestUserThreadForChannel } from "@/lib/repos/threads.repo";
-import { buildQuizActions, questionExpiryDate } from "@/lib/whatsapp/question";
+import {
+  buildQuizActions,
+  hasReplyButtons,
+  questionExpiryDate,
+} from "@/lib/whatsapp/question";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
   buildOpeningTemplateParams,
@@ -318,6 +322,8 @@ export async function sendWhatsappBroadcast(input = {}) {
   }
 
   const quiz = question?.kind === "quiz" ? question : null;
+  const survey = question?.kind === "survey" ? question : null;
+  const withButtons = question && hasReplyButtons(question.kind);
 
   if (question && (normalizedFiles.length > 0 || sendOpeningOnly)) {
     throw new BroadcastError(
@@ -372,11 +378,12 @@ export async function sendWhatsappBroadcast(input = {}) {
       organizationId: orgId,
       kind: question.kind,
       body: question.body,
-      options: quiz ? quiz.options : null,
-      feedbackCorrect: quiz?.feedbackCorrect,
+      options: withButtons ? question.options : null,
+      /* Na sondagem, feedback_correct guarda o agradecimento. */
+      feedbackCorrect: quiz?.feedbackCorrect ?? survey?.thanksText ?? null,
       feedbackIncorrect: quiz?.feedbackIncorrect,
       expectedAnswer: question.expectedAnswer,
-      aiEvaluation: quiz ? true : question.aiEvaluation !== false,
+      aiEvaluation: withButtons ? true : question.aiEvaluation !== false,
       scheduledBroadcastId,
       sendGroupId,
       createdByUserId,
@@ -384,7 +391,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     });
   }
 
-  const quizActions = quiz ? buildQuizActions(quiz.options) : null;
+  const quizActions = withButtons ? buildQuizActions(question.options) : null;
 
   async function resolveRecipient(rawRecipient) {
     const recipient = normalizeRecipient(rawRecipient);

@@ -85,16 +85,22 @@ export async function attachChainStepQuestions({
     }
 
     const isQuiz = question.kind === "quiz";
+    const isSurvey = question.kind === "survey";
+    const withButtons = isQuiz || isSurvey;
 
     const row = await create({
       organizationId,
       kind: question.kind,
       body: question.body,
-      options: isQuiz ? question.options : null,
-      feedbackCorrect: isQuiz ? question.feedbackCorrect : null,
+      options: withButtons ? question.options : null,
+      feedbackCorrect: isQuiz
+        ? question.feedbackCorrect
+        : isSurvey
+          ? question.thanksText || null
+          : null,
       feedbackIncorrect: isQuiz ? question.feedbackIncorrect : null,
-      expectedAnswer: isQuiz ? null : question.expectedAnswer,
-      aiEvaluation: isQuiz ? true : question.aiEvaluation !== false,
+      expectedAnswer: withButtons ? null : question.expectedAnswer,
+      aiEvaluation: withButtons ? true : question.aiEvaluation !== false,
       createdByUserId,
       expiresAt: chainStepExpiryDate({ startAt, cumulativeDelayMinutes }),
     });

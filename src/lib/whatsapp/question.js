@@ -12,7 +12,14 @@
  *   replyTo.id é o id da mensagem enviada.
  */
 
-export const QUESTION_KINDS = ["quiz", "open"];
+export const QUESTION_KINDS = ["quiz", "survey", "open"];
+
+/* Tipos com botões de resposta rápida. */
+export const BUTTON_QUESTION_KINDS = ["quiz", "survey"];
+
+export function hasReplyButtons(kind) {
+  return BUTTON_QUESTION_KINDS.includes(kind);
+}
 
 export const QUIZ_MIN_OPTIONS = 2;
 export const QUIZ_MAX_OPTIONS = 3;
@@ -28,6 +35,9 @@ export const QUESTION_VALIDITY_DAYS = 7;
 export const DEFAULT_QUIZ_FEEDBACK_CORRECT = "Certo! ✅";
 export const DEFAULT_QUIZ_FEEDBACK_INCORRECT =
   "Não é essa. A resposta certa é: {{certa}}";
+
+/* Agradecimento por omissão depois de escolher numa sondagem. */
+export const DEFAULT_SURVEY_THANKS = "Obrigado pela tua resposta!";
 
 /* Resposta a um toque numa pergunta cujo prazo já passou. */
 export const EXPIRED_QUESTION_TEXT = "Esta pergunta já não aceita respostas.";
@@ -138,6 +148,89 @@ export function normalizeQuiz(input) {
  */
 export function isQuizValid(input) {
   return !normalizeQuiz(input).error;
+}
+
+export function makeEmptySurvey() {
+  return {
+    body: "",
+    options: [makeQuizOption(), makeQuizOption(), makeQuizOption()],
+    thanksText: "",
+  };
+}
+
+/**
+ * Valida e normaliza uma sondagem: pergunta com 2 a 3 opções, sem resposta
+ * certa, e um agradecimento opcional enviado depois da escolha.
+ */
+export function normalizeSurvey(input) {
+  if (!input || typeof input !== "object") {
+    return { error: "Survey is missing" };
+  }
+
+  const body = cleanMultiline(input.body);
+
+  if (!body) {
+    return { error: "The survey question cannot be empty" };
+  }
+
+  if (body.length > QUESTION_BODY_MAX_LENGTH) {
+    return {
+      error: `The survey question must have at most ${QUESTION_BODY_MAX_LENGTH} characters`,
+    };
+  }
+
+  const rawOptions = Array.isArray(input.options) ? input.options : [];
+  const options = rawOptions.map((option) => ({
+    label: sanitizeOptionLabel(option?.label),
+  }));
+
+  if (options.length < QUIZ_MIN_OPTIONS || options.length > QUIZ_MAX_OPTIONS) {
+    return {
+      error: `A survey needs between ${QUIZ_MIN_OPTIONS} and ${QUIZ_MAX_OPTIONS} options`,
+    };
+  }
+
+  if (options.some((option) => !option.label)) {
+    return { error: "Every survey option needs a label" };
+  }
+
+  if (options.some((option) => option.label.length > QUIZ_OPTION_MAX_LENGTH)) {
+    return {
+      error: `Survey options must have at most ${QUIZ_OPTION_MAX_LENGTH} characters`,
+    };
+  }
+
+  const labels = new Set(options.map((option) => option.label.toLowerCase()));
+
+  if (labels.size !== options.length) {
+    return { error: "Survey options must be different from each other" };
+  }
+
+  const thanksText = cleanMultiline(input.thanksText);
+
+  if (thanksText.length > QUESTION_FEEDBACK_MAX_LENGTH) {
+    return {
+      error: `The survey thanks text must have at most ${QUESTION_FEEDBACK_MAX_LENGTH} characters`,
+    };
+  }
+
+  return { survey: { kind: "survey", body, options, thanksText } };
+}
+
+export function isSurveyValid(input) {
+  return !normalizeSurvey(input).error;
+}
+
+/**
+ * Texto enviado depois da escolha numa sondagem. O administrador pode
+ * escrevê-lo; fica guardado em feedback_correct.
+ */
+export function surveyThanksText(question) {
+  const custom = cleanMultiline(
+    question?.feedback_correct ?? question?.thanksText,
+  );
+
+  return custom || DEFAULT_SURVEY_THANKS;
 }
 
 export function makeEmptyOpenQuestion() {

@@ -1,4 +1,8 @@
-import { normalizeQuiz, normalizeOpenQuestion } from "@/lib/whatsapp/question";
+import {
+  normalizeOpenQuestion,
+  normalizeQuiz,
+  normalizeSurvey,
+} from "@/lib/whatsapp/question";
 
 /**
  * Lê a pergunta vinda do cliente ou de um payload agendado.
@@ -23,6 +27,14 @@ export function parseQuestionOptions(body = {}) {
     if (result.error) return { error: result.error };
 
     return { question: result.quiz };
+  }
+
+  if (raw.kind === "survey") {
+    const result = normalizeSurvey(raw);
+
+    if (result.error) return { error: result.error };
+
+    return { question: result.survey };
   }
 
   if (raw.kind === "open") return normalizeOpenQuestion(raw);
