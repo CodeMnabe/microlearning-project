@@ -897,6 +897,7 @@
     "broadcastCreate": "Enviar",
     "broadcastScheduled": "Ver Agendadas",
     "trackedLinks": "Links Rastreados",
+    "questions": "Perguntas",
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
@@ -1711,6 +1712,103 @@
       "loadFailed": {
         "title": "Erro ao carregar links rastreados",
         "message": "Não foi possível carregar os links rastreados. Tenta novamente dentro de alguns segundos."
+      }
+    }
+  },
+
+  "Questions": {
+    "title": "Perguntas",
+    "subtitle": "Resultados dos quizzes e das perguntas abertas enviadas por WhatsApp.",
+    "totalQuestions": "Perguntas",
+    "toReview": "Para rever",
+    "search": "Procura pelo texto da pergunta",
+    "loading": "A carregar perguntas...",
+    "noQuestions": "Ainda não foi enviada nenhuma pergunta nesta organização.",
+    "kind": {
+      "quiz": "Quiz",
+      "open": "Pergunta aberta"
+    },
+    "table": {
+      "question": "Pergunta",
+      "kind": "Tipo",
+      "recipients": "Destinatários",
+      "answered": "Respostas",
+      "responseRate": "Taxa de resposta",
+      "result": "Resultado",
+      "toReview": "Para rever",
+      "sent": "Enviada"
+    },
+    "correctRate": "{rate}% de acertos",
+    "verdictSummary": "{completa} completa · {parcial} parcial · {incompleta} incompleta",
+    "view": "Ver",
+    "alerts": {
+      "noOrg": {
+        "title": "Organização em falta",
+        "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+      },
+      "loadFailed": {
+        "title": "Erro ao carregar perguntas",
+        "message": "Não foi possível carregar as perguntas. Tenta novamente dentro de alguns segundos."
+      }
+    },
+    "detail": {
+      "back": "Voltar",
+      "loading": "A carregar a pergunta...",
+      "options": "Opções",
+      "correctOption": "certa",
+      "expectedAnswer": "Resposta esperada",
+      "aiEvaluation": "Avaliação pela IA",
+      "aiOn": "ligada",
+      "aiOff": "desligada",
+      "sentAt": "Enviada",
+      "expiresAt": "Aceita respostas até",
+      "recipients": "Destinatários",
+      "answered": "Responderam",
+      "notAnswered": "Não responderam",
+      "responseRate": "Taxa de resposta",
+      "correct": "Acertos",
+      "correctRate": "Taxa de acertos",
+      "toReview": "Para rever",
+      "verdicts": {
+        "completa": "Completa",
+        "parcial": "Parcial",
+        "incompleta": "Incompleta",
+        "none": "Sem veredicto"
+      },
+      "table": {
+        "contact": "Contacto",
+        "phone": "Telemóvel",
+        "answer": "Resposta",
+        "result": "Resultado",
+        "verdict": "Veredicto",
+        "aiVerdict": "IA: {verdict}",
+        "feedback": "Feedback enviado",
+        "answeredAt": "Respondida",
+        "sentAt": "Enviada"
+      },
+      "right": "Certo",
+      "wrong": "Errado",
+      "reviewNeeded": "Para rever",
+      "useAiVerdict": "Manter o veredicto da IA",
+      "noAnswers": "Ainda ninguém respondeu.",
+      "allAnswered": "Toda a gente respondeu.",
+      "alerts": {
+        "noOrg": {
+          "title": "Organização em falta",
+          "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+        },
+        "missingQuestion": {
+          "title": "Pergunta inválida",
+          "message": "Não foi possível identificar a pergunta."
+        },
+        "loadFailed": {
+          "title": "Erro ao carregar a pergunta",
+          "message": "Não foi possível carregar os resultados desta pergunta. Tenta novamente dentro de alguns segundos."
+        },
+        "updateFailed": {
+          "title": "Erro ao guardar o veredicto",
+          "message": "Não foi possível guardar a correção. Tenta novamente."
+        }
       }
     }
   },

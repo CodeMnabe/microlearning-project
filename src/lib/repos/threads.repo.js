@@ -449,3 +449,31 @@ export async function getOrCreateThread({
     externalConversationId,
   });
 }
+
+/**
+ * Thread mais recente de um utilizador num canal, seja qual for o
+ * assistente. Serve para ligar à conversa mensagens enviadas fora do
+ * webhook (perguntas, mensagens em espera), onde o assistente não é
+ * conhecido.
+ */
+export async function getLatestUserThreadForChannel(userId, channel) {
+  const parsedUserId = Number(userId);
+
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || !channel) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("thread")
+    .select(SELECT_COLS)
+    .eq("user_id", parsedUserId)
+    .eq("channel", channel)
+    .eq("scope", "user")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data ?? null;
+}

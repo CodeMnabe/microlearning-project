@@ -5,6 +5,7 @@ import { getUserById } from "@/lib/repos/user.repo";
 import { createMessage, isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
 import { createQuestion } from "@/lib/repos/questions.repo";
+import { getLatestUserThreadForChannel } from "@/lib/repos/threads.repo";
 import { buildQuizActions, questionExpiryDate } from "@/lib/whatsapp/question";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
@@ -477,11 +478,17 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       if (r.ok && questionRow && user) {
+        /* Liga a pergunta à conversa do contacto, quando já existe. */
+        const thread = await getLatestUserThreadForChannel(
+          user.id,
+          "whatsapp",
+        ).catch(() => null);
+
         await createMessage({
-          threadId: null,
+          threadId: thread?.id ?? null,
           userId: user.id,
           organizationId: orgId,
-          assistantId: user.assistant_id ?? null,
+          assistantId: thread?.assistant_id ?? user.assistant_id ?? null,
           channel: "whatsapp",
           messageId: r.providerMessageId,
           content: resolvedMessage,

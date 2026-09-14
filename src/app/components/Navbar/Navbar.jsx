@@ -17,6 +17,7 @@ import {
   SendHorizontal,
   CalendarClock,
   Link2,
+  ListChecks,
   Zap,
   BarChart3,
 } from "lucide-react";
@@ -247,6 +248,17 @@ export default function Navbar() {
                     >
                       <Link2 aria-hidden className={styles.subnavIcon} />
                       <span>{translation("Nav.trackedLinks")}</span>
+                    </Link>
+
+                    <Link
+                      href="/broadcast/questions"
+                      onClick={onNavClick("/broadcast/questions")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/questions") ? styles.active : ""
+                      }`}
+                    >
+                      <ListChecks aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.questions")}</span>
                     </Link>
                   </div>
                 )}
