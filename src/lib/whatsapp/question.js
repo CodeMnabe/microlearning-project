@@ -276,7 +276,24 @@ export function resolveQuizOption({ reply, options = [] }) {
   return index >= 0 ? { index, matchedBy: "text" } : null;
 }
 
-export function isQuestionExpired(question, now = Date.now()) {
+/**
+ * Uma pergunta aceita respostas durante QUESTION_VALIDITY_DAYS depois de
+ * ser entregue ao contacto (`deliveredAt`, a data da mensagem enviada).
+ * Sem data de entrega vale o limite da própria pergunta, `expires_at`.
+ */
+export function isQuestionExpired(
+  question,
+  now = Date.now(),
+  deliveredAt = null,
+) {
+  if (deliveredAt) {
+    const delivered = new Date(deliveredAt).getTime();
+
+    if (Number.isFinite(delivered)) {
+      return delivered + QUESTION_VALIDITY_DAYS * 24 * 60 * 60 * 1000 <= now;
+    }
+  }
+
   const expiresAt = question?.expires_at ?? question?.expiresAt;
 
   if (!expiresAt) return false;

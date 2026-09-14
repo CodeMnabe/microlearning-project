@@ -9,6 +9,10 @@ import {
 } from "@/lib/repos/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
 import {
+  attachChainStepQuestions,
+  parseChainStepQuestions,
+} from "@/lib/services/broadcast/readChains/chainStepQuestions";
+import {
   assertUsersBelongToOrg,
   handleApiError,
   requireOwnedOrg,
@@ -27,8 +31,9 @@ function normalizeRecipient(raw) {
 }
 
 /*
- * Cada passo é uma mensagem livre. Quando a janela de 24h está fechada, o
- * envio usa o template de abertura da organização de forma implícita.
+ * Cada passo é uma mensagem livre, um quiz ou uma pergunta aberta. Quando a
+ * janela de 24h está fechada, o envio usa o template de abertura da
+ * organização de forma implícita.
  */
 function normalizeSteps(steps) {
   if (!Array.isArray(steps)) return [];
@@ -38,6 +43,7 @@ function normalizeSteps(steps) {
     files: Array.isArray(step?.files) ? step.files : [],
     imageUrls: Array.isArray(step?.imageUrls) ? step.imageUrls : [],
     trackedLinks: Array.isArray(step?.trackedLinks) ? step.trackedLinks : [],
+    question: step?.question ?? null,
     delayAfterPreviousReadMinutes: normalizeDelayMinutes(
       step?.delayAfterPreviousReadMinutes,
     ),
@@ -46,6 +52,7 @@ function normalizeSteps(steps) {
 
 function stepHasFreeformContent(step) {
   return (
+    Boolean(step?.question) ||
     String(step?.message || "").trim().length > 0 ||
     (Array.isArray(step?.files) && step.files.length > 0) ||
     (Array.isArray(step?.imageUrls) && step.imageUrls.length > 0)
@@ -160,6 +167,15 @@ export async function POST(req) {
       );
     }
 
+    const parsedQuestions = parseChainStepQuestions(steps);
+
+    if (parsedQuestions.error) {
+      return NextResponse.json(
+        { error: parsedQuestions.error },
+        { status: 400 },
+      );
+    }
+
     const chain = await createMessageChain({
       organizationId: orgAuth.orgId,
       createdByUserId: orgAuth.user.id,
@@ -170,9 +186,21 @@ export async function POST(req) {
       recipientCount: dedupedRecipients.length,
     });
 
+    /*
+     * Os passos com pergunta ganham a sua linha em `question`, partilhada
+     * por todos os destinatários da cadeia.
+     */
+    const stepsWithQuestions = await attachChainStepQuestions({
+      steps,
+      questions: parsedQuestions.questions,
+      organizationId: orgAuth.orgId,
+      createdByUserId: orgAuth.user.id,
+      startAt: scheduledForIso,
+    });
+
     const chainSteps = await createMessageChainSteps({
       chainId: chain.id,
-      steps,
+      steps: stepsWithQuestions,
     });
 
     const chainRecipients = await createMessageChainRecipients({

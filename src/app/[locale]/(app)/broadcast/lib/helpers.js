@@ -1,3 +1,5 @@
+import { makeEmptyOpenQuestion, makeEmptyQuiz } from "@/lib/whatsapp/question";
+
 export function getInitial(name = "") {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }
@@ -39,15 +41,25 @@ export function makeTrackedLinkDraft() {
   };
 }
 
+/*
+ * Um passo da cadeia é uma mensagem livre ("message"), um quiz ("quiz") ou
+ * uma pergunta aberta ("open"). Guarda os três rascunhos para se poder
+ * trocar de tipo sem perder o que já estava escrito.
+ */
+export const CHAIN_STEP_KINDS = ["message", "quiz", "open"];
+
 export function makeChainStep(overrides = {}) {
   return {
     id:
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    kind: "message",
     message: "",
     files: [],
     trackedLinks: [],
+    quiz: makeEmptyQuiz(),
+    openQuestion: makeEmptyOpenQuestion(),
     delayAfterPreviousReadMinutes: 0,
     ...overrides,
   };
