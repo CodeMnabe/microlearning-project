@@ -16,6 +16,7 @@ import {
 
 import {
   createThread,
+  getLatestUserThreadForChannel,
   getUserThreadForChannel,
   setThreadConversationId,
 } from "@/lib/repos/threads.repo";
@@ -1313,8 +1314,17 @@ async function handlePendingMessages({
   pendingMessages,
   sentChannelId,
 }) {
+  /*
+   * A conversa do contacto, para a resposta e as mensagens entregues
+   * aparecerem no histórico. Pode não existir ainda.
+   */
+  const thread = await getLatestUserThreadForChannel(
+    user.id,
+    "whatsapp",
+  ).catch(() => null);
+
   await createMessage({
-    threadId: null,
+    threadId: thread?.id ?? null,
 
     userId: user.id,
 
@@ -1450,13 +1460,13 @@ async function handlePendingMessages({
       : null;
 
     await createMessage({
-      threadId: null,
+      threadId: thread?.id ?? null,
 
       userId: user.id,
 
       organizationId: user.organization_id,
 
-      assistantId: user.assistant_id ?? null,
+      assistantId: thread?.assistant_id ?? user.assistant_id ?? null,
 
       channel: "whatsapp",
 

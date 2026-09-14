@@ -1,5 +1,10 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
+import {
+  buildQuestionDetail,
+  buildQuestionReports,
+} from "@/lib/services/questions/questionReports";
+
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -181,4 +186,120 @@ export async function createQuestionAnswer({
   }
 
   return data;
+}
+
+/**
+ * Mensagens de envio de perguntas (uma por destinatário) e utilizadores
+ * envolvidos. Auxiliares dos relatórios.
+ */
+async function getQuestionMessages(questionIds) {
+  if (!questionIds.length) return [];
+
+  const { data, error } = await supabase
+    .from("message")
+    .select("question_id, user_id, created_at")
+    .in("question_id", questionIds)
+    .in("role", ["assistant", "system"]);
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function getQuestionAnswers(questionIds) {
+  if (!questionIds.length) return [];
+
+  const { data, error } = await supabase
+    .from("question_answer")
+    .select(ANSWER_SELECT)
+    .in("question_id", questionIds);
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function getUsersMap(userIds) {
+  const ids = [...new Set(userIds.filter((id) => id != null))];
+
+  if (!ids.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("user")
+    .select("id, name, email, phone_number")
+    .in("id", ids);
+
+  if (error) throw error;
+  return new Map((data || []).map((user) => [String(user.id), user]));
+}
+
+/**
+ * Lista de perguntas da organização com os totais de respostas.
+ */
+export async function getQuestionReportsByOrg(orgId) {
+  const { data: questions, error } = await supabase
+    .from("question")
+    .select(QUESTION_SELECT)
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const ids = (questions || []).map((question) => question.id);
+  const [messages, answers] = await Promise.all([
+    getQuestionMessages(ids),
+    getQuestionAnswers(ids),
+  ]);
+
+  return buildQuestionReports({
+    questions: questions || [],
+    messages,
+    answers,
+  });
+}
+
+/**
+ * Detalhe de uma pergunta: resumo, quem respondeu e quem não respondeu.
+ */
+export async function getQuestionReportDetail({ orgId, questionId }) {
+  const { data: question, error } = await supabase
+    .from("question")
+    .select(QUESTION_SELECT)
+    .eq("organization_id", orgId)
+    .eq("id", questionId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!question) return null;
+
+  const [messages, answers] = await Promise.all([
+    getQuestionMessages([question.id]),
+    getQuestionAnswers([question.id]),
+  ]);
+
+  const users = await getUsersMap([
+    ...messages.map((row) => row.user_id),
+    ...answers.map((row) => row.user_id),
+  ]);
+
+  return buildQuestionDetail({ question, messages, answers, users });
+}
+
+/**
+ * Correção manual do veredicto. Corrigir tira a resposta da lista de
+ * revisão; null volta ao veredicto da IA.
+ */
+export async function updateQuestionAnswerAdminVerdict({
+  id,
+  orgId,
+  adminVerdict,
+}) {
+  const { data, error } = await supabase
+    .from("question_answer")
+    .update({ admin_verdict: adminVerdict, review_needed: false })
+    .eq("id", id)
+    .eq("organization_id", orgId)
+    .select(ANSWER_SELECT)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
 }

@@ -884,6 +884,7 @@
     "broadcastCreate": "Send",
     "broadcastScheduled": "See Scheduled",
     "trackedLinks": "Tracked Links",
+    "questions": "Questions",
     "admin": "Admin",
     "login": "Login",
     "options": "Options",
@@ -1706,6 +1707,103 @@
       }
     }
   },
+  "Questions": {
+    "title": "Questions",
+    "subtitle": "Results of the quizzes and open questions sent on WhatsApp.",
+    "totalQuestions": "Questions",
+    "toReview": "To review",
+    "search": "Search by question text",
+    "loading": "Loading questions...",
+    "noQuestions": "No question has been sent in this organization yet.",
+    "kind": {
+      "quiz": "Quiz",
+      "open": "Open question"
+    },
+    "table": {
+      "question": "Question",
+      "kind": "Type",
+      "recipients": "Recipients",
+      "answered": "Answers",
+      "responseRate": "Response rate",
+      "result": "Result",
+      "toReview": "To review",
+      "sent": "Sent"
+    },
+    "correctRate": "{rate}% correct",
+    "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
+    "view": "View",
+    "alerts": {
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
+      "loadFailed": {
+        "title": "Failed to load questions",
+        "message": "The questions could not be loaded. Please try again in a few seconds."
+      }
+    },
+    "detail": {
+      "back": "Back",
+      "loading": "Loading the question...",
+      "options": "Options",
+      "correctOption": "correct",
+      "expectedAnswer": "Expected answer",
+      "aiEvaluation": "AI evaluation",
+      "aiOn": "on",
+      "aiOff": "off",
+      "sentAt": "Sent",
+      "expiresAt": "Accepts answers until",
+      "recipients": "Recipients",
+      "answered": "Answered",
+      "notAnswered": "Did not answer",
+      "responseRate": "Response rate",
+      "correct": "Correct",
+      "correctRate": "Correct rate",
+      "toReview": "To review",
+      "verdicts": {
+        "completa": "Complete",
+        "parcial": "Partial",
+        "incompleta": "Incomplete",
+        "none": "No verdict"
+      },
+      "table": {
+        "contact": "Contact",
+        "phone": "Phone",
+        "answer": "Answer",
+        "result": "Result",
+        "verdict": "Verdict",
+        "aiVerdict": "AI: {verdict}",
+        "feedback": "Feedback sent",
+        "answeredAt": "Answered",
+        "sentAt": "Sent"
+      },
+      "right": "Right",
+      "wrong": "Wrong",
+      "reviewNeeded": "To review",
+      "useAiVerdict": "Keep the AI verdict",
+      "noAnswers": "Nobody has answered yet.",
+      "allAnswered": "Everyone answered.",
+      "alerts": {
+        "noOrg": {
+          "title": "Missing organization",
+          "message": "The organization could not be identified yet. Please try again in a few seconds."
+        },
+        "missingQuestion": {
+          "title": "Invalid question",
+          "message": "The question could not be identified."
+        },
+        "loadFailed": {
+          "title": "Failed to load the question",
+          "message": "The results of this question could not be loaded. Please try again in a few seconds."
+        },
+        "updateFailed": {
+          "title": "Failed to save the verdict",
+          "message": "The correction could not be saved. Please try again."
+        }
+      }
+    }
+  },
+
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",
