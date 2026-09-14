@@ -1372,7 +1372,17 @@
       "openingHint": "Reabre a conversa com quem não responde há mais de 24 horas. Só o corpo é editável.",
       "blank": "Em branco",
       "blankHint": "Mensagem livre com texto, imagens e links. Quem estiver fora da janela recebe primeiro a abertura.",
-      "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar."
+      "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar.",
+      "quiz": "Quiz",
+      "quizHint": "Pergunta com até 3 opções de resposta rápida. Ideal para verificar o que ficou retido.",
+      "quizSample": "Olá {name}! Qual é a pressão certa dos pneus?",
+      "quizOptionA": "2,2 bar",
+      "quizOptionB": "2,8 bar",
+      "quizOptionC": "3,5 bar",
+      "question": "Pergunta aberta",
+      "questionHint": "Pergunta de resposta livre. As respostas ficam guardadas na conversa.",
+      "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
+      "soon": "Em breve"
     },
     "composer": {
       "contact": "Contacto",
