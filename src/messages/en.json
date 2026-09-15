@@ -1733,8 +1733,17 @@
     "totalQuestions": "Questions",
     "toReview": "To review",
     "search": "Search by question text",
+    "filters": {
+      "allKinds": "All types",
+      "sentBetween": "Sent between",
+      "and": "and",
+      "from": "Sent from",
+      "to": "Sent until",
+      "clear": "Clear filters"
+    },
     "loading": "Loading questions...",
     "noQuestions": "No question has been sent in this organization yet.",
+    "noMatches": "No question matches the filters.",
     "kind": {
       "quiz": "Quiz",
       "survey": "Survey",
@@ -1742,17 +1751,15 @@
     },
     "table": {
       "question": "Question",
-      "kind": "Type",
-      "recipients": "Recipients",
       "answered": "Answers",
       "responseRate": "Response rate",
-      "result": "Result",
-      "toReview": "To review",
-      "sent": "Sent"
+      "result": "Result"
     },
+    "sentOn": "Sent on {date}",
+    "answersOf": "{answered} of {recipients}",
     "correctRate": "{rate}% correct",
     "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
-    "view": "View",
+    "reviewCount": "{count} to review",
     "alerts": {
       "noOrg": {
         "title": "Missing organization",
@@ -1780,7 +1787,11 @@
       "responseRate": "Response rate",
       "correct": "Correct",
       "correctRate": "Correct rate",
+      "correctOf": "{correct} of {answered}",
       "toReview": "To review",
+      "verdictsTitle": "Verdicts",
+      "answeredCount": "Answered ({count})",
+      "notAnsweredCount": "Did not answer ({count})",
       "verdicts": {
         "completa": "Complete",
         "parcial": "Partial",

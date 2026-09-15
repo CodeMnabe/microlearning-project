@@ -1742,8 +1742,17 @@
     "totalQuestions": "Perguntas",
     "toReview": "Para rever",
     "search": "Procura pelo texto da pergunta",
+    "filters": {
+      "allKinds": "Todos os tipos",
+      "sentBetween": "Enviada entre",
+      "and": "e",
+      "from": "Enviada desde",
+      "to": "Enviada até",
+      "clear": "Limpar filtros"
+    },
     "loading": "A carregar perguntas...",
     "noQuestions": "Ainda não foi enviada nenhuma pergunta nesta organização.",
+    "noMatches": "Nenhuma pergunta corresponde aos filtros.",
     "kind": {
       "quiz": "Quiz",
       "survey": "Sondagem",
@@ -1751,17 +1760,15 @@
     },
     "table": {
       "question": "Pergunta",
-      "kind": "Tipo",
-      "recipients": "Destinatários",
       "answered": "Respostas",
       "responseRate": "Taxa de resposta",
-      "result": "Resultado",
-      "toReview": "Para rever",
-      "sent": "Enviada"
+      "result": "Resultado"
     },
+    "sentOn": "Enviada a {date}",
+    "answersOf": "{answered} de {recipients}",
     "correctRate": "{rate}% de acertos",
     "verdictSummary": "{completa} completa · {parcial} parcial · {incompleta} incompleta",
-    "view": "Ver",
+    "reviewCount": "{count} para rever",
     "alerts": {
       "noOrg": {
         "title": "Organização em falta",
@@ -1789,7 +1796,11 @@
       "responseRate": "Taxa de resposta",
       "correct": "Acertos",
       "correctRate": "Taxa de acertos",
+      "correctOf": "{correct} de {answered}",
       "toReview": "Para rever",
+      "verdictsTitle": "Veredictos",
+      "answeredCount": "Responderam ({count})",
+      "notAnsweredCount": "Não responderam ({count})",
       "verdicts": {
         "completa": "Completa",
         "parcial": "Parcial",
