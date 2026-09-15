@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 
 import {
   handleApiError,
+  jsonError,
   requireOrgForAssistant,
   requireOrgForThread,
 } from "@/lib/auth/guards";
 
 import {
   createConversation,
+  getConversation,
   generateAssistantResponse,
 } from "@/lib/services/openaiResponses.service";
 
@@ -60,12 +62,26 @@ export async function POST(req, { params }) {
      *
      * Staging may also send an actual numeric DB thread ID.
      */
+    // Rejeitar identificadores inválidos antes de consultar ou criar conversas.
+    for (const id of [body?.conversationId, body?.threadId]) {
+      if (id === undefined || id === null) continue;
+      if (String(id).trim() === "") continue;
+      const isConversationId = typeof id === "string" && id.trim().startsWith("conv_");
+      const isThreadId =
+        (typeof id === "string" || typeof id === "number") &&
+        Number.isInteger(Number(id)) && Number(id) > 0;
+      if (!isConversationId && !isThreadId) {
+        return jsonError("Invalid conversation id", 400);
+      }
+    }
+
     const incomingConversationId =
       typeof body?.conversationId === "string"
         ? body.conversationId.trim()
         : null;
 
-    const incomingThreadId = body?.threadId ?? null;
+    const incomingThreadId = typeof body?.threadId === "string"
+      ? body.threadId.trim() : body?.threadId ?? null;
 
     let conversationId = null;
 
@@ -90,6 +106,28 @@ export async function POST(req, { params }) {
       incomingThreadId.startsWith("conv_")
     ) {
       conversationId = incomingThreadId;
+    }
+
+    // As conversas do sandbox são autorizadas pelos metadados da OpenAI.
+    if (conversationId) {
+      let conversation;
+      try {
+        conversation = await getConversation(conversationId);
+      } catch (error) {
+        if (error?.status === 404) {
+          return jsonError("Conversation not found", 404);
+        }
+        throw error;
+      }
+
+      const metadata = conversation?.metadata;
+      if (
+        metadata?.assistantId !== String(authorizedAssistantId) ||
+        metadata?.organizationId !== String(orgId) ||
+        metadata?.scope !== "sandbox"
+      ) {
+        return jsonError("Conversation not found", 404);
+      }
     }
 
     /*
