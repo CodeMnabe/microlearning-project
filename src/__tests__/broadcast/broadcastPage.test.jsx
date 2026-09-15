@@ -314,7 +314,7 @@ describe("BroadcastPage", () => {
     );
     pickFromPlusMenu("Link: Curso");
 
-    /* A imagem aparece num balão antes da pergunta. */
+    /* A imagem aparece no topo do balão da pergunta. */
     fireEvent.change(screen.getByTestId("file-input"), {
       target: {
         files: [new File(["x"], "foto.png", { type: "image/png" })],
