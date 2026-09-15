@@ -11,8 +11,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { VERDICTS } from "@/lib/services/questions/questionReports";
 
-import styles from "../../tracked-links/detail/detail.module.css";
-import own from "../questions.module.css";
+import styles from "../questions.module.css";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -20,7 +19,18 @@ function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
 
-  return d.toLocaleString();
+  return d.toLocaleString([], {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function percentOf(count, total) {
+  if (!total) return 0;
+  return Math.round((count / total) * 1000) / 10;
 }
 
 function personLine(item, fallback) {
@@ -28,8 +38,9 @@ function personLine(item, fallback) {
 }
 
 /**
- * Resultados de uma pergunta: resumo, quem respondeu (com correção manual
- * do veredicto nas perguntas abertas) e quem não respondeu.
+ * Resultados de uma pergunta: resumo, distribuição das respostas, quem
+ * respondeu (com correção manual do veredicto nas perguntas abertas) e
+ * quem não respondeu.
  */
 export default function QuestionDetailPage() {
   const searchParams = useSearchParams();
@@ -39,11 +50,14 @@ export default function QuestionDetailPage() {
   const translation = useTranslations();
   const showAlert = useAlert();
 
+  /* Refs para o efeito de carregamento não depender destas funções. */
   const showAlertRef = useRef(showAlert);
+  const translationRef = useRef(translation);
 
   useEffect(() => {
     showAlertRef.current = showAlert;
-  }, [showAlert]);
+    translationRef.current = translation;
+  }, [showAlert, translation]);
 
   const questionId = searchParams.get("questionId") || "";
 
@@ -58,10 +72,12 @@ export default function QuestionDetailPage() {
     /* Sem organização ainda: fica a carregar até o hook a resolver. */
     if (!org?.id) return;
 
+    const t = translationRef.current;
+
     if (!questionId) {
       setLoading(false);
       stopLoading();
-      setError(translation("Questions.detail.alerts.missingQuestion.message"));
+      setError(t("Questions.detail.alerts.missingQuestion.message"));
 
       return;
     }
@@ -94,11 +110,11 @@ export default function QuestionDetailPage() {
       } catch {
         if (!alive) return;
 
-        setError(translation("Questions.detail.alerts.loadFailed.message"));
+        setError(t("Questions.detail.alerts.loadFailed.message"));
 
         void showAlertRef.current({
-          title: translation("Questions.detail.alerts.loadFailed.title"),
-          message: translation("Questions.detail.alerts.loadFailed.message"),
+          title: t("Questions.detail.alerts.loadFailed.title"),
+          message: t("Questions.detail.alerts.loadFailed.message"),
           tone: "danger",
         });
       } finally {
@@ -112,7 +128,7 @@ export default function QuestionDetailPage() {
     return () => {
       alive = false;
     };
-  }, [org?.id, orgLoading, questionId, stopLoading, translation]);
+  }, [org?.id, orgLoading, questionId, stopLoading]);
 
   const summary = useMemo(() => data?.summary || null, [data]);
   const answered = useMemo(() => data?.answered || [], [data]);
@@ -158,7 +174,7 @@ export default function QuestionDetailPage() {
             : row,
         );
 
-        /* Os cartões de veredictos seguem a correção. */
+        /* A distribuição de veredictos segue a correção. */
         const verdicts = {
           completa: 0,
           parcial: 0,
@@ -197,10 +213,54 @@ export default function QuestionDetailPage() {
     return translation(`Questions.detail.verdicts.${verdict || "none"}`);
   }
 
+  /*
+   * Linhas da distribuição: opções (quiz e sondagem) ou veredictos
+   * (pergunta aberta), com contagem e percentagem das respostas.
+   */
+  function buildDistribution() {
+    if (!summary) return [];
+
+    if (hasOptions) {
+      return (summary.options || []).map((option, index) => ({
+        key: `option-${index}`,
+        label: option.label,
+        correct: isQuiz && Boolean(option.correct),
+        count: summary.optionCounts?.[index] ?? 0,
+      }));
+    }
+
+    const v = summary.verdicts || {};
+    return [...VERDICTS, "semVeredicto"].map((verdict) => ({
+      key: verdict,
+      label: verdictLabel(verdict === "semVeredicto" ? null : verdict),
+      correct: false,
+      count: v[verdict] ?? 0,
+    }));
+  }
+
+  const distribution = buildDistribution();
+
+  const metaParts = summary
+    ? [
+        translation(`Questions.kind.${summary.kind}`),
+        `${translation("Questions.detail.sentAt")}: ${formatDate(summary.sentAt)}`,
+        `${translation("Questions.detail.expiresAt")}: ${formatDate(summary.expiresAt)}`,
+        ...(isOpen
+          ? [
+              `${translation("Questions.detail.aiEvaluation")}: ${translation(
+                summary.aiEvaluation
+                  ? "Questions.detail.aiOn"
+                  : "Questions.detail.aiOff",
+              )}`,
+            ]
+          : []),
+      ]
+    : [];
+
   return (
     <div className={styles.screen}>
-      <div className={styles.topRow}>
-        <Link href="/broadcast/questions" className={styles.backBtn}>
+      <div>
+        <Link href="/broadcast/questions" className={styles.backLink}>
           ← {translation("Questions.detail.back")}
         </Link>
       </div>
@@ -215,194 +275,157 @@ export default function QuestionDetailPage() {
 
       {!loading && !error && summary && (
         <>
-          <div className={styles.headerCard}>
-            <div className={styles.headerInfo}>
-              <h1 className={styles.title}>{summary.body}</h1>
+          <div className={styles.detailPanel}>
+            <h1 className={styles.detailTitle}>{summary.body}</h1>
+            <p className={styles.detailMeta}>{metaParts.join(" · ")}</p>
 
-              <div className={styles.metaRow}>
-                <span className={styles.metaPill}>
-                  {translation(`Questions.kind.${summary.kind}`)}
-                </span>
-                <span className={styles.metaPill}>
-                  {translation("Questions.detail.sentAt")}:{" "}
-                  {formatDate(summary.sentAt)}
-                </span>
-                <span className={styles.metaPill}>
-                  {translation("Questions.detail.expiresAt")}:{" "}
-                  {formatDate(summary.expiresAt)}
-                </span>
-                {isOpen && (
-                  <span className={styles.metaPill}>
-                    {translation("Questions.detail.aiEvaluation")}:{" "}
-                    {translation(
-                      summary.aiEvaluation
-                        ? "Questions.detail.aiOn"
-                        : "Questions.detail.aiOff",
-                    )}
-                  </span>
-                )}
+            <dl className={styles.statRow} data-testid="question-stats">
+              <div className={styles.stat}>
+                <dt>{translation("Questions.detail.recipients")}</dt>
+                <dd>{summary.recipientCount}</dd>
               </div>
-
-              <div className={styles.destinationBox}>
-                <div className={styles.destinationLabel}>
-                  {hasOptions
-                    ? translation("Questions.detail.options")
-                    : translation("Questions.detail.expectedAnswer")}
+              <div className={styles.stat}>
+                <dt>{translation("Questions.detail.answered")}</dt>
+                <dd>{summary.answeredCount}</dd>
+              </div>
+              <div className={styles.stat}>
+                <dt>{translation("Questions.detail.responseRate")}</dt>
+                <dd>{summary.responseRate}%</dd>
+              </div>
+              {isQuiz ? (
+                <div className={styles.stat}>
+                  <dt>{translation("Questions.detail.correctRate")}</dt>
+                  <dd>
+                    {summary.correctRate}%
+                    <span className={styles.statNote}>
+                      {" "}
+                      {translation("Questions.detail.correctOf", {
+                        correct: summary.correctCount,
+                        answered: summary.answeredCount,
+                      })}
+                    </span>
+                  </dd>
                 </div>
+              ) : null}
+              {isOpen ? (
+                <div className={styles.stat}>
+                  <dt>{translation("Questions.detail.toReview")}</dt>
+                  <dd
+                    className={
+                      summary.reviewNeededCount > 0 ? styles.reviewCount : ""
+                    }
+                  >
+                    {summary.reviewNeededCount}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
-                {hasOptions ? (
-                  <ul className={own.optionList}>
-                    {summary.options.map((option, index) => (
-                      <li key={index} className={own.optionItem}>
-                        <span>{option.label}</span>
-                        {option.correct ? (
-                          <span className={own.optionCorrect}>
-                            {translation("Questions.detail.correctOption")}
-                          </span>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className={styles.destinationValue}>
+            <div className={styles.detailBlocks}>
+              {isOpen ? (
+                <div className={styles.detailBlock}>
+                  <div className={styles.blockLabel}>
+                    {translation("Questions.detail.expectedAnswer")}
+                  </div>
+                  <div className={styles.expectedAnswer}>
                     {summary.expectedAnswer || "-"}
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.cardsGrid}>
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translation("Questions.detail.recipients")}
                 </div>
-                <div className={styles.kpiValue}>{summary.recipientCount}</div>
-              </div>
+              ) : null}
 
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translation("Questions.detail.answered")}
+              <div className={styles.detailBlock}>
+                <div className={styles.blockLabel}>
+                  {translation(
+                    hasOptions
+                      ? "Questions.detail.options"
+                      : "Questions.detail.verdictsTitle",
+                  )}
                 </div>
-                <div className={styles.kpiValue}>{summary.answeredCount}</div>
-              </div>
-
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translation("Questions.detail.responseRate")}
-                </div>
-                <div className={styles.kpiValue}>{summary.responseRate}%</div>
-              </div>
-
-              {isQuiz ? (
-                <>
-                  <div className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>
-                      {translation("Questions.detail.correct")}
-                    </div>
-                    <div className={styles.kpiValue}>
-                      {summary.correctCount}
-                    </div>
-                  </div>
-
-                  <div className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>
-                      {translation("Questions.detail.correctRate")}
-                    </div>
-                    <div className={styles.kpiValue}>
-                      {summary.correctRate}%
-                    </div>
-                  </div>
-                </>
-              ) : isSurvey ? (
-                summary.options.map((option, index) => (
-                  <div key={index} className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>{option.label}</div>
-                    <div className={styles.kpiValue}>
-                      {summary.optionCounts?.[index] ?? 0}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                VERDICTS.map((verdict) => (
-                  <div key={verdict} className={styles.kpiCard}>
-                    <div className={styles.kpiLabel}>
-                      {verdictLabel(verdict)}
-                    </div>
-                    <div className={styles.kpiValue}>
-                      {summary.verdicts?.[verdict] ?? 0}
-                    </div>
-                  </div>
-                ))
-              )}
-
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiLabel}>
-                  {translation("Questions.detail.toReview")}
-                </div>
-                <div className={styles.kpiValue}>
-                  {summary.reviewNeededCount}
-                </div>
+                <table
+                  className={styles.distribution}
+                  data-testid="question-distribution"
+                >
+                  <tbody>
+                    {distribution.map((row) => (
+                      <tr key={row.key}>
+                        <td className={styles.distributionLabel}>
+                          {row.label}
+                          {row.correct ? (
+                            <span className={styles.correctTag}>
+                              {translation("Questions.detail.correctOption")}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className={styles.numeric}>{row.count}</td>
+                        <td className={`${styles.numeric} ${styles.muted}`}>
+                          {percentOf(row.count, summary.answeredCount)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>
-              {translation("Questions.detail.answered")}
-            </div>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              {translation("Questions.detail.answeredCount", {
+                count: answered.length,
+              })}
+            </h2>
 
             {answered.length === 0 ? (
               <div className={styles.emptyBox}>
                 {translation("Questions.detail.noAnswers")}
               </div>
             ) : (
-              <div className={styles.tableWrap}>
-                <table className={styles.table} data-testid="answered-table">
-                  <thead>
-                    <tr>
-                      <th>{translation("Questions.detail.table.contact")}</th>
-                      <th>{translation("Questions.detail.table.phone")}</th>
-                      <th>{translation("Questions.detail.table.answer")}</th>
-                      <th>
-                        {isQuiz
-                          ? translation("Questions.detail.table.result")
-                          : isSurvey
-                            ? translation("Questions.detail.table.choice")
-                            : translation("Questions.detail.table.verdict")}
-                      </th>
-                      <th>
-                        {translation("Questions.detail.table.answeredAt")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {answered.map((item) => (
-                      <tr
-                        key={item.answerId}
-                        className={item.reviewNeeded ? own.reviewRow : ""}
-                      >
-                        <td className={styles.strongCell}>
-                          {personLine(item, `#${item.userId}`)}
-                        </td>
-                        <td>{item.phoneNumber || "-"}</td>
-                        <td className={own.answerCell}>
-                          {item.answerText || item.optionLabel || "-"}
-                          {isOpen && item.aiFeedback ? (
-                            <div className={own.feedbackText}>
-                              {translation("Questions.detail.table.feedback")}:{" "}
-                              {item.aiFeedback}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td>
-                          {isSurvey ? (
-                            <span>
-                              {item.optionLabel || item.answerText || "-"}
-                            </span>
-                          ) : isQuiz ? (
-                            <span
+              <div className={styles.tableCard}>
+                <div className={styles.tableWrap}>
+                  <table
+                    className={styles.detailTable}
+                    data-testid="answered-table"
+                  >
+                    <thead>
+                      <tr>
+                        <th>{translation("Questions.detail.table.contact")}</th>
+                        <th>{translation("Questions.detail.table.phone")}</th>
+                        <th>{translation("Questions.detail.table.answer")}</th>
+                        {isQuiz ? (
+                          <th>{translation("Questions.detail.table.result")}</th>
+                        ) : null}
+                        {isOpen ? (
+                          <th>
+                            {translation("Questions.detail.table.verdict")}
+                          </th>
+                        ) : null}
+                        <th>
+                          {translation("Questions.detail.table.answeredAt")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {answered.map((item) => (
+                        <tr key={item.answerId}>
+                          <td className={styles.strongCell}>
+                            {personLine(item, `#${item.userId}`)}
+                          </td>
+                          <td>{item.phoneNumber || "-"}</td>
+                          <td className={styles.answerCell}>
+                            {item.answerText || item.optionLabel || "-"}
+                            {isOpen && item.aiFeedback ? (
+                              <div className={styles.feedbackText}>
+                                {translation("Questions.detail.table.feedback")}
+                                : {item.aiFeedback}
+                              </div>
+                            ) : null}
+                          </td>
+                          {isQuiz ? (
+                            <td
                               className={
-                                item.isCorrect ? own.resultOk : own.resultBad
+                                item.isCorrect
+                                  ? styles.resultRight
+                                  : styles.resultWrong
                               }
                             >
                               {translation(
@@ -410,88 +433,104 @@ export default function QuestionDetailPage() {
                                   ? "Questions.detail.right"
                                   : "Questions.detail.wrong",
                               )}
-                            </span>
-                          ) : (
-                            <div className={own.verdictCell}>
-                              <select
-                                className={own.verdictSelect}
-                                aria-label={translation(
-                                  "Questions.detail.table.verdict",
-                                )}
-                                value={item.adminVerdict || ""}
-                                disabled={savingId === item.answerId}
-                                onChange={(e) =>
-                                  changeVerdict(item, e.target.value)
-                                }
-                              >
-                                <option value="">
-                                  {translation("Questions.detail.useAiVerdict")}
-                                </option>
-                                {VERDICTS.map((verdict) => (
-                                  <option key={verdict} value={verdict}>
-                                    {verdictLabel(verdict)}
+                            </td>
+                          ) : null}
+                          {isOpen ? (
+                            <td>
+                              <div className={styles.verdictCell}>
+                                <select
+                                  className={styles.verdictSelect}
+                                  aria-label={translation(
+                                    "Questions.detail.table.verdict",
+                                  )}
+                                  value={item.adminVerdict || ""}
+                                  disabled={savingId === item.answerId}
+                                  onChange={(e) =>
+                                    changeVerdict(item, e.target.value)
+                                  }
+                                >
+                                  <option value="">
+                                    {translation(
+                                      "Questions.detail.useAiVerdict",
+                                    )}
                                   </option>
-                                ))}
-                              </select>
-                              <span className={own.subtle}>
-                                {translation(
-                                  "Questions.detail.table.aiVerdict",
-                                  {
-                                    verdict: verdictLabel(item.verdict),
-                                  },
-                                )}
-                              </span>
-                              {item.reviewNeeded ? (
-                                <span className={own.reviewBadge}>
-                                  {translation("Questions.detail.reviewNeeded")}
+                                  {VERDICTS.map((verdict) => (
+                                    <option key={verdict} value={verdict}>
+                                      {verdictLabel(verdict)}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className={styles.subtle}>
+                                  {translation(
+                                    "Questions.detail.table.aiVerdict",
+                                    { verdict: verdictLabel(item.verdict) },
+                                  )}
+                                  {item.reviewNeeded ? (
+                                    <>
+                                      {" · "}
+                                      <span className={styles.reviewCount}>
+                                        {translation(
+                                          "Questions.detail.reviewNeeded",
+                                        )}
+                                      </span>
+                                    </>
+                                  ) : null}
                                 </span>
-                              ) : null}
-                            </div>
-                          )}
-                        </td>
-                        <td>{formatDate(item.answeredAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              </div>
+                            </td>
+                          ) : null}
+                          <td className={styles.nowrap}>
+                            {formatDate(item.answeredAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>
-              {translation("Questions.detail.notAnswered")}
-            </div>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              {translation("Questions.detail.notAnsweredCount", {
+                count: notAnswered.length,
+              })}
+            </h2>
 
             {notAnswered.length === 0 ? (
               <div className={styles.emptyBox}>
                 {translation("Questions.detail.allAnswered")}
               </div>
             ) : (
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>{translation("Questions.detail.table.contact")}</th>
-                      <th>{translation("Questions.detail.table.phone")}</th>
-                      <th>{translation("Questions.detail.table.sentAt")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {notAnswered.map((item) => (
-                      <tr key={item.userId}>
-                        <td className={styles.strongCell}>
-                          {personLine(item, `#${item.userId}`)}
-                        </td>
-                        <td>{item.phoneNumber || "-"}</td>
-                        <td>{formatDate(item.sentAt)}</td>
+              <div className={styles.tableCard}>
+                <div className={styles.tableWrap}>
+                  <table className={styles.detailTable}>
+                    <thead>
+                      <tr>
+                        <th>{translation("Questions.detail.table.contact")}</th>
+                        <th>{translation("Questions.detail.table.phone")}</th>
+                        <th>{translation("Questions.detail.table.sentAt")}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {notAnswered.map((item) => (
+                        <tr key={item.userId}>
+                          <td className={styles.strongCell}>
+                            {personLine(item, `#${item.userId}`)}
+                          </td>
+                          <td>{item.phoneNumber || "-"}</td>
+                          <td className={styles.nowrap}>
+                            {formatDate(item.sentAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </div>
+          </section>
         </>
       )}
     </div>

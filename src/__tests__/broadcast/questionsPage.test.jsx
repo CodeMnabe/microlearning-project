@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  appMocks,
   registerAppModulePacks,
   resetAppMocks,
   setDefaultAppMockReturns,
@@ -44,7 +45,7 @@ const ITEMS = [
     correctRate: 50,
     verdicts: null,
     reviewNeededCount: 0,
-    sentAt: "2026-09-14T13:26:04Z",
+    sentAt: "2026-09-12T13:26:04Z",
   },
 ];
 
@@ -94,19 +95,43 @@ describe("QuestionsPage", () => {
 
     expect(rows[0]).toHaveTextContent("Como verificas os pneus?");
     expect(rows[0]).toHaveTextContent("Questions.kind.open");
+    expect(rows[0]).toHaveTextContent("Questions.sentOn");
+    expect(rows[0]).toHaveTextContent("Questions.answersOf");
     expect(rows[0]).toHaveTextContent("50%");
     expect(rows[0]).toHaveTextContent("Questions.verdictSummary");
+    expect(rows[0]).toHaveTextContent("Questions.reviewCount");
 
     expect(rows[1]).toHaveTextContent("Qual é a pressão certa dos pneus?");
     expect(rows[1]).toHaveTextContent("Questions.kind.quiz");
     expect(rows[1]).toHaveTextContent("66.7%");
     expect(rows[1]).toHaveTextContent("Questions.correctRate");
+    expect(rows[1]).not.toHaveTextContent("Questions.reviewCount");
 
-    const links = screen.getAllByRole("link", { name: "Questions.view" });
-    expect(links[0]).toHaveAttribute(
-      "href",
-      "/broadcast/questions/detail?questionId=2",
+    /* O texto da pergunta é a ligação para o detalhe. */
+    expect(
+      screen.getByRole("link", { name: "Como verificas os pneus?" }),
+    ).toHaveAttribute("href", "/broadcast/questions/detail?questionId=2");
+  });
+
+  it("opens the detail when the row is clicked", async () => {
+    render(<QuestionsPage />);
+
+    await screen.findByTestId("questions-table");
+
+    const rows = screen.getAllByRole("row").slice(1);
+
+    /* Clique simples na célula dos números, fora da ligação. */
+    fireEvent.click(rows[1].querySelectorAll("td")[1]);
+
+    expect(appMocks.push).toHaveBeenCalledWith(
+      "/broadcast/questions/detail?questionId=1",
     );
+
+    /* Com modificador fica para o browser (nova aba pela ligação). */
+    appMocks.push.mockClear();
+    fireEvent.click(rows[1].querySelectorAll("td")[1], { ctrlKey: true });
+
+    expect(appMocks.push).not.toHaveBeenCalled();
   });
 
   it("shows the number of answers to review and filters by text", async () => {
@@ -127,6 +152,72 @@ describe("QuestionsPage", () => {
       const table = screen.getByTestId("questions-table");
       expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
       expect(table).toHaveTextContent("Qual é a pressão certa dos pneus?");
+    });
+  });
+
+  it("filters by question type", async () => {
+    render(<QuestionsPage />);
+
+    await screen.findByTestId("questions-table");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Questions.filters.allKinds" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Questions.kind.quiz" }));
+
+    await waitFor(() => {
+      const table = screen.getByTestId("questions-table");
+      expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
+      expect(table).toHaveTextContent("Qual é a pressão certa dos pneus?");
+    });
+
+    /* "Limpar filtros" volta à lista completa. */
+    fireEvent.click(
+      screen.getByRole("button", { name: "Questions.filters.clear" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("questions-table").querySelectorAll("tbody tr"),
+      ).toHaveLength(2);
+    });
+  });
+
+  it("filters by the sent date range, inclusive", async () => {
+    render(<QuestionsPage />);
+
+    await screen.findByTestId("questions-table");
+
+    /* Só a pergunta de 14/09 fica dentro do intervalo. */
+    fireEvent.change(screen.getByLabelText("Questions.filters.from"), {
+      target: { value: "2026-09-13" },
+    });
+
+    await waitFor(() => {
+      const table = screen.getByTestId("questions-table");
+      expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
+      expect(table).toHaveTextContent("Como verificas os pneus?");
+    });
+
+    /* Limite superior antes das duas datas: sem resultados. */
+    fireEvent.change(screen.getByLabelText("Questions.filters.to"), {
+      target: { value: "2026-09-13" },
+    });
+
+    expect(await screen.findByText("Questions.noMatches")).toBeInTheDocument();
+
+    /* Intervalo que apanha as duas perguntas (limites inclusivos). */
+    fireEvent.change(screen.getByLabelText("Questions.filters.from"), {
+      target: { value: "2026-09-12" },
+    });
+    fireEvent.change(screen.getByLabelText("Questions.filters.to"), {
+      target: { value: "2026-09-14" },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("questions-table").querySelectorAll("tbody tr"),
+      ).toHaveLength(2);
     });
   });
 
