@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-import WhatsAppPhone, {
-  WhatsAppBubble,
-  WhatsAppButton,
-} from "@/app/components/WhatsAppPhone/WhatsAppPhone";
+import { WhatsAppButton } from "@/app/components/WhatsAppPhone/WhatsAppPhone";
 import phoneStyles from "@/app/components/WhatsAppPhone/whatsAppPhone.module.css";
 import {
   DEFAULT_SURVEY_THANKS,
-  QUESTION_BODY_MAX_LENGTH,
   QUESTION_FEEDBACK_MAX_LENGTH,
   QUESTION_VALIDITY_DAYS,
   QUIZ_MAX_OPTIONS,
@@ -19,6 +13,7 @@ import {
 } from "@/lib/whatsapp/question";
 
 import styles from "../broadcast.module.css";
+import QuestionPhone from "./QuestionPhone";
 
 /**
  * Composição de uma sondagem: a pergunta no balão e as opções nos botões,
@@ -30,18 +25,9 @@ export default function SurveyComposer({
   onChange,
   contactName,
   previewTime,
+  tools,
   translation,
 }) {
-  const bodyRef = useRef(null);
-
-  // O campo cresce com o texto para o balão parecer uma mensagem real.
-  useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [survey.body]);
-
   const options = Array.isArray(survey.options) ? survey.options : [];
 
   function update(patch) {
@@ -72,71 +58,64 @@ export default function SurveyComposer({
         {translation("Broadcast.composer.surveyHint")}
       </div>
 
-      <div className={styles.phoneWrap}>
-        <WhatsAppPhone contactName={contactName}>
-          <WhatsAppBubble time={previewTime}>
-            <textarea
-              ref={bodyRef}
-              id="broadcast-survey-body"
-              aria-label={translation("Broadcast.composer.surveyBody")}
-              className={phoneStyles.bodyInput}
-              rows={2}
-              maxLength={QUESTION_BODY_MAX_LENGTH}
-              value={survey.body}
-              placeholder={translation("Broadcast.composer.surveyPlaceholder")}
-              onChange={(e) => update({ body: e.target.value })}
-            />
-          </WhatsAppBubble>
+      <QuestionPhone
+        contactName={contactName}
+        previewTime={previewTime}
+        body={survey.body}
+        onBodyChange={(body) => update({ body })}
+        bodyLabel={translation("Broadcast.composer.surveyBody")}
+        bodyPlaceholder={translation("Broadcast.composer.surveyPlaceholder")}
+        tools={tools}
+        translation={translation}
+      >
+        {options.map((option, index) => {
+          const position = index + 1;
 
-          {options.map((option, index) => {
-            const position = index + 1;
+          return (
+            <WhatsAppButton key={index} className={styles.quizOption}>
+              <input
+                type="text"
+                className={styles.quizOptionInput}
+                value={option.label}
+                maxLength={QUIZ_OPTION_MAX_LENGTH}
+                aria-label={translation("Broadcast.composer.surveyOption", {
+                  index: position,
+                })}
+                placeholder={translation("Broadcast.composer.surveyOption", {
+                  index: position,
+                })}
+                onChange={(e) => updateOptionLabel(index, e.target.value)}
+              />
 
-            return (
-              <WhatsAppButton key={index} className={styles.quizOption}>
-                <input
-                  type="text"
-                  className={styles.quizOptionInput}
-                  value={option.label}
-                  maxLength={QUIZ_OPTION_MAX_LENGTH}
-                  aria-label={translation("Broadcast.composer.surveyOption", {
-                    index: position,
-                  })}
-                  placeholder={translation("Broadcast.composer.surveyOption", {
-                    index: position,
-                  })}
-                  onChange={(e) => updateOptionLabel(index, e.target.value)}
-                />
+              {options.length > QUIZ_MIN_OPTIONS ? (
+                <button
+                  type="button"
+                  className={styles.quizOptionRemove}
+                  aria-label={translation(
+                    "Broadcast.composer.surveyRemoveOption",
+                    { index: position },
+                  )}
+                  onClick={() => removeOption(index)}
+                >
+                  ✕
+                </button>
+              ) : null}
+            </WhatsAppButton>
+          );
+        })}
 
-                {options.length > QUIZ_MIN_OPTIONS ? (
-                  <button
-                    type="button"
-                    className={styles.quizOptionRemove}
-                    aria-label={translation(
-                      "Broadcast.composer.surveyRemoveOption",
-                      { index: position },
-                    )}
-                    onClick={() => removeOption(index)}
-                  >
-                    ✕
-                  </button>
-                ) : null}
-              </WhatsAppButton>
-            );
-          })}
-
-          {options.length < QUIZ_MAX_OPTIONS ? (
-            <div className={phoneStyles.rowOut}>
-              <button
-                type="button"
-                className={styles.quizAddOption}
-                onClick={addOption}
-              >
-                + {translation("Broadcast.composer.quizAddOption")}
-              </button>
-            </div>
-          ) : null}
-        </WhatsAppPhone>
-      </div>
+        {options.length < QUIZ_MAX_OPTIONS ? (
+          <div className={phoneStyles.rowOut}>
+            <button
+              type="button"
+              className={styles.quizAddOption}
+              onClick={addOption}
+            >
+              + {translation("Broadcast.composer.quizAddOption")}
+            </button>
+          </div>
+        ) : null}
+      </QuestionPhone>
 
       <div className={styles.quizMeta}>
         <div className={styles.quizFieldHint}>

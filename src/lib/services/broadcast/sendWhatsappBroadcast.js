@@ -325,9 +325,9 @@ export async function sendWhatsappBroadcast(input = {}) {
   const survey = question?.kind === "survey" ? question : null;
   const withButtons = question && hasReplyButtons(question.kind);
 
-  if (question && (normalizedFiles.length > 0 || sendOpeningOnly)) {
+  if (question && sendOpeningOnly) {
     throw new BroadcastError(
-      "Uma pergunta não pode ter anexos nem ser apenas uma abertura.",
+      "Uma pergunta não pode ser apenas uma abertura.",
       400,
     );
   }
@@ -503,12 +503,44 @@ export async function sendWhatsappBroadcast(input = {}) {
       !sendOpeningOnly && user ? await isWindowOpenForUser(user.id) : false;
 
     if (windowOpen && hasResolvedFreeformContent) {
+      /*
+       * Os anexos de uma pergunta seguem numa mensagem própria, antes da
+       * pergunta: o Bird não leva imagens e botões na mesma mensagem, e
+       * o toque tem de responder à mensagem com a pergunta.
+       */
+      if (questionRow && onlyImageUrls.length > 0) {
+        const attachment = await sendFreeform({
+          endpoint: messagesEndpoint,
+          accessKey,
+          contact,
+          message: "",
+          imageUrls: onlyImageUrls,
+        });
+
+        if (!attachment.ok) {
+          console.error("[WA question attachment failed]", {
+            sendGroupId,
+            recipient: label,
+            status: attachment.status,
+            data: attachment.data,
+          });
+
+          return {
+            ...base,
+            kind: "freeform",
+            resolvedMessage,
+            questionId: questionRow.id,
+            ...attachment,
+          };
+        }
+      }
+
       const r = await sendFreeform({
         endpoint: messagesEndpoint,
         accessKey,
         contact,
         message: resolvedMessage,
-        imageUrls: onlyImageUrls,
+        imageUrls: questionRow ? [] : onlyImageUrls,
         actions: quizActions,
       });
 

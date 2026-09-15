@@ -46,19 +46,22 @@ describe("parseChainStepQuestions", () => {
     });
   });
 
-  it("names the step when a question is invalid or has attachments", () => {
+  it("names the step when a question is invalid", () => {
     expect(
       parseChainStepQuestions([
         { message: "Olá" },
         { question: { kind: "quiz", body: "", options: [] } },
       ]).error,
     ).toMatch(/^Message 2:/);
+  });
 
-    expect(
-      parseChainStepQuestions([
-        { question: QUIZ, files: [{ url: "https://x/f.pdf" }] },
-      ]).error,
-    ).toMatch(/Message 1: a question cannot have attachments/);
+  it("accepts a question with attachments", () => {
+    const { questions, error } = parseChainStepQuestions([
+      { question: QUIZ, files: [{ url: "https://x/f.png" }] },
+    ]);
+
+    expect(error).toBeUndefined();
+    expect(questions[0]).toMatchObject({ kind: "quiz" });
   });
 });
 
@@ -82,9 +85,17 @@ describe("attachChainStepQuestions", () => {
       .mockResolvedValueOnce({ id: 11 })
       .mockResolvedValueOnce({ id: 12 });
 
+    const image = { url: "https://x/f.png", contentType: "image/png" };
+    const link = { key: "curso", label: "Curso", destinationUrl: "https://x" };
+
     const steps = [
       { message: "Olá", files: [], delayAfterPreviousReadMinutes: 0 },
-      { message: "", files: [], delayAfterPreviousReadMinutes: 30 },
+      {
+        message: "",
+        files: [image],
+        trackedLinks: [link],
+        delayAfterPreviousReadMinutes: 30,
+      },
       { message: "", files: [], delayAfterPreviousReadMinutes: 90 },
     ];
 
@@ -98,11 +109,13 @@ describe("attachChainStepQuestions", () => {
     });
 
     expect(result[0]).toMatchObject({ message: "Olá", questionId: null });
+    /* Os anexos e os links do passo seguem com a pergunta. */
     expect(result[1]).toMatchObject({
       message: QUIZ.body,
       questionId: 11,
       question: { kind: "quiz" },
-      files: [],
+      files: [image],
+      trackedLinks: [link],
     });
     expect(result[2]).toMatchObject({ message: OPEN.body, questionId: 12 });
 

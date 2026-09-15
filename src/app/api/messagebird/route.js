@@ -1380,7 +1380,9 @@ async function handlePendingMessages({
       continue;
     }
 
-    const body = hasImages
+    const isQuestion = Boolean(p.questionId);
+
+    const imageBody = hasImages
       ? {
           type: "image",
 
@@ -1389,42 +1391,59 @@ async function handlePendingMessages({
               mediaUrl: u,
             })),
 
-            ...(hasText
+            /* Numa pergunta a imagem segue sozinha, antes do texto. */
+            ...(hasText && !isQuestion
               ? {
                   text: p.message,
                 }
               : {}),
           },
         }
-      : {
-          type: "text",
+      : null;
 
-          text: {
-            text: p.message || "",
+    const textBody = {
+      type: "text",
 
-            ...(actions ? { actions } : {}),
-          },
-        };
+      text: {
+        text: p.message || "",
 
-    const sendRes = await sendBirdMessage({
-      channelId: outgoingChannelId,
+        ...(actions ? { actions } : {}),
+      },
+    };
 
-      contactId,
+    /*
+     * Uma pergunta com anexo são duas mensagens: o anexo e depois a
+     * pergunta (com os botões). Só a última fica ligada à pergunta.
+     */
+    const bodies = isQuestion
+      ? [imageBody, hasText ? textBody : null].filter(Boolean)
+      : [imageBody || textBody];
 
-      phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
+    let sendRes = null;
 
-      whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
+    for (const body of bodies) {
+      sendRes = await sendBirdMessage({
+        channelId: outgoingChannelId,
 
-      body,
-    });
+        contactId,
 
-    if (!sendRes.ok) {
+        phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
+
+        whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
+
+        body,
+      });
+
+      if (!sendRes.ok) break;
+    }
+
+    if (!sendRes?.ok) {
       console.error("Failed to send pending outreach:", {
         pendingOutreachId: row.id,
 
-        status: sendRes.status,
+        status: sendRes?.status,
 
-        data: sendRes.data,
+        data: sendRes?.data,
       });
 
       continue;

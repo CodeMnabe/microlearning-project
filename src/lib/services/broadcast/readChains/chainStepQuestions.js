@@ -27,18 +27,6 @@ export function parseChainStepQuestions(steps) {
       return { error: `Message ${index + 1}: ${parsed.error}` };
     }
 
-    if (parsed.question) {
-      const hasFiles =
-        (Array.isArray(step?.files) && step.files.length > 0) ||
-        (Array.isArray(step?.imageUrls) && step.imageUrls.length > 0);
-
-      if (hasFiles) {
-        return {
-          error: `Message ${index + 1}: a question cannot have attachments.`,
-        };
-      }
-    }
-
     questions.push(parsed.question);
   }
 
@@ -107,11 +95,11 @@ export async function attachChainStepQuestions({
 
     result.push({
       ...step,
-      /* A pergunta é a própria mensagem do passo. */
+      /*
+       * A pergunta é a própria mensagem do passo; os anexos e os links do
+       * passo seguem com ela (o anexo numa mensagem antes da pergunta).
+       */
       message: question.body,
-      files: [],
-      imageUrls: [],
-      trackedLinks: [],
       question,
       questionId: row.id,
     });
