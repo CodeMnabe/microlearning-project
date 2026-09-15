@@ -1,31 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import WhatsAppPhone, {
-  WhatsAppBubble,
-} from "@/app/components/WhatsAppPhone/WhatsAppPhone";
-import phoneStyles from "@/app/components/WhatsAppPhone/whatsAppPhone.module.css";
 import {
-  QUESTION_BODY_MAX_LENGTH,
   QUESTION_FEEDBACK_MAX_LENGTH,
   QUESTION_VALIDITY_DAYS,
 } from "@/lib/whatsapp/question";
 import styles from "../broadcast.module.css";
+import QuestionPhone from "./QuestionPhone";
 
 export default function OpenQuestionComposer({
   question,
   onChange,
   contactName,
   previewTime,
+  tools,
   translation,
 }) {
-  const bodyRef = useRef(null);
-  useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [question.body]);
   const update = (patch) => onChange({ ...question, ...patch });
 
   return (
@@ -33,24 +22,18 @@ export default function OpenQuestionComposer({
       <div className={styles.composerHint}>
         {translation("Broadcast.composer.openQuestionHint")}
       </div>
-      <div className={styles.phoneWrap}>
-        <WhatsAppPhone contactName={contactName}>
-          <WhatsAppBubble time={previewTime}>
-            <textarea
-              ref={bodyRef}
-              aria-label={translation("Broadcast.composer.openQuestionBody")}
-              placeholder={translation(
-                "Broadcast.composer.openQuestionPlaceholder",
-              )}
-              className={phoneStyles.bodyInput}
-              rows={2}
-              maxLength={QUESTION_BODY_MAX_LENGTH}
-              value={question.body}
-              onChange={(e) => update({ body: e.target.value })}
-            />
-          </WhatsAppBubble>
-        </WhatsAppPhone>
-      </div>
+      <QuestionPhone
+        contactName={contactName}
+        previewTime={previewTime}
+        body={question.body}
+        onBodyChange={(body) => update({ body })}
+        bodyLabel={translation("Broadcast.composer.openQuestionBody")}
+        bodyPlaceholder={translation(
+          "Broadcast.composer.openQuestionPlaceholder",
+        )}
+        tools={tools}
+        translation={translation}
+      />
       <div className={styles.quizMeta}>
         <label className={styles.quizField}>
           <span>{translation("Broadcast.composer.expectedAnswer")}</span>

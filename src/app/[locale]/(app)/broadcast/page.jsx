@@ -843,14 +843,6 @@ export default function BroadcastPage() {
         return translation("Broadcast.composer.variableCompany");
       }
 
-      if (k === "user_email") {
-        return translation("Broadcast.composer.variableEmail");
-      }
-
-      if (k === "user_phone") {
-        return translation("Broadcast.composer.variablePhone");
-      }
-
       if (k.startsWith("link.")) {
         const linkKey = k.slice("link.".length);
         const link = normalizedTrackedLinks.find((l) => l.key === linkKey);
@@ -874,16 +866,6 @@ export default function BroadcastPage() {
         kind: "company",
         label: translation("Broadcast.composer.variableCompany"),
       },
-      {
-        key: "user_email",
-        kind: "email",
-        label: translation("Broadcast.composer.variableEmail"),
-      },
-      {
-        key: "user_phone",
-        kind: "phone",
-        label: translation("Broadcast.composer.variablePhone"),
-      },
       ...normalizedTrackedLinks.map((l) => ({
         key: `link.${l.key}`,
         kind: "link",
@@ -896,6 +878,26 @@ export default function BroadcastPage() {
   function insertToken(key) {
     editorRef.current?.insertToken?.(key);
   }
+
+  /*
+   * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
+   * ficheiros e os links rastreados pertencem ao composer (ou ao passo
+   * ativo da corrente), não ao tipo escolhido.
+   */
+  const composerTools = {
+    editorRef,
+    tokenLabel,
+    variables: composerVariables,
+    onInsertToken: insertToken,
+    imageFiles,
+    videoFiles,
+    otherFiles,
+    onRemoveFile: removeFile,
+    onPickThumbnail: openThumbnailPicker,
+    onRemoveThumbnail: removeThumbnail,
+    onAddFile: openFilePicker,
+    onAddLink: () => setActiveToolPanel("links"),
+  };
 
   const trackedLinksValid =
     normalizedTrackedLinks.length === composerTrackedLinks.length &&
@@ -933,8 +935,8 @@ export default function BroadcastPage() {
   }
 
   /*
-   * Payload de um passo com pergunta: a pergunta é a própria mensagem, sem
-   * anexos nem links.
+   * Payload de um passo com pergunta: a pergunta é a própria mensagem; os
+   * anexos e os links do passo seguem com ela.
    */
   function chainStepQuestionPayload(step) {
     if (step.kind === "quiz") return { kind: "quiz", ...step.quiz };
@@ -1072,11 +1074,11 @@ export default function BroadcastPage() {
   const baseCanSend =
     selected.size > 0 &&
     (isSurveyMode
-      ? surveyValid
+      ? surveyValid && trackedLinksValid
       : isOpenQuestionMode
-        ? openQuestionValid
+        ? openQuestionValid && trackedLinksValid
         : isQuizMode
-          ? quizValid
+          ? quizValid && trackedLinksValid
           : chainMode
             ? chainValid
             : trackedLinksValid && hasManualContent);
@@ -1100,57 +1102,39 @@ export default function BroadcastPage() {
       }));
   }
 
+  /*
+   * Pergunta do envio, conforme o tipo escolhido. Os anexos e os links
+   * seguem no payload como na mensagem em branco.
+   */
+  function composerQuestionPayload() {
+    if (isSurveyMode) return { kind: "survey", ...survey };
+    if (isOpenQuestionMode) return { kind: "open", ...openQuestion };
+
+    if (isQuizMode) {
+      return {
+        kind: "quiz",
+        body: quiz.body,
+        options: quiz.options,
+        feedbackCorrect: quiz.feedbackCorrect,
+        feedbackIncorrect: quiz.feedbackIncorrect,
+      };
+    }
+
+    return null;
+  }
+
   function buildBroadcastPayload(chosen) {
     if (channel === "whatsapp") {
-      if (isSurveyMode) {
-        return {
-          orgId: org?.id,
-          message: "",
-          imageUrls: [],
-          files: [],
-          trackedLinks: [],
-          recipients: buildRecipients(chosen),
-          question: { kind: "survey", ...survey },
-        };
-      }
-
-      if (isOpenQuestionMode) {
-        return {
-          orgId: org?.id,
-          message: "",
-          imageUrls: [],
-          files: [],
-          trackedLinks: [],
-          recipients: buildRecipients(chosen),
-          question: { kind: "open", ...openQuestion },
-        };
-      }
-
-      if (isQuizMode) {
-        return {
-          orgId: org?.id,
-          message: "",
-          imageUrls: [],
-          files: [],
-          trackedLinks: [],
-          recipients: buildRecipients(chosen),
-          question: {
-            kind: "quiz",
-            body: quiz.body,
-            options: quiz.options,
-            feedbackCorrect: quiz.feedbackCorrect,
-            feedbackIncorrect: quiz.feedbackIncorrect,
-          },
-        };
-      }
+      const question = composerQuestionPayload();
 
       return {
         orgId: org?.id,
-        message: composerMessage,
+        message: question ? "" : composerMessage,
         imageUrls,
         files: composerFiles,
         trackedLinks: normalizedTrackedLinks,
         recipients: buildRecipients(chosen),
+        ...(question ? { question } : {}),
       };
     }
 
@@ -1174,8 +1158,8 @@ export default function BroadcastPage() {
 
         return {
           message: question ? "" : step.message || "",
-          files: question ? [] : Array.isArray(step.files) ? step.files : [],
-          trackedLinks: question ? [] : normalizeTrackedLinksForStep(step),
+          files: Array.isArray(step.files) ? step.files : [],
+          trackedLinks: normalizeTrackedLinksForStep(step),
           question,
           delayAfterPreviousReadMinutes:
             index === 0
@@ -1941,6 +1925,19 @@ export default function BroadcastPage() {
     />
   );
 
+  /* Painel dos links rastreados, igual em todos os tipos de mensagem. */
+  const linksPanel =
+    activeToolPanel === "links" ? (
+      <TrackedLinksPanel
+        trackedLinks={composerTrackedLinks}
+        trackedLinksValid={trackedLinksValid}
+        addTrackedLink={addTrackedLink}
+        updateTrackedLink={updateTrackedLink}
+        removeTrackedLink={removeTrackedLink}
+        translation={translation}
+      />
+    ) : null;
+
   let composer = null;
 
   if (showStartMenu) {
@@ -1957,11 +1954,10 @@ export default function BroadcastPage() {
       <MessageComposer
         title={translation("Broadcast.composer.surveyTitle")}
         onBack={() => setComposeMode(null)}
-        showLinks={false}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
-        trackedLinksCount={0}
+        trackedLinksCount={trackedLinksCount}
         translation={translation}
         phone={
           <SurveyComposer
@@ -1969,11 +1965,13 @@ export default function BroadcastPage() {
             onChange={setSurvey}
             contactName={sampleName}
             previewTime={previewTime}
+            tools={composerTools}
             translation={translation}
           />
         }
       >
         {schedulePanel}
+        {linksPanel}
       </MessageComposer>
     );
   } else if (isOpenQuestionMode) {
@@ -1981,11 +1979,10 @@ export default function BroadcastPage() {
       <MessageComposer
         title={translation("Broadcast.start.question")}
         onBack={() => setComposeMode(null)}
-        showLinks={false}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
-        trackedLinksCount={0}
+        trackedLinksCount={trackedLinksCount}
         translation={translation}
         phone={
           <OpenQuestionComposer
@@ -1993,11 +1990,13 @@ export default function BroadcastPage() {
             onChange={setOpenQuestion}
             contactName={sampleName}
             previewTime={previewTime}
+            tools={composerTools}
             translation={translation}
           />
         }
       >
         {schedulePanel}
+        {linksPanel}
       </MessageComposer>
     );
   } else if (isQuizMode) {
@@ -2005,11 +2004,10 @@ export default function BroadcastPage() {
       <MessageComposer
         title={translation("Broadcast.composer.quizTitle")}
         onBack={() => setComposeMode(null)}
-        showLinks={false}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
-        trackedLinksCount={0}
+        trackedLinksCount={trackedLinksCount}
         translation={translation}
         phone={
           <QuizComposer
@@ -2017,11 +2015,13 @@ export default function BroadcastPage() {
             onChange={setQuiz}
             contactName={sampleName}
             previewTime={previewTime}
+            tools={composerTools}
             translation={translation}
           />
         }
       >
         {schedulePanel}
+        {linksPanel}
       </MessageComposer>
     );
   } else {
@@ -2030,7 +2030,6 @@ export default function BroadcastPage() {
         title={translation("Broadcast.message")}
         onBack={isWhatsapp ? () => setComposeMode(null) : null}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
-        showLinks={!chainQuestionKind}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
@@ -2064,6 +2063,7 @@ export default function BroadcastPage() {
               onChange={(next) => updateActiveChainStep({ quiz: next })}
               contactName={sampleName}
               previewTime={previewTime}
+              tools={composerTools}
               translation={translation}
             />
           ) : chainQuestionKind === "survey" ? (
@@ -2072,6 +2072,7 @@ export default function BroadcastPage() {
               onChange={(next) => updateActiveChainStep({ survey: next })}
               contactName={sampleName}
               previewTime={previewTime}
+              tools={composerTools}
               translation={translation}
             />
           ) : chainQuestionKind === "open" ? (
@@ -2080,44 +2081,24 @@ export default function BroadcastPage() {
               onChange={(next) => updateActiveChainStep({ openQuestion: next })}
               contactName={sampleName}
               previewTime={previewTime}
+              tools={composerTools}
               translation={translation}
             />
           ) : (
-          <PhoneComposer
-            channel={channel}
-            contactName={sampleName}
-            message={composerMessage}
-            onMessageChange={setComposerMessage}
-            editorRef={editorRef}
-            tokenLabel={tokenLabel}
-            variables={composerVariables}
-            onInsertToken={insertToken}
-            imageFiles={imageFiles}
-            videoFiles={videoFiles}
-            otherFiles={otherFiles}
-            onRemoveFile={removeFile}
-            onPickThumbnail={openThumbnailPicker}
-            onRemoveThumbnail={removeThumbnail}
-            onAddFile={openFilePicker}
-            onAddLink={() => setActiveToolPanel("links")}
-            previewTime={previewTime}
-            translation={translation}
-          />
+            <PhoneComposer
+              channel={channel}
+              contactName={sampleName}
+              message={composerMessage}
+              onMessageChange={setComposerMessage}
+              tools={composerTools}
+              previewTime={previewTime}
+              translation={translation}
+            />
           )
         }
       >
         {schedulePanel}
-
-        {activeToolPanel === "links" && !chainQuestionKind && (
-          <TrackedLinksPanel
-            trackedLinks={composerTrackedLinks}
-            trackedLinksValid={trackedLinksValid}
-            addTrackedLink={addTrackedLink}
-            updateTrackedLink={updateTrackedLink}
-            removeTrackedLink={removeTrackedLink}
-            translation={translation}
-          />
-        )}
+        {linksPanel}
       </MessageComposer>
     );
   }

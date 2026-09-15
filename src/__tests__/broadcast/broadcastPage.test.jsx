@@ -15,8 +15,16 @@ vi.mock("@/app/components/Alert/AlertProvider", () => ({
   useAlert: () => alertMock,
 }));
 
+/* Carregamento de ficheiros: devolve um URL público sem tocar no Supabase. */
+const storageMock = vi.hoisted(() => ({
+  upload: vi.fn(() => Promise.resolve({ error: null })),
+  getPublicUrl: vi.fn((key) => ({
+    data: { publicUrl: `https://cdn.test/${key}` },
+  })),
+}));
+
 vi.mock("@/utils/supabase/client", () => ({
-  createClient: () => ({ storage: { from: () => ({}) } }),
+  createClient: () => ({ storage: { from: () => storageMock } }),
 }));
 
 import BroadcastPage from "@/app/[locale]/(app)/broadcast/page.jsx";
@@ -102,6 +110,19 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
   }
 
+  /* O corpo escreve-se num editor contenteditable, não num textarea. */
+  function typeInEditor(editor, text) {
+    editor.appendChild(document.createTextNode(text));
+    fireEvent.input(editor);
+  }
+
+  function pickFromPlusMenu(name) {
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.composer.add" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name }));
+  }
+
   it("shows the start menu for WhatsApp and the editor for Teams", async () => {
     render(<BroadcastPage />);
     await screen.findByText("Pedro Silva");
@@ -145,9 +166,9 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByTestId("start-card-question"));
     fireEvent.click(screen.getByText("Pedro Silva"));
     const send = screen.getByRole("button", { name: "Broadcast.send" });
-    fireEvent.change(
+    typeInEditor(
       screen.getByLabelText("Broadcast.composer.openQuestionBody"),
-      { target: { value: "Como verificas os pneus?" } },
+      "Como verificas os pneus?",
     );
     expect(send).toBeDisabled();
     expect(
@@ -176,9 +197,7 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByTestId("start-card-quiz"));
 
     const body = await screen.findByLabelText("Broadcast.composer.quizBody");
-    fireEvent.change(body, {
-      target: { value: "Qual é a pressão certa dos pneus?" },
-    });
+    typeInEditor(body, "Qual é a pressão certa dos pneus?");
 
     const optionInputs = screen.getAllByRole("textbox", {
       name: "Broadcast.composer.quizOption",
@@ -243,13 +262,89 @@ describe("BroadcastPage", () => {
     const send = screen.getByRole("button", { name: "Broadcast.send" });
     expect(send).toBeDisabled();
 
-    fireEvent.change(
+    typeInEditor(
       await screen.findByLabelText("Broadcast.composer.quizBody"),
-      { target: { value: "Pergunta" } },
+      "Pergunta",
     );
 
     /* Falta preencher as opções. */
     expect(send).toBeDisabled();
+  });
+
+  it("offers the + menu in the quiz, with only the name and company variables", async () => {
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.composer.add" }),
+    );
+
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual([
+      "Broadcast.composer.addImage",
+      "Broadcast.composer.addVideo",
+      "Broadcast.composer.addDocument",
+      "Broadcast.composer.addLink",
+      "Broadcast.composer.variableName",
+      "Broadcast.composer.variableCompany",
+    ]);
+  });
+
+  it("sends a quiz with a variable chip, a tracked link and an image", async () => {
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    const body = await screen.findByLabelText("Broadcast.composer.quizBody");
+    typeInEditor(body, "Olá ");
+    pickFromPlusMenu("Broadcast.composer.variableName");
+
+    /* O link rastreado abre o painel; depois entra no balão como pastilha. */
+    pickFromPlusMenu("Broadcast.composer.addLink");
+    fireEvent.click(screen.getByRole("button", { name: "Broadcast.addLink" }));
+    fireEvent.change(screen.getByPlaceholderText("training"), {
+      target: { value: "curso" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Aceder à formação"), {
+      target: { value: "Curso" },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText("https://example.com/course/123"),
+      { target: { value: "https://x.test/curso" } },
+    );
+    pickFromPlusMenu("Link: Curso");
+
+    /* A imagem aparece num balão antes da pergunta. */
+    fireEvent.change(screen.getByTestId("file-input"), {
+      target: {
+        files: [new File(["x"], "foto.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByAltText("foto.png");
+
+    const optionInputs = screen.getAllByRole("textbox", {
+      name: "Broadcast.composer.quizOption",
+    });
+    fireEvent.change(optionInputs[0], { target: { value: "2,2 bar" } });
+    fireEvent.change(optionInputs[1], { target: { value: "2,8 bar" } });
+    fireEvent.change(optionInputs[2], { target: { value: "3,5 bar" } });
+
+    fireEvent.click(screen.getByText("Pedro Silva"));
+    fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+    await waitFor(() => {
+      expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+    });
+
+    const payload = lastPostTo("/api/broadcast/whatsapp");
+    expect(payload.question.body).toBe("Olá {{nome}} {{link.curso}} ");
+    expect(payload.trackedLinks).toEqual([
+      { key: "curso", label: "Curso", destinationUrl: "https://x.test/curso" },
+    ]);
+    expect(payload.files).toEqual([
+      expect.objectContaining({ name: "foto.png", contentType: "image/png" }),
+    ]);
+    expect(payload.imageUrls).toEqual([payload.files[0].url]);
   });
 
   it("sends a survey with its options and thanks text, without a correct option", async () => {
@@ -258,9 +353,7 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByTestId("start-card-survey"));
 
     const body = await screen.findByLabelText("Broadcast.composer.surveyBody");
-    fireEvent.change(body, {
-      target: { value: "Qual o melhor horário para a formação?" },
-    });
+    typeInEditor(body, "Qual o melhor horário para a formação?");
 
     const optionInputs = screen.getAllByRole("textbox", {
       name: "Broadcast.composer.surveyOption",
@@ -307,17 +400,8 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByText("Broadcast.start.blank"));
 
     const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
-    editor.appendChild(document.createTextNode("Olá "));
-    fireEvent.input(editor);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Broadcast.composer.add" }),
-    );
-    fireEvent.click(
-      screen.getByRole("menuitem", {
-        name: "Broadcast.composer.variableName",
-      }),
-    );
+    typeInEditor(editor, "Olá ");
+    pickFromPlusMenu("Broadcast.composer.variableName");
 
     fireEvent.click(screen.getByText("Ana Costa"));
     fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
