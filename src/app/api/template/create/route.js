@@ -4,6 +4,8 @@ import {
   requireOwnedOrg,
   requireUser,
 } from "@/lib/auth/guards";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 async function getOrgById(admin, orgId) {
   const { data, error } = await admin
@@ -101,6 +103,18 @@ export async function POST(req) {
       .single();
 
     if (error) throw error;
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TEMPLATE_CREATED,
+      entityType: "whatsapp_template",
+      entityId: template?.id,
+      entityLabel: template?.name ?? name.trim(),
+      details: {
+        language: language.trim(),
+        category: category.trim(),
+        status: template?.status ?? null,
+      },
+    });
 
     return NextResponse.json(
       { ok: true, template },

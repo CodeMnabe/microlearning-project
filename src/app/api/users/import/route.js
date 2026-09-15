@@ -8,6 +8,8 @@ import {
   addTagsToUser,
 } from "@/lib/repos/tag.repo.js";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertAssistantBelongsToOrg,
   handleApiError,
@@ -514,6 +516,19 @@ export async function POST(req) {
         reason: message,
       });
     });
+
+    if (created > 0 || updated > 0) {
+      await recordAuditEvent(orgAuth, {
+        action: AUDIT_ACTIONS.USER_IMPORTED,
+        details: {
+          totalReceived: users.length,
+          created,
+          updated,
+          skipped: skippedRows.length,
+          failed: failedRows.length,
+        },
+      });
+    }
 
     return NextResponse.json({
       totalReceived: users.length,

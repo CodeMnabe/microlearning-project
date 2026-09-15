@@ -155,7 +155,7 @@ export async function requireOrgForUser(userId) {
 
   const { data: row, error } = await auth.admin
     .from("user")
-    .select("id, organization_id")
+    .select("id, organization_id, name, email, phone_number")
     .eq("id", parsedUserId)
     .maybeSingle();
 
@@ -259,7 +259,7 @@ export async function requireOrgForTag(tagId) {
 
   const { data: tag, error } = await auth.admin
     .from("tags")
-    .select("id, org_id")
+    .select("id, org_id, name, color")
     .eq("id", parsedTagId)
     .maybeSingle();
 
@@ -497,7 +497,7 @@ export async function requireOrgForAutomationRule(id) {
 
   const { data: rule, error } = await auth.admin
     .from("automation_rule")
-    .select("id, organization_id, assistant_id")
+    .select("id, organization_id, assistant_id, name, trigger_type, channel")
     .eq("id", id)
     .maybeSingle();
 

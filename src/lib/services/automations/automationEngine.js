@@ -1,6 +1,8 @@
 import { getUserById } from "@/lib/repos/user.repo";
 import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
 import { createAutomationRunIfMissing } from "@/lib/repos/automationRuns.repo";
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function addMinutes(baseTime, minutes) {
   const date = new Date(baseTime);
@@ -126,7 +128,7 @@ export async function queueAutomationRunForRule({
     },
   };
 
-  return await createAutomationRunIfMissing({
+  const run = await createAutomationRunIfMissing({
     rule_id: rule.id,
     organization_id: rule.organization_id,
     user_id: effectiveUser.id,
@@ -138,6 +140,28 @@ export async function queueAutomationRunForRule({
     scheduled_for: scheduledFor,
     payload: mergedPayload,
   });
+
+  /*
+   * Só há registo quando o run foi mesmo criado. Um null
+   * significa que já existia um run para este gatilho.
+   */
+  if (run) {
+    await recordSystemAuditEvent(rule.organization_id, {
+      action: AUDIT_ACTIONS.AUTOMATION_TRIGGERED,
+      entityType: "automation_rule",
+      entityId: rule.id,
+      entityLabel: rule.name,
+      details: {
+        triggerType: rule.trigger_type,
+        channel: rule.channel,
+        userId: effectiveUser.id,
+        userName: effectiveUser.name ?? null,
+        scheduledFor,
+      },
+    });
+  }
+
+  return run;
 }
 
 export async function emitAutomationEvent({
