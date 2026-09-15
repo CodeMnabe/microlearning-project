@@ -796,24 +796,31 @@
 }
 
 .productStage {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
   min-height: 100svh;
+  padding: max(100px, 10svh) 0 40px;
+  gap: 32px;
 }
 
 .productHeader {
-  position: absolute;
+  position: relative;
   z-index: 10;
-  top: 7vh;
-  left: max(20px, calc((100vw - 1240px) / 2));
-  max-width: 610px;
+  width: min(1240px, calc(100% - 40px));
+  margin: 0 auto;
+  flex-shrink: 0;
 }
 
 .productHeader .sectionTitle {
+  max-width: 610px;
   font-size: clamp(2.55rem, 4.2vw, 4.5rem);
 }
 
 .actsViewport {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: clip;
 }
 
@@ -826,7 +833,7 @@
 
 .act {
   position: absolute;
-  inset: 30vh 0 7vh;
+  inset: 0;
   display: grid;
   grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
   gap: clamp(34px, 6vw, 92px);
@@ -853,7 +860,7 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 18px;
-  color: var(--act-color, var(--sky));
+  color: var(--sky);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.2em;
@@ -925,6 +932,24 @@
 .actMedia video {
   z-index: 1;
   background: #fff;
+}
+
+.actPhoto {
+  aspect-ratio: 3 / 2;
+  max-height: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%);
+  mask-image: linear-gradient(to bottom, transparent, #000 18%);
+}
+
+.actPhoto::before {
+  content: none;
+}
+
+.actPhoto img {
+  object-position: center;
 }
 
 .pricingScene {
@@ -1314,6 +1339,8 @@
   }
 
   .productStage {
+    display: block;
+    height: auto;
     padding: 100px 0;
   }
 
@@ -1537,6 +1564,8 @@
   }
 
   .productStage {
+    display: block;
+    height: auto;
     min-height: auto;
     padding: 100px 0;
   }

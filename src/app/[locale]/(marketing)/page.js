@@ -307,24 +307,26 @@ export default async function LocaleIndex() {
                       <h3 className={styles.actTitle}>{card.title}</h3>
                       <p className={styles.actMeta}>{card.meta}</p>
                     </div>
-                    <div className={styles.actMedia}>
+                    <div className={`${styles.actMedia} ${card.image ? styles.actPhoto : ""}`}>
                       <Image
-                        src={card.screenshot}
+                        src={card.image || card.screenshot}
                         alt={card.title}
                         fill
-                        sizes="(max-width: 760px) 100vw, 720px"
+                        sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1280px) 60vw, 780px"
                       />
-                      <video
-                        data-scene-video
-                        muted
-                        playsInline
-                        loop
-                        preload="metadata"
-                        poster={card.screenshot}
-                        aria-label={card.title}
-                      >
-                        <source src={card.video} type="video/mp4" />
-                      </video>
+                      {!card.image && (
+                        <video
+                          data-scene-video
+                          muted
+                          playsInline
+                          loop
+                          preload="metadata"
+                          poster={card.screenshot}
+                          aria-label={card.title}
+                        >
+                          <source src={card.video} type="video/mp4" />
+                        </video>
+                      )}
                     </div>
                   </article>
                 ))}

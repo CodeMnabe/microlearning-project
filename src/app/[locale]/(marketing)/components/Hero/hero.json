@@ -22,21 +22,24 @@
       "titleKey": "cards.1.title",
       "metaKey": "cards.1.meta",
       "screenshot": "/images/onboarding.png",
-      "video": "/videos/onboarding.mp4"
+      "video": "/videos/onboarding.mp4",
+      "image": "/images/onboarding-journey.png"
     },
     {
       "id": 2,
       "titleKey": "cards.2.title",
       "metaKey": "cards.2.meta",
       "screenshot": "/images/microlearning.png",
-      "video": "/videos/microlearning.mp4"
+      "video": "/videos/microlearning.mp4",
+      "image": "/images/communication-journey.png"
     },
     {
       "id": 3,
       "titleKey": "cards.3.title",
       "metaKey": "cards.3.meta",
       "screenshot": "/images/ai.png",
-      "video": "/videos/ai.mp4"
+      "video": "/videos/ai.mp4",
+      "image": "/images/ai-journey.png"
     }
   ]
 }
