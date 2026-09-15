@@ -1390,7 +1390,7 @@
       "soon": "Em breve"
     },
     "composer": {
-      "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para anexos, links e variáveis; um anexo segue numa mensagem antes da pergunta.",
+      "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",
       "openQuestionBody": "Pergunta aberta",
       "openQuestionPlaceholder": "O que queres perguntar?",
       "expectedAnswer": "Resposta esperada (obrigatória)",
@@ -1418,7 +1418,7 @@
       "openingLoadFailed": "Não foi possível carregar a mensagem de abertura.",
       "retry": "Tentar novamente",
       "quizTitle": "Quiz",
-      "quizHint": "Escreve a pergunta no balão e as opções nos botões. Marca a certa no círculo. Usa o + para anexos, links e variáveis; um anexo segue numa mensagem antes da pergunta. Quem estiver fora da janela recebe primeiro a abertura.",
+      "quizHint": "Escreve a pergunta no balão e as opções nos botões. Marca a certa no círculo. Usa o + para imagens, links e variáveis. Quem estiver fora da janela recebe primeiro a abertura.",
       "quizBody": "Pergunta do quiz",
       "quizPlaceholder": "Escreve a pergunta...",
       "quizOption": "Opção {index}",
@@ -1431,7 +1431,7 @@
       "quizFeedbackHint": "Se ficarem vazios, envia-se o texto por omissão. Podes escrever '{{'certa'}}' para incluir a opção certa.",
       "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta.",
       "surveyTitle": "Sondagem",
-      "surveyHint": "Escreve a pergunta no balão e as opções nos botões. Não há resposta certa: regista-se só a escolha. Usa o + para anexos, links e variáveis; um anexo segue numa mensagem antes da pergunta.",
+      "surveyHint": "Escreve a pergunta no balão e as opções nos botões. Não há resposta certa: regista-se só a escolha. Usa o + para imagens, links e variáveis.",
       "surveyBody": "Pergunta da sondagem",
       "surveyPlaceholder": "Escreve a pergunta...",
       "surveyOption": "Opção {index}",

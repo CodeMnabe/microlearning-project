@@ -1380,9 +1380,12 @@ async function handlePendingMessages({
       continue;
     }
 
-    const isQuestion = Boolean(p.questionId);
-
-    const imageBody = hasImages
+    /*
+     * Os botões vão em `actions` também na mensagem de imagem: o Bird
+     * entrega imagem, texto e botões numa só mensagem (verificado a
+     * 15-09-2026).
+     */
+    const body = hasImages
       ? {
           type: "image",
 
@@ -1391,59 +1394,44 @@ async function handlePendingMessages({
               mediaUrl: u,
             })),
 
-            /* Numa pergunta a imagem segue sozinha, antes do texto. */
-            ...(hasText && !isQuestion
+            ...(hasText
               ? {
                   text: p.message,
                 }
               : {}),
+
+            ...(actions ? { actions } : {}),
           },
         }
-      : null;
+      : {
+          type: "text",
 
-    const textBody = {
-      type: "text",
+          text: {
+            text: p.message || "",
 
-      text: {
-        text: p.message || "",
+            ...(actions ? { actions } : {}),
+          },
+        };
 
-        ...(actions ? { actions } : {}),
-      },
-    };
+    const sendRes = await sendBirdMessage({
+      channelId: outgoingChannelId,
 
-    /*
-     * Uma pergunta com anexo são duas mensagens: o anexo e depois a
-     * pergunta (com os botões). Só a última fica ligada à pergunta.
-     */
-    const bodies = isQuestion
-      ? [imageBody, hasText ? textBody : null].filter(Boolean)
-      : [imageBody || textBody];
+      contactId,
 
-    let sendRes = null;
+      phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
 
-    for (const body of bodies) {
-      sendRes = await sendBirdMessage({
-        channelId: outgoingChannelId,
+      whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
 
-        contactId,
+      body,
+    });
 
-        phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
-
-        whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
-
-        body,
-      });
-
-      if (!sendRes.ok) break;
-    }
-
-    if (!sendRes?.ok) {
+    if (!sendRes.ok) {
       console.error("Failed to send pending outreach:", {
         pendingOutreachId: row.id,
 
-        status: sendRes?.status,
+        status: sendRes.status,
 
-        data: sendRes?.data,
+        data: sendRes.data,
       });
 
       continue;

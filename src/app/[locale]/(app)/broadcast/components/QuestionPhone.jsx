@@ -13,10 +13,10 @@ const NO_TOKENS = () => null;
 
 /**
  * Telemóvel de uma pergunta (quiz, sondagem ou pergunta aberta). O corpo
- * escreve-se no balão com pastilhas para variáveis e links; os anexos
- * aparecem em balões antes da pergunta, porque seguem numa mensagem à
- * parte, antes dos botões. Os filhos são as linhas por baixo do balão
- * (as opções). `tools` traz o "+" e os anexos do composer.
+ * escreve-se no balão com pastilhas para variáveis e links; as imagens
+ * ficam no topo do mesmo balão, porque seguem na mesma mensagem que o
+ * texto e os botões. Os filhos são as linhas por baixo do balão (as
+ * opções). `tools` traz o "+" e os anexos do composer.
  */
 export default function QuestionPhone({
   contactName,
@@ -29,24 +29,12 @@ export default function QuestionPhone({
   translation,
   children,
 }) {
-  const imageFiles = tools?.imageFiles || [];
-
   return (
     <div className={styles.phoneWrap}>
       <WhatsAppPhone
         contactName={contactName}
         footer={<PlusMenuBar tools={tools} translation={translation} />}
       >
-        {imageFiles.length > 0 && (
-          <WhatsAppBubble>
-            <BubbleImages
-              imageFiles={imageFiles}
-              onRemoveFile={tools.onRemoveFile}
-              translation={translation}
-            />
-          </WhatsAppBubble>
-        )}
-
         {tools && (
           <FileBubbles
             videoFiles={tools.videoFiles}
@@ -59,6 +47,14 @@ export default function QuestionPhone({
         )}
 
         <WhatsAppBubble time={previewTime}>
+          {tools && (
+            <BubbleImages
+              imageFiles={tools.imageFiles}
+              onRemoveFile={tools.onRemoveFile}
+              translation={translation}
+            />
+          )}
+
           <TokenTextEditor
             ref={tools?.editorRef}
             value={body}

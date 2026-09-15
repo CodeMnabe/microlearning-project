@@ -157,6 +157,12 @@ async function sendFreeform({
     receiver: {
       contacts: [contact],
     },
+    /*
+     * Botões de resposta rápida (quiz, sondagem) vão em `actions`, tanto
+     * na mensagem de texto como na de imagem: verificado a 15-09-2026 com
+     * o Bird, a imagem, o texto e os botões chegam numa só mensagem e o
+     * toque responde ao id dela.
+     */
     body: imageUrls.length
       ? {
           type: "image",
@@ -165,13 +171,13 @@ async function sendFreeform({
               mediaUrl: u,
             })),
             ...(message ? { text: message } : {}),
+            ...(actions?.length ? { actions } : {}),
           },
         }
       : {
           type: "text",
           text: {
             text: message,
-            /* Botões de resposta rápida (quiz). */
             ...(actions?.length ? { actions } : {}),
           },
         },
@@ -503,44 +509,13 @@ export async function sendWhatsappBroadcast(input = {}) {
       !sendOpeningOnly && user ? await isWindowOpenForUser(user.id) : false;
 
     if (windowOpen && hasResolvedFreeformContent) {
-      /*
-       * Os anexos de uma pergunta seguem numa mensagem própria, antes da
-       * pergunta: o Bird não leva imagens e botões na mesma mensagem, e
-       * o toque tem de responder à mensagem com a pergunta.
-       */
-      if (questionRow && onlyImageUrls.length > 0) {
-        const attachment = await sendFreeform({
-          endpoint: messagesEndpoint,
-          accessKey,
-          contact,
-          message: "",
-          imageUrls: onlyImageUrls,
-        });
-
-        if (!attachment.ok) {
-          console.error("[WA question attachment failed]", {
-            sendGroupId,
-            recipient: label,
-            status: attachment.status,
-            data: attachment.data,
-          });
-
-          return {
-            ...base,
-            kind: "freeform",
-            resolvedMessage,
-            questionId: questionRow.id,
-            ...attachment,
-          };
-        }
-      }
-
+      /* Uma pergunta com imagens vai numa só mensagem, com os botões. */
       const r = await sendFreeform({
         endpoint: messagesEndpoint,
         accessKey,
         contact,
         message: resolvedMessage,
-        imageUrls: questionRow ? [] : onlyImageUrls,
+        imageUrls: onlyImageUrls,
         actions: quizActions,
       });
 

@@ -376,19 +376,8 @@ describe("sendWhatsappBroadcast", () => {
       });
     });
 
-    it("sends an attachment in its own message right before the quiz", async () => {
+    it("sends the image, the question and the buttons in one message", async () => {
       mocks.isWindowOpenForUser.mockResolvedValue(true);
-      mocks.fetch
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: async () => ({ id: "bird-img-1" }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: async () => ({ id: "bird-msg-2" }),
-        });
 
       const result = await sendWhatsappBroadcast({
         orgId: 1,
@@ -398,18 +387,13 @@ describe("sendWhatsappBroadcast", () => {
       });
 
       expect(result.ok).toBe(1);
-      expect(mocks.fetch).toHaveBeenCalledTimes(2);
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
 
-      /* Primeiro a imagem, sem texto nem botões. */
-      expect(birdCall(0).body.body).toEqual({
+      /* Formato verificado com o Bird a 15-09-2026. */
+      expect(birdCall().body.body).toEqual({
         type: "image",
-        image: { images: [{ mediaUrl: "https://x/img.png" }] },
-      });
-
-      /* Depois a pergunta com os botões. */
-      expect(birdCall(1).body.body).toEqual({
-        type: "text",
-        text: {
+        image: {
+          images: [{ mediaUrl: "https://x/img.png" }],
           text: "Olá Pedro, qual é a pressão certa?",
           actions: [
             { type: "reply", reply: { text: "2,2 bar" } },
@@ -418,33 +402,11 @@ describe("sendWhatsappBroadcast", () => {
         },
       });
 
-      /* Só a mensagem da pergunta fica ligada à pergunta. */
       expect(mocks.createMessage).toHaveBeenCalledTimes(1);
       expect(mocks.createMessage.mock.calls[0][0]).toMatchObject({
-        messageId: "bird-msg-2",
+        messageId: "bird-msg-1",
         questionId: 10,
       });
-      expect(result.results[0].providerMessageId).toBe("bird-msg-2");
-    });
-
-    it("does not send the quiz when the attachment fails", async () => {
-      mocks.isWindowOpenForUser.mockResolvedValue(true);
-      mocks.fetch.mockResolvedValueOnce({
-        ok: false,
-        status: 422,
-        json: async () => ({ error: "bad media" }),
-      });
-
-      const result = await sendWhatsappBroadcast({
-        orgId: 1,
-        recipients: [{ userId: 42 }],
-        question: QUIZ,
-        imageUrls: ["https://x/img.png"],
-      });
-
-      expect(result.failed).toBe(1);
-      expect(mocks.fetch).toHaveBeenCalledTimes(1);
-      expect(mocks.createMessage).not.toHaveBeenCalled();
     });
 
     it("queues the attachment with the quiz when the window is closed", async () => {
