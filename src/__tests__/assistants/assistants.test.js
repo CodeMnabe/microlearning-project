@@ -98,6 +98,12 @@ const DETAILS_2 = {
   vectorStoreId: null,
 };
 
+const VECTOR_STORE = {
+  id: 42,
+  storeName: "Knowledge base",
+  files: [{ id: 7, name: "old.pdf", size: 12 }],
+};
+
 describe("AssistantsHub Page", () => {
   const mocks = vi.hoisted(() => ({
     fetch: vi.fn(),
@@ -255,8 +261,6 @@ describe("AssistantsHub Page", () => {
     const sent = JSON.parse(patchCall[1].body);
 
     expect(sent).toMatchObject({
-      id: "asst_1",
-      open_ai_id: "oa_1",
       name: "Alpha renamed",
       description: "New description",
       instructions: "New instructions",
@@ -342,5 +346,78 @@ describe("AssistantsHub Page", () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByText("Gamma desc")).toBeInTheDocument();
+  });
+
+  it("edits an attached vector store and removes an existing file", async () => {
+    const user = userEvent.setup();
+    const details = { ...DETAILS_1, vectorStoreId: 42 };
+
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      const method = (init.method || "GET").toUpperCase();
+
+      if (url === `/api/assistants?orgId=${ORG_ID}` && method === "GET") {
+        return makeResponse(LIST);
+      }
+
+      if (url === `/api/assistants/asst_1` && method === "GET") {
+        return makeResponse(details);
+      }
+
+      if (
+        url === `/api/assistants/asst_1/vector-store/42` &&
+        method === "GET"
+      ) {
+        return makeResponse(VECTOR_STORE);
+      }
+
+      if (
+        url === `/api/assistants/asst_1/vector-store/42` &&
+        method === "PATCH"
+      ) {
+        return makeResponse(VECTOR_STORE);
+      }
+
+      return makeResponse({});
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("old.pdf")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.vector.edit" }),
+    );
+    expect(screen.getByDisplayValue("Knowledge base")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.vector.remove" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Assistants.vector.save" }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/assistants/asst_1/vector-store/42",
+        expect.objectContaining({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+
+    const patchCall = mocks.fetch.mock.calls.find(
+      (call) =>
+        call[0] === "/api/assistants/asst_1/vector-store/42" &&
+        call[1]?.method === "PATCH",
+    );
+    const body = JSON.parse(patchCall[1].body);
+
+    expect(body).toMatchObject({
+      storeName: "Knowledge base",
+      files: [],
+      removedFileIds: [7],
+    });
   });
 });

@@ -35,6 +35,11 @@ export default function AssistantsHub() {
   const [vectorStore, setVectorStore] = useState(null);
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
+  const [isEditingVectorStore, setIsEditingVectorStore] = useState(false);
+  const [vectorStoreDraftName, setVectorStoreDraftName] = useState("");
+  const [vectorStoreEditFiles, setVectorStoreEditFiles] = useState([]);
+  const [removedVectorFileIds, setRemovedVectorFileIds] = useState([]);
+  const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -72,6 +77,10 @@ export default function AssistantsHub() {
       startLoading();
       setSelected(null);
       setVectorStore(null);
+      setIsEditingVectorStore(false);
+      setVectorStoreDraftName("");
+      setVectorStoreEditFiles([]);
+      setRemovedVectorFileIds([]);
 
       try {
         const res = await fetch(`/api/assistants/${id}`);
@@ -188,34 +197,42 @@ export default function AssistantsHub() {
     }
   }
 
+  async function stageFiles(files) {
+    const basePath = `${orgId}/${selected.id}/${Date.now()}`;
+    const uploaded = [];
+
+    for (const f of files) {
+      const path = `${basePath}-${f.name}`;
+      const { error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, f, {
+          upsert: true,
+          contentType: f.type || "application/octet-stream",
+        });
+
+      if (error) {
+        throw new Error("Erro no upload: " + error.message);
+      }
+
+      uploaded.push({
+        bucket: STORAGE_BUCKET,
+        path,
+        name: f.name,
+        size: f.size,
+        type: f.type,
+      });
+    }
+
+    return uploaded;
+  }
+
   async function handleAddVectorStore() {
     if (!selected) return;
     if (!vsName.trim() || vsFiles.length === 0) return;
 
     startLoading();
     try {
-      const basePath = `${orgId}/${selected.id}/${Date.now()}`;
-      const uploaded = [];
-      for (const f of vsFiles) {
-        const path = `${basePath}-${f.name}`;
-        const { error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(path, f, {
-            upsert: true,
-            contentType: f.type || "application/octet-stream",
-          });
-        if (error) {
-          alert("Erro no upload: " + error.message);
-          return;
-        }
-        uploaded.push({
-          bucket: STORAGE_BUCKET,
-          path,
-          name: f.name,
-          size: f.size,
-          type: f.type,
-        });
-      }
+      const uploaded = await stageFiles(vsFiles);
 
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
@@ -230,7 +247,74 @@ export default function AssistantsHub() {
       setVsName("");
       setVsFiles([]);
       await fetchOne(selected.id);
+    } catch (error) {
+      alert(error?.message || "Erro ao carregar os ficheiros");
     } finally {
+      stopLoading();
+    }
+  }
+
+  function beginVectorStoreEdit() {
+    if (!vectorStore) return;
+
+    setVectorStoreDraftName(vectorStore.storeName || "");
+    setVectorStoreEditFiles([]);
+    setRemovedVectorFileIds([]);
+    setIsEditingVectorStore(true);
+  }
+
+  function toggleVectorFileRemoval(fileId) {
+    const normalizedId = Number(fileId);
+
+    setRemovedVectorFileIds((previous) =>
+      previous.includes(normalizedId)
+        ? previous.filter((id) => id !== normalizedId)
+        : [...previous, normalizedId],
+    );
+  }
+
+  function cancelVectorStoreEdit() {
+    setIsEditingVectorStore(false);
+    setVectorStoreDraftName("");
+    setVectorStoreEditFiles([]);
+    setRemovedVectorFileIds([]);
+  }
+
+  async function handleUpdateVectorStore() {
+    if (!selected || !vectorStore || !selected.vectorStoreId) return;
+
+    if (!vectorStoreDraftName.trim()) return;
+
+    setIsSavingVectorStore(true);
+    startLoading();
+
+    try {
+      const uploaded = await stageFiles(vectorStoreEditFiles);
+      const res = await fetch(
+        `/api/assistants/${selected.id}/vector-store/${selected.vectorStoreId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storeName: vectorStoreDraftName.trim(),
+            files: uploaded,
+            removedFileIds: removedVectorFileIds,
+          }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert("Erro: " + (data.error || "Falha ao atualizar a coleção"));
+        return;
+      }
+
+      cancelVectorStoreEdit();
+      await fetchOne(selected.id);
+    } catch (error) {
+      alert(error?.message || "Erro ao atualizar a coleção");
+    } finally {
+      setIsSavingVectorStore(false);
       stopLoading();
     }
   }
@@ -579,49 +663,193 @@ export default function AssistantsHub() {
                 </>
               ) : (
                 <>
-                  <h3 className={styles.cardSubtitle}>
-                    {translation("Assistants.vector.docCollection")}
-                  </h3>
-                  <div className={styles.metaGrid}>
-                    {vectorStore && (
-                      <>
-                        <div>
-                          <span className={styles.metaLabel}>
-                            {translation("Assistants.vector.collectionTitle")}
-                          </span>
-                          <span>{vectorStore.storeName}</span>
-                        </div>
-                        <div>
-                          <span className={styles.metaLabel}>
-                            {translation("Assistants.vector.quantity")}
-                          </span>
-                          <span>{vectorStore.files?.length || 0}</span>
-                        </div>
-                      </>
+                  <div className={styles.vectorHeader}>
+                    <h3 className={styles.cardSubtitle}>
+                      {translation("Assistants.vector.docCollection")}
+                    </h3>
+                    {!isEditingVectorStore && (
+                      <button
+                        type="button"
+                        className={styles.ghostBtn}
+                        onClick={beginVectorStoreEdit}
+                        disabled={!vectorStore}
+                        title={translation("Assistants.vector.editTitle")}
+                      >
+                        {translation("Assistants.vector.edit")}
+                      </button>
                     )}
                   </div>
 
-                  {vectorStore?.files?.length ? (
-                    <div style={{ marginTop: 8 }}>
-                      <span className={styles.metaLabel}>
-                        {translation("Assistants.vector.filenames")}
-                      </span>
-                      <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
-                        {vectorStore.files.map((f) => (
-                          <li key={f.id}>{f.name}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
+                  {isEditingVectorStore ? (
+                    <div className={styles.vectorEditor}>
+                      <label
+                        className={styles.label}
+                        htmlFor="vector-store-name"
+                      >
+                        {translation("Assistants.vector.collectionName")}
+                      </label>
+                      <input
+                        id="vector-store-name"
+                        className={styles.input}
+                        value={vectorStoreDraftName}
+                        onChange={(e) => setVectorStoreDraftName(e.target.value)}
+                        placeholder={translation(
+                          "Assistants.vector.storeNamePlaceholder",
+                        )}
+                      />
 
-                  <div className={styles.rowEnd}>
-                    <button
-                      className={styles.dangerBtn}
-                      onClick={deleteVectorStore}
-                    >
-                      {translation("Common.delete")}
-                    </button>
-                  </div>
+                      <p className={styles.helperText}>
+                        {translation("Assistants.vector.replaceHelp")}
+                      </p>
+
+                      <div>
+                        <span className={styles.metaLabel}>
+                          {translation("Assistants.vector.filenames")}
+                        </span>
+                        {vectorStore?.files?.length ? (
+                          <ul className={styles.vectorFileList}>
+                            {vectorStore.files.map((file) => {
+                              const isMarkedForRemoval =
+                                removedVectorFileIds.includes(Number(file.id));
+
+                              return (
+                                <li
+                                  key={file.id}
+                                  className={`${styles.vectorFileRow} ${
+                                    isMarkedForRemoval
+                                      ? styles.vectorFileRemoved
+                                      : ""
+                                  }`}
+                                >
+                                  <span>{file.name}</span>
+                                  <button
+                                    type="button"
+                                    className={styles.fileActionBtn}
+                                    onClick={() => toggleVectorFileRemoval(file.id)}
+                                  >
+                                    {translation(
+                                      isMarkedForRemoval
+                                        ? "Assistants.vector.keep"
+                                        : "Assistants.vector.remove",
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className={styles.helperText}>
+                            {translation("Assistants.vector.noFiles")}
+                          </p>
+                        )}
+                      </div>
+
+                      <label
+                        className={styles.label}
+                        htmlFor="vector-store-edit-files"
+                      >
+                        {translation("Assistants.vector.addFiles")}
+                      </label>
+                      <input
+                        id="vector-store-edit-files"
+                        className={styles.input}
+                        type="file"
+                        multiple
+                        onChange={(e) =>
+                          setVectorStoreEditFiles(
+                            Array.from(e.target.files || []),
+                          )
+                        }
+                      />
+
+                      {vectorStoreEditFiles.length > 0 && (
+                        <div>
+                          <span className={styles.metaLabel}>
+                            {translation("Assistants.vector.newFiles")}
+                          </span>
+                          <ul className={styles.vectorFileList}>
+                            {vectorStoreEditFiles.map((file) => (
+                              <li
+                                key={`${file.name}-${file.size}-${file.lastModified}`}
+                                className={styles.vectorFileRow}
+                              >
+                                <span>{file.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className={styles.rowEnd}>
+                        <button
+                          type="button"
+                          className={styles.ctaPrimary}
+                          onClick={handleUpdateVectorStore}
+                          disabled={
+                            isSavingVectorStore || !vectorStoreDraftName.trim()
+                          }
+                        >
+                          {isSavingVectorStore
+                            ? translation("Assistants.vector.saving")
+                            : translation("Assistants.vector.save")}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.ghostBtn}
+                          onClick={cancelVectorStoreEdit}
+                          disabled={isSavingVectorStore}
+                        >
+                          {translation("Common.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.metaGrid}>
+                        {vectorStore && (
+                          <>
+                            <div>
+                              <span className={styles.metaLabel}>
+                                {translation("Assistants.vector.collectionTitle")}
+                              </span>
+                              <span>{vectorStore.storeName}</span>
+                            </div>
+                            <div>
+                              <span className={styles.metaLabel}>
+                                {translation("Assistants.vector.quantity")}
+                              </span>
+                              <span>{vectorStore.files?.length || 0}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {vectorStore?.files?.length ? (
+                        <div className={styles.vectorFilesReadOnly}>
+                          <span className={styles.metaLabel}>
+                            {translation("Assistants.vector.filenames")}
+                          </span>
+                          <ul className={styles.vectorFileList}>
+                            {vectorStore.files.map((file) => (
+                              <li key={file.id} className={styles.vectorFileRow}>
+                                <span>{file.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+
+                      <div className={styles.rowEnd}>
+                        <button
+                          type="button"
+                          className={styles.dangerBtn}
+                          onClick={deleteVectorStore}
+                        >
+                          {translation("Common.delete")}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </section>
