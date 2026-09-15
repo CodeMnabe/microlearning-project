@@ -608,19 +608,14 @@ export default function AutomationsPage() {
     }
   }
 
-  async function runCron(path) {
+  async function runAutomation(path) {
     try {
       const res = await fetch(path, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(process.env.NEXT_PUBLIC_CRON_SECRET
-            ? {
-                Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
-              }
-            : {}),
         },
-        body: JSON.stringify({ limit: 100 }),
+        body: JSON.stringify({ organizationId: orgId, limit: 100 }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -673,7 +668,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/inactivity")}
+            onClick={() => runAutomation("/api/automations/run/inactivity")}
           >
             <Clock3 size={16} />
             <span>{translation("runInactivity")}</span>
@@ -682,7 +677,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/materialize")}
+            onClick={() => runAutomation("/api/automations/run/materialize")}
           >
             <PlayCircle size={16} />
             <span>{translation("materialize")}</span>
