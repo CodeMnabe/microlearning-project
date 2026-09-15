@@ -1,15 +1,10 @@
 import { getOrganizationFaviconUrl } from "./organizationLogo.helpers";
 
-/**
- * Builds the Next.js metadata overrides for an organization: the browser tab
- * title becomes the organization name and the favicon becomes a square
- * rendition of its uploaded logo. Missing values are omitted so the platform
- * defaults keep applying.
- */
+// Identidade do separador: nome e favicon independente do logótipo.
 export function getOrganizationMetadata(org) {
   const metadata = {};
   const name = String(org?.name || "").trim();
-  const faviconUrl = getOrganizationFaviconUrl(org?.logo_url);
+  const faviconUrl = getOrganizationFaviconUrl(org?.favicon_url);
 
   if (name) {
     metadata.title = name;

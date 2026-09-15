@@ -15,7 +15,7 @@ export async function generateMetadata() {
 
   const { data: org, error } = await supabase
     .from("organization")
-    .select("name, logo_url")
+    .select("name, favicon_url")
     .eq("owner_user_id", user.id)
     .maybeSingle();
 

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import {
   DEFAULT_LOGO_URL,
+  getOrganizationFaviconUrl,
   getOrganizationLogoUrl,
 } from "@/lib/helpers/organizationLogo.helpers";
 import styles from "./settings.module.css";
@@ -18,15 +19,23 @@ export default function LogoUploader({
   orgName,
   disabled,
   onLogoChange,
+  variant = "logo",
 }) {
-  const t = useTranslations("Settings.logo");
+  const isFavicon = variant === "favicon";
+  const t = useTranslations(isFavicon ? "Settings.favicon" : "Settings.logo");
+  const previewUrl = isFavicon
+    ? getOrganizationFaviconUrl(logoUrl) || "/favicon.ico"
+    : getOrganizationLogoUrl(logoUrl);
+  const isDefault = isFavicon ? !getOrganizationFaviconUrl(logoUrl) : previewUrl === DEFAULT_LOGO_URL;
   const showAlert = useAlert();
   const [file, setFile] = useState(null);
   const [objectUrl, setObjectUrl] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
+    setImageDimensions(null);
     if (!file) {
       setObjectUrl(null);
       return undefined;
@@ -34,8 +43,21 @@ export default function LogoUploader({
 
     const nextUrl = URL.createObjectURL(file);
     setObjectUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [file]);
+    let image;
+    if (isFavicon) {
+      image = new Image();
+      image.onload = () => setImageDimensions({
+        file,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+      image.src = nextUrl;
+    }
+    return () => {
+      if (image) image.onload = null;
+      URL.revokeObjectURL(nextUrl);
+    };
+  }, [file, isFavicon]);
 
   function chooseFile(event) {
     const selected = event.target.files?.[0] ?? null;
@@ -72,9 +94,9 @@ export default function LogoUploader({
     try {
       const body = new FormData();
       body.set("orgId", String(orgId));
-      body.set("logo", file);
+      body.set(variant, file);
 
-      const response = await fetch("/api/organizations/logo", {
+      const response = await fetch(`/api/organizations/${variant}`, {
         method: "POST",
         body,
       });
@@ -108,7 +130,7 @@ export default function LogoUploader({
     setFeedback(null);
 
     try {
-      const response = await fetch("/api/organizations/logo", {
+      const response = await fetch(`/api/organizations/${variant}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orgId }),
@@ -130,10 +152,10 @@ export default function LogoUploader({
 
   return (
     <div className={styles.logoUploader}>
-      <div className={styles.logoPreviewFrame}>
+      <div className={isFavicon ? `${styles.logoPreviewFrame} ${styles.faviconPreviewFrame}` : styles.logoPreviewFrame}>
         <img
-          src={objectUrl || getOrganizationLogoUrl(logoUrl)}
-          alt={orgName}
+          src={objectUrl || previewUrl}
+          alt={isFavicon ? t("title") : orgName}
         />
       </div>
 
@@ -150,6 +172,12 @@ export default function LogoUploader({
         <p className={styles.helpText}>{t("help")}</p>
 
         {file && <p className={styles.selectedFile}>{file.name}</p>}
+        {isFavicon && file && imageDimensions?.file === file &&
+          imageDimensions.width !== imageDimensions.height && (
+            <p className={styles.helpText} role="status">
+              {t("nonSquareWarning")}
+            </p>
+          )}
 
         <div className={styles.inlineActions}>
           <button
@@ -165,7 +193,7 @@ export default function LogoUploader({
             className={styles.secondaryButton}
             onClick={reset}
             disabled={
-              isDisabled || getOrganizationLogoUrl(logoUrl) === DEFAULT_LOGO_URL
+              isDisabled || isDefault
             }
           >
             {t("reset")}

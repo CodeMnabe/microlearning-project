@@ -7,6 +7,7 @@ export const ORGANIZATION_SETTINGS_COLUMNS = [
   "default_phone_country_code",
   "theme",
   "logo_url",
+  "favicon_url",
   "teams_tenant_id",
   "waba_id",
   "waba_namespace",

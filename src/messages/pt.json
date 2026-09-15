@@ -2402,6 +2402,23 @@
       "resetSuccess": "O logótipo por omissão foi reposto.",
       "resetError": "Não foi possível repor o logótipo."
     },
+    "favicon": {
+      "title": "Favicon",
+      "choose": "Escolher ficheiro",
+      "help": "Prefere uma imagem quadrada de 64 × 64 px ou superior, em PNG com fundo transparente. PNG, JPEG ou WebP, até 2 MB.",
+      "nonSquareWarning": "Esta imagem não é quadrada. Vamos manter as proporções e acrescentar espaço transparente; o símbolo pode ficar mais pequeno no separador.",
+      "upload": "Carregar favicon",
+      "working": "A processar…",
+      "reset": "Remover favicon",
+      "invalidType": "Escolhe uma imagem PNG, JPEG ou WebP.",
+      "tooLarge": "O ficheiro não pode exceder 2 MB.",
+      "uploadSuccessTitle": "Favicon atualizado",
+      "uploadSuccess": "O novo favicon foi guardado.",
+      "uploadErrorTitle": "Erro no favicon",
+      "uploadError": "Não foi possível carregar o favicon.",
+      "resetSuccess": "O favicon MyDigitalBot foi reposto.",
+      "resetError": "Não foi possível repor o favicon."
+    },
     "integrations": {
       "title": "Integrações",
       "description": "Configura os identificadores das plataformas de mensagens.",

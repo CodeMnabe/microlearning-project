@@ -2394,6 +2394,23 @@
       "resetSuccess": "The default logo was restored.",
       "resetError": "The default logo could not be restored."
     },
+    "favicon": {
+      "title": "Favicon",
+      "choose": "Choose file",
+      "help": "Use a square image of 64 × 64 px or larger, preferably a PNG with a transparent background. PNG, JPEG or WebP, up to 2 MB.",
+      "nonSquareWarning": "This image is not square. We will keep its proportions and add transparent padding; the symbol may look smaller in the browser tab.",
+      "upload": "Upload favicon",
+      "working": "Working…",
+      "reset": "Remove favicon",
+      "invalidType": "Choose a PNG, JPEG, or WebP image.",
+      "tooLarge": "The file must not exceed 2 MB.",
+      "uploadSuccessTitle": "Favicon updated",
+      "uploadSuccess": "The new favicon was saved.",
+      "uploadErrorTitle": "Favicon error",
+      "uploadError": "The favicon could not be uploaded.",
+      "resetSuccess": "The MyDigitalBot favicon has been restored.",
+      "resetError": "The default favicon could not be restored."
+    },
     "integrations": {
       "title": "Integrations",
       "description": "Configure identifiers for messaging platforms.",

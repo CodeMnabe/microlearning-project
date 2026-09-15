@@ -57,6 +57,7 @@ export default function SettingsPage() {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO_URL);
+  const [faviconUrl, setFaviconUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -77,6 +78,7 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error(payload.error || loadErrorMessage);
 
       setForm(toForm(payload.item));
+      setFaviconUrl(payload.item?.favicon_url ?? null);
       setLogoUrl(getOrganizationLogoUrl(payload.item?.logo_url));
     } catch (error) {
       setLoadError(error.message);
@@ -156,6 +158,7 @@ export default function SettingsPage() {
       }
 
       setForm(toForm(payload.item));
+      setFaviconUrl(payload.item?.favicon_url ?? null);
       setLogoUrl(getOrganizationLogoUrl(payload.item?.logo_url || logoUrl));
       applyThemeVariables(payload.item?.theme);
       window.dispatchEvent(new CustomEvent("organization:updated"));
@@ -176,6 +179,11 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleFaviconChange(item) {
+    setFaviconUrl(item?.favicon_url ?? null);
+    router.refresh();
   }
 
   function handleLogoChange(item) {
@@ -299,15 +307,27 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className={styles.logoBlock}>
-            <h3>{t("logo.title")}</h3>
-            <LogoUploader
-              orgId={orgId}
-              logoUrl={logoUrl}
-              orgName={form.name}
-              disabled={saving}
-              onLogoChange={handleLogoChange}
-            />
+          <div className={styles.brandingUploads}>
+            <div className={styles.logoBlock}>
+              <h3>{t("logo.title")}</h3>
+              <LogoUploader
+                orgId={orgId}
+                logoUrl={logoUrl}
+                orgName={form.name}
+                disabled={saving}
+                onLogoChange={handleLogoChange}
+              />
+            </div>
+            <div className={styles.logoBlock}>
+              <h3>{t("favicon.title")}</h3>
+              <LogoUploader
+                variant="favicon"
+                orgId={orgId}
+                logoUrl={faviconUrl}
+                disabled={saving}
+                onLogoChange={handleFaviconChange}
+              />
+            </div>
           </div>
         </section>
 

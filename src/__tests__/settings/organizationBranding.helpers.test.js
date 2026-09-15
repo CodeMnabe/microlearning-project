@@ -52,12 +52,16 @@ describe("organization branding metadata", () => {
     );
   });
 
-  it("uses the square favicon rendered from the uploaded logo", () => {
+  it("uses the separately uploaded favicon", () => {
     expect(
-      getOrganizationMetadata({ name: "Acme", logo_url: "org-logos/7/logo.png" }),
+      getOrganizationMetadata({ name: "Acme", favicon_url: "org-logos/7/logo.png" }),
     ).toEqual({
       title: "Acme",
       icons: { icon: "/api/organizations/favicon?path=org-logos%2F7%2Flogo.png" },
     });
   });
+});
+
+it("não usa o logótipo como favicon quando não existe favicon personalizado", () => {
+  expect(getOrganizationMetadata({ name: "Acme", logo_url: "org-logos/7/logo.png", favicon_url: null })).toEqual({ title: "Acme" });
 });
