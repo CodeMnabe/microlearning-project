@@ -2191,7 +2191,9 @@
   "loading": "A carregar métricas...",
   "errors": {
     "load": "Não foi possível carregar as métricas. Tenta novamente dentro de alguns segundos.",
-    "noOrg": "Não foi possível identificar a organização atual."
+    "noOrg": "Não foi possível identificar a organização atual.",
+  "export": "Não foi possível gerar o ficheiro Excel. Tenta novamente.",
+  "exportPartial": "O Excel foi descarregado apenas com o Resumo e o Painel: não foi possível obter os dados de detalhe."
   },
   "health": {
     "ok": "Tudo OK",
@@ -2326,9 +2328,95 @@
   "reset": "Repor grupos",
   "resetCharts": "Repor gráficos",
   "exports":"Exportar",
+  "exportPdf": "Exportar PDF",
+  "exportExcel": "Exportar Excel",
+  "exporting": "A exportar...",
   "resetDashboard": "Repor dashboard"
 
 },
+    "excel": {
+  "title": "Analytics",
+  "summarySheet": "Resumo",
+  "detail": {
+    "messagesSheet": "Mensagens",
+    "templatesSheet": "Templates",
+    "dailySheet": "Evolucao diaria",
+    "language": "Idioma",
+    "scope": "Ambito",
+    "providerTemplateId": "ID no fornecedor",
+    "date": "Data",
+    "failures": "Falhas",
+    "usersSheet": "Utilizadores",
+    "runsSheet": "Execucoes",
+    "scheduledSheet": "Agendamentos",
+    "linksSheet": "Links",
+    "id": "ID",
+    "name": "Nome",
+    "email": "Email",
+    "phone": "Telefone",
+    "channel": "Canal",
+    "role": "Origem",
+    "status": "Estado",
+    "deliveryStatus": "Estado de entrega",
+    "rule": "Regra",
+    "createdAt": "Criado em",
+    "deliveredAt": "Entregue em",
+    "readAt": "Lido em",
+    "failedAt": "Falhou em",
+    "scheduledFor": "Agendado para",
+    "processedAt": "Processado em",
+    "startedAt": "Iniciado em",
+    "completedAt": "Concluido em",
+    "lastError": "Ultimo erro",
+    "userId": "ID utilizador",
+    "assistantId": "ID assistente",
+    "threadId": "ID conversa",
+    "scheduledBroadcastId": "ID agendamento",
+    "automationRunId": "ID execucao",
+    "sendGroupId": "ID envio",
+    "whatsappId": "ID WhatsApp",
+    "teamsId": "ID Teams",
+    "assistant": "Assistente",
+    "tags": "Etiquetas",
+    "recipients": "Destinatarios",
+    "clicked": "Clicaram",
+    "clicksTotal": "Cliques",
+    "clickRate": "Taxa",
+    "linkLabel": "Link",
+    "destinationUrl": "Destino"
+  },
+
+  "dashboardSheet": "Painel",
+  "panels": {
+    "messages": "MENSAGENS",
+    "operations": "OPERAÇÃO",
+    "templates": "TEMPLATES"
+  },
+  "organization": "Organização",
+  "period": "Período",
+  "exportedAt": "Exportado em",
+  "columnGroup": "Grupo",
+  "columnMetric": "Métrica",
+  "columnValue": "Valor",
+  "columnRate": "Taxa",
+  "groups": {
+    "users": "Utilizadores", "assistants": "Assistentes", "messages": "Mensagens",
+    "automations": "Automações", "scheduled": "Mensagens agendadas", "templates": "Templates",
+    "trackedLinks": "Links rastreados", "pendingOutreach": "Outreach pendente"
+  },
+  "metrics": {
+    "total": "Total", "withAssistant": "Com assistente", "withoutAssistant": "Sem assistente",
+    "withEmail": "Com email", "withPhone": "Com telefone", "withTeams": "Com Teams",
+    "withWhatsapp": "Com WhatsApp", "withoutOpenAiId": "Sem OpenAI ID", "whatsapp": "WhatsApp",
+    "teams": "Teams", "fromUser": "Do utilizador", "fromAssistant": "Do assistente",
+    "delivered": "Entregues", "read": "Lidas", "failed": "Falhadas", "rulesTotal": "Regras",
+    "rulesActive": "Regras ativas", "rulesPaused": "Regras pausadas", "runsTotal": "Execuções",
+    "runsProcessed": "Processadas", "runsFailed": "Falhadas", "queued": "Em fila",
+    "completed": "Concluídas", "recipients": "Destinatários", "active": "Ativos",
+    "pending": "Pendentes", "rejected": "Rejeitados", "linksTotal": "Links", "clicksTotal": "Cliques"
+  }
+},
+
     "rankings": {
   "title": "Rankings",
   "description": "Os elementos mais relevantes no período selecionado.",

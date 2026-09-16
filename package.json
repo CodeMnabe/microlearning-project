@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.50.3",
     "clsx": "^2.1.1",
     "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
@@ -29,8 +30,7 @@
     "react": "^19.0.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.0.0",
-    "recharts": "^3.8.1",
-    "xlsx": "^0.18.5"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

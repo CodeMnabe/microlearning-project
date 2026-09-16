@@ -2182,7 +2182,9 @@
   "loading": "Loading metrics...",
   "errors": {
     "load": "Metrics could not be loaded. Please try again in a few seconds.",
-    "noOrg": "The current organization could not be identified."
+    "noOrg": "The current organization could not be identified.",
+  "export": "Could not generate the Excel file. Please try again.",
+  "exportPartial": "The Excel file was downloaded with only the Summary and Dashboard: the detail data could not be retrieved."
   },
   "health": {
     "ok": "All good",
@@ -2321,7 +2323,93 @@
   "reset": "Reset groups",
   "resetCharts": "Reset charts",
   "exports": "Export",
+  "exportPdf": "Export PDF",
+  "exportExcel": "Export Excel",
+  "exporting": "Exporting...",
   "resetDashboard": "Reset dashboard"
+},
+
+  "excel": {
+  "title": "Analytics",
+  "summarySheet": "Summary",
+  "detail": {
+    "messagesSheet": "Messages",
+    "templatesSheet": "Templates",
+    "dailySheet": "Daily trend",
+    "language": "Language",
+    "scope": "Scope",
+    "providerTemplateId": "Provider ID",
+    "date": "Date",
+    "failures": "Failures",
+    "usersSheet": "Users",
+    "runsSheet": "Runs",
+    "scheduledSheet": "Scheduled",
+    "linksSheet": "Links",
+    "id": "ID",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "channel": "Channel",
+    "role": "Origin",
+    "status": "Status",
+    "deliveryStatus": "Delivery status",
+    "rule": "Rule",
+    "createdAt": "Created at",
+    "deliveredAt": "Delivered at",
+    "readAt": "Read at",
+    "failedAt": "Failed at",
+    "scheduledFor": "Scheduled for",
+    "processedAt": "Processed at",
+    "startedAt": "Started at",
+    "completedAt": "Completed at",
+    "lastError": "Last error",
+    "userId": "User ID",
+    "assistantId": "Assistant ID",
+    "threadId": "Thread ID",
+    "scheduledBroadcastId": "Broadcast ID",
+    "automationRunId": "Run ID",
+    "assistant": "Assistant",
+    "sendGroupId": "Send group ID",
+    "whatsappId": "WhatsApp ID",
+    "teamsId": "Teams ID",
+    "tags": "Tags",
+    "recipients": "Recipients",
+    "clicked": "Clicked",
+    "clicksTotal": "Clicks",
+    "clickRate": "Rate",
+    "linkLabel": "Link",
+    "destinationUrl": "Destination"
+  },
+
+  "dashboardSheet": "Dashboard",
+  "panels": {
+    "messages": "MESSAGES",
+    "operations": "OPERATIONS",
+    "templates": "TEMPLATES"
+  },
+  "organization": "Organisation",
+  "period": "Period",
+  "exportedAt": "Exported on",
+  "columnGroup": "Group",
+  "columnMetric": "Metric",
+  "columnValue": "Value",
+  "columnRate": "Rate",
+  "groups": {
+    "users": "Users", "assistants": "Assistants", "messages": "Messages",
+    "automations": "Automations", "scheduled": "Scheduled broadcasts", "templates": "Templates",
+    "trackedLinks": "Tracked links", "pendingOutreach": "Pending outreach"
+  },
+  "metrics": {
+    "total": "Total", "withAssistant": "With assistant", "withoutAssistant": "Without assistant",
+    "withEmail": "With email", "withPhone": "With phone", "withTeams": "With Teams",
+    "withWhatsapp": "With WhatsApp", "withoutOpenAiId": "Without OpenAI ID", "whatsapp": "WhatsApp",
+    "teams": "Teams", "fromUser": "From user", "fromAssistant": "From assistant",
+    "delivered": "Delivered", "read": "Read", "failed": "Failed", "rulesTotal": "Rules",
+    "rulesActive": "Active rules", "rulesPaused": "Paused rules", "runsTotal": "Runs",
+    "runsProcessed": "Processed", "runsFailed": "Failed", "queued": "Queued",
+    "completed": "Completed", "recipients": "Recipients", "active": "Active",
+    "pending": "Pending", "rejected": "Rejected", "linksTotal": "Links", "clicksTotal": "Clicks"
+  }
 },
 
   "rankings": {

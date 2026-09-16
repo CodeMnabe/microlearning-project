@@ -62,8 +62,17 @@ export async function createTrackedLinkEvent(row) {
   return data;
 }
 
-export async function getTrackedLinkReportsByOrg(orgId) {
-  const { data: links, error } = await supabaseAdmin
+/**
+ * Relatorio dos links agrupados por envio.
+ *
+ * O `periodStart` e opcional e por omissao e nulo, para nao alterar o
+ * comportamento de quem ja chama esta funcao — a pagina de tracked
+ * links continua a ver todos os envios. Quando vem preenchido, filtra
+ * pelos envios criados a partir dessa data, que e como uma pessoa
+ * pensa em "os envios dos ultimos 30 dias".
+ */
+export async function getTrackedLinkReportsByOrg(orgId, periodStart = null) {
+  let query = supabaseAdmin
     .from("tracked_link")
     .select(
       `
@@ -90,8 +99,15 @@ export async function getTrackedLinkReportsByOrg(orgId) {
       )
     `,
     )
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false });
+    .eq("org_id", orgId);
+
+  if (periodStart) {
+    query = query.gte("created_at", periodStart);
+  }
+
+  const { data: links, error } = await query.order("created_at", {
+    ascending: false,
+  });
 
   if (error) throw error;
 

@@ -10,6 +10,89 @@ import { Download } from "lucide-react";
 
 const PREVIEW_LIMIT = 10;
 
+/**
+ * Converte uma célula em texto, seja qual for o tipo que lá está.
+ *
+ * O ExcelJS devolve objetos para fórmulas, texto rico e hiperligações;
+ * o resto do fluxo de importação espera strings simples, como o `xlsx`
+ * devolvia. Esta função é a tradução entre os dois.
+ */
+/**
+ * Lê um ficheiro .xlsx e devolve uma linha por utilizador.
+ *
+ * Usa o ExcelJS, que já é dependência do projeto por causa da
+ * exportação. Antes usava o `xlsx@0.18.5`, que tem duas
+ * vulnerabilidades sem correção publicada no npm — e ambas são
+ * de leitura, que é exatamente o que esta função faz sobre um
+ * ficheiro escolhido por quem está do outro lado do ecrã.
+ *
+ * O comportamento mantém-se: prefere a folha "Users", cai na
+ * primeira, e devolve objetos com os cabeçalhos como chaves e
+ * strings como valores.
+ */
+export async function readExcelFile(file) {
+  const ExcelJS = await import("exceljs");
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+
+  const worksheet =
+    workbook.getWorksheet("Users") ?? workbook.worksheets[0];
+
+  if (!worksheet) {
+    throw new Error("No sheets found in Excel file.");
+  }
+
+  const headers = [];
+
+  worksheet.getRow(1).eachCell({ includeEmpty: true }, (cell, column) => {
+    headers[column] = String(cellToText(cell)).trim();
+  });
+
+  const rows = [];
+
+  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    // A linha 1 são os cabeçalhos.
+    if (rowNumber === 1) return;
+
+    const entry = {};
+    let hasValue = false;
+
+    headers.forEach((header, column) => {
+      if (!header) return;
+
+      const text = cellToText(row.getCell(column));
+
+      entry[header] = text;
+      if (text !== "") hasValue = true;
+    });
+
+    // O ExcelJS devolve linhas que só têm formatação. Sem esta
+    // guarda, entravam como utilizadores vazios.
+    if (hasValue) rows.push(entry);
+  });
+
+  return rows;
+}
+
+function cellToText(cell) {
+  const value = cell?.value;
+
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString();
+
+  if (typeof value === "object") {
+    if ("text" in value) return String(value.text);
+    if ("result" in value) return String(value.result ?? "");
+    if ("richText" in value) {
+      return value.richText.map((part) => part.text).join("");
+    }
+    return "";
+  }
+
+  return String(value);
+}
+
 function isExcelFile(file) {
   const name = file?.name?.toLowerCase() || "";
 
@@ -77,30 +160,6 @@ export default function ImportUsersModal({
 
   const stateClass = isOpen ? styles.open : styles.closing;
 
-  async function readExcelFile(file) {
-    const XLSX = await import("xlsx");
-
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, {
-      type: "array",
-      cellDates: false,
-    });
-
-    const sheetName = workbook.SheetNames.includes("Users")
-      ? "Users"
-      : workbook.SheetNames[0];
-
-    if (!sheetName) {
-      throw new Error("No sheets found in Excel file.");
-    }
-
-    const worksheet = workbook.Sheets[sheetName];
-
-    return XLSX.utils.sheet_to_json(worksheet, {
-      defval: "",
-      raw: false,
-    });
-  }
 
   async function readCsvFile(file) {
     const text = await file.text();

@@ -140,8 +140,8 @@ export async function resolveTrackedLinkClick({
   };
 }
 
-export async function listTrackedLinkReports(orgId) {
-  return getTrackedLinkReportsByOrg(orgId);
+export async function listTrackedLinkReports(orgId, periodStart = null) {
+  return getTrackedLinkReportsByOrg(orgId, periodStart);
 }
 
 export async function getTrackedLinkReport({ orgId, sendGroupId }) {
