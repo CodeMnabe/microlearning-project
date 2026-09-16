@@ -11,6 +11,7 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import Slider from "@/app/components/Slider/Slider";
+import { ASSISTANT_FILE_ACCEPT, resolveAssistantFileType } from "@/lib/uploads/assistantFiles";
 
 const STORAGE_BUCKET = "assistant-uploads";
 
@@ -197,12 +198,17 @@ export default function AssistantsHub() {
       const basePath = `${orgId}/${selected.id}/${Date.now()}`;
       const uploaded = [];
       for (const f of vsFiles) {
+        const contentType = resolveAssistantFileType(f);
+        if (!contentType) {
+          alert("Este tipo de ficheiro não é aceite.");
+          return;
+        }
         const path = `${basePath}-${f.name}`;
         const { error } = await supabase.storage
           .from(STORAGE_BUCKET)
           .upload(path, f, {
             upsert: true,
-            contentType: f.type || "application/octet-stream",
+            contentType,
           });
         if (error) {
           alert("Erro no upload: " + error.message);
@@ -562,6 +568,7 @@ export default function AssistantsHub() {
                   <input
                     className={styles.input}
                     type="file"
+                    accept={ASSISTANT_FILE_ACCEPT}
                     multiple
                     onChange={(e) =>
                       setVsFiles(Array.from(e.target.files || []))
