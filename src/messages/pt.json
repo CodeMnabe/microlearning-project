@@ -1362,6 +1362,7 @@
     "key": "Chave",
     "label": "Rótulo",
     "destinationUrl": "URL Destino",
+    "destinationUrlInvalid": "O destino tem de começar por http:// ou https://",
     "addPlaceholders": {
       "first": "Adiciona o placeholder tipo",
       "second": "dentro da mensagem"
