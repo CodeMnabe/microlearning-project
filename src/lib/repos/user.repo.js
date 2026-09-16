@@ -373,7 +373,6 @@ async function getSingleUserByIdentity({ column, value, organizationId }) {
       `Multiple users match ${column}; pass organizationId to disambiguate`,
       {
         column,
-        value: cleaned,
         count: data.length,
       },
     );
@@ -457,7 +456,6 @@ export async function getUserByNumber(
 }
 
 export async function getUserByEmail(email, tenant) {
-  console.log("It got here");
   const _email = String(email || "")
     .trim()
     .toLowerCase();
@@ -484,7 +482,6 @@ export async function getUserByEmail(email, tenant) {
     throw err;
   }
 
-  console.log("User was found");
 
   return matches[0].id;
 }

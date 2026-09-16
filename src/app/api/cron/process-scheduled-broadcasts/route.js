@@ -12,6 +12,7 @@ import {
 } from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
+import { summarizeBroadcastPayload } from "@/lib/logging/summarizeBroadcastPayload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -170,7 +171,7 @@ async function processOneBroadcast(broadcast) {
     console.log("[Schedule Broadcast] payload before send", {
       broadcastId: broadcast.id,
       channel: broadcast.channel,
-      payload,
+      summary: summarizeBroadcastPayload(payload),
     });
 
     let result;
