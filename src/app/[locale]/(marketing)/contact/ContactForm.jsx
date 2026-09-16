@@ -8,6 +8,7 @@ const INITIAL_FORM = {
   email: "",
   company: "",
   message: "",
+  website: "",
 };
 
 export default function ContactForm() {
@@ -51,6 +52,16 @@ export default function ContactForm() {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      <div style={{ position: "absolute", left: "-10000px" }}>
+        <input
+          name="website"
+          autoComplete="off"
+          tabIndex={-1}
+          aria-hidden="true"
+          value={form.website}
+          onChange={updateField}
+        />
+      </div>
       <div className={styles.row}>
         <div className={styles.field}>
           <label htmlFor="name" className={styles.label}>
