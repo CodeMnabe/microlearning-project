@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
+import AssistantsField from "./AssistantsField";
 import { useTranslations } from "next-intl";
 import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
@@ -26,6 +27,7 @@ export default function CreateUserModal({
   const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
+  const [assistantIds, setAssistantIds] = useState([]);
 
   const [teamsAadObjectId, setTeamsAadObjectId] = useState("");
   const [teamsFromId, setTeamsFromId] = useState("");
@@ -76,6 +78,7 @@ export default function CreateUserModal({
         phoneNational,
         email,
         assistantId: assistantId ?? null,
+        assistantIds,
         teamsAadObjectId: teamsAadObjectId || null,
         teamsFromId: teamsFromId || null,
       });
@@ -96,6 +99,7 @@ export default function CreateUserModal({
         setPhoneNational("");
         setEmail("");
         setAssistantId(null);
+        setAssistantIds([]);
         setTeamsAadObjectId("");
         setTeamsFromId("");
         setWhatsAppStatus("enabled");
@@ -157,17 +161,15 @@ export default function CreateUserModal({
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label>{translation("CreateUserModal.assistant")}</label>
-            <PillSelect
-              options={assistants.map((a) => ({ value: a.id, label: a.name }))}
-              value={assistantId ?? ""}
-              onChange={(val) => setAssistantId(val)}
-              placeholder={translation("CreateUserModal.chooseAssistant")}
-              fullWidth
-              portalToBody
-            />
-          </div>
+          <AssistantsField
+            assistants={assistants}
+            assistantIds={assistantIds}
+            activeAssistantId={assistantId}
+            onChange={(next) => {
+              setAssistantIds(next.assistantIds);
+              setAssistantId(next.activeAssistantId);
+            }}
+          />
 
           {/* ───── Canais de Comunicação (accordion) ───── */}
           <div className={styles.sectionDivider}>

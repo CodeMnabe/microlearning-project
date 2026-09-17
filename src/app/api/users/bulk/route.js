@@ -10,7 +10,7 @@ import {
 
 export async function PATCH(req) {
   try {
-    const { ids, assistantId, orgId } = await req.json();
+    const { ids, assistantId, orgId, mode } = await req.json();
     const userIds = (ids || []).map(Number).filter(Boolean);
 
     if (!Array.isArray(ids) || userIds.length === 0) {
@@ -32,6 +32,33 @@ export async function PATCH(req) {
       assistantId,
     );
 
+    // "add": junta o assistente aos já atribuídos e só o torna ativo em quem
+    // não tinha nenhum. Sem modo: os utilizadores ficam só com este (#131).
+    if (mode === "add" && safeAssistantId) {
+      const { error: addError } = await orgAuth.admin
+        .from("user_assistant")
+        .upsert(
+          safeUserIds.map((userId) => ({
+            user_id: userId,
+            assistant_id: safeAssistantId,
+          })),
+          { onConflict: "user_id,assistant_id", ignoreDuplicates: true },
+        );
+
+      if (addError) throw addError;
+
+      const { error: activeError } = await orgAuth.admin
+        .from("user")
+        .update({ assistant_id: safeAssistantId })
+        .in("id", safeUserIds)
+        .eq("organization_id", orgAuth.orgId)
+        .is("assistant_id", null);
+
+      if (activeError) throw activeError;
+
+      return NextResponse.json({ ok: true });
+    }
+
     const { error } = await orgAuth.admin
       .from("user")
       .update({ assistant_id: safeAssistantId })
@@ -39,6 +66,16 @@ export async function PATCH(req) {
       .eq("organization_id", orgAuth.orgId);
 
     if (error) throw error;
+
+    let others = orgAuth.admin
+      .from("user_assistant")
+      .delete()
+      .in("user_id", safeUserIds);
+
+    if (safeAssistantId) others = others.neq("assistant_id", safeAssistantId);
+
+    const { error: othersError } = await others;
+    if (othersError) throw othersError;
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
+import AssistantsField from "./AssistantsField";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { useTranslations } from "next-intl";
 import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
@@ -36,6 +37,7 @@ export default function EditUserModal({
   const [phoneNational, setPhoneNational] = useState("");
   const [email, setEmail] = useState("");
   const [assistantId, setAssistantId] = useState(null);
+  const [assistantIds, setAssistantIds] = useState([]);
   const [teamsAadObjectId, setTeamsAadObjectId] = useState(null);
   const [teamsFromId, setTeamsFromId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -78,7 +80,11 @@ export default function EditUserModal({
     );
 
     setEmail(user.email || "");
-    setAssistantId(user.assistantId ?? user.assistant_id ?? null);
+    const activeId = user.assistantId ?? user.assistant_id ?? null;
+    setAssistantId(activeId);
+    setAssistantIds(
+      user.assistantIds ?? user.assistant_ids ?? (activeId ? [activeId] : []),
+    );
 
     setTeamsAadObjectId(
       user.teamsAadObjectId ?? user.teams_aad_object_id ?? null,
@@ -138,6 +144,7 @@ export default function EditUserModal({
           name,
           email,
           assistantId,
+          assistantIds,
           tagIds: selectedTagIds,
           phoneCountryCode: phoneCode,
           phoneNational,
@@ -238,17 +245,15 @@ export default function EditUserModal({
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label>{translation("EditUserModal.assistant")}</label>
-            <PillSelect
-              options={assistants.map((a) => ({ value: a.id, label: a.name }))}
-              value={assistantId ?? ""}
-              onChange={(val) => setAssistantId(val)}
-              placeholder={translation("EditUserModal.chooseAssistant")}
-              fullWidth
-              portalToBody
-            />
-          </div>
+          <AssistantsField
+            assistants={assistants}
+            assistantIds={assistantIds}
+            activeAssistantId={assistantId}
+            onChange={(next) => {
+              setAssistantIds(next.assistantIds);
+              setAssistantId(next.activeAssistantId);
+            }}
+          />
 
           {/* ───── Teams section ───── */}
           {/* <div className={styles.sectionDivider}>

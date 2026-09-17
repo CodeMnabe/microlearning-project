@@ -1067,6 +1067,13 @@
     "assistants": "Assistants",
     "empty": "No results."
   },
+  "UserAssistants": {
+    "assigned": "Assistants",
+    "active": "Active assistant",
+    "activeHint": "The one that replies to messages. The user can switch in the WhatsApp conversation.",
+    "none": "No assistants available.",
+    "extraTitle": "{count} assistants assigned"
+  },
   "EditUserModal": {
     "title": "Edit User",
     "name": "Name",
@@ -2203,7 +2210,9 @@
     "selected": "selected",
     "clear": "Clear",
     "bulkLabel": "Set Assistant",
-    "apply": "Apply",
+    "apply": "Replace",
+    "addAssistantHint": "Adds this assistant to the ones users already have",
+    "replaceAssistantHint": "Users keep only this assistant",
     "tag": "Add/Remove Tags",
     "add": "Add",
     "addTags": "Add selected tags to users",
