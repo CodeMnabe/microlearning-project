@@ -8,9 +8,12 @@
  * cortados, vai uma lista numerada e o contacto responde com o número.
  *
  * Mensagem de lista no Bird (verificado a 17-09-2026):
- * body { type: "list", list: { text, altText, items: [{ title, actions:
+ * body { type: "list", list: { text, items: [{ title, actions:
  * [{ type: "postback", postback: { text, payload } }] }], metadata:
  * { button: { label } } } }. Secções (items dentro de items) são rejeitadas.
+ * `altText` é opcional e aparece repetido a cinzento por baixo do texto, por
+ * isso não vai. `postback.text` é obrigatório e aparece por baixo de cada
+ * opção; é também o texto com que o toque chega.
  * O toque chega como o de um botão: texto, postback `item_<índice>` e
  * `replyTo.id` igual ao id da mensagem enviada.
  *
