@@ -58,6 +58,28 @@ describe("handleAssistantSwitch", () => {
     );
   });
 
+  it("com quatro a dez assistentes envia a mensagem de lista do WhatsApp", async () => {
+    getAssistantsInOrg.mockResolvedValue([
+      ...ASSISTANTS,
+      { id: 10, name: "Cibersegurança" },
+    ]);
+
+    await handleAssistantSwitch({
+      user: { ...USER, assistant_ids: [7, 8, 9, 10] },
+      payload: textPayload("assistentes"),
+      send,
+    });
+
+    const menu = send.mock.calls[0][0];
+    expect(menu.actions).toBeNull();
+    expect(menu.list.items.map((item) => item.title)).toEqual([
+      "Cibersegurança",
+      "Outro da organização",
+      "Segurança",
+      "Vendas",
+    ]);
+  });
+
   it("um toque num botão do menu muda o assistente ativo e confirma", async () => {
     const result = await handleAssistantSwitch({
       user: USER,
