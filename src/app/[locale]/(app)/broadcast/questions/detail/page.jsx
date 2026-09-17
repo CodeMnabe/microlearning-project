@@ -3,15 +3,37 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useAuth } from "@/app/AuthContext";
+import PillSelect from "@/app/components/PillSelect/PillSelect";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { VERDICTS } from "@/lib/services/questions/questionReports";
 
 import styles from "../questions.module.css";
+
+const ANSWER_FILTER_ALL = "all";
+
+const PILL_STYLE = {
+  height: "44px",
+  padding: "0 16px",
+  borderRadius: "9999px",
+  boxSizing: "border-box",
+};
+
+/* Nome, email ou telemóvel do contacto contêm o termo. */
+function matchesContact(item, term) {
+  if (!term) return true;
+
+  return [item.name, item.email, item.phoneNumber].some((value) =>
+    String(value || "")
+      .toLowerCase()
+      .includes(term),
+  );
+}
 
 function formatDate(value) {
   if (!value) return "-";
@@ -65,6 +87,8 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState(null);
+  const [q, setQ] = useState("");
+  const [answerFilter, setAnswerFilter] = useState(ANSWER_FILTER_ALL);
 
   useEffect(() => {
     if (orgLoading) return;
@@ -240,6 +264,48 @@ export default function QuestionDetailPage() {
 
   const distribution = buildDistribution();
 
+  /*
+   * Filtro por resposta: as opções (quiz e sondagem) ou o veredicto em
+   * vigor (pergunta aberta). As chaves são as da distribuição.
+   */
+  const answerOptions = [
+    {
+      value: ANSWER_FILTER_ALL,
+      label: translation("Questions.detail.filters.allAnswers"),
+    },
+    ...distribution.map((row) => ({ value: row.key, label: row.label })),
+  ];
+
+  function answerKey(item) {
+    if (hasOptions) {
+      return item.optionIndex != null ? `option-${item.optionIndex}` : null;
+    }
+
+    return VERDICTS.includes(item.effectiveVerdict)
+      ? item.effectiveVerdict
+      : "semVeredicto";
+  }
+
+  const term = q.trim().toLowerCase();
+  const hasAnswerFilter = answerFilter !== ANSWER_FILTER_ALL;
+  const hasFilters = Boolean(term || hasAnswerFilter);
+
+  const shownAnswered = answered.filter(
+    (item) =>
+      matchesContact(item, term) &&
+      (!hasAnswerFilter || answerKey(item) === answerFilter),
+  );
+
+  /* Quem não respondeu não tem resposta: sai quando se filtra por ela. */
+  const shownNotAnswered = hasAnswerFilter
+    ? []
+    : notAnswered.filter((item) => matchesContact(item, term));
+
+  function clearFilters() {
+    setQ("");
+    setAnswerFilter(ANSWER_FILTER_ALL);
+  }
+
   const metaParts = summary
     ? [
         translation(`Questions.kind.${summary.kind}`),
@@ -368,16 +434,55 @@ export default function QuestionDetailPage() {
             </div>
           </div>
 
+          <div className={styles.toolbar}>
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon}>
+                <Search size={18} />
+              </span>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={translation("Questions.detail.filters.search")}
+                aria-label={translation("Questions.detail.filters.search")}
+                className={styles.searchInput}
+              />
+            </div>
+
+            <PillSelect
+              value={answerFilter}
+              options={answerOptions}
+              onChange={(value) => setAnswerFilter(value)}
+              placeholder={translation("Questions.detail.filters.allAnswers")}
+              className={styles.answerFilter}
+              menuWidth={260}
+              style={PILL_STYLE}
+            />
+
+            {hasFilters ? (
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={clearFilters}
+              >
+                {translation("Questions.filters.clear")}
+              </button>
+            ) : null}
+          </div>
+
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>
               {translation("Questions.detail.answeredCount", {
-                count: answered.length,
+                count: shownAnswered.length,
               })}
             </h2>
 
-            {answered.length === 0 ? (
+            {shownAnswered.length === 0 ? (
               <div className={styles.emptyBox}>
-                {translation("Questions.detail.noAnswers")}
+                {translation(
+                  answered.length === 0
+                    ? "Questions.detail.noAnswers"
+                    : "Questions.detail.filters.noMatches",
+                )}
               </div>
             ) : (
               <div className={styles.tableCard}>
@@ -405,7 +510,7 @@ export default function QuestionDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {answered.map((item) => (
+                      {shownAnswered.map((item) => (
                         <tr key={item.answerId}>
                           <td className={styles.strongCell}>
                             {personLine(item, `#${item.userId}`)}
@@ -491,46 +596,52 @@ export default function QuestionDetailPage() {
             )}
           </section>
 
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>
-              {translation("Questions.detail.notAnsweredCount", {
-                count: notAnswered.length,
-              })}
-            </h2>
+          {hasAnswerFilter ? null : (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                {translation("Questions.detail.notAnsweredCount", {
+                  count: shownNotAnswered.length,
+                })}
+              </h2>
 
-            {notAnswered.length === 0 ? (
-              <div className={styles.emptyBox}>
-                {translation("Questions.detail.allAnswered")}
-              </div>
-            ) : (
-              <div className={styles.tableCard}>
-                <div className={styles.tableWrap}>
-                  <table className={styles.detailTable}>
-                    <thead>
-                      <tr>
-                        <th>{translation("Questions.detail.table.contact")}</th>
-                        <th>{translation("Questions.detail.table.phone")}</th>
-                        <th>{translation("Questions.detail.table.sentAt")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {notAnswered.map((item) => (
-                        <tr key={item.userId}>
-                          <td className={styles.strongCell}>
-                            {personLine(item, `#${item.userId}`)}
-                          </td>
-                          <td>{item.phoneNumber || "-"}</td>
-                          <td className={styles.nowrap}>
-                            {formatDate(item.sentAt)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {shownNotAnswered.length === 0 ? (
+                <div className={styles.emptyBox}>
+                  {translation(
+                    notAnswered.length === 0
+                      ? "Questions.detail.allAnswered"
+                      : "Questions.detail.filters.noMatches",
+                  )}
                 </div>
-              </div>
-            )}
-          </section>
+              ) : (
+                <div className={styles.tableCard}>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.detailTable}>
+                      <thead>
+                        <tr>
+                          <th>{translation("Questions.detail.table.contact")}</th>
+                          <th>{translation("Questions.detail.table.phone")}</th>
+                          <th>{translation("Questions.detail.table.sentAt")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {shownNotAnswered.map((item) => (
+                          <tr key={item.userId}>
+                            <td className={styles.strongCell}>
+                              {personLine(item, `#${item.userId}`)}
+                            </td>
+                            <td>{item.phoneNumber || "-"}</td>
+                            <td className={styles.nowrap}>
+                              {formatDate(item.sentAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
     </div>

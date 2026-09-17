@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ORG_ID = 7;
@@ -232,6 +232,46 @@ describe("QuestionDetailPage", () => {
       "Questions.detail.verdicts.parcial150%",
     );
     expect(distribution).toHaveTextContent("Questions.detail.verdicts.none00%");
+  });
+
+  it("filters who answered by contact and by answer", async () => {
+    fetchMock.mockImplementation(() => makeResponse(OPEN));
+
+    render(<QuestionDetailPage />);
+
+    const table = await screen.findByTestId("answered-table");
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(2);
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Questions.detail.filters.search" }),
+      { target: { value: "ana" } },
+    );
+
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
+    expect(table).toHaveTextContent("Ana Silva");
+
+    fireEvent.click(screen.getByRole("button", { name: "Questions.filters.clear" }));
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(2);
+
+    /* Por resposta: numa pergunta aberta filtra pelo veredicto em vigor. */
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Questions.detail.filters.allAnswers",
+      }),
+    );
+    fireEvent.click(
+      within(screen.getByRole("listbox")).getByRole("option", {
+        name: "Questions.detail.verdicts.completa",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(table.querySelectorAll("tbody tr")).toHaveLength(1);
+    });
+    expect(table).toHaveTextContent("João Lima");
+    expect(
+      screen.queryByText("Questions.detail.allAnswered"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows an error when the question id is missing", async () => {

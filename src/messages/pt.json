@@ -1801,6 +1801,11 @@
       "verdictsTitle": "Veredictos",
       "answeredCount": "Responderam ({count})",
       "notAnsweredCount": "Não responderam ({count})",
+      "filters": {
+        "search": "Procurar por nome, email ou telemóvel",
+        "allAnswers": "Todas as respostas",
+        "noMatches": "Nenhum contacto corresponde aos filtros."
+      },
       "verdicts": {
         "completa": "Completa",
         "parcial": "Parcial",
