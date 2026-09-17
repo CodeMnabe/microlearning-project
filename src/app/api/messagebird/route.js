@@ -1058,9 +1058,22 @@ async function handleEvent(rawJSON) {
         },
       }),
 
-    resolveThread: async ({ question }) => {
+    resolveThread: async ({ question, message }) => {
       try {
-        const assistant = await getAssistantFromUser(user, organization);
+        /*
+         * A resposta fica com o assistente com que a pergunta foi
+         * enviada, mesmo que o contacto tenha trocado entretanto.
+         */
+        const sentWithAssistantId = (user.assistant_ids || [])
+          .map(Number)
+          .includes(Number(message?.assistant_id))
+          ? message.assistant_id
+          : user.assistant_id;
+
+        const assistant = await getAssistantFromUser(
+          { ...user, assistant_id: sentWithAssistantId },
+          organization,
+        );
 
         if (!assistant) return null;
 

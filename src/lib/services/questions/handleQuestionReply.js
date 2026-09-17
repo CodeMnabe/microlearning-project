@@ -159,7 +159,7 @@ export async function handleQuestionReply({
 
   if (!isOpen && !option) return { handled: false };
 
-  const thread = (await resolveThread?.({ question })) || {};
+  const thread = (await resolveThread?.({ question, message })) || {};
 
   const inboundRow = await d.createMessage({
     threadId: thread.threadId ?? null,
