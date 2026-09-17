@@ -217,12 +217,12 @@ export default function EditUserModal({
       <div
         className={`${styles.modalContent} ${styles.modalContentForm} ${stateClass}`}
       >
-        <h3 className={styles.modalTitle}>
-          {translation("EditUserModal.title")}
-        </h3>
+        <div className={styles.formHead}>
+          <h3>{translation("EditUserModal.title")}</h3>
+        </div>
 
-        <div className={styles.form}>
-          <div className={styles.formRow}>
+        <div className={styles.formBody}>
+          <div className={styles.formCol}>
             <div className={styles.formGroup}>
               <label>{translation("EditUserModal.name")}</label>
               <input
@@ -261,18 +261,7 @@ export default function EditUserModal({
                 placeholder="exemplo@exemplo.com"
               />
             </div>
-          </div>
 
-          <AssistantsField
-            assistants={assistants}
-            assistantIds={assistantIds}
-            initialAssistantIds={initialAssistantIds}
-            activeAssistantId={assistantId}
-            onChange={(next) => {
-              setAssistantIds(next.assistantIds);
-              setAssistantId(next.activeAssistantId);
-            }}
-          />
 
           {/* ───── Teams section ───── */}
           {/* <div className={styles.sectionDivider}>
@@ -421,8 +410,19 @@ export default function EditUserModal({
             </div>
           </div>
 
-          <div className={styles.sectionDivider} />
-          {/* ───────────────────────── */}
+          </div>
+
+          <div className={styles.formCol}>
+          <AssistantsField
+            assistants={assistants}
+            assistantIds={assistantIds}
+            initialAssistantIds={initialAssistantIds}
+            activeAssistantId={assistantId}
+            onChange={(next) => {
+              setAssistantIds(next.assistantIds);
+              setAssistantId(next.activeAssistantId);
+            }}
+          />
 
           <CheckList
             label={translation("EditUserModal.tags")}
@@ -432,17 +432,15 @@ export default function EditUserModal({
             onToggle={toggleTag}
             emptyText={translation("EditUserModal.noTags")}
           />
+          </div>
+        </div>
 
-          <div className={styles.buttonGroup}>
+          <div className={`${styles.buttonGroup} ${styles.formFoot}`}>
             <button
               type="button"
               onClick={handleDelete}
               disabled={isSaving || isDeleting}
-              style={{
-                background: "#fff5f5",
-                color: "#b42318",
-                border: "1px solid #ffd0d0",
-              }}
+              className={styles.btnDangerText}
             >
               {isDeleting
                 ? translation("EditUserModal.deleting")
@@ -454,6 +452,7 @@ export default function EditUserModal({
               </button>
               <button
                 type="button"
+                className={styles.btnPrimary}
                 onClick={save}
                 disabled={isSaving || isDeleting}
               >
@@ -463,7 +462,6 @@ export default function EditUserModal({
               </button>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

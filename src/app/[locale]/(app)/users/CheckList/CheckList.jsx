@@ -89,6 +89,11 @@ export default function CheckList({
                     checked={checked}
                     onChange={() => onToggle(item.id)}
                   />
+                  <span className={styles.tick} aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
                   <span className={styles.name}>{item.name}</span>
                 </label>
 

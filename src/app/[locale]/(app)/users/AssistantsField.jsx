@@ -27,27 +27,19 @@ export default function AssistantsField({
   const hasSeveral = assistantIds.length > 1;
 
   return (
-    <div style={{ display: "grid", gap: "0.35rem" }}>
-      <CheckList
-        label={translation("assigned")}
-        items={assistants}
-        selectedIds={assistantIds}
-        initialSelectedIds={initialAssistantIds}
-        onToggle={toggle}
-        activeId={hasSeveral ? activeAssistantId : null}
-        onMakeActive={
-          hasSeveral
-            ? (id) => onChange({ assistantIds, activeAssistantId: id })
-            : undefined
-        }
-        emptyText={translation("none")}
-      />
-
-      {hasSeveral && (
-        <small style={{ color: "var(--ui-muted)" }}>
-          {translation("activeHint")}
-        </small>
-      )}
-    </div>
+    <CheckList
+      label={translation("assigned")}
+      items={assistants}
+      selectedIds={assistantIds}
+      initialSelectedIds={initialAssistantIds}
+      onToggle={toggle}
+      activeId={hasSeveral ? activeAssistantId : null}
+      onMakeActive={
+        hasSeveral
+          ? (id) => onChange({ assistantIds, activeAssistantId: id })
+          : undefined
+      }
+      emptyText={translation("none")}
+    />
   );
 }
