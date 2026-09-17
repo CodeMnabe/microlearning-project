@@ -1,4 +1,4 @@
--- Vários assistentes por utilizador (issue #131)
+-- Vários assistentes por utilizador (issues #131, #132)
 --
 -- user_assistant guarda os assistentes atribuídos a cada utilizador.
 -- user.assistant_id mantém-se e passa a ser o assistente ativo: o que
@@ -49,3 +49,10 @@ select u.id, u.assistant_id
 from public."user" u
 where u.assistant_id is not null
 on conflict do nothing;
+
+-- Troca de assistente na conversa (#132): último menu enviado ao contacto.
+-- Um toque num botão liga-se ao menu pelo id da mensagem; um número ou nome
+-- escrito à mão só conta nos minutos a seguir ao envio.
+alter table public."user"
+  add column if not exists assistant_menu_message_id text,
+  add column if not exists assistant_menu_sent_at timestamptz;
