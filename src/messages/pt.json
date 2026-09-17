@@ -1086,8 +1086,6 @@
   },
   "UserAssistants": {
     "assigned": "Assistentes",
-    "active": "Assistente ativo",
-    "activeHint": "É o que responde às mensagens. O utilizador pode trocar na conversa do WhatsApp.",
     "none": "Sem assistentes disponíveis.",
     "extraTitle": "{count} assistentes atribuídos"
   },
