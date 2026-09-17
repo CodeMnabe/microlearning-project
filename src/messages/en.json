@@ -1353,6 +1353,7 @@
     "key": "Key",
     "label": "Label",
     "destinationUrl": "Destination URL",
+    "destinationUrlInvalid": "The destination must start with http:// or https://",
     "addPlaceholders": {
       "first": "Add placeholders like",
       "second": "inside the message."

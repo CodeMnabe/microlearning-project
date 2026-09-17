@@ -84,12 +84,18 @@ export default function TrackedLinksPanel({
               </label>
               <input
                 value={link.destinationUrl}
+                type="url"
                 onChange={(e) =>
                   updateTrackedLink(link.id, "destinationUrl", e.target.value)
                 }
                 placeholder="https://example.com/course/123"
                 className={styles.input}
               />
+              {link.destinationUrl.trim() && !/^https?:\/\//i.test(link.destinationUrl.trim()) && (
+                <p className={styles.helpDanger}>
+                  {translation("Broadcast.destinationUrlInvalid")}
+                </p>
+              )}
             </div>
 
             {sanitizeTrackedKey(link.key) && (

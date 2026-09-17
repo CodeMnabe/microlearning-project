@@ -912,6 +912,21 @@ export default function BroadcastPage() {
       .filter((link) => link.key && link.label && link.destinationUrl);
   }
 
+  async function validateTrackedDestinationsBeforeAction() {
+    const links = chainMode
+      ? chainSteps.flatMap(normalizeTrackedLinksForStep)
+      : normalizedTrackedLinks;
+    if (links.some((link) => !/^https?:\/\//i.test(link.destinationUrl))) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: translation("Broadcast.destinationUrlInvalid"),
+        tone: "danger",
+      });
+      return false;
+    }
+    return true;
+  }
+
   function trackedLinksValidForStep(step) {
     const normalized = normalizeTrackedLinksForStep(step);
 
@@ -1402,6 +1417,7 @@ export default function BroadcastPage() {
   }
 
   async function handleSend() {
+    if (!(await validateTrackedDestinationsBeforeAction())) return;
     if (!selectedUsers.length) {
       await showAlert({
         title: "Choose recipients",
@@ -1593,6 +1609,7 @@ export default function BroadcastPage() {
   }
 
   async function handleSchedule() {
+    if (!(await validateTrackedDestinationsBeforeAction())) return;
     if (!selectedUsers.length) {
       await showAlert({
         title: "Choose recipients",
