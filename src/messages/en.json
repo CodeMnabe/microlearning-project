@@ -1117,10 +1117,19 @@
     "none": "No tags.",
     "name": "Name:",
     "placeholder": "Group 1",
-    "save": "Save Changes",
+    "save": "Save",
     "add": "Add",
     "cancel": "Cancel",
-    "removeLabel": "Remove {name}"
+    "removeLabel": "Remove {name}",
+    "newLabel": "New tag",
+    "listLabel": "Tags",
+    "search": "Search",
+    "rename": "Rename",
+    "delete": "Delete",
+    "close": "Close",
+    "noResults": "No results.",
+    "confirmDeleteTitle": "Delete the tag {name}?",
+    "confirmDeleteMessage": "The tag is removed from every user that has it."
   },
 
   "Options": {

@@ -9,6 +9,11 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
   onClose: vi.fn(),
   setTags: vi.fn(),
+  confirm: vi.fn(),
+}));
+
+vi.mock("@/app/components/Confirm/ConfirmProvider", () => ({
+  useConfirm: () => mocks.confirm,
 }));
 
 function makeResponse(data, ok = true) {
@@ -29,6 +34,7 @@ const TAGS = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.confirm.mockResolvedValue(true);
 
   mocks.fetch.mockImplementation((input, init = {}) => {
     const url = typeof input === "string" ? input : input.url;
@@ -70,7 +76,7 @@ function renderModal(props = {}) {
 }
 
 describe("ManageTagsModal", () => {
-  it("renders when open and auto-selects first tag + fills input", async () => {
+  it("renders the tag list and an empty field for a new tag", async () => {
     renderModal();
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -78,8 +84,7 @@ describe("ManageTagsModal", () => {
     expect(screen.getByText("IT")).toBeInTheDocument();
     expect(screen.getByText("HR")).toBeInTheDocument();
 
-    const input = screen.getByLabelText("ManageTagsModal.name");
-    await waitFor(() => expect(input).toHaveValue("IT"));
+    expect(screen.getByLabelText("ManageTagsModal.newLabel")).toHaveValue("");
   });
 
   it("closes when pressing Escape", async () => {
@@ -120,9 +125,13 @@ describe("ManageTagsModal", () => {
     expect(next[0]).toEqual({ id: "t3", name: "Grupo 3" });
   });
 
-  it("renames selected tag (PATCH) when input changes and Save clicked", async () => {
+  it("renames a tag in its own row (PATCH) and Save clicked", async () => {
     const user = userEvent.setup();
     renderModal();
+
+    await user.click(
+      screen.getAllByRole("button", { name: "ManageTagsModal.rename" })[0],
+    );
 
     const input = screen.getByLabelText("ManageTagsModal.name");
     await waitFor(() => expect(input).toHaveValue("IT"));
@@ -147,12 +156,14 @@ describe("ManageTagsModal", () => {
     expect(mocks.setTags).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  it("deletes a tag (DELETE) when clicking the x close inside the chip", async () => {
+  it("deletes a tag (DELETE) after confirming", async () => {
     renderModal();
 
     const removeIT = screen.getByLabelText("ManageTagsModal.removeLabel:IT");
 
     fireEvent.click(removeIT);
+
+    await waitFor(() => expect(mocks.confirm).toHaveBeenCalled());
 
     await waitFor(() => {
       expect(mocks.fetch).toHaveBeenCalledWith("/api/tags?id=t1", {

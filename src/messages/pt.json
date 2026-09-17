@@ -1126,10 +1126,19 @@
     "none": "Sem tags.",
     "name": "Nome:",
     "placeholder": "Grupo 1",
-    "save": "Guardar Alterações",
+    "save": "Guardar",
     "add": "Adicionar",
     "cancel": "Cancelar",
-    "removeLabel": "Remover {name}"
+    "removeLabel": "Remover {name}",
+    "newLabel": "Nova tag",
+    "listLabel": "Tags",
+    "search": "Procurar",
+    "rename": "Mudar nome",
+    "delete": "Eliminar",
+    "close": "Fechar",
+    "noResults": "Sem resultados.",
+    "confirmDeleteTitle": "Eliminar a tag {name}?",
+    "confirmDeleteMessage": "A tag sai de todos os utilizadores que a têm."
   },
 
   "Options": {
