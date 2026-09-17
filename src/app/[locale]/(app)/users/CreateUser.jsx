@@ -127,7 +127,7 @@ export default function CreateUserModal({
       }}
     >
       <div
-        className={`${styles.modalContent} ${stateClass}`}
+        className={`${styles.modalContent} ${styles.modalContentForm} ${stateClass}`}
         role="dialog"
         aria-modal="true"
       >
@@ -136,29 +136,31 @@ export default function CreateUserModal({
         </h3>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label htmlFor="nome">
-              {translation("CreateUserModal.userName")}
-            </label>
-            <input
-              id="nome"
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              required
-            />
-          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label htmlFor="nome">
+                {translation("CreateUserModal.userName")}
+              </label>
+              <input
+                id="nome"
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                required
+              />
+            </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="email">
-              {translation("CreateUserModal.email")}
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className={styles.formGroup}>
+              <label htmlFor="email">
+                {translation("CreateUserModal.email")}
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
           </div>
 
           <AssistantsField

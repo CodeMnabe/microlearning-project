@@ -602,6 +602,29 @@
   gap: 0.75rem;
 }
 
+/* Janela de criar e editar utilizador (#135) */
+.modalContentForm {
+  width: min(640px, 92vw);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.formRow .formGroup {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 .formGroup {
   display: grid;
   gap: 0.35rem;
