@@ -160,14 +160,19 @@ export default function mapCsvRow(
 
   const teamsFromId = getValue(normalized, ["teams_from_id"]);
 
+  // Vários assistentes na mesma célula separam-se por ";" (ex.: "3;7").
+  // O primeiro fica como assistente ativo.
   const assistantIdFromCsv = getValue(normalized, [
     "assistant_id",
     "assistantid",
+    "assistant_ids",
+    "assistants",
   ]);
 
   const assistantPositionFromCsv = getValue(normalized, [
     "assistant_position",
     "assistantposition",
+    "assistant_positions",
   ]);
 
   const tags = parseTags(

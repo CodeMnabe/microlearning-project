@@ -1077,6 +1077,13 @@
     "assistants": "Assistentes",
     "empty": "Sem resultados."
   },
+  "UserAssistants": {
+    "assigned": "Assistentes",
+    "active": "Assistente ativo",
+    "activeHint": "É o que responde às mensagens. O utilizador pode trocar na conversa do WhatsApp.",
+    "none": "Sem assistentes disponíveis.",
+    "extraTitle": "{count} assistentes atribuídos"
+  },
   "EditUserModal": {
     "title": "Editar Utilizador",
     "name": "Nome",
@@ -2206,7 +2213,9 @@
     "selected": "selecionados",
     "clear": "Limpar",
     "bulkLabel": "Definir Assistente",
-    "apply": "Aplicar",
+    "apply": "Substituir",
+    "addAssistantHint": "Junta este assistente aos que os utilizadores já têm",
+    "replaceAssistantHint": "Os utilizadores ficam só com este assistente",
     "tag": "Adicionar/Remover Tags",
     "add": "Adicionar",
     "addTags": "Adiciona as tags selecionadas aos users",

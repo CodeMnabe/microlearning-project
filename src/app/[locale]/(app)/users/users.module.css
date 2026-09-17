@@ -799,6 +799,18 @@
   padding: 8px 6px;
 }
 
+.cellAssistant {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assistantExtra {
+  flex: none;
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
 .tagsWrap {
   display: flex;
   flex-wrap: wrap;
@@ -1443,6 +1455,10 @@
   /* Assistant select should fill the line */
   .cellAssistant > * {
     width: 100%;
+  }
+
+  .cellAssistant > .assistantExtra {
+    width: auto;
   }
 
   /* Make the default kebab always visible on mobile,

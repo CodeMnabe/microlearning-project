@@ -137,8 +137,43 @@ export async function getFirstAssistantInOrg(organizationId) {
 }
 
 export async function deleteAssistant(id) {
+  // Quem o tinha ativo fica sem ativo ao apagar (a BD põe a null e retira a
+  // atribuição); passa a ativo outro dos seus assistentes, se houver (#131).
+  const { data: activeUsers, error: usersError } = await sb
+    .from("user")
+    .select("id")
+    .eq("assistant_id", id);
+  if (usersError) throw usersError;
+
   const { error } = await sb.from("assistant").delete().eq("id", id);
   if (error) throw error;
+
+  const userIds = (activeUsers || []).map((u) => u.id);
+  if (!userIds.length) return true;
+
+  const { data: remaining, error: remainingError } = await sb
+    .from("user_assistant")
+    .select("user_id, assistant_id")
+    .in("user_id", userIds)
+    .order("created_at", { ascending: true });
+  if (remainingError) throw remainingError;
+
+  const nextByUser = new Map();
+  for (const row of remaining || []) {
+    if (!nextByUser.has(row.user_id)) {
+      nextByUser.set(row.user_id, row.assistant_id);
+    }
+  }
+
+  for (const [userId, assistantId] of nextByUser) {
+    const { error: promoteError } = await sb
+      .from("user")
+      .update({ assistant_id: assistantId })
+      .eq("id", userId)
+      .is("assistant_id", null);
+    if (promoteError) throw promoteError;
+  }
+
   return true;
 }
 
