@@ -280,11 +280,6 @@
   max-width: 460px;
 }
 
-.kindFilter {
-  width: 200px;
-  min-width: 200px;
-}
-
 .dateRange {
   display: inline-flex;
   align-items: center;
@@ -334,6 +329,7 @@
 @media (max-width: 900px) {
   .toolbar .searchWrap,
   .kindFilter,
+  .answerFilter,
   .dateRange,
   .clearButton {
     width: 100%;
@@ -342,6 +338,12 @@
 
   .dateRange {
     flex-wrap: wrap;
+  }
+
+  /* Justos ao texto em ecrãs largos; aqui ocupam a linha, seta à direita. */
+  .kindFilter,
+  .answerFilter {
+    justify-content: space-between;
   }
 
   .dateInput {

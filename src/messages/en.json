@@ -1792,6 +1792,11 @@
       "verdictsTitle": "Verdicts",
       "answeredCount": "Answered ({count})",
       "notAnsweredCount": "Did not answer ({count})",
+      "filters": {
+        "search": "Search by name, email or phone",
+        "allAnswers": "All answers",
+        "noMatches": "No contact matches the filters."
+      },
       "verdicts": {
         "completa": "Complete",
         "parcial": "Partial",

@@ -268,6 +268,7 @@ export default function QuestionsPage() {
           onChange={(value) => setKindFilter(value)}
           placeholder={translation("Questions.filters.allKinds")}
           className={styles.kindFilter}
+          menuWidth={220}
           style={PILL_STYLE}
         />
 
