@@ -451,10 +451,9 @@ export async function getOrCreateThread({
 }
 
 /**
- * Thread mais recente de um utilizador num canal, seja qual for o
- * assistente. Serve para ligar à conversa mensagens enviadas fora do
- * webhook (perguntas, mensagens em espera), onde o assistente não é
- * conhecido.
+ * Thread de um utilizador num canal com o seu assistente ativo (ou a mais
+ * recente, se não tiver nenhum ativo). Serve para ligar à conversa mensagens
+ * enviadas fora do webhook (perguntas, mensagens em espera).
  */
 export async function getLatestUserThreadForChannel(userId, channel) {
   const parsedUserId = Number(userId);
@@ -463,12 +462,28 @@ export async function getLatestUserThreadForChannel(userId, channel) {
     return null;
   }
 
-  const { data, error } = await supabase
+  // Com vários assistentes, a conversa é a do assistente ativo (#133); sem
+  // conversa com ele devolve null, para não cair na de outro assistente.
+  const { data: owner, error: ownerError } = await supabase
+    .from("user")
+    .select("assistant_id")
+    .eq("id", parsedUserId)
+    .maybeSingle();
+
+  if (ownerError) throw ownerError;
+
+  let query = supabase
     .from("thread")
     .select(SELECT_COLS)
     .eq("user_id", parsedUserId)
     .eq("channel", channel)
-    .eq("scope", "user")
+    .eq("scope", "user");
+
+  if (owner?.assistant_id != null) {
+    query = query.eq("assistant_id", owner.assistant_id);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

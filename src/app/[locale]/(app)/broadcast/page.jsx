@@ -558,6 +558,7 @@ export default function BroadcastPage() {
       email: u.email ?? "",
       tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id),
       assistantId: u.assistant_id ?? null,
+      assistantIds: u.assistant_ids ?? (u.assistant_id ? [u.assistant_id] : []),
     }));
   }, [users]);
 
@@ -640,7 +641,7 @@ export default function BroadcastPage() {
 
       const assistantOk =
         selectedAssistantIds.length === 0 ||
-        selectedAssistantIds.includes(u.assistantId);
+        selectedAssistantIds.some((id) => u.assistantIds.includes(id));
 
       const channelOk =
         channel !== "whatsapp" ||
