@@ -1001,8 +1001,6 @@ async function handleEvent(rawJSON) {
               list: {
                 text: menuText,
 
-                altText: menuText,
-
                 items: list.items,
 
                 metadata: { button: { label: list.buttonLabel } },
