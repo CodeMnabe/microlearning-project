@@ -617,6 +617,41 @@ export async function assertAssistantBelongsToOrg(admin, orgId, assistantId) {
   return parsedAssistantId;
 }
 
+export async function assertAssistantsBelongToOrg(admin, orgId, assistantIds) {
+  const parsedIds = (assistantIds || []).map((id) => parsePositiveInt(id));
+
+  if (parsedIds.some((id) => !id)) {
+    throwHttpError("Invalid assistant id", 400);
+  }
+
+  const uniqueIds = [...new Set(parsedIds)];
+
+  if (!uniqueIds.length) {
+    return [];
+  }
+
+  const { data, error } = await admin
+    .from("assistant")
+    .select("id")
+    .eq("organization_id", orgId)
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const found = new Set((data || []).map((row) => Number(row.id)));
+
+  if (uniqueIds.some((id) => !found.has(id))) {
+    throwHttpError(
+      "One or more assistants do not belong to this organization",
+      403,
+    );
+  }
+
+  return uniqueIds;
+}
+
 /* =========================================================
    BROADCAST RECIPIENT SECURITY
    ========================================================= */
