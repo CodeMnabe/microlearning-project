@@ -984,7 +984,7 @@ async function handleEvent(rawJSON) {
 
     contactId,
 
-    send: ({ text: menuText, actions }) =>
+    send: ({ text: menuText, actions, list }) =>
       sendBirdMessage({
         channelId: normalizeId(organization.channel_id) || sentChannelId,
 
@@ -994,15 +994,29 @@ async function handleEvent(rawJSON) {
 
         whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
 
-        body: {
-          type: "text",
+        body: list
+          ? {
+              type: "list",
 
-          text: {
-            text: menuText,
+              list: {
+                text: menuText,
 
-            ...(actions?.length ? { actions } : {}),
-          },
-        },
+                altText: menuText,
+
+                items: list.items,
+
+                metadata: { button: { label: list.buttonLabel } },
+              },
+            }
+          : {
+              type: "text",
+
+              text: {
+                text: menuText,
+
+                ...(actions?.length ? { actions } : {}),
+              },
+            },
       }),
   });
 

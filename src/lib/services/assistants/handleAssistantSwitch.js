@@ -30,7 +30,8 @@ const defaultDeps = {
  * - toque num botão do último menu, ou número/nome escrito logo a seguir ao
  *   menu: muda o assistente ativo e confirma.
  *
- * `send({ text, actions })` envia a mensagem e devolve o resultado do Bird.
+ * `send({ text, actions, list })` envia a mensagem e devolve o resultado do
+ * Bird.
  */
 export async function handleAssistantSwitch({
   user,
@@ -132,7 +133,7 @@ export async function handleAssistantSwitch({
   await d.setUserAssistantMenu(user.id, { sentAt: null });
 
   const text = switchConfirmationText(chosen, { alreadyActive });
-  const sendRes = await send({ text, actions: null });
+  const sendRes = await send({ text, actions: null, list: null });
 
   await record({ content: text, role: "assistant", sendRes });
 
