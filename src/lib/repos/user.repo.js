@@ -312,6 +312,15 @@ export async function updateUser(userId, updates) {
   return await getUserById(userId);
 }
 
+// Último menu de troca de assistente enviado ao contacto (#132).
+export async function setUserAssistantMenu(userId, { messageId, sentAt }) {
+  const patch = { assistant_menu_sent_at: sentAt ?? null };
+  if (messageId !== undefined) patch.assistant_menu_message_id = messageId;
+
+  const { error } = await supabase.from("user").update(patch).eq("id", userId);
+  if (error) throw error;
+}
+
 export async function updateUserWhatsappIdentity(
   userId,
   { whatsappBsuid, whatsappUsername, birdContactId } = {},
@@ -378,6 +387,8 @@ export async function getUserById(userId) {
       name,
       email,
       assistant_id,
+      assistant_menu_message_id,
+      assistant_menu_sent_at,
       created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
@@ -406,6 +417,8 @@ export async function getUserById(userId) {
     email: data.email,
     assistant_id: data.assistant_id,
     assistant_ids: (data.user_assistant || []).map((ua) => ua.assistant_id),
+    assistant_menu_message_id: data.assistant_menu_message_id,
+    assistant_menu_sent_at: data.assistant_menu_sent_at,
     created_at: data.created_at,
     tags,
     tag_ids: tags.map((t) => t.id),
