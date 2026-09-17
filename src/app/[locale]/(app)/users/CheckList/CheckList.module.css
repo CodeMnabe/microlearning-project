@@ -1,0 +1,132 @@
+.field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-weight: inherit;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.box {
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.search {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border);
+  border-radius: 0;
+  background: var(--ui-pill);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.search:focus {
+  background: #fff;
+}
+
+/* Cerca de seis linhas à vista; o resto com scroll. */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 234px;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+  border-bottom: 1px solid var(--ui-border);
+  transition: background 0.12s ease;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row:hover {
+  background: var(--ui-pill);
+}
+
+.rowChecked,
+.rowChecked:hover {
+  background: #eaf6ff;
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0 9px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brand-1, #30a9e0);
+  cursor: pointer;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.activeBadge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f1c3f;
+}
+
+.makeActive {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ui-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.makeActive:hover {
+  color: #0f1c3f;
+}
+
+.empty {
+  padding: 12px;
+  font-size: 14px;
+  color: var(--ui-muted);
+}

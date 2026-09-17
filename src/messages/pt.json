@@ -1077,6 +1077,13 @@
     "assistants": "Assistentes",
     "empty": "Sem resultados."
   },
+  "CheckList": {
+    "selected": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "search": "Procurar",
+    "active": "Ativo",
+    "makeActive": "Tornar ativo",
+    "noResults": "Sem resultados."
+  },
   "UserAssistants": {
     "assigned": "Assistentes",
     "active": "Assistente ativo",
