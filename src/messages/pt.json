@@ -1413,17 +1413,17 @@
     },
     "suggest": {
       "title": "Sugerir texto",
-      "tone": "Tom de",
       "promptLabel": "Pedido para a sugestão",
-      "placeholder": "Diz o que queres escrever ou mudar",
+      "tag": "Sugestão da IA",
+      "placeholderWrite": "Descreve a mensagem à IA",
+      "placeholderChange": "O que queres mudar?",
       "ask": "Pedir sugestão",
       "close": "Fechar a sugestão",
       "again": "Outra",
       "discard": "Descartar",
       "loading": "A escrever...",
       "use": "Usar",
-      "failed": "Não foi possível gerar a sugestão. Tenta outra vez.",
-      "noAssistants": "Cria primeiro um assistente: é ele que dá o tom."
+      "failed": "Não foi possível gerar a sugestão. Tenta outra vez."
     },
     "composer": {
       "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",

@@ -1405,17 +1405,17 @@
     },
     "suggest": {
       "title": "Suggest text",
-      "tone": "Tone of",
       "promptLabel": "Request for the suggestion",
-      "placeholder": "Say what you want to write or change",
+      "tag": "AI suggestion",
+      "placeholderWrite": "Describe the message to the AI",
+      "placeholderChange": "What do you want to change?",
       "ask": "Ask for a suggestion",
       "close": "Close the suggestion",
       "again": "Another",
       "discard": "Discard",
       "loading": "Writing...",
       "use": "Use",
-      "failed": "The suggestion could not be generated. Try again.",
-      "noAssistants": "Create an assistant first: it sets the tone."
+      "failed": "The suggestion could not be generated. Try again."
     },
     "composer": {
       "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",

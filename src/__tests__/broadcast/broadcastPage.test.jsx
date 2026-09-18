@@ -296,9 +296,6 @@ describe("BroadcastPage", () => {
     const baseFetch = mocks.fetch.getMockImplementation();
     mocks.fetch.mockImplementation((input, init = {}) => {
       const url = typeof input === "string" ? input : input.url;
-      if (url.startsWith("/api/assistants")) {
-        return makeResponse({ items: [{ id: 3, name: "Tutor" }] });
-      }
       if (url === "/api/broadcast/suggest") {
         return makeResponse({ text: "Qual é a pressão certa dos pneus?" });
       }
@@ -329,7 +326,6 @@ describe("BroadcastPage", () => {
     );
     expect(lastPostTo("/api/broadcast/suggest")).toEqual({
       orgId: ORG_ID,
-      assistantId: 3,
       kind: "quiz",
       prompt: "pergunta sobre pneus",
       currentText: "",
