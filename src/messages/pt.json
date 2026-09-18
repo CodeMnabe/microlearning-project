@@ -1411,6 +1411,20 @@
       "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
       "soon": "Em breve"
     },
+    "suggest": {
+      "title": "Sugerir texto",
+      "promptLabel": "Pedido para a sugestão",
+      "tag": "Sugestão da IA",
+      "placeholderWrite": "Descreve a mensagem à IA",
+      "placeholderChange": "O que queres mudar?",
+      "ask": "Pedir sugestão",
+      "close": "Fechar a sugestão",
+      "again": "Outra",
+      "discard": "Descartar",
+      "loading": "A escrever...",
+      "use": "Usar",
+      "failed": "Não foi possível gerar a sugestão. Tenta outra vez."
+    },
     "composer": {
       "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",
       "openQuestionBody": "Pergunta aberta",

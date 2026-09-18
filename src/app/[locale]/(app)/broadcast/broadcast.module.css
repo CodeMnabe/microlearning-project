@@ -1414,3 +1414,108 @@
   font-size: 12px;
   color: #6b7280;
 }
+
+/* Sugestão de texto dentro do telemóvel: pedido na barra, proposta no balão. */
+
+.suggestBar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestField {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border: 1.5px solid var(--phone-accent, #128c7e);
+  border-radius: 999px;
+  background: #fff;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.suggestSpark {
+  flex: none;
+  color: var(--phone-accent, #128c7e);
+}
+
+.suggestInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #111b21;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.suggestTag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  color: var(--phone-accent, #128c7e);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.suggestIconBtn,
+.suggestSendBtn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.suggestIconBtn {
+  background: transparent;
+  color: #54656f;
+}
+
+.suggestSendBtn {
+  background: var(--phone-accent, #128c7e);
+  color: #fff;
+}
+
+.suggestSendBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.suggestStatus {
+  color: #667781;
+  font-style: italic;
+}
+
+.suggestBubbleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.suggestBubbleActions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #027eb5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

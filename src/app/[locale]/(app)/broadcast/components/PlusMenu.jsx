@@ -8,10 +8,12 @@ import {
   Image as ImageIcon,
   Link2,
   Plus,
+  Sparkles,
   User,
 } from "lucide-react";
 
 import styles from "../broadcast.module.css";
+import { SuggestBar } from "./SuggestInPhone";
 
 const VARIABLE_ICONS = {
   name: User,
@@ -21,11 +23,13 @@ const VARIABLE_ICONS = {
 
 /**
  * O "+" da barra inferior do telemóvel: junta imagens, vídeos, documentos,
- * links rastreados e variáveis. É o mesmo em todos os tipos de mensagem.
+ * links rastreados, sugestão de texto com IA e variáveis. É o mesmo em todos
+ * os tipos de mensagem.
  */
 export default function PlusMenu({
   onAddFile,
   onAddLink,
+  onSuggestText,
   variables = [],
   onInsertToken,
   translation,
@@ -116,6 +120,18 @@ export default function PlusMenu({
             </button>
           )}
 
+          {onSuggestText && (
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.plusItem}
+              onClick={() => pick(onSuggestText)}
+            >
+              <Sparkles size={16} />
+              <span>{translation("Broadcast.suggest.title")}</span>
+            </button>
+          )}
+
           {variables.length > 0 && (
             <div className={styles.plusLabel}>
               {translation("Broadcast.composer.variables")}
@@ -150,11 +166,16 @@ export default function PlusMenu({
 export function PlusMenuBar({ tools, translation }) {
   if (!tools) return null;
 
+  if (tools.suggest?.active) {
+    return <SuggestBar suggest={tools.suggest} translation={translation} />;
+  }
+
   return (
     <>
       <PlusMenu
         onAddFile={tools.onAddFile}
         onAddLink={tools.onAddLink}
+        onSuggestText={tools.suggest?.open}
         variables={tools.variables}
         onInsertToken={tools.onInsertToken}
         translation={translation}
