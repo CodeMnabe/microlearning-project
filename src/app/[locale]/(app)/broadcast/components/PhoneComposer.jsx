@@ -7,6 +7,7 @@ import WhatsAppPhone, {
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
 import { PlusMenuBar } from "./PlusMenu";
+import { SuggestBubble } from "./SuggestInPhone";
 import TokenTextEditor from "./TokenTextEditor";
 
 /**
@@ -37,14 +38,21 @@ export default function PhoneComposer({
             translation={translation}
           />
 
-          <TokenTextEditor
-            ref={tools.editorRef}
-            value={message}
-            onChange={onMessageChange}
-            tokenLabel={tools.tokenLabel}
-            placeholder={translation("Broadcast.composer.placeholder")}
-            ariaLabel={translation("Broadcast.message")}
-          />
+          {tools.suggest?.showsInBubble && (
+            <SuggestBubble suggest={tools.suggest} translation={translation} />
+          )}
+
+          {/* O editor fica montado: a proposta aceite entra por ele. */}
+          <div hidden={Boolean(tools.suggest?.showsInBubble)}>
+            <TokenTextEditor
+              ref={tools.editorRef}
+              value={message}
+              onChange={onMessageChange}
+              tokenLabel={tools.tokenLabel}
+              placeholder={translation("Broadcast.composer.placeholder")}
+              ariaLabel={translation("Broadcast.message")}
+            />
+          </div>
         </WhatsAppBubble>
 
         <FileBubbles

@@ -173,8 +173,19 @@ const TokenTextEditor = forwardRef(function TokenTextEditor(
     emit();
   };
 
+  /* Troca o texto todo (sugestão da IA) e avisa o pai, que é dono do estado. */
+  const setText = (text) => {
+    const root = rootRef.current;
+    if (!root || disabled) return;
+
+    renderInto(root, text, tokenLabel);
+    emit();
+  };
+
   useImperativeHandle(ref, () => ({
     insertToken,
+    getText: () => (rootRef.current ? serializeEditor(rootRef.current) : ""),
+    setText,
     focus: () => rootRef.current?.focus(),
   }));
 
