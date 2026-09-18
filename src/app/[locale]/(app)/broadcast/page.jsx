@@ -36,6 +36,7 @@ import RecipientsPanel from "./components/recipients/RecipientsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
+import useTextSuggestion from "./lib/useTextSuggestion";
 import {
   asList,
   buildInitialScheduledDate,
@@ -880,6 +881,26 @@ export default function BroadcastPage() {
     editorRef.current?.insertToken?.(key);
   }
 
+  /* Tipo de texto que a IA vai propor: mensagem ou enunciado de pergunta. */
+  const suggestKind =
+    chainQuestionKind ||
+    (isQuizMode
+      ? "quiz"
+      : isSurveyMode
+        ? "survey"
+        : isOpenQuestionMode
+          ? "open"
+          : "message");
+
+  /* A sugestão vive dentro do telemóvel: pedido na barra, proposta no balão. */
+  const textSuggestion = useTextSuggestion({
+    orgId: org?.id,
+    kind: suggestKind,
+    assistants: assistantsList,
+    editorRef,
+    resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
+  });
+
   /*
    * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
    * ficheiros e os links rastreados pertencem ao composer (ou ao passo
@@ -898,6 +919,7 @@ export default function BroadcastPage() {
     onRemoveThumbnail: removeThumbnail,
     onAddFile: openFilePicker,
     onAddLink: () => setActiveToolPanel("links"),
+    suggest: textSuggestion,
   };
 
   const trackedLinksValid =

@@ -286,9 +286,64 @@ describe("BroadcastPage", () => {
       "Broadcast.composer.addVideo",
       "Broadcast.composer.addDocument",
       "Broadcast.composer.addLink",
+      "Broadcast.suggest.title",
       "Broadcast.composer.variableName",
       "Broadcast.composer.variableCompany",
     ]);
+  });
+
+  it("suggests a text inside the phone and only applies it when accepted", async () => {
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.startsWith("/api/assistants")) {
+        return makeResponse({ items: [{ id: 3, name: "Tutor" }] });
+      }
+      if (url === "/api/broadcast/suggest") {
+        return makeResponse({ text: "Qual é a pressão certa dos pneus?" });
+      }
+      return baseFetch(input, init);
+    });
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.composer.add" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Broadcast.suggest.title" }),
+    );
+
+    /* O pedido escreve-se na barra do telemóvel. */
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Broadcast.suggest.promptLabel" }),
+      { target: { value: "pergunta sobre pneus" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.suggest.ask" }),
+    );
+
+    expect(await screen.findByTestId("suggest-result")).toHaveTextContent(
+      "Qual é a pressão certa dos pneus?",
+    );
+    expect(lastPostTo("/api/broadcast/suggest")).toEqual({
+      orgId: ORG_ID,
+      assistantId: 3,
+      kind: "quiz",
+      prompt: "pergunta sobre pneus",
+      currentText: "",
+    });
+
+    /* Só "Usar" põe a proposta no balão e fecha a sugestão. */
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.suggest.use" }),
+    );
+
+    expect(screen.queryByTestId("suggest-result")).not.toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Broadcast.composer.quizBody"),
+    ).toHaveTextContent("Qual é a pressão certa dos pneus?");
   });
 
   it("sends a quiz with a variable chip, a tracked link and an image", async () => {

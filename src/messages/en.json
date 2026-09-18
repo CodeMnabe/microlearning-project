@@ -1405,6 +1405,20 @@
       "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
       "soon": "Coming soon"
     },
+    "suggest": {
+      "title": "Suggest text",
+      "tone": "Tone of",
+      "promptLabel": "Request for the suggestion",
+      "placeholder": "Say what you want to write or change",
+      "ask": "Ask for a suggestion",
+      "close": "Close the suggestion",
+      "again": "Another",
+      "discard": "Discard",
+      "loading": "Writing...",
+      "use": "Use",
+      "failed": "The suggestion could not be generated. Try again.",
+      "noAssistants": "Create an assistant first: it sets the tone."
+    },
     "composer": {
       "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
       "openQuestionBody": "Open question",
