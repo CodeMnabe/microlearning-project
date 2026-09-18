@@ -10,19 +10,14 @@ import { useState } from "react";
 export default function useTextSuggestion({
   orgId,
   kind,
-  assistants = [],
   editorRef,
   resetKey,
 }) {
   const [active, setActive] = useState(false);
-  const [assistantId, setAssistantId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
-
-  const chosenAssistantId =
-    assistantId || (assistants[0]?.id != null ? String(assistants[0].id) : "");
 
   function close() {
     setActive(false);
@@ -42,7 +37,7 @@ export default function useTextSuggestion({
     const currentText = String(editorRef.current?.getText?.() || "").trim();
     const cleanPrompt = prompt.trim();
 
-    if (loading || !chosenAssistantId || (!cleanPrompt && !currentText)) return;
+    if (loading || (!cleanPrompt && !currentText)) return;
 
     setLoading(true);
     setFailed(false);
@@ -53,7 +48,6 @@ export default function useTextSuggestion({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orgId,
-          assistantId: Number(chosenAssistantId),
           kind,
           prompt: cleanPrompt,
           currentText,
@@ -83,9 +77,9 @@ export default function useTextSuggestion({
     active,
     open: () => setActive(true),
     close,
-    assistants,
-    assistantId: chosenAssistantId,
-    setAssistantId,
+    /* Com texto no balão, o pedido serve para o mudar. */
+    hasCurrentText: () =>
+      Boolean(String(editorRef.current?.getText?.() || "").trim()),
     prompt,
     setPrompt,
     suggestion,

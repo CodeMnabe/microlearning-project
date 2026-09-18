@@ -4,12 +4,6 @@ vi.mock("@/lib/openai/client", () => ({ openai: {} }));
 
 import { suggestMessageText } from "@/lib/services/broadcast/suggestMessageText";
 
-const ASSISTANT = {
-  id: 3,
-  model: "gpt-test",
-  instructions: "Tom próximo e positivo.",
-};
-
 function fakeOpenai(text, status = "completed") {
   return {
     responses: {
@@ -21,13 +15,12 @@ function fakeOpenai(text, status = "completed") {
 }
 
 describe("suggestMessageText", () => {
-  it("asks for a draft in the assistant's tone without storing a conversation", async () => {
+  it("asks for a draft without storing a conversation", async () => {
     const client = fakeOpenai(
       "Olá {{nome}}, sexta às 10h há formação digikal da Digik.",
     );
 
     const result = await suggestMessageText({
-      assistant: ASSISTANT,
       organizationName: "DIGIK",
       kind: "message",
       prompt: "lembrar a formação de sexta às 10h",
@@ -40,9 +33,8 @@ describe("suggestMessageText", () => {
     );
 
     const request = client.responses.create.mock.calls[0][0];
-    expect(request.model).toBe("gpt-test");
     expect(request.store).toBe(false);
-    expect(request.instructions).toContain("Tom próximo e positivo.");
+    expect(request.instructions).toContain("{{empresa}}");
     expect(JSON.parse(request.input)).toEqual({
       pedido: "lembrar a formação de sexta às 10h",
       texto_atual: "",
@@ -55,7 +47,6 @@ describe("suggestMessageText", () => {
     );
 
     const result = await suggestMessageText({
-      assistant: ASSISTANT,
       kind: "message",
       currentText: "Curso novo: {{link.curso}}",
       deps: { openai: client },
@@ -66,12 +57,11 @@ describe("suggestMessageText", () => {
 
   it("fails without a request or when the draft is not usable", async () => {
     await expect(
-      suggestMessageText({ assistant: ASSISTANT, deps: { openai: fakeOpenai("x") } }),
+      suggestMessageText({ deps: { openai: fakeOpenai("x") } }),
     ).rejects.toThrow();
 
     await expect(
       suggestMessageText({
-        assistant: ASSISTANT,
         prompt: "algo",
         deps: { openai: fakeOpenai("a".repeat(1025)) },
       }),

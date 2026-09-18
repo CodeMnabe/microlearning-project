@@ -1420,36 +1420,52 @@
 .suggestBar {
   flex: 1;
   min-width: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.suggestBarRow {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.suggestTone {
+.suggestField {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #6b7280;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border: 1.5px solid var(--phone-accent, #128c7e);
+  border-radius: 999px;
+  background: #fff;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.suggestSpark {
+  flex: none;
+  color: var(--phone-accent, #128c7e);
 }
 
 .suggestInput {
   flex: 1;
   min-width: 0;
-  height: 34px;
-  padding: 0 14px;
+  height: 100%;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
-  background: #fff;
+  background: transparent;
   color: #111b21;
   font: inherit;
   font-size: 14px;
   outline: none;
+}
+
+.suggestTag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  color: var(--phone-accent, #128c7e);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .suggestIconBtn,

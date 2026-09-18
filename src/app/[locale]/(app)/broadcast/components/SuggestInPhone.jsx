@@ -1,100 +1,60 @@
 "use client";
 
-import { SendHorizontal, X } from "lucide-react";
-
-import PillSelect from "@/app/components/PillSelect/PillSelect";
+import { SendHorizontal, Sparkles, X } from "lucide-react";
 
 import styles from "../broadcast.module.css";
 
 const PROMPT_MAX_LENGTH = 600;
-
-const TONE_PILL_STYLE = {
-  height: "26px",
-  padding: "0 10px",
-  fontSize: "12px",
-};
 
 /**
  * Barra inferior do telemóvel em modo de sugestão: o pedido escreve-se aqui,
  * como uma mensagem do WhatsApp, e segue com Enter ou com a seta.
  */
 export function SuggestBar({ suggest, translation }) {
-  const { assistants } = suggest;
-
-  if (assistants.length === 0) {
-    return (
-      <div className={styles.suggestBar}>
-        <div className={styles.suggestBarRow}>
-          <span className={styles.barHint}>
-            {translation("Broadcast.suggest.noAssistants")}
-          </span>
-          <button
-            type="button"
-            className={styles.suggestIconBtn}
-            onClick={suggest.close}
-            aria-label={translation("Broadcast.suggest.close")}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={styles.suggestBar}>
-      {assistants.length > 1 && (
-        <div className={styles.suggestTone}>
-          <span>{translation("Broadcast.suggest.tone")}</span>
-          <PillSelect
-            value={suggest.assistantId}
-            options={assistants.map((a) => ({
-              value: String(a.id),
-              label: a.name,
-            }))}
-            onChange={(value) => suggest.setAssistantId(String(value))}
-            menuWidth={240}
-            style={TONE_PILL_STYLE}
-          />
-        </div>
-      )}
-
-      <form
-        className={styles.suggestBarRow}
-        onSubmit={(e) => {
-          e.preventDefault();
-          suggest.ask();
-        }}
+    <form
+      className={styles.suggestBar}
+      onSubmit={(e) => {
+        e.preventDefault();
+        suggest.ask();
+      }}
+    >
+      <button
+        type="button"
+        className={styles.suggestIconBtn}
+        onClick={suggest.close}
+        aria-label={translation("Broadcast.suggest.close")}
       >
-        <button
-          type="button"
-          className={styles.suggestIconBtn}
-          onClick={suggest.close}
-          aria-label={translation("Broadcast.suggest.close")}
-        >
-          <X size={16} />
-        </button>
+        <X size={16} />
+      </button>
 
+      {/* O campo fica marcado como pedido à IA: ícone e contorno de destaque. */}
+      <label className={styles.suggestField}>
+        <Sparkles size={16} className={styles.suggestSpark} aria-hidden="true" />
         <input
           autoFocus
           className={styles.suggestInput}
           value={suggest.prompt}
           maxLength={PROMPT_MAX_LENGTH}
           onChange={(e) => suggest.setPrompt(e.target.value)}
-          placeholder={translation("Broadcast.suggest.placeholder")}
+          placeholder={translation(
+            suggest.hasCurrentText()
+              ? "Broadcast.suggest.placeholderChange"
+              : "Broadcast.suggest.placeholderWrite",
+          )}
           aria-label={translation("Broadcast.suggest.promptLabel")}
         />
+      </label>
 
-        <button
-          type="submit"
-          className={styles.suggestSendBtn}
-          disabled={suggest.loading}
-          aria-label={translation("Broadcast.suggest.ask")}
-        >
-          <SendHorizontal size={16} />
-        </button>
-      </form>
-    </div>
+      <button
+        type="submit"
+        className={styles.suggestSendBtn}
+        disabled={suggest.loading}
+        aria-label={translation("Broadcast.suggest.ask")}
+      >
+        <SendHorizontal size={16} />
+      </button>
+    </form>
   );
 }
 
@@ -121,6 +81,11 @@ export function SuggestBubble({ suggest, translation }) {
 
   return (
     <>
+      <div className={styles.suggestTag}>
+        <Sparkles size={13} aria-hidden="true" />
+        {translation("Broadcast.suggest.tag")}
+      </div>
+
       <div data-testid="suggest-result">{suggest.suggestion}</div>
 
       <div className={styles.suggestBubbleActions}>

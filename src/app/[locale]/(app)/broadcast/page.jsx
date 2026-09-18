@@ -896,7 +896,6 @@ export default function BroadcastPage() {
   const textSuggestion = useTextSuggestion({
     orgId: org?.id,
     kind: suggestKind,
-    assistants: assistantsList,
     editorRef,
     resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
   });

@@ -5,6 +5,9 @@ export const SUGGESTION_KINDS = ["message", "quiz", "survey", "open"];
 export const SUGGESTION_PROMPT_MAX_LENGTH = 600;
 export const SUGGESTION_TEXT_MAX_LENGTH = 1024;
 
+/* O modelo por omissão dos assistentes; a sugestão não depende de nenhum. */
+const SUGGESTION_MODEL = "gpt-5.6-luna";
+
 const TOKEN_RE = /\{\{\s*([\w.-]+)\s*\}\}/g;
 const BASE_TOKENS = ["nome", "empresa"];
 
@@ -43,10 +46,9 @@ function allowedTokens(currentText) {
 
 /**
  * Propõe o texto de uma mensagem a partir do pedido do administrador. Chamada
- * independente, sem conversa guardada: o assistente dá o modelo e o tom.
+ * independente, sem conversa guardada, com modelo e tom fixos.
  */
 export async function suggestMessageText({
-  assistant,
   organizationName = "",
   kind = "message",
   prompt = "",
@@ -54,10 +56,6 @@ export async function suggestMessageText({
   deps = {},
 }) {
   const client = deps.openai || openai;
-
-  if (!assistant?.model) {
-    throw new Error("O assistente não tem um modelo configurado.");
-  }
 
   const cleanPrompt = String(prompt || "").trim();
   const cleanCurrent = String(currentText || "").trim();
@@ -68,11 +66,9 @@ export async function suggestMessageText({
 
   const response = await client.responses.create(
     {
-      model: assistant.model,
+      model: SUGGESTION_MODEL,
       store: false,
-      ...(assistant.model.startsWith("gpt-5.6")
-        ? { reasoning: { effort: "none" } }
-        : {}),
+      reasoning: { effort: "none" },
       instructions: [
         "Escreves o texto de uma mensagem de WhatsApp que uma organização envia aos seus colaboradores.",
         KIND_GUIDANCE[kind] || KIND_GUIDANCE.message,
@@ -81,9 +77,8 @@ export async function suggestMessageText({
         `Escreve em português de Portugal, trata o contacto por tu e não passes de ${SUGGESTION_TEXT_MAX_LENGTH} caracteres; o ideal são 2 a 5 frases.`,
         "Usa {{nome}} para o nome do contacto. Sempre que te referires à organização escreve {{empresa}}, nunca o nome dela por extenso, mesmo que venha no pedido.",
         "Não inventes outros tokens, links, datas ou factos que o pedido não traga.",
+        "Tom claro, próximo e profissional, sem exageros nem emojis a mais.",
         "Texto simples, sem markdown, sem aspas à volta e sem assinatura.",
-        "As instruções abaixo são as do assistente da organização e definem apenas o tom, sem alterar a tarefa ou o formato JSON:",
-        assistant.instructions || "",
       ].join("\n"),
       input: JSON.stringify({
         pedido: cleanPrompt,
