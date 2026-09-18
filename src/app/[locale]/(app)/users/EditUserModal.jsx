@@ -1,9 +1,10 @@
 // app/[locale]/(app)/users/EditUserModal.jsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./users.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import AssistantsField from "./AssistantsField";
+import CheckList from "./CheckList/CheckList";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import { useTranslations } from "next-intl";
 import phoneCountryCodes from "../../../../messages/phoneCountryCodes.json";
@@ -51,6 +52,19 @@ export default function EditUserModal({
   // tags
   const [allTags, setAllTags] = useState([]);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
+
+  // Selecionados ao abrir: aparecem primeiro nas listas.
+  const initialAssistantIds = useMemo(() => {
+    const activeId = user?.assistantId ?? user?.assistant_id ?? null;
+    return (
+      user?.assistantIds ?? user?.assistant_ids ?? (activeId ? [activeId] : [])
+    );
+  }, [user]);
+
+  const initialTagIds = useMemo(
+    () => user?.tagIds || user?.tag_ids || [],
+    [user],
+  );
 
   // Keep mounted while the closing animation runs
   const [render, setRender] = useState(open);
@@ -200,60 +214,54 @@ export default function EditUserModal({
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className={`${styles.modalContent} ${stateClass}`}>
-        <h3 className={styles.modalTitle}>
-          {translation("EditUserModal.title")}
-        </h3>
+      <div
+        className={`${styles.modalContent} ${styles.modalContentForm} ${stateClass}`}
+      >
+        <div className={styles.formHead}>
+          <h3>{translation("EditUserModal.title")}</h3>
+        </div>
 
-        <div className={styles.form}>
-          <div className={styles.formGroup}>
-            <label>{translation("EditUserModal.name")}</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={translation("EditUserModal.name")}
-            />
-          </div>
-
-          {/* <div className={styles.formGroup}>
-            <label>{translation("EditUserModal.phone")}</label>
-            <div className={styles.phoneRow}>
-              <PillSelect
-                options={PHONE_CODE_OPTIONS}
-                value={phoneCode}
-                onChange={(val) => setPhoneCode(val)}
-                className={styles.phoneCodeSelect}
-                portalToBody
-                menuWidth={135}
-              />
+        <div className={styles.formBody}>
+          <div className={styles.formCol}>
+            <div className={styles.formGroup}>
+              <label>{translation("EditUserModal.name")}</label>
               <input
-                type="text"
-                value={phoneNational}
-                onChange={(e) => setPhoneNational(e.target.value)}
-                placeholder="912 345 678"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={translation("EditUserModal.name")}
               />
             </div>
-          </div> */}
 
-          <div className={styles.formGroup}>
-            <label>E-mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemplo@exemplo.com"
-            />
-          </div>
+            {/* <div className={styles.formGroup}>
+              <label>{translation("EditUserModal.phone")}</label>
+              <div className={styles.phoneRow}>
+                <PillSelect
+                  options={PHONE_CODE_OPTIONS}
+                  value={phoneCode}
+                  onChange={(val) => setPhoneCode(val)}
+                  className={styles.phoneCodeSelect}
+                  portalToBody
+                  menuWidth={135}
+                />
+                <input
+                  type="text"
+                  value={phoneNational}
+                  onChange={(e) => setPhoneNational(e.target.value)}
+                  placeholder="912 345 678"
+                />
+              </div>
+            </div> */}
 
-          <AssistantsField
-            assistants={assistants}
-            assistantIds={assistantIds}
-            activeAssistantId={assistantId}
-            onChange={(next) => {
-              setAssistantIds(next.assistantIds);
-              setAssistantId(next.activeAssistantId);
-            }}
-          />
+            <div className={styles.formGroup}>
+              <label>E-mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="exemplo@exemplo.com"
+              />
+            </div>
+
 
           {/* ───── Teams section ───── */}
           {/* <div className={styles.sectionDivider}>
@@ -402,59 +410,37 @@ export default function EditUserModal({
             </div>
           </div>
 
-          <div className={styles.sectionDivider} />
-          {/* ───────────────────────── */}
-
-          <div className={styles.formGroup}>
-            <label>{translation("EditUserModal.tags")}</label>
-            <div className={styles.tagsWrap}>
-              {allTags.map((t) => {
-                const checked = selectedTagIds.includes(t.id);
-                return (
-                  <label
-                    key={t.id}
-                    className={`${styles.chip} ${styles.chipCheck} ${
-                      checked ? styles.chipChecked : ""
-                    }`}
-                    title={
-                      checked
-                        ? translation("EditUserModal.remove")
-                        : translation("EditUserModal.add")
-                    }
-                  >
-                    <input
-                      type="checkbox"
-                      className={styles.visuallyHidden}
-                      checked={checked}
-                      onChange={() => toggleTag(t.id)}
-                    />
-                    <span className={styles.checkboxSquare} aria-hidden="true">
-                      <svg viewBox="0 0 24 24" className={styles.checkIcon}>
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </span>
-                    <span className={styles.chipText}>{t.name}</span>
-                  </label>
-                );
-              })}
-              {!allTags.length && (
-                <div style={{ color: "var(--ui-muted)" }}>
-                  {translation("EditUserModal.noTags")}
-                </div>
-              )}
-            </div>
           </div>
 
-          <div className={styles.buttonGroup}>
+          <div className={styles.formCol}>
+          <AssistantsField
+            assistants={assistants}
+            assistantIds={assistantIds}
+            initialAssistantIds={initialAssistantIds}
+            activeAssistantId={assistantId}
+            onChange={(next) => {
+              setAssistantIds(next.assistantIds);
+              setAssistantId(next.activeAssistantId);
+            }}
+          />
+
+          <CheckList
+            label={translation("EditUserModal.tags")}
+            items={allTags}
+            selectedIds={selectedTagIds}
+            initialSelectedIds={initialTagIds}
+            onToggle={toggleTag}
+            emptyText={translation("EditUserModal.noTags")}
+          />
+          </div>
+        </div>
+
+          <div className={`${styles.buttonGroup} ${styles.formFoot}`}>
             <button
               type="button"
               onClick={handleDelete}
               disabled={isSaving || isDeleting}
-              style={{
-                background: "#fff5f5",
-                color: "#b42318",
-                border: "1px solid #ffd0d0",
-              }}
+              className={styles.btnDangerText}
             >
               {isDeleting
                 ? translation("EditUserModal.deleting")
@@ -466,6 +452,7 @@ export default function EditUserModal({
               </button>
               <button
                 type="button"
+                className={styles.btnPrimary}
                 onClick={save}
                 disabled={isSaving || isDeleting}
               >
@@ -475,7 +462,6 @@ export default function EditUserModal({
               </button>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

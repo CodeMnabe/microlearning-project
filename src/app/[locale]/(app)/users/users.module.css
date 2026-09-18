@@ -602,6 +602,86 @@
   gap: 0.75rem;
 }
 
+/* Janela de criar e editar utilizador (#135): cabeçalho, duas colunas
+   (dados e canais | assistentes e tags) e rodapé sempre à vista. */
+.modalContentForm {
+  width: min(780px, 94vw);
+  max-height: 92vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.formHead {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.formHead h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.formShell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.formBody {
+  padding: 18px 22px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 18px 26px;
+}
+
+.formCol {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.formCol .sectionDivider {
+  margin: 0.6rem 0 0.2rem;
+}
+
+.formCol .formGroup label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b4a66;
+}
+
+.formFoot {
+  padding: 12px 22px;
+  border-top: 1px solid var(--ui-border);
+  align-items: center;
+}
+
+.buttonGroup button[type].btnPrimary {
+  background: var(--brand-1, #30a9e0);
+  color: #fff;
+}
+
+.buttonGroup button[type].btnDangerText {
+  background: none;
+  color: #b42318;
+  padding-left: 0;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 680px) {
+  .formBody {
+    grid-template-columns: 1fr;
+  }
+}
+
 .formGroup {
   display: grid;
   gap: 0.35rem;

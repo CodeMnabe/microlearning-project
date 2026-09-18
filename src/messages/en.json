@@ -1067,10 +1067,15 @@
     "assistants": "Assistants",
     "empty": "No results."
   },
+  "CheckList": {
+    "selected": "{count} selected",
+    "search": "Search",
+    "active": "Active",
+    "makeActive": "Make active",
+    "noResults": "No results."
+  },
   "UserAssistants": {
     "assigned": "Assistants",
-    "active": "Active assistant",
-    "activeHint": "The one that replies to messages. The user can switch in the WhatsApp conversation.",
     "none": "No assistants available.",
     "extraTitle": "{count} assistants assigned"
   },
@@ -1112,10 +1117,19 @@
     "none": "No tags.",
     "name": "Name:",
     "placeholder": "Group 1",
-    "save": "Save Changes",
+    "save": "Save",
     "add": "Add",
     "cancel": "Cancel",
-    "removeLabel": "Remove {name}"
+    "removeLabel": "Remove {name}",
+    "newLabel": "New tag",
+    "listLabel": "Tags",
+    "search": "Search",
+    "rename": "Rename",
+    "delete": "Delete",
+    "close": "Close",
+    "noResults": "No results.",
+    "confirmDeleteTitle": "Delete the tag {name}?",
+    "confirmDeleteMessage": "The tag is removed from every user that has it."
   },
 
   "Options": {

@@ -1,8 +1,19 @@
 // src/app/[locale]/(app)/users/ManageTagsModal/ManageTagsModal.jsx
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./manageTagsModal.module.css";
 import { useTranslations } from "next-intl";
+import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+
+/* A partir de quantas tags aparece a pesquisa. */
+const SEARCH_THRESHOLD = 8;
+
+function normalize(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 export default function ManageTagsModal({
   isOpen,
@@ -12,8 +23,12 @@ export default function ManageTagsModal({
   setTags,
 }) {
   const translation = useTranslations();
-  const [selectedId, setSelectedId] = useState(null);
-  const [nameInput, setNameInput] = useState("");
+  const confirm = useConfirm();
+
+  const [newName, setNewName] = useState("");
+  const [query, setQuery] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
 
   // mount/unmount animation
   const [render, setRender] = useState(isOpen);
@@ -23,76 +38,73 @@ export default function ManageTagsModal({
 
   useEffect(() => {
     if (!render) return;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      // Esc a meio de mudar um nome só cancela a edição.
+      if (editingId != null) setEditingId(null);
+      else onClose?.();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [render, onClose]);
+  }, [render, onClose, editingId]);
 
   const stateClass = isOpen ? styles.open : styles.closing;
-
-  // When modal opens or tags change, pick a sensible selection
-  useEffect(() => {
-    if (!isOpen) return;
-    const first = tags?.[0];
-    if (first && !tags.find((t) => t.id === selectedId)) {
-      setSelectedId(first.id);
-      setNameInput(first.name || "");
-    }
-    if (!tags?.length) {
-      setSelectedId(null);
-      setNameInput("");
-    }
-  }, [isOpen, tags, selectedId]);
-
-  const selectedTag = useMemo(
-    () =>
-      Array.isArray(tags)
-        ? tags.find((t) => t.id === selectedId) || null
-        : null,
-    [tags, selectedId]
-  );
+  const list = Array.isArray(tags) ? tags : [];
 
   async function createTag() {
-    const base = (nameInput || "").trim() || `Grupo ${tags.length + 1}`;
+    const name = newName.trim() || `Grupo ${list.length + 1}`;
     const res = await fetch("/api/tags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, name: base }),
+      body: JSON.stringify({ orgId, name }),
     });
     if (!res.ok) return;
     const t = await res.json();
     setTags?.((prev) => [t, ...(prev || [])]);
-    setSelectedId(t.id);
-    setNameInput(t.name || "");
+    setNewName("");
   }
 
-  async function saveRename() {
-    if (!selectedTag) return;
-    const next = (nameInput || "").trim();
-    if (!next || next === selectedTag.name) return;
+  function startRename(tag) {
+    setEditingId(tag.id);
+    setEditName(tag.name || "");
+  }
+
+  async function saveRename(tag) {
+    const next = editName.trim();
+    setEditingId(null);
+    if (!next || next === tag.name) return;
     await fetch("/api/tags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: selectedTag.id, name: next }),
+      body: JSON.stringify({ id: tag.id, name: next }),
     });
     setTags?.((prev) =>
-      (prev || []).map((t) =>
-        t.id === selectedTag.id ? { ...t, name: next } : t
-      )
+      (prev || []).map((t) => (t.id === tag.id ? { ...t, name: next } : t)),
     );
   }
 
-  async function removeTag(id) {
-    await fetch(`/api/tags?id=${id}`, { method: "DELETE" });
-    setTags?.((prev) => (prev || []).filter((t) => t.id !== id));
-    if (id === selectedId) {
-      const next = (tags || []).find((t) => t.id !== id);
-      setSelectedId(next?.id ?? null);
-      setNameInput(next?.name ?? "");
-    }
+  async function removeTag(tag) {
+    const ok = await confirm({
+      title: translation("ManageTagsModal.confirmDeleteTitle", {
+        name: tag.name,
+      }),
+      message: translation("ManageTagsModal.confirmDeleteMessage"),
+      confirmText: translation("Common.delete"),
+      cancelText: translation("Common.cancel"),
+      tone: "danger",
+    });
+    if (!ok) return;
+
+    await fetch(`/api/tags?id=${tag.id}`, { method: "DELETE" });
+    setTags?.((prev) => (prev || []).filter((t) => t.id !== tag.id));
   }
 
   if (!render) return null;
+
+  const wanted = normalize(query.trim());
+  const visible = wanted
+    ? list.filter((t) => normalize(t.name).includes(wanted))
+    : list;
 
   return (
     <div
@@ -112,96 +124,123 @@ export default function ManageTagsModal({
         </div>
 
         <div className={styles.body}>
-          {/* LEFT: chips */}
-          <div className={styles.leftCol}>
-            <div className={styles.chipsArea}>
-              {Array.isArray(tags) && tags.length ? (
-                tags.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`${styles.chip} ${
-                      t.id === selectedId ? styles.chipActive : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedId(t.id);
-                      setNameInput(t.name || "");
-                    }}
-                  >
-                    <span className={styles.chipLabel}>{t.name}</span>
-                    <span
-                      className={styles.chipClose}
-                      role="button"
-                      aria-label={translation("ManageTagsModal.removeLabel", {
-                        name: t.name,
-                      })}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeTag(t.id);
-                      }}
-                    >
-                      ×
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <div className={styles.muted}>
-                  {translation("ManageTagsModal.none")}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.divider} />
-
-          {/* RIGHT: editor */}
-          <div className={styles.rightCol}>
-            <label className={styles.label} htmlFor="tag-name">
-              {translation("ManageTagsModal.name")}
+          <form
+            className={styles.createRow}
+            onSubmit={(e) => {
+              e.preventDefault();
+              createTag();
+            }}
+          >
+            <label className={styles.label} htmlFor="new-tag-name">
+              {translation("ManageTagsModal.newLabel")}
             </label>
-            <input
-              id="tag-name"
-              className={styles.nameInput}
-              placeholder={translation("ManageTagsModal.placeholder")}
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-            />
-
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                onClick={saveRename}
-                disabled={!selectedTag}
-              >
-                {translation("ManageTagsModal.save")}
-              </button>
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                onClick={createTag}
-              >
+            <div className={styles.createControls}>
+              <input
+                id="new-tag-name"
+                className={styles.input}
+                placeholder={translation("ManageTagsModal.placeholder")}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <button type="submit" className={styles.btnPrimary}>
                 {translation("ManageTagsModal.add")}
               </button>
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={onClose}
-              >
-                {translation("ManageTagsModal.cancel")}
-              </button>
+            </div>
+          </form>
+
+          <div className={styles.field}>
+            <div className={styles.listHead}>
+              <span className={styles.label}>
+                {translation("ManageTagsModal.listLabel")}
+              </span>
+              {list.length > 0 && (
+                <span className={styles.count}>{list.length}</span>
+              )}
+            </div>
+
+            <div className={styles.box}>
+              {list.length > SEARCH_THRESHOLD && (
+                <input
+                  type="search"
+                  className={styles.search}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={translation("ManageTagsModal.search")}
+                  aria-label={translation("ManageTagsModal.search")}
+                />
+              )}
+
+              <ul className={styles.list}>
+                {visible.map((tag) =>
+                  editingId === tag.id ? (
+                    <li key={tag.id} className={styles.row}>
+                      <form
+                        className={styles.editForm}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          saveRename(tag);
+                        }}
+                      >
+                        <input
+                          autoFocus
+                          className={styles.editInput}
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          aria-label={translation("ManageTagsModal.name")}
+                        />
+                        <button type="submit" className={styles.rowAction}>
+                          {translation("ManageTagsModal.save")}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.rowAction}
+                          onClick={() => setEditingId(null)}
+                        >
+                          {translation("ManageTagsModal.cancel")}
+                        </button>
+                      </form>
+                    </li>
+                  ) : (
+                    <li key={tag.id} className={styles.row}>
+                      <span className={styles.name}>{tag.name}</span>
+                      <button
+                        type="button"
+                        className={styles.rowAction}
+                        onClick={() => startRename(tag)}
+                      >
+                        {translation("ManageTagsModal.rename")}
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.rowAction} ${styles.rowActionDanger}`}
+                        aria-label={translation("ManageTagsModal.removeLabel", {
+                          name: tag.name,
+                        })}
+                        onClick={() => removeTag(tag)}
+                      >
+                        {translation("ManageTagsModal.delete")}
+                      </button>
+                    </li>
+                  ),
+                )}
+
+                {!visible.length && (
+                  <li className={styles.empty}>
+                    {list.length
+                      ? translation("ManageTagsModal.noResults")
+                      : translation("ManageTagsModal.none")}
+                  </li>
+                )}
+              </ul>
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          className={styles.closeX}
-          aria-label="Fechar"
-          onClick={onClose}
-        >
-          ✕
-        </button>
+        <div className={styles.footer}>
+          <button type="button" className={styles.btnGhost} onClick={onClose}>
+            {translation("ManageTagsModal.close")}
+          </button>
+        </div>
       </div>
     </div>
   );
