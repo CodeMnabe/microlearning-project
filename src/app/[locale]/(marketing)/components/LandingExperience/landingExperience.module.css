@@ -821,6 +821,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
+  container-type: size;
   overflow: clip;
 }
 
@@ -935,52 +936,22 @@
 }
 
 .actPhoto {
-  /* Largura limitada pela coluna, por 780px e pela altura máxima (55vh a 3:2),
-     para o frame manter sempre a proporção da fotografia e não a cortar. */
+  /* A fotografia cabe na altura disponível abaixo do título, sem cortar os cantos. */
   aspect-ratio: 3 / 2;
-  width: min(100%, 780px, calc(55vh * 1.5));
+  width: min(100%, 780px, calc(55vh * 1.5), calc(100cqh * 1.5));
   max-width: none;
   height: auto;
   max-height: none;
   border: 0;
-  border-radius: 0 0 30px 30px;
+  --photo-radius: 32px;
+  border-radius: var(--photo-radius);
+  clip-path: inset(0 round var(--photo-radius));
   background: transparent;
   box-shadow: none;
 }
 
 .actPhoto::before {
   content: none;
-}
-
-.actPhoto::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(8, 20, 38, 0.96) 0%,
-    rgba(8, 20, 38, 0.72) 12%,
-    rgba(8, 20, 38, 0) 34%
-  );
-  -webkit-mask-image: radial-gradient(
-    ellipse 38% 68% at var(--photo-focus, 50% 54%),
-    transparent 0%,
-    rgba(0, 0, 0, 0.18) 58%,
-    #000 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 38% 68% at var(--photo-focus, 50% 54%),
-    transparent 0%,
-    rgba(0, 0, 0, 0.18) 58%,
-    #000 100%
-  );
-  pointer-events: none;
-}
-
-.actPhotoNoFade::after {
-  content: none;
-  display: none;
 }
 
 .actPhoto img {
@@ -1390,6 +1361,7 @@
   .actsViewport {
     position: relative;
     inset: auto;
+    container-type: normal;
     overflow: visible;
   }
 
@@ -1536,7 +1508,7 @@
 
   .actPhoto {
     width: 100%;
-    border-radius: 0 0 22px 22px;
+    --photo-radius: 24px;
   }
 
   .pricingHeader {

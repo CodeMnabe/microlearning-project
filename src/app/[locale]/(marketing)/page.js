@@ -298,7 +298,6 @@ export default async function LocaleIndex() {
                     key={card.id}
                     style={{
                       "--act-color": ["#7cc2ff", "#ffd166", "#7c5cfc"][index],
-                      "--photo-focus": ["68% 54%", "54% 54%", "38% 54%"][index],
                     }}
                   >
                     <div className={styles.actCopy}>
@@ -309,7 +308,7 @@ export default async function LocaleIndex() {
                       <p className={styles.actMeta}>{card.meta}</p>
                     </div>
                     <div
-                      className={`${styles.actMedia} ${card.image ? styles.actPhoto : ""} ${index === 0 && card.image ? styles.actPhotoNoFade : ""}`}
+                      className={`${styles.actMedia} ${card.image ? styles.actPhoto : ""}`}
                     >
                       <Image
                         src={card.image || card.screenshot}
