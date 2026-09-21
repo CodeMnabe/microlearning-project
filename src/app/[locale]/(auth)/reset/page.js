@@ -1,17 +1,16 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   DEFAULT_AUTH_REDIRECT,
   getSafeRedirectPath,
 } from "@/lib/auth/safeRedirect";
+import { requestPasswordReset } from "./actions";
 import styles from "../login/login.module.css"; // reuse spinner/check/btn styles
 
 export default function ResetRequestPage() {
-  const supabase = createClient();
   const searchParams = useSearchParams();
   const t = useTranslations();
   const locale = useLocale();
@@ -29,22 +28,7 @@ export default function ResetRequestPage() {
     setErrorMsg("");
     setStatus("loading");
 
-    const confirmUrl = new URL(
-      `/${locale}/reset/confirm`,
-      window.location.origin,
-    );
-    confirmUrl.searchParams.set("next", redirectPath);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: confirmUrl.toString(),
-      flowType: "implicit",
-    });
-
-    if (error) {
-      setStatus("idle");
-      setErrorMsg(error.message);
-      return;
-    }
+    await requestPasswordReset({ email, locale, next: redirectPath });
 
     setStatus("done"); // label changes to “E-mail enviado”
     setEmail("");

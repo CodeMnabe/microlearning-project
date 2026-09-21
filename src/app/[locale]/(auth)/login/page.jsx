@@ -11,6 +11,7 @@ import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import { login } from "./actions";
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -49,14 +50,11 @@ export default function LoginPage() {
     setErrorMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await login({ email, password });
 
-    if (error) {
+    if (!result.success) {
       setStatus("idle");
-      setErrorMsg(error.message);
+      setErrorMsg(t("Auth.login.genericError"));
       return;
     }
 

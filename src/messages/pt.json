@@ -2077,7 +2077,8 @@
       "login": "Iniciar sessão",
       "forgot": "Esqueceu a palavra-passe?",
       "working": "A trabalhar…",
-      "success": "Sucesso! A redirecionar…"
+      "success": "Sucesso! A redirecionar…",
+      "genericError": "Não foi possível iniciar sessão. Verifica os dados e tenta novamente."
     },
     "reset": {
       "title": "Recuperar palavra-passe",
@@ -2085,7 +2086,7 @@
       "send": "Enviar link",
       "back": "Voltar ao login",
       "sending": "A enviar…",
-      "sent": "E-mail enviado! Verifique a sua caixa de entrada."
+      "sent": "Se existir uma conta com esse e-mail, receberás um link de recuperação."
     },
     "resetConfirm": {
       "title": "Definir nova palavra-passe",

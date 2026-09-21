@@ -2068,7 +2068,8 @@
       "login": "Sign in",
       "forgot": "Forgot your password?",
       "working": "Working…",
-      "success": "Success! Redirecting…"
+      "success": "Success! Redirecting…",
+      "genericError": "Unable to sign in. Check your details and try again."
     },
     "reset": {
       "title": "Recover password",
@@ -2076,7 +2077,7 @@
       "send": "Send link",
       "back": "Back to login",
       "sending": "Sending…",
-      "sent": "E-mail sent! Check your inbox."
+      "sent": "If an account exists for that e-mail, you will receive a recovery link."
     },
     "resetConfirm": {
       "title": "Set a new password",
