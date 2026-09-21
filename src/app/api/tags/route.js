@@ -70,6 +70,22 @@ function validateColor(value) {
   return { value: normalized || null };
 }
 
+/*
+ * O nome repete-se quando o slug já existe na organização (índice
+ * tags_org_slug_uidx). É um erro de quem pede, não do servidor.
+ */
+function duplicateNameResponse(error) {
+  if (error?.code !== "23505") return null;
+
+  return NextResponse.json(
+    {
+      error: "A tag with this name already exists.",
+      code: "tag_name_taken",
+    },
+    { status: 409 },
+  );
+}
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -168,9 +184,9 @@ export async function POST(req) {
       { status: 201 },
     );
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to create tag",
+    return (
+      duplicateNameResponse(error) ??
+      handleApiError(error, "Failed to create tag")
     );
   }
 }
@@ -279,9 +295,9 @@ export async function PATCH(req) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to update tag",
+    return (
+      duplicateNameResponse(error) ??
+      handleApiError(error, "Failed to update tag")
     );
   }
 }
