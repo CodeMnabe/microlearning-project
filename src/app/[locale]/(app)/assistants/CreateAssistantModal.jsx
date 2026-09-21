@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import styles from "./assistants.module.css";
 import { useTranslations } from "next-intl";
@@ -28,6 +28,12 @@ export default function CreateAssistantModal({
   const [preset, setPreset] = useState(DEFAULT_ASSISTANT_PRESET);
   // O modelo com que os assistentes nascem. Alterável na edição.
   const DEFAULT_MODEL = "gpt-5.6-luna";
+  /**
+   * Um pedido de cada vez. A ref trava os cliques seguidos, que chegam
+   * antes de o botão aparecer desativado; o estado desativa o botão.
+   */
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,6 +49,19 @@ export default function CreateAssistantModal({
   async function handleSubmit(e) {
     e.preventDefault();
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+
+    try {
+      await createAssistant();
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }
+
+  async function createAssistant() {
     const res = await fetch("/api/assistants", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,7 +224,7 @@ export default function CreateAssistantModal({
           </div>
 
           <div className={styles.buttonGroup}>
-            <button type="submit">
+            <button type="submit" disabled={submitting}>
               {translation("CreateAssistant.create")}
             </button>
             <button type="button" onClick={onClose}>

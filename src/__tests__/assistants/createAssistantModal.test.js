@@ -262,4 +262,31 @@ describe("CreateAssistantModal", () => {
 
     expect(screen.queryByText("AssistantPresets.formal.description")).toBeNull();
   });
+
+  it("cria um so assistente quando se carrega varias vezes em criar", async () => {
+    const user = userEvent.setup();
+
+    // O pedido fica pendente, como numa rede lenta.
+    let finish;
+    mocks.fetch.mockImplementationOnce(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    renderModal();
+
+    await user.type(screen.getAllByRole("textbox")[0], "My Assistant");
+
+    const create = screen.getByRole("button", {
+      name: "CreateAssistant.create",
+    });
+    const form = create.closest("form");
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(create).toBeDisabled());
+    expect(mocks.fetch).toHaveBeenCalledTimes(1);
+
+    finish({ ok: true, json: async () => ({ id: "asst_new" }) });
+    await waitFor(() => expect(mocks.onCreated).toHaveBeenCalledTimes(1));
+  });
 });
