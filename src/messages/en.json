@@ -2086,7 +2086,9 @@
       "preparing": "Preparing session…",
       "invalid": "Invalid or expired link",
       "updating": "Updating…",
-      "updated": "Password updated! Redirecting…"
+      "updated": "Password updated! Redirecting…",
+      "passwordPolicy": "The password must be at least 8 characters long and include an uppercase letter, a lowercase letter, and a special character.",
+      "genericError": "The password could not be updated. Please try again."
     }
   },
 

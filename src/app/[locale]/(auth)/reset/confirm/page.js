@@ -7,6 +7,7 @@ import {
   DEFAULT_AUTH_REDIRECT,
   getSafeRedirectPath,
 } from "@/lib/auth/safeRedirect";
+import { changePassword } from "./actions";
 import styles from "../../login/login.module.css";
 import Link from "next/link";
 
@@ -56,10 +57,16 @@ export default function ResetConfirmPage() {
     setMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.updateUser({ password: newPw });
-    if (error) {
+    const result = await changePassword(newPw);
+    if (!result.success) {
       setStatus("idle");
-      setMsg(error.message);
+      setMsg(
+        t(
+          result.error === "password_policy"
+            ? "Auth.resetConfirm.passwordPolicy"
+            : "Auth.resetConfirm.genericError",
+        ),
+      );
       return;
     }
 
@@ -94,7 +101,7 @@ export default function ResetConfirmPage() {
           placeholder="••••••••"
           value={newPw}
           onChange={(e) => setNewPw(e.target.value)}
-          minLength={6}
+          minLength={8}
           required
           disabled={disabled}
         />

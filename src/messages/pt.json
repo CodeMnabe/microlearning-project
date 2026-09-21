@@ -2095,7 +2095,9 @@
       "preparing": "A preparar sessão…",
       "invalid": "Link inválido ou expirado",
       "updating": "A atualizar…",
-      "updated": "Password atualizada! Redirecionando…"
+      "updated": "Palavra-passe atualizada! A redirecionar…",
+      "passwordPolicy": "A palavra-passe tem de ter pelo menos 8 caracteres e incluir uma letra maiúscula, uma letra minúscula e um caráter especial.",
+      "genericError": "Não foi possível atualizar a palavra-passe. Tenta novamente."
     }
   },
   "Alert": {
