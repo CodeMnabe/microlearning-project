@@ -6,6 +6,10 @@ import { useTranslations } from "next-intl";
 import styles from "./broadcast.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
+import {
+  BROADCAST_IMAGES_BUCKET,
+  buildBroadcastImageKey,
+} from "@/lib/uploads/broadcastImages";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
@@ -908,7 +912,7 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = "images";
+    const bucket = BROADCAST_IMAGES_BUCKET;
     const uploaded = [];
 
     const makeSafeName = (name) => {
@@ -920,14 +924,12 @@ export default function BroadcastPage() {
 
     for (const file of pickedFiles) {
       const safeName = makeSafeName(file.name);
-      const key = `broadcasts/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}-${safeName}`;
+      const key = buildBroadcastImageKey(org?.id, safeName);
       const ct = file.type || guessContentTypeFromName(file.name);
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
-        .upload(key, file, { upsert: true, contentType: ct });
+        .upload(key, file, { upsert: false, contentType: ct });
 
       if (upErr) {
         console.error("Supabase upload error:", upErr);
