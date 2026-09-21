@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertTagsBelongToOrg,
   assertUsersBelongToOrg,
@@ -36,6 +38,17 @@ export async function POST(req) {
       tagIdsNum,
     );
 
+    const audit = () =>
+      recordAuditEvent(orgAuth, {
+        action: AUDIT_ACTIONS.USER_TAGS_UPDATED,
+        details: {
+          op,
+          userCount: safeUserIds.length,
+          userIds: safeUserIds,
+          tagIds: safeTagIds,
+        },
+      });
+
     if (op === "add") {
       const rows = [];
       for (const uid of safeUserIds) {
@@ -47,6 +60,7 @@ export async function POST(req) {
         .upsert(rows, { onConflict: "user_id,tag_id", ignoreDuplicates: true });
 
       if (error) throw error;
+      await audit();
       return NextResponse.json({ ok: true });
     }
 
@@ -58,6 +72,7 @@ export async function POST(req) {
         .in("tag_id", safeTagIds);
 
       if (error) throw error;
+      await audit();
       return NextResponse.json({ ok: true });
     }
 
@@ -69,7 +84,10 @@ export async function POST(req) {
 
       if (delErr) throw delErr;
 
-      if (!safeTagIds.length) return NextResponse.json({ ok: true });
+      if (!safeTagIds.length) {
+        await audit();
+        return NextResponse.json({ ok: true });
+      }
 
       const rows = [];
       for (const uid of safeUserIds) {
@@ -81,6 +99,7 @@ export async function POST(req) {
         .upsert(rows, { onConflict: "user_id,tag_id", ignoreDuplicates: true });
 
       if (addErr) throw addErr;
+      await audit();
       return NextResponse.json({ ok: true });
     }
 

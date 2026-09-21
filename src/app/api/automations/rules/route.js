@@ -10,6 +10,8 @@ import {
   requireOwnedOrg,
 } from "@/lib/auth/guards";
 import { sanitizeAutomationPayload } from "@/lib/services/automations/automationEngine";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function normalizeAssistantId(value) {
   if (value === "" || value === undefined || value === null) return null;
@@ -92,6 +94,14 @@ export async function POST(req) {
       payload: sanitizeAutomationPayload(body.payload),
       is_active: isActive,
       whatsapp_template_id: safeTemplateId,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.AUTOMATION_CREATED,
+      entityType: "automation_rule",
+      entityId: row?.id,
+      entityLabel: row?.name ?? body.name,
+      details: { triggerType, channel, isActive },
     });
 
     return NextResponse.json(row, { status: 201 });

@@ -6,6 +6,9 @@ import {
   deleteUser,
 } from "@/lib/repos/user.repo";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { lookupAssistantName } from "@/lib/services/audit/auditLookups";
+import { AUDIT_ACTIONS, providedFields } from "@/lib/audit/auditEvents";
 import {
   assertAssistantBelongsToOrg,
   assertTagsBelongToOrg,
@@ -91,6 +94,20 @@ export async function POST(req) {
       phoneNational: normalizedNational,
       teamsAadObjectId: teamsAadObjectId ?? null,
       teamsFromId: teamsFromId ?? null,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.USER_CREATED,
+      entityId: newUser?.id,
+      entityLabel: newUser?.name ?? name,
+      details: {
+        email: newUser?.email ?? email ?? null,
+        phone: newUser?.phone_number ?? fullPhone ?? null,
+        assistantName: await lookupAssistantName(
+          orgAuth.admin,
+          safeAssistantId,
+        ),
+      },
     });
 
     return NextResponse.json(newUser, { status: 201 });
@@ -194,6 +211,25 @@ export async function PATCH(req) {
       teamsFromId,
     });
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.USER_UPDATED,
+      entityId: orgAuth.userId,
+      entityLabel: updatedUser?.name ?? orgAuth.targetUser?.name,
+      details: {
+        fields: providedFields({
+          name,
+          phoneNumber,
+          phoneCountryCode,
+          phoneNational,
+          email,
+          teamsAadObjectId,
+          teamsFromId,
+          assistantId,
+          tagIds,
+        }),
+      },
+    });
+
     return NextResponse.json(updatedUser);
   } catch (err) {
     return handleApiError(err, "Failed to update user");
@@ -209,6 +245,16 @@ export async function DELETE(req) {
     if (orgAuth.error) return orgAuth.error;
 
     await deleteUser(orgAuth.userId);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.USER_DELETED,
+      entityId: orgAuth.userId,
+      entityLabel: orgAuth.targetUser?.name,
+      details: {
+        email: orgAuth.targetUser?.email ?? null,
+        phone: orgAuth.targetUser?.phone_number ?? null,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
