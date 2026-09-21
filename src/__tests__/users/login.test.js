@@ -10,9 +10,9 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   startLoading: vi.fn(),
   stopLoading: vi.fn(),
+  login: vi.fn(),
   auth: {
     getSession: vi.fn(),
-    signInWithPassword: vi.fn(),
   },
 }));
 
@@ -21,6 +21,16 @@ vi.mock("next/navigation", () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  useSearchParams: () => ({ get: () => null }),
+}));
+
+vi.mock("next-intl", () => ({
+  useLocale: () => "pt",
+  useTranslations: () => (key) => key,
+}));
+
+vi.mock("@/app/[locale]/(auth)/login/actions", () => ({
+  login: mocks.login,
 }));
 
 // No JSX here either
@@ -28,6 +38,14 @@ vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }) =>
     React.createElement("a", { href, ...rest }, children),
 }));
+
+vi.mock(
+  "@/app/[locale]/(marketing)/components/TopLoader/LoaderLink",
+  () => ({
+    default: ({ href, children, ...rest }) =>
+      React.createElement("a", { href, ...rest }, children),
+  }),
+);
 
 vi.mock("@/app/LoadingScreen/GlobalLoaderContext", () => ({
   useGlobalLoader: () => ({
@@ -79,9 +97,7 @@ describe("LoginPage", () => {
 
   it("shows error message when login fails", async () => {
     mocks.auth.getSession.mockResolvedValueOnce({ data: { session: null } });
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({
-      error: { message: "Invalid login credentials" },
-    });
+    mocks.login.mockResolvedValueOnce({ error: "auth_failed" });
 
     const user = userEvent.setup();
     render(React.createElement(LoginPage));
@@ -92,7 +108,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Auth.login.login" }));
 
     expect(
-      await screen.findByText("Invalid login credentials"),
+      await screen.findByText("Auth.login.genericError"),
     ).toBeInTheDocument();
 
     expect(mocks.push).not.toHaveBeenCalled();
@@ -113,7 +129,7 @@ describe("LoginPage", () => {
         return realSetTimeout(cb, ms, ...args);
       });
 
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({ error: null });
+    mocks.login.mockResolvedValueOnce({ success: true });
 
     const user = userEvent.setup();
     render(React.createElement(LoginPage));

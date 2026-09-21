@@ -2,17 +2,31 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { consumeAuthAttempt } from "@/lib/auth/authRateLimit";
 
-export async function login(formData) {
-  const supabase = await createClient();
+export async function login({ email, password }) {
+  const normalizedEmail =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
+  if (!normalizedEmail || typeof password !== "string") {
+    return { error: "auth_failed" };
+  }
 
-  if (error) redirect("/error");
-  redirect("/users");
+  try {
+    const allowed = await consumeAuthAttempt("login", normalizedEmail);
+    if (!allowed) return { error: "auth_failed" };
+
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error) return { error: "auth_failed" };
+    return { success: true };
+  } catch {
+    return { error: "auth_failed" };
+  }
 }
 
 export async function signup(formData) {

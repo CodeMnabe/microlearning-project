@@ -2068,7 +2068,8 @@
       "login": "Sign in",
       "forgot": "Forgot your password?",
       "working": "Working…",
-      "success": "Success! Redirecting…"
+      "success": "Success! Redirecting…",
+      "genericError": "Unable to sign in. Check your details and try again."
     },
     "reset": {
       "title": "Recover password",
@@ -2076,7 +2077,7 @@
       "send": "Send link",
       "back": "Back to login",
       "sending": "Sending…",
-      "sent": "E-mail sent! Check your inbox."
+      "sent": "If an account exists for that e-mail, you will receive a recovery link."
     },
     "resetConfirm": {
       "title": "Set a new password",
@@ -2086,7 +2087,9 @@
       "preparing": "Preparing session…",
       "invalid": "Invalid or expired link",
       "updating": "Updating…",
-      "updated": "Password updated! Redirecting…"
+      "updated": "Password updated! Redirecting…",
+      "passwordPolicy": "The password must be at least 8 characters long and include an uppercase letter, a lowercase letter, and a special character.",
+      "genericError": "The password could not be updated. Please try again."
     }
   },
 
