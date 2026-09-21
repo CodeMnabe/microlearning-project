@@ -15,6 +15,23 @@ function normalize(value) {
     .toLowerCase();
 }
 
+/*
+ * Primeiro "Grupo N" que ainda não existe. A base de dados compara pelo slug
+ * (minúsculas, espaços como hífen), por isso a comparação segue a mesma regra.
+ */
+function nextGroupName(tags) {
+  const slug = (value) =>
+    String(value ?? "")
+      .toLowerCase()
+      .trim()
+      .replace(/s+/g, "-");
+  const taken = new Set(tags.map((t) => slug(t.name)));
+
+  let n = tags.length + 1;
+  while (taken.has(slug(`Grupo ${n}`))) n += 1;
+  return `Grupo ${n}`;
+}
+
 export default function ManageTagsModal({
   isOpen,
   onClose,
@@ -29,6 +46,7 @@ export default function ManageTagsModal({
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [error, setError] = useState("");
 
   // mount/unmount animation
   const [render, setRender] = useState(isOpen);
@@ -51,14 +69,27 @@ export default function ManageTagsModal({
   const stateClass = isOpen ? styles.open : styles.closing;
   const list = Array.isArray(tags) ? tags : [];
 
+  /* 409 é nome repetido; o resto é uma falha que o utilizador não resolve. */
+  function errorFor(res) {
+    return translation(
+      res.status === 409
+        ? "ManageTagsModal.nameTaken"
+        : "ManageTagsModal.saveFailed",
+    );
+  }
+
   async function createTag() {
-    const name = newName.trim() || `Grupo ${list.length + 1}`;
+    const name = newName.trim() || nextGroupName(list);
+    setError("");
     const res = await fetch("/api/tags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orgId, name }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      setError(errorFor(res));
+      return;
+    }
     const t = await res.json();
     setTags?.((prev) => [t, ...(prev || [])]);
     setNewName("");
@@ -73,11 +104,16 @@ export default function ManageTagsModal({
     const next = editName.trim();
     setEditingId(null);
     if (!next || next === tag.name) return;
-    await fetch("/api/tags", {
+    setError("");
+    const res = await fetch("/api/tags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: tag.id, name: next }),
     });
+    if (!res.ok) {
+      setError(errorFor(res));
+      return;
+    }
     setTags?.((prev) =>
       (prev || []).map((t) => (t.id === tag.id ? { ...t, name: next } : t)),
     );
@@ -146,6 +182,11 @@ export default function ManageTagsModal({
                 {translation("ManageTagsModal.add")}
               </button>
             </div>
+            {error && (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            )}
           </form>
 
           <div className={styles.field}>

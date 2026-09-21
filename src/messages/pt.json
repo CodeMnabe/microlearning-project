@@ -1121,6 +1121,8 @@
     "communicationChannels": "Canais de Comunicação"
   },
   "ManageTagsModal": {
+    "nameTaken": "Já existe uma tag com esse nome.",
+    "saveFailed": "Não foi possível guardar. Tenta outra vez.",
     "title": "Gerir Tags",
     "loading": "A carregar…",
     "none": "Sem tags.",

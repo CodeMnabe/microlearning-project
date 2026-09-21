@@ -138,6 +138,12 @@
   color: #3b4a66;
 }
 
+.error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger, #e05252);
+}
+
 /* Criar uma tag */
 .createRow,
 .field {

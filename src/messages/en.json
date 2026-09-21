@@ -1112,6 +1112,8 @@
     "communicationChannels": "Communication Channels"
   },
   "ManageTagsModal": {
+    "nameTaken": "A tag with that name already exists.",
+    "saveFailed": "Could not save. Try again.",
     "title": "Manage Tags",
     "loading": "Loading…",
     "none": "No tags.",

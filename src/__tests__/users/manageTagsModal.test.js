@@ -183,4 +183,40 @@ describe("ManageTagsModal", () => {
     const { container } = renderModal({ isOpen: false });
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("usa o primeiro Grupo N livre quando o nome fica vazio", async () => {
+    const user = userEvent.setup();
+    // 2 tags, mas "Grupo 3" já existe: o nome por defeito tem de ser "Grupo 4".
+    renderModal({
+      tags: [
+        { id: "t1", name: "IT" },
+        { id: "t2", name: "grupo 3" },
+      ],
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: "ManageTagsModal.add" }),
+    );
+
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalled());
+    const body = JSON.parse(mocks.fetch.mock.calls.at(-1)[1].body);
+    expect(body.name).toBe("Grupo 4");
+  });
+
+  it("avisa quando o nome já existe (409) e não mexe na lista", async () => {
+    const user = userEvent.setup();
+    mocks.fetch.mockImplementationOnce(() =>
+      Promise.resolve({ ok: false, status: 409, json: async () => ({}) }),
+    );
+    renderModal();
+
+    await user.click(
+      screen.getByRole("button", { name: "ManageTagsModal.add" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "ManageTagsModal.nameTaken",
+    );
+    expect(mocks.setTags).not.toHaveBeenCalled();
+  });
 });
