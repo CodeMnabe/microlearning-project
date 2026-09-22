@@ -58,10 +58,10 @@ export async function getAutomationRunForScheduledBroadcast({
   return data ?? null;
 }
 
-export async function getDueAutomationRuns(limit = 100) {
+export async function getDueAutomationRuns(limit = 100, { organizationId = null } = {}) {
   const nowIso = new Date().toISOString();
 
-  const { data, error } = await sb
+  let query = sb
     .from("automation_run")
     .select("*")
     .eq("status", "queued")
@@ -69,6 +69,11 @@ export async function getDueAutomationRuns(limit = 100) {
     .order("scheduled_for", { ascending: true })
     .limit(limit);
 
+  if (organizationId != null) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
