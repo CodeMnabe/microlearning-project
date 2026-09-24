@@ -6,6 +6,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse, after } from "next/server";
 import crypto from "crypto";
+import {
+  recordWebhookEvent,
+  markWebhookEventProcessing,
+  markWebhookEventDone,
+  markWebhookEventFailed,
+} from "@/lib/repos/webhookEvents.repo";
 
 import {
   getUserByNumber,
@@ -681,16 +687,63 @@ export async function POST(req) {
     });
   }
 
+  let evt;
+  try {
+    evt = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ ok: true });
+  }
+
+  const payload = evt?.payload;
+  let eventKey;
+  if (evt?.event === "whatsapp.inbound" && payload?.id) {
+    eventKey = `inbound:${payload.id}`;
+  } else if (
+    evt?.event === "whatsapp.interaction" &&
+    payload?.type === "read" &&
+    payload?.messageId
+  ) {
+    eventKey = `read:${payload.messageId}`;
+  } else {
+    eventKey = `raw:${crypto.createHash("sha256").update(rawBody).digest("hex")}`;
+  }
+
+  let recorded;
+  try {
+    recorded = await recordWebhookEvent({
+      eventKey,
+      eventType: evt?.event,
+      payload: evt,
+    });
+  } catch (err) {
+    console.error("Falha ao gravar evento do webhook do Bird", err);
+    return NextResponse.json({ error: "temporarily unavailable" }, { status: 503 });
+  }
+
+  if (!recorded.inserted) {
+    console.log("Evento repetido do Bird ignorado", eventKey);
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
+  const { id } = recorded;
   /*
-   * O Bird espera 15 segundos pela resposta e depois dá a entrega como
-   * falhada e repete-a. O trabalho (Supabase, OpenAI, envios) pode demorar
-   * mais do que isso, por isso respondemos já e continuamos em segundo
-   * plano. Erros ficam nos logs, como antes; a resposta é sempre 200 para o
-   * Bird não repetir o evento e gerar respostas duplicadas da IA.
+   * O evento fica gravado antes do 200; repetições não voltam a ser processadas.
+   * Se a gravação falhar, devolvemos 503 para o Bird repetir. O processamento
+   * continua em segundo plano, com estado registado e falhas de estado só em log.
    */
   after(async () => {
     try {
+      await markWebhookEventProcessing(id);
+    } catch (err) {
+      console.error("Falha ao marcar evento do Bird em processamento", err);
+    }
+    try {
       await handleEvent(rawBody);
+      try {
+        await markWebhookEventDone(id);
+      } catch (err) {
+        console.error("Falha ao marcar evento do Bird como concluído", err);
+      }
     } catch (err) {
       console.error("MessageBird webhook failed", {
         message: err?.message,
@@ -701,6 +754,11 @@ export async function POST(req) {
 
         request_id: err?.request_id,
       });
+      try {
+        await markWebhookEventFailed(id, err?.message);
+      } catch (stateError) {
+        console.error("Falha ao marcar evento do Bird como falhado", stateError);
+      }
     }
   });
 
