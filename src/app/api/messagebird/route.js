@@ -66,6 +66,7 @@ import { splitE164 } from "@/lib/whatsapp/E164";
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 
 import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
+import { handleAssistantSwitch } from "@/lib/services/assistants/handleAssistantSwitch";
 
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 
@@ -966,6 +967,71 @@ async function handleEvent(rawJSON) {
 
   /*
    * =========================================================
+   * TROCA DE ASSISTENTE
+   * =========================================================
+   *
+   * Quem tem vários assistentes pede a lista com uma
+   * palavra-chave e escolhe com quem quer falar. Vem
+   * antes das perguntas para a palavra-chave não contar
+   * como resposta a uma pergunta aberta.
+   */
+  const switchResult = await handleAssistantSwitch({
+    user,
+
+    payload: evt.payload,
+
+    inboundMsgId,
+
+    contactId,
+
+    send: ({ text: menuText, actions, list }) =>
+      sendBirdMessage({
+        channelId: normalizeId(organization.channel_id) || sentChannelId,
+
+        contactId,
+
+        phoneNumber: identity.phoneNumber || user.phone_number,
+
+        whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
+
+        body: list
+          ? {
+              type: "list",
+
+              list: {
+                text: menuText,
+
+                items: list.items,
+
+                metadata: { button: { label: list.buttonLabel } },
+              },
+            }
+          : {
+              type: "text",
+
+              text: {
+                text: menuText,
+
+                ...(actions?.length ? { actions } : {}),
+              },
+            },
+      }),
+  });
+
+  if (switchResult.handled) {
+    console.log("Assistant switch handled", {
+      userId: user.id,
+
+      inboundMsgId,
+
+      ...switchResult,
+    });
+
+    return;
+  }
+
+  /*
+   * =========================================================
    * QUIZ / PERGUNTA
    * =========================================================
    *
@@ -1004,9 +1070,22 @@ async function handleEvent(rawJSON) {
         },
       }),
 
-    resolveThread: async ({ question }) => {
+    resolveThread: async ({ question, message }) => {
       try {
-        const assistant = await getAssistantFromUser(user, organization);
+        /*
+         * A resposta fica com o assistente com que a pergunta foi
+         * enviada, mesmo que o contacto tenha trocado entretanto.
+         */
+        const sentWithAssistantId = (user.assistant_ids || [])
+          .map(Number)
+          .includes(Number(message?.assistant_id))
+          ? message.assistant_id
+          : user.assistant_id;
+
+        const assistant = await getAssistantFromUser(
+          { ...user, assistant_id: sentWithAssistantId },
+          organization,
+        );
 
         if (!assistant) return null;
 

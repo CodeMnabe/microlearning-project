@@ -1,5 +1,6 @@
 // src/lib/repos/user.repo.js
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { resolveAssistantAssignment } from "@/lib/services/users/assistantAssignment";
 
 const supabase = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -56,6 +57,42 @@ async function cancelPendingInactivityRunsForAssistantChange(
   if (error) throw error;
 }
 
+// Deixa em user_assistant exatamente os assistentes pedidos (#131).
+async function setUserAssistants(userId, assistantIds) {
+  const { data: existing, error: exErr } = await supabase
+    .from("user_assistant")
+    .select("assistant_id")
+    .eq("user_id", userId);
+
+  if (exErr) throw exErr;
+
+  const have = new Set((existing || []).map((r) => Number(r.assistant_id)));
+  const want = new Set(assistantIds.map(Number));
+
+  const toInsert = [...want].filter((id) => !have.has(id));
+  const toDelete = [...have].filter((id) => !want.has(id));
+
+  if (toInsert.length) {
+    const rows = toInsert.map((assistantId) => ({
+      user_id: userId,
+      assistant_id: assistantId,
+    }));
+    const { error: insErr } = await supabase
+      .from("user_assistant")
+      .upsert(rows, { onConflict: "user_id,assistant_id" });
+    if (insErr) throw insErr;
+  }
+
+  if (toDelete.length) {
+    const { error: delErr } = await supabase
+      .from("user_assistant")
+      .delete()
+      .eq("user_id", userId)
+      .in("assistant_id", toDelete);
+    if (delErr) throw delErr;
+  }
+}
+
 export async function createUser({
   organizationId,
   phoneNumber,
@@ -64,6 +101,7 @@ export async function createUser({
   name,
   email = null,
   assistantId,
+  assistantIds,
   teamsAadObjectId,
   teamsFromId,
   whatsappBsuid,
@@ -92,6 +130,14 @@ export async function createUser({
   }
 
   const created = Array.isArray(data) ? data[0] : data;
+
+  // O ativo já ficou atribuído pelo trigger; aqui entram os restantes.
+  if (Array.isArray(assistantIds) && assistantIds.length) {
+    await setUserAssistants(
+      created.id,
+      assistantId == null ? assistantIds : [...assistantIds, assistantId],
+    );
+  }
 
   if (whatsappBsuid || whatsappUsername || birdContactId) {
     return await updateUserWhatsappIdentity(created.id, {
@@ -139,8 +185,16 @@ export async function updateUser(userId, updates) {
   const patch = {};
   if (updates.name !== undefined) patch.name = updates.name;
   if (updates.email !== undefined) patch.email = updates.email;
-  if (updates.assistantId !== undefined) {
-    patch.assistant_id = updates.assistantId;
+
+  const assignment = resolveAssistantAssignment({
+    currentIds: currentUser.assistant_ids,
+    currentActiveId: currentUser.assistant_id,
+    assistantIds: updates.assistantIds,
+    assistantId: updates.assistantId,
+  });
+
+  if (assignment) {
+    patch.assistant_id = assignment.activeId;
   }
 
   if (updates.phoneNumber !== undefined) {
@@ -235,13 +289,17 @@ export async function updateUser(userId, updates) {
     }
   }
 
-  const nextAssistantId =
-    updates.assistantId !== undefined
-      ? (updates.assistantId ?? null)
-      : (currentUser.assistant_id ?? null);
+  // Depois de gravar o ativo, para o trigger não repor um que foi retirado.
+  if (assignment) {
+    await setUserAssistants(userId, assignment.ids);
+  }
+
+  const nextAssistantId = assignment
+    ? assignment.activeId
+    : (currentUser.assistant_id ?? null);
 
   const assistantChanged =
-    updates.assistantId !== undefined &&
+    Boolean(assignment) &&
     !sameNullableNumber(currentUser.assistant_id, nextAssistantId);
 
   if (assistantChanged) {
@@ -252,6 +310,15 @@ export async function updateUser(userId, updates) {
   }
 
   return await getUserById(userId);
+}
+
+// Último menu de troca de assistente enviado ao contacto (#132).
+export async function setUserAssistantMenu(userId, { messageId, sentAt }) {
+  const patch = { assistant_menu_sent_at: sentAt ?? null };
+  if (messageId !== undefined) patch.assistant_menu_message_id = messageId;
+
+  const { error } = await supabase.from("user").update(patch).eq("id", userId);
+  if (error) throw error;
 }
 
 export async function updateUserWhatsappIdentity(
@@ -320,10 +387,13 @@ export async function getUserById(userId) {
       name,
       email,
       assistant_id,
+      assistant_menu_message_id,
+      assistant_menu_sent_at,
       created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
-      )
+      ),
+      user_assistant:user_assistant ( assistant_id )
     `,
     )
     .eq("id", userId)
@@ -346,6 +416,9 @@ export async function getUserById(userId) {
     name: data.name,
     email: data.email,
     assistant_id: data.assistant_id,
+    assistant_ids: (data.user_assistant || []).map((ua) => ua.assistant_id),
+    assistant_menu_message_id: data.assistant_menu_message_id,
+    assistant_menu_sent_at: data.assistant_menu_sent_at,
     created_at: data.created_at,
     tags,
     tag_ids: tags.map((t) => t.id),
@@ -510,7 +583,8 @@ export async function getUsersInOrg(orgId, { page = 1, pageSize = 100 } = {}) {
       created_at,
       user_tag:user_tag (
         tag:tags ( id, name, slug, color )
-      )
+      ),
+      user_assistant:user_assistant ( assistant_id )
       `,
       { count: "exact" },
     )
@@ -535,6 +609,7 @@ export async function getUsersInOrg(orgId, { page = 1, pageSize = 100 } = {}) {
       whatsapp_identity_updated_at: u.whatsapp_identity_updated_at,
       email: u.email,
       assistant_id: u.assistant_id,
+      assistant_ids: (u.user_assistant || []).map((ua) => ua.assistant_id),
       teams_aad_object_id: u.teams_aad_object_id,
       teams_from_id: u.teams_from_id,
       created_at: u.created_at,
