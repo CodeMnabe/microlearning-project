@@ -10,7 +10,6 @@ import {
   Users,
   Bot,
   MessageSquare,
-  FileText,
   Settings,
   LogOut,
   LogIn,
@@ -18,6 +17,7 @@ import {
   SendHorizontal,
   CalendarClock,
   Link2,
+  ListChecks,
   Zap,
   BarChart3,
 } from "lucide-react";
@@ -249,19 +249,17 @@ export default function Navbar() {
                       <Link2 aria-hidden className={styles.subnavIcon} />
                       <span>{translation("Nav.trackedLinks")}</span>
                     </Link>
-                    {isAdmin && (
-                      <Link
-                        href="/templates"
-                        onClick={onNavClick("/templates")}
-                        className={`${styles.navItem} ${
-                          isActive("/templates") ? styles.active : ""
-                        }`}
-                      >
-                        <FileText aria-hidden className={styles.icon} />
-                        <span>{translation("Nav.templates")} </span>
-                        <span className={styles.smallText}>WhatsApp</span>
-                      </Link>
-                    )}
+
+                    <Link
+                      href="/broadcast/questions"
+                      onClick={onNavClick("/broadcast/questions")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/questions") ? styles.active : ""
+                      }`}
+                    >
+                      <ListChecks aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.questions")}</span>
+                    </Link>
                   </div>
                 )}
               </div>

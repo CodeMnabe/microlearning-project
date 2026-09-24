@@ -170,7 +170,6 @@ export default function AutomationsPage() {
   const [rules, setRules] = useState([]);
   const [runs, setRuns] = useState([]);
   const [assistants, setAssistants] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [materialized, setMaterialized] = useState([]);
 
   const [q, setQ] = useState("");
@@ -224,7 +223,6 @@ export default function AutomationsPage() {
           fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
           fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
           fetch(`/api/assistants?orgId=${orgId}`),
-          fetch(`/api/template/list?orgId=${orgId}`),
           fetch(
             `/api/organizations/messaging-feature?orgId=${orgId}&channel=whatsapp`,
           ),
@@ -235,7 +233,6 @@ export default function AutomationsPage() {
           runsRes,
           materializedRes,
           assistantsRes,
-          templatesRes,
           featureRes,
         ] = responses;
 
@@ -244,7 +241,6 @@ export default function AutomationsPage() {
           runsData,
           materializedData,
           assistantsData,
-          templatesData,
           featureData,
         ] = await Promise.all(
           responses.map((res) => res.json().catch(() => ({}))),
@@ -274,10 +270,6 @@ export default function AutomationsPage() {
           );
         }
 
-        if (!templatesRes.ok) {
-          throw new Error(templatesData?.error || "Failed to load templates.");
-        }
-
         if (!featureRes.ok) {
           throw new Error(
             featureData?.error || "Failed to load messaging feature settings.",
@@ -290,9 +282,6 @@ export default function AutomationsPage() {
           Array.isArray(materializedData?.items) ? materializedData.items : [],
         );
         setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
-        setTemplates(
-          Array.isArray(templatesData?.items) ? templatesData.items : [],
-        );
         setReadChainsEnabled(Boolean(featureData?.item?.read_chains_enabled));
 
         if (showSuccessAlert && typeof showAlertRef.current === "function") {
@@ -1069,7 +1058,6 @@ export default function AutomationsPage() {
         }}
         onSave={handleSaveRule}
         assistants={assistants}
-        whatsappTemplates={templates}
         initialRule={editingRule}
         saving={saving}
         triggerOptions={translatedTriggerOptions}

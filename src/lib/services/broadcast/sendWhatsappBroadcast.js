@@ -2,14 +2,23 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { toE164 } from "@/lib/whatsapp/E164";
 import { getUserById } from "@/lib/repos/user.repo";
-import { isWindowOpenForUser } from "@/lib/repos/messages.repo";
+import { createMessage, isWindowOpenForUser } from "@/lib/repos/messages.repo";
 import { createPendingOutreach } from "@/lib/repos/pendingOutreach.repo";
+import { createQuestion, getQuestionById } from "@/lib/repos/questions.repo";
+import { getLatestUserThreadForChannel } from "@/lib/repos/threads.repo";
+import {
+  buildQuizActions,
+  hasReplyButtons,
+  questionExpiryDate,
+} from "@/lib/whatsapp/question";
 import { BroadcastError, normalizeFiles, isImageType } from "./shared";
 import {
-  getWhatsappTemplateById,
-  getWhatsappTemplateByProviderId,
-} from "@/lib/repos/whatsappTemplates.repo";
+  buildOpeningTemplateParams,
+  getOpeningTemplateConfig,
+  sanitizeOpeningBody,
+} from "@/lib/whatsapp/openingTemplate";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
+import { parseQuestionOptions } from "./questionOptions";
 import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
@@ -20,29 +29,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );
-
-const NAME_KEYS = [
-  "name",
-  "nome",
-  "firstname",
-  "first_name",
-  "utilizador",
-  "user",
-];
-
-const COMPANY_KEYS = [
-  "empresa",
-  "company",
-  "organization",
-  "organização",
-  "organizacao",
-  "org",
-  "orgname",
-  "companyname",
-  "organizationname",
-];
-
-const isIn = (arr, k) => arr.includes(String(k || "").toLowerCase());
 
 function cleanText(value) {
   if (value === undefined || value === null) return null;
@@ -126,58 +112,12 @@ function getRecipientLabel(recipient, user, to) {
   );
 }
 
-function buildKvParamsForUser({
-  varKeys = [],
-  baseValues = [],
-  manualParams,
-  userName,
-  urlVar,
-  orgName,
-}) {
-  if (Array.isArray(varKeys) && varKeys.length) {
-    const pairs = varKeys.map((k, i) => {
-      let v = baseValues[i] ?? "";
-
-      if (isIn(NAME_KEYS, k)) v = userName ?? v ?? "";
-      if (isIn(COMPANY_KEYS, k)) v = orgName ?? v ?? "";
-
-      return `${k}=${v}`;
-    });
-
-    if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
-      pairs.push(`url=${urlVar}`);
-    }
-
-    return pairs;
-  }
-
-  const pairs = (manualParams || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((kv) => {
-      const [k, ...rest] = kv.split("=");
-      const key = (k || "").trim();
-
-      let value = (rest.join("=") || "").trim();
-
-      if (isIn(NAME_KEYS, key)) value = userName || value;
-      if (isIn(COMPANY_KEYS, key)) value = orgName || value;
-
-      return `${key}=${value}`;
-    });
-
-  if (urlVar && !pairs.some((p) => p.startsWith("url="))) {
-    pairs.push(`url=${urlVar}`);
-  }
-
-  return pairs;
-}
-
 async function loadOrgForWhatsapp(orgId) {
   const { data: org, error } = await supabaseAdmin
     .from("organization")
-    .select("id, name, channel_id, waba_namespace, default_phone_country_code")
+    .select(
+      "id, name, channel_id, waba_namespace, default_phone_country_code, whatsapp_opening_body",
+    )
     .eq("id", orgId)
     .single();
 
@@ -211,11 +151,18 @@ async function sendFreeform({
   contact,
   message,
   imageUrls,
+  actions = null,
 }) {
   const payload = {
     receiver: {
       contacts: [contact],
     },
+    /*
+     * Botões de resposta rápida (quiz, sondagem) vão em `actions`, tanto
+     * na mensagem de texto como na de imagem: verificado a 15-09-2026 com
+     * o Bird, a imagem, o texto e os botões chegam numa só mensagem e o
+     * toque responde ao id dela.
+     */
     body: imageUrls.length
       ? {
           type: "image",
@@ -224,9 +171,16 @@ async function sendFreeform({
               mediaUrl: u,
             })),
             ...(message ? { text: message } : {}),
+            ...(actions?.length ? { actions } : {}),
           },
         }
-      : { type: "text", text: { text: message } },
+      : {
+          type: "text",
+          text: {
+            text: message,
+            ...(actions?.length ? { actions } : {}),
+          },
+        },
   };
 
   const res = await fetch(endpoint, {
@@ -248,11 +202,15 @@ async function sendFreeform({
   };
 }
 
-async function sendTemplate({
+/**
+ * Envia o template de abertura. É sempre o mesmo projeto do Bird, na versão
+ * mais recente; só os valores das variáveis mudam por destinatário.
+ */
+async function sendOpeningTemplate({
   endpoint,
   accessKey,
   contact,
-  template,
+  config,
   kvPairs,
 }) {
   const payload = {
@@ -260,9 +218,9 @@ async function sendTemplate({
       contacts: [contact],
     },
     template: {
-      projectId: template.projectId,
+      projectId: config.projectId,
       version: "latest",
-      locale: template.languageCode || "pt-PT",
+      locale: config.locale,
       parameters: kvPairs.map((kv) => {
         const [k, ...rest] = kv.split("=");
 
@@ -294,6 +252,18 @@ async function sendTemplate({
   };
 }
 
+/**
+ * Envio WhatsApp em massa.
+ *
+ * - Contacto com a janela de 24h aberta: recebe a mensagem livre.
+ * - Contacto fora da janela: recebe o template de abertura e a mensagem
+ *   fica em espera até responder.
+ * - `openingOnly`: envia só o template de abertura, sem mensagem em espera.
+ * - `openingBody`: corpo do template só para este envio; sem ele usa-se o
+ *   corpo guardado na organização.
+ * - `question`: quiz com botões ou pergunta aberta em texto simples. Cria uma linha em
+ *   `question` e liga-lhe cada mensagem entregue (message.question_id).
+ */
 export async function sendWhatsappBroadcast(input = {}) {
   const {
     orgId,
@@ -301,13 +271,15 @@ export async function sendWhatsappBroadcast(input = {}) {
     files = [],
     imageUrls = [],
     recipients = [],
-    template = null,
-    whatsappTemplateId = null,
+    openingBody = null,
+    openingOnly = false,
     trackedLinks = [],
     scheduledBroadcastId = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
     chainMetadata = null,
+    question: rawQuestion = null,
+    questionId: existingQuestionId = null,
   } = input;
 
   if (!orgId) {
@@ -323,70 +295,57 @@ export async function sendWhatsappBroadcast(input = {}) {
     .filter((f) => isImageType(f.contentType))
     .map((f) => f.url);
 
-  let resolvedTemplate = null;
+  const sendOpeningOnly = Boolean(openingOnly);
 
-  if (template?.projectId && !whatsappTemplateId) {
-    const allowedTemplate = await getWhatsappTemplateByProviderId(
-      template.projectId,
-      orgId,
-    );
+  const parsed = parseQuestionOptions({ question: rawQuestion });
+  if (parsed.error) throw new BroadcastError(parsed.error, 400);
 
-    if (!allowedTemplate) {
-      throw new BroadcastError(
-        "WhatsApp template does not belong to this organization",
-        403,
-      );
+  /*
+   * Uma pergunta já criada (passo de uma cadeia de leitura, partilhada por
+   * todos os destinatários) chega por `questionId`; um envio normal traz a
+   * pergunta por definir em `question`.
+   */
+  let questionRow = null;
+  let question = parsed.question;
+
+  if (existingQuestionId) {
+    questionRow = await getQuestionById(existingQuestionId);
+
+    if (
+      !questionRow ||
+      Number(questionRow.organization_id) !== Number(orgId)
+    ) {
+      throw new BroadcastError("Question not found", 404);
     }
 
-    resolvedTemplate = {
-      projectId: String(allowedTemplate.provider_template_id || "").trim(),
-      languageCode: String(
-        template.languageCode || allowedTemplate.language || "pt-PT",
-      ).trim(),
-      varKeys: Array.isArray(template.varKeys) ? template.varKeys : [],
-      params: Array.isArray(template.params) ? template.params : [],
-      manualParams: String(template.manualParams || ""),
-      trackedUrlKey: cleanText(template.trackedUrlKey),
+    question = {
+      kind: questionRow.kind,
+      body: questionRow.body,
+      options: questionRow.options,
+      expectedAnswer: questionRow.expected_answer,
+      aiEvaluation: questionRow.ai_evaluation !== false,
     };
   }
 
-  if (!resolvedTemplate && whatsappTemplateId) {
-    const tpl = await getWhatsappTemplateById(whatsappTemplateId);
+  const quiz = question?.kind === "quiz" ? question : null;
+  const survey = question?.kind === "survey" ? question : null;
+  const withButtons = question && hasReplyButtons(question.kind);
 
-    if (!tpl) {
-      throw new BroadcastError("WhatsApp template not found", 400);
-    }
-
-    if (tpl.org_id != null && Number(tpl.org_id) !== Number(orgId)) {
-      throw new BroadcastError(
-        "WhatsApp template does not belong to this organization",
-        400,
-      );
-    }
-
-    const order = Array.isArray(tpl.components?.order)
-      ? tpl.components.order
-      : [];
-
-    resolvedTemplate = {
-      projectId: String(tpl.provider_template_id || "").trim(),
-      languageCode: String(tpl.language || "pt-PT").trim(),
-      varKeys: order,
-      params: order.map(() => ""),
-      manualParams: "",
-      trackedUrlKey: tpl.components?.urlButtonVarKey || null,
-    };
-  }
-
-  const hasTemplate = Boolean(resolvedTemplate?.projectId);
-  const hasInitialFreeformContent =
-    String(message || "").trim().length > 0 || onlyImageUrls.length > 0;
-
-  if (!hasInitialFreeformContent && !hasTemplate) {
+  if (question && sendOpeningOnly) {
     throw new BroadcastError(
-      "Missing message/images and no template provided",
+      "Uma pergunta não pode ser apenas uma abertura.",
       400,
     );
+  }
+
+  /* A pergunta é a própria mensagem. */
+  const messageText = question ? question.body : message;
+
+  const hasInitialFreeformContent =
+    String(messageText || "").trim().length > 0 || onlyImageUrls.length > 0;
+
+  if (!hasInitialFreeformContent && !sendOpeningOnly) {
+    throw new BroadcastError("Missing message/images", 400);
   }
 
   const org = await loadOrgForWhatsapp(orgId);
@@ -394,10 +353,51 @@ export async function sendWhatsappBroadcast(input = {}) {
     org.channel_id,
   );
 
+  const resolvedOpeningBody =
+    sanitizeOpeningBody(openingBody) || org.whatsapp_opening_body || null;
+
+  /*
+   * A configuração do template só é obrigatória quando há mesmo um template
+   * para enviar, por isso é lida uma única vez, na primeira necessidade.
+   */
+  let openingConfig = null;
+
+  function getOpeningConfig() {
+    if (!openingConfig) {
+      openingConfig = getOpeningTemplateConfig();
+    }
+
+    return openingConfig;
+  }
+
   const defaultCc =
     org.default_phone_country_code ||
     process.env.DEFAULT_COUNTRY_CODE ||
     "+351";
+
+  /*
+   * Uma linha em `question` por envio. Cada mensagem entregue fica ligada a
+   * ela, e um toque num botão chega com a referência a essa mensagem.
+   */
+  if (question && !questionRow) {
+    questionRow = await createQuestion({
+      organizationId: orgId,
+      kind: question.kind,
+      body: question.body,
+      options: withButtons ? question.options : null,
+      /* Na sondagem, feedback_correct guarda o agradecimento. */
+      feedbackCorrect: quiz?.feedbackCorrect ?? survey?.thanksText ?? null,
+      feedbackIncorrect: quiz?.feedbackIncorrect,
+      expectedAnswer: question.expectedAnswer,
+      aiEvaluation: withButtons ? true : question.aiEvaluation !== false,
+      scheduledBroadcastId,
+      sendGroupId,
+      createdByUserId,
+      expiresAt: questionExpiryDate(),
+    });
+  }
+
+  const quizActions = withButtons ? buildQuizActions(question.options) : null;
 
   async function resolveRecipient(rawRecipient) {
     const recipient = normalizeRecipient(rawRecipient);
@@ -453,15 +453,19 @@ export async function sendWhatsappBroadcast(input = {}) {
       label,
     } = resolved;
 
+    const base = {
+      recipient: label,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      userId: user?.id || recipient.userId || null,
+      userName: user?.name || recipient.name || null,
+    };
+
     if (!contact) {
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "none",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage: "",
         providerMessageId: null,
         ok: false,
@@ -484,7 +488,7 @@ export async function sendWhatsappBroadcast(input = {}) {
     });
 
     const messageWithTrackedLinks = replaceTrackedPlaceholders(
-      message,
+      messageText,
       resolvedTrackedLinks,
     );
 
@@ -501,16 +505,45 @@ export async function sendWhatsappBroadcast(input = {}) {
       String(resolvedMessage || "").trim().length > 0 ||
       onlyImageUrls.length > 0;
 
-    const windowOpen = user ? await isWindowOpenForUser(user.id) : false;
+    const windowOpen =
+      !sendOpeningOnly && user ? await isWindowOpenForUser(user.id) : false;
 
     if (windowOpen && hasResolvedFreeformContent) {
+      /* Uma pergunta com imagens vai numa só mensagem, com os botões. */
       const r = await sendFreeform({
         endpoint: messagesEndpoint,
         accessKey,
         contact,
         message: resolvedMessage,
         imageUrls: onlyImageUrls,
+        actions: quizActions,
       });
+
+      /*
+       * Regista a mensagem da pergunta. Numa cadeia de leitura é o passo
+       * que a regista, com os dados da cadeia.
+       */
+      if (r.ok && questionRow && user && !chainMetadata) {
+        /* Liga a pergunta à conversa do contacto, quando já existe. */
+        const thread = await getLatestUserThreadForChannel(
+          user.id,
+          "whatsapp",
+        ).catch(() => null);
+
+        await createMessage({
+          threadId: thread?.id ?? null,
+          userId: user.id,
+          organizationId: orgId,
+          assistantId: thread?.assistant_id ?? user.assistant_id ?? null,
+          channel: "whatsapp",
+          messageId: r.providerMessageId,
+          content: resolvedMessage,
+          role: "assistant",
+          deliveryStatus: "accepted",
+          scheduledBroadcastId,
+          questionId: questionRow.id,
+        });
+      }
 
       console.log("[WA freeform result]", {
         sendGroupId,
@@ -526,127 +559,101 @@ export async function sendWhatsappBroadcast(input = {}) {
       });
 
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "freeform",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage,
+        questionId: questionRow?.id ?? null,
         ...r,
       };
     }
 
-    if (hasTemplate) {
-      const orderedKeys = Array.isArray(resolvedTemplate.varKeys)
-        ? resolvedTemplate.varKeys
-        : [];
+    let config;
 
-      const baseValues = Array.isArray(resolvedTemplate.params)
-        ? resolvedTemplate.params
-        : [];
-
-      let trackedUrlForTemplate = null;
-
-      if (resolvedTemplate.trackedUrlKey) {
-        const found = resolvedTrackedLinks.find(
-          (x) => x.key === resolvedTemplate.trackedUrlKey,
-        );
-        trackedUrlForTemplate = found?.trackedUrl || null;
-      }
-
-      const kvPairs = buildKvParamsForUser({
-        varKeys: orderedKeys,
-        baseValues,
-        manualParams: resolvedTemplate.manualParams,
-        userName: user?.name || "",
-        orgName: org?.name || "",
-        urlVar: trackedUrlForTemplate,
-      });
-
-      console.log("[WA template final]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        orderedKeys,
-        baseValues,
-        trackedUrlForTemplate,
-        kvPairs,
-        resolvedTemplate,
-      });
-
-      const r = await sendTemplate({
-        endpoint: messagesEndpoint,
-        accessKey,
-        contact,
-        template: resolvedTemplate,
-        kvPairs,
-      });
-
-      console.log("[WA template result]", {
-        sendGroupId,
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
-        contact,
-        ok: r.ok,
-        status: r.status,
-        providerMessageId: r.providerMessageId,
-        data: r.data,
-      });
-
-      if (r.ok && user && hasResolvedFreeformContent) {
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        const templateMessageId = r.providerMessageId;
-
-        await createPendingOutreach({
-          orgId,
-          userId: user.id,
-          payload: {
-            message: resolvedMessage,
-            imageUrls: onlyImageUrls,
-          },
-          expiresAt,
-          templateMessageId,
-          messageChainId: chainMetadata?.messageChainId || null,
-          messageChainStepId: chainMetadata?.messageChainStepId || null,
-          messageChainRecipientId:
-            chainMetadata?.messageChainRecipientId || null,
-          messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
-        });
-      }
-
+    try {
+      config = getOpeningConfig();
+    } catch (err) {
       return {
-        recipient: label,
-        to,
-        whatsappBsuid,
-        birdContactId,
+        ...base,
         kind: "template",
-        userId: user?.id || recipient.userId || null,
-        userName: user?.name || recipient.name || null,
         resolvedMessage,
-        ...r,
+        providerMessageId: null,
+        ok: false,
+        status: 500,
+        data: { error: err.message },
       };
     }
 
-    return {
+    const kvPairs = buildOpeningTemplateParams({
+      userName: user?.name || "",
+      orgName: org?.name || "",
+      body: resolvedOpeningBody,
+    });
+
+    console.log("[WA template final]", {
+      sendGroupId,
       recipient: label,
       to,
       whatsappBsuid,
       birdContactId,
-      kind: "freeform",
-      userId: user?.id || recipient.userId || null,
-      userName: user?.name || recipient.name || null,
+      contact,
+      projectId: config.projectId,
+      kvPairs,
+    });
+
+    const r = await sendOpeningTemplate({
+      endpoint: messagesEndpoint,
+      accessKey,
+      contact,
+      config,
+      kvPairs,
+    });
+
+    console.log("[WA template result]", {
+      sendGroupId,
+      recipient: label,
+      to,
+      whatsappBsuid,
+      birdContactId,
+      contact,
+      ok: r.ok,
+      status: r.status,
+      providerMessageId: r.providerMessageId,
+      data: r.data,
+    });
+
+    if (r.ok && user && !sendOpeningOnly && hasResolvedFreeformContent) {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const templateMessageId = r.providerMessageId;
+
+      await createPendingOutreach({
+        orgId,
+        userId: user.id,
+        payload: {
+          message: resolvedMessage,
+          imageUrls: onlyImageUrls,
+          ...(questionRow
+            ? {
+                type: question.kind,
+                questionId: questionRow.id,
+                actions: quizActions,
+              }
+            : {}),
+        },
+        expiresAt,
+        templateMessageId,
+        messageChainId: chainMetadata?.messageChainId || null,
+        messageChainStepId: chainMetadata?.messageChainStepId || null,
+        messageChainRecipientId: chainMetadata?.messageChainRecipientId || null,
+        messageChainStepIndex: chainMetadata?.messageChainStepIndex || null,
+      });
+    }
+
+    return {
+      ...base,
+      kind: "template",
       resolvedMessage,
-      providerMessageId: null,
-      ok: false,
-      status: 412,
-      data: { error: "24h window closed and no template provided." },
+      questionId: questionRow?.id ?? null,
+      ...r,
     };
   }
 
@@ -687,11 +694,16 @@ export async function sendWhatsappBroadcast(input = {}) {
 
   const okCount = results.filter((r) => r.ok).length;
   const failedCount = results.length - okCount;
+  const queuedCount = results.filter(
+    (r) => r.ok && r.kind === "template" && !sendOpeningOnly,
+  ).length;
 
   return {
     sendGroupId,
+    questionId: questionRow?.id ?? null,
     ok: okCount,
     failed: failedCount,
+    queued: queuedCount,
     results,
     error:
       okCount === 0
@@ -700,8 +712,8 @@ export async function sendWhatsappBroadcast(input = {}) {
           "WhatsApp broadcast failed for all recipients."
         : null,
     note:
-      hasTemplate && hasInitialFreeformContent
-        ? "If a contact was outside the 24h window, we sent the selected template and queued your message to be delivered on their first reply."
+      queuedCount > 0
+        ? "Some contacts were outside the 24h window: they received the opening message and your message will be delivered on their first reply."
         : null,
   };
 }

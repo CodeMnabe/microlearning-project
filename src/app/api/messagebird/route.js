@@ -4,7 +4,7 @@ WhatsApp inbound webhook + read receipt webhook
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import crypto from "crypto";
 
 import {
@@ -16,6 +16,7 @@ import {
 
 import {
   createThread,
+  getLatestUserThreadForChannel,
   getUserThreadForChannel,
   setThreadConversationId,
 } from "@/lib/repos/threads.repo";
@@ -55,6 +56,8 @@ import {
 import { splitE164 } from "@/lib/whatsapp/E164";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
+
+import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
 
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 
@@ -678,39 +681,32 @@ export async function POST(req) {
     });
   }
 
-  try {
-    await handleEvent(rawBody);
+  /*
+   * O Bird espera 15 segundos pela resposta e depois dá a entrega como
+   * falhada e repete-a. O trabalho (Supabase, OpenAI, envios) pode demorar
+   * mais do que isso, por isso respondemos já e continuamos em segundo
+   * plano. Erros ficam nos logs, como antes; a resposta é sempre 200 para o
+   * Bird não repetir o evento e gerar respostas duplicadas da IA.
+   */
+  after(async () => {
+    try {
+      await handleEvent(rawBody);
+    } catch (err) {
+      console.error("MessageBird webhook failed", {
+        message: err?.message,
 
-    return NextResponse.json({
-      ok: true,
-    });
-  } catch (err) {
-    console.error("MessageBird webhook failed", {
-      message: err?.message,
+        status: err?.status,
 
-      status: err?.status,
+        type: err?.type,
 
-      type: err?.type,
+        request_id: err?.request_id,
+      });
+    }
+  });
 
-      request_id: err?.request_id,
-    });
-
-    /*
-     * Return 200 so Bird doesn't continually
-     * retry the same event and potentially
-     * produce duplicate AI messages.
-     */
-    return NextResponse.json(
-      {
-        ok: false,
-
-        error: err?.message || String(err),
-      },
-      {
-        status: 200,
-      },
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+  });
 }
 
 /* =========================================================
@@ -906,6 +902,119 @@ async function handleEvent(rawJSON) {
     throw new Error(
       "User organization does not match webhook channel organization",
     );
+  }
+
+  /*
+   * =========================================================
+   * QUIZ / PERGUNTA
+   * =========================================================
+   *
+   * Um toque num botão de quiz (ou o texto de uma
+   * opção) regista a resposta e envia o feedback.
+   * Não passa pelo assistente. Só a primeira
+   * resposta de cada contacto conta.
+   */
+  const questionResult = await handleQuestionReply({
+    user,
+
+    payload: evt.payload,
+
+    inboundMsgId,
+
+    contactId,
+
+    organization,
+
+    sendText: (replyText) =>
+      sendBirdMessage({
+        channelId: normalizeId(organization.channel_id) || sentChannelId,
+
+        contactId,
+
+        phoneNumber: identity.phoneNumber || user.phone_number,
+
+        whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
+
+        body: {
+          type: "text",
+
+          text: {
+            text: replyText,
+          },
+        },
+      }),
+
+    resolveThread: async ({ question }) => {
+      try {
+        const assistant = await getAssistantFromUser(user, organization);
+
+        if (!assistant) return null;
+
+        let existingThread = await getUserThreadForChannel({
+          userId: user.id,
+
+          assistantId: assistant.id,
+
+          channel: "whatsapp",
+        });
+
+        let conversationId = existingThread?.openai_conversation_id ?? null;
+        if (question.kind === "open" && !conversationId) {
+          try {
+            const history = existingThread
+              ? buildConversationHistoryItems(await getMessagesInThread(existingThread.id))
+              : [];
+            const conversation = await createConversation(
+              {
+                assistantId: assistant.id,
+                organizationId: user.organization_id,
+                userId: user.id,
+                channel: "whatsapp",
+                scope: "user",
+              },
+              history,
+            );
+            conversationId = conversation.id;
+            existingThread = existingThread
+              ? await setThreadConversationId(existingThread.id, conversationId)
+              : await createThread({
+                  userId: user.id,
+                  assistantId: assistant.id,
+                  openAiConversationId: conversationId,
+                  channel: "whatsapp",
+                  scope: "user",
+                });
+          } catch (error) {
+            console.warn("Falha ao preparar a conversa da pergunta", {
+              userId: user.id,
+              error: error.message,
+            });
+            conversationId = null;
+          }
+        }
+
+        return {
+          threadId: existingThread?.id ?? null,
+          assistantId: assistant.id,
+          assistant,
+          conversationId,
+        };
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  if (questionResult.handled) {
+    console.log("Question reply handled", {
+      userId: user.id,
+
+      inboundMsgId,
+
+      ...questionResult,
+    });
+
+    return;
   }
 
   /*
@@ -1207,8 +1316,17 @@ async function handlePendingMessages({
   pendingMessages,
   sentChannelId,
 }) {
+  /*
+   * A conversa do contacto, para a resposta e as mensagens entregues
+   * aparecerem no histórico. Pode não existir ainda.
+   */
+  const thread = await getLatestUserThreadForChannel(
+    user.id,
+    "whatsapp",
+  ).catch(() => null);
+
   await createMessage({
-    threadId: null,
+    threadId: thread?.id ?? null,
 
     userId: user.id,
 
@@ -1245,6 +1363,13 @@ async function handlePendingMessages({
 
     const hasText = Boolean(String(p.message || "").trim());
 
+    /*
+     * Quiz em espera: a mensagem leva os botões
+     * de resposta rápida.
+     */
+    const actions =
+      Array.isArray(p.actions) && p.actions.length > 0 ? p.actions : null;
+
     if (!hasImages && !hasText) {
       console.warn("Skipping empty pending outreach", {
         pendingOutreachId: row.id,
@@ -1255,6 +1380,11 @@ async function handlePendingMessages({
       continue;
     }
 
+    /*
+     * Os botões vão em `actions` também na mensagem de imagem: o Bird
+     * entrega imagem, texto e botões numa só mensagem (verificado a
+     * 15-09-2026).
+     */
     const body = hasImages
       ? {
           type: "image",
@@ -1269,6 +1399,8 @@ async function handlePendingMessages({
                   text: p.message,
                 }
               : {}),
+
+            ...(actions ? { actions } : {}),
           },
         }
       : {
@@ -1276,6 +1408,8 @@ async function handlePendingMessages({
 
           text: {
             text: p.message || "",
+
+            ...(actions ? { actions } : {}),
           },
         };
 
@@ -1335,13 +1469,13 @@ async function handlePendingMessages({
       : null;
 
     await createMessage({
-      threadId: null,
+      threadId: thread?.id ?? null,
 
       userId: user.id,
 
       organizationId: user.organization_id,
 
-      assistantId: user.assistant_id ?? null,
+      assistantId: thread?.assistant_id ?? user.assistant_id ?? null,
 
       channel: "whatsapp",
 
@@ -1354,6 +1488,8 @@ async function handlePendingMessages({
       role: "assistant",
 
       deliveryStatus: "accepted",
+
+      questionId: p.questionId ?? null,
 
       messageChainId: chainContext?.chain.id || null,
 
