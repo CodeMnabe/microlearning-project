@@ -50,6 +50,8 @@ import {
 
 import {
   getAllPendingOutreachByUser,
+  claimPendingOutreach,
+  releasePendingOutreach,
   markPendingOutreachReplied,
 } from "@/lib/repos/pendingOutreach.repo";
 
@@ -1415,6 +1417,7 @@ async function handlePendingMessages({
     normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
   for (const row of pendingMessages) {
+    if (!(await claimPendingOutreach(row.id, inboundMsgId))) continue;
     const p = safePayload(row.payload);
 
     const hasImages = Array.isArray(p.imageUrls) && p.imageUrls.length > 0;
@@ -1492,6 +1495,7 @@ async function handlePendingMessages({
         data: sendRes.data,
       });
 
+      await releasePendingOutreach(row.id);
       continue;
     }
 
