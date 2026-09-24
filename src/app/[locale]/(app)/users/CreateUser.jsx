@@ -127,49 +127,42 @@ export default function CreateUserModal({
       }}
     >
       <div
-        className={`${styles.modalContent} ${stateClass}`}
+        className={`${styles.modalContent} ${styles.modalContentForm} ${stateClass}`}
         role="dialog"
         aria-modal="true"
       >
-        <h3 className={styles.modalTitle}>
-          {translation("CreateUserModal.title")}
-        </h3>
+        <div className={styles.formHead}>
+          <h3>{translation("CreateUserModal.title")}</h3>
+        </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label htmlFor="nome">
-              {translation("CreateUserModal.userName")}
-            </label>
-            <input
-              id="nome"
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className={styles.formShell}>
+        <div className={styles.formBody}>
+          <div className={styles.formCol}>
+            <div className={styles.formGroup}>
+              <label htmlFor="nome">
+                {translation("CreateUserModal.userName")}
+              </label>
+              <input
+                id="nome"
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                required
+              />
+            </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="email">
-              {translation("CreateUserModal.email")}
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="email">
+                {translation("CreateUserModal.email")}
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-          <AssistantsField
-            assistants={assistants}
-            assistantIds={assistantIds}
-            activeAssistantId={assistantId}
-            onChange={(next) => {
-              setAssistantIds(next.assistantIds);
-              setAssistantId(next.activeAssistantId);
-            }}
-          />
 
           {/* ───── Canais de Comunicação (accordion) ───── */}
           <div className={styles.sectionDivider}>
@@ -293,16 +286,33 @@ export default function CreateUserModal({
               )}
             </div>
           </div>
-          {/* ───────────────────────── */}
+          </div>
 
-          <div className={styles.buttonGroup}>
-            <button type="submit" disabled={isSubmitting}>
+          <div className={styles.formCol}>
+          <AssistantsField
+            assistants={assistants}
+            assistantIds={assistantIds}
+            activeAssistantId={assistantId}
+            onChange={(next) => {
+              setAssistantIds(next.assistantIds);
+              setAssistantId(next.activeAssistantId);
+            }}
+          />
+          </div>
+        </div>
+
+          <div className={`${styles.buttonGroup} ${styles.formFoot}`}>
+            <button type="button" onClick={onClose} disabled={isSubmitting}>
+              {translation("CreateUserModal.cancel")}
+            </button>
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={isSubmitting}
+            >
               {isSubmitting
                 ? translation("CreateUserModal.creating")
                 : translation("CreateUserModal.create")}
-            </button>
-            <button type="button" onClick={onClose} disabled={isSubmitting}>
-              {translation("CreateUserModal.cancel")}
             </button>
           </div>
         </form>

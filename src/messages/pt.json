@@ -1077,10 +1077,15 @@
     "assistants": "Assistentes",
     "empty": "Sem resultados."
   },
+  "CheckList": {
+    "selected": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "search": "Procurar",
+    "active": "Ativo",
+    "makeActive": "Tornar ativo",
+    "noResults": "Sem resultados."
+  },
   "UserAssistants": {
     "assigned": "Assistentes",
-    "active": "Assistente ativo",
-    "activeHint": "É o que responde às mensagens. O utilizador pode trocar na conversa do WhatsApp.",
     "none": "Sem assistentes disponíveis.",
     "extraTitle": "{count} assistentes atribuídos"
   },
@@ -1116,15 +1121,26 @@
     "communicationChannels": "Canais de Comunicação"
   },
   "ManageTagsModal": {
+    "nameTaken": "Já existe uma tag com esse nome.",
+    "saveFailed": "Não foi possível guardar. Tenta outra vez.",
     "title": "Gerir Tags",
     "loading": "A carregar…",
     "none": "Sem tags.",
     "name": "Nome:",
     "placeholder": "Grupo 1",
-    "save": "Guardar Alterações",
+    "save": "Guardar",
     "add": "Adicionar",
     "cancel": "Cancelar",
-    "removeLabel": "Remover {name}"
+    "removeLabel": "Remover {name}",
+    "newLabel": "Nova tag",
+    "listLabel": "Tags",
+    "search": "Procurar",
+    "rename": "Mudar nome",
+    "delete": "Eliminar",
+    "close": "Fechar",
+    "noResults": "Sem resultados.",
+    "confirmDeleteTitle": "Eliminar a tag {name}?",
+    "confirmDeleteMessage": "A tag sai de todos os utilizadores que a têm."
   },
 
   "Options": {
