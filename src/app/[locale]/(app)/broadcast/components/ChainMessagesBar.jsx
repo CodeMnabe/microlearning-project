@@ -11,12 +11,20 @@ export default function ChainMessagesBar({
   addChainStep,
   duplicateChainStep,
   removeChainStep,
-  hasFallbackTemplate,
+  activeStepKind = "message",
+  onChangeStepKind,
   translation,
 }) {
   if (!enabled && !chainMode) {
     return null;
   }
+
+  const stepKinds = [
+    ["message", "Broadcast.broadcastChain.stepKindMessage"],
+    ["quiz", "Broadcast.broadcastChain.stepKindQuiz"],
+    ["survey", "Broadcast.broadcastChain.stepKindSurvey"],
+    ["open", "Broadcast.broadcastChain.stepKindOpen"],
+  ];
 
   return (
     <div className={styles.chainBox}>
@@ -56,12 +64,6 @@ export default function ChainMessagesBar({
       {!enabled && chainMode && (
         <div className={styles.chainWarning}>
           {translation("Broadcast.broadcastChain.chainOff")}
-        </div>
-      )}
-
-      {chainMode && !hasFallbackTemplate && (
-        <div className={styles.chainWarning}>
-          {translation("Broadcast.broadcastChain.chainTemplate")}
         </div>
       )}
 
@@ -151,6 +153,33 @@ export default function ChainMessagesBar({
               {translation("Broadcast.broadcastChain.chainMessages")}
             </span>
           </div>
+
+          {/* Tipo do passo ativo: mensagem livre, quiz ou pergunta aberta. */}
+          {onChangeStepKind ? (
+            <div
+              className={styles.chainKindRow}
+              role="radiogroup"
+              aria-label={translation("Broadcast.broadcastChain.stepKind")}
+            >
+              <span className={styles.chainKindLabel}>
+                {translation("Broadcast.broadcastChain.stepKind")}
+              </span>
+              {stepKinds.map(([kind, labelKey]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  role="radio"
+                  aria-checked={activeStepKind === kind}
+                  className={`${styles.chainStepTab} ${
+                    activeStepKind === kind ? styles.chainStepTabActive : ""
+                  }`}
+                  onClick={() => onChangeStepKind(kind)}
+                >
+                  {translation(labelKey)}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </>
       )}
     </div>

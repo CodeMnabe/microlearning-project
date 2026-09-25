@@ -1,0 +1,184 @@
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b4a66;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--ui-muted);
+}
+
+.box {
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.search {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border);
+  background: #fff;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.search::placeholder {
+  color: var(--ui-muted);
+}
+
+/* Cerca de cinco linhas à vista; o resto com scroll. */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 212px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d5dfe9 transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+}
+
+.row:hover {
+  background: var(--ui-pill);
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tick {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid #c9d6e4;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.tick svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.row:hover .tick,
+.checkbox:focus-visible + .tick {
+  border-color: var(--brand-1, #30a9e0);
+}
+
+.rowChecked .tick {
+  background: var(--brand-1, #30a9e0);
+  border-color: var(--brand-1, #30a9e0);
+}
+
+.rowChecked .tick svg {
+  opacity: 1;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #52607a;
+}
+
+.rowChecked .name {
+  color: #0f1c3f;
+  font-weight: 500;
+}
+
+.activeBadge {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1679a8;
+  background: #e6f5fc;
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+/* Só aparece ao passar na linha; em ecrãs tácteis está sempre visível. */
+.makeActive {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 3px 4px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ui-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.row:hover .makeActive,
+.makeActive:focus-visible {
+  opacity: 1;
+}
+
+.makeActive:hover {
+  color: #0f1c3f;
+  background: #e8eef5;
+}
+
+@media (hover: none) {
+  .makeActive {
+    opacity: 1;
+  }
+}
+
+.empty {
+  padding: 10px 8px;
+  font-size: 14px;
+  color: var(--ui-muted);
+}

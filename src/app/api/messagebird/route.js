@@ -4,8 +4,14 @@ WhatsApp inbound webhook + read receipt webhook
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import crypto from "crypto";
+import {
+  recordWebhookEvent,
+  markWebhookEventProcessing,
+  markWebhookEventDone,
+  markWebhookEventFailed,
+} from "@/lib/repos/webhookEvents.repo";
 
 import {
   getUserByNumber,
@@ -16,6 +22,7 @@ import {
 
 import {
   createThread,
+  getLatestUserThreadForChannel,
   getUserThreadForChannel,
   setThreadConversationId,
 } from "@/lib/repos/threads.repo";
@@ -43,6 +50,8 @@ import {
 
 import {
   getAllPendingOutreachByUser,
+  claimPendingOutreach,
+  releasePendingOutreach,
   markPendingOutreachReplied,
 } from "@/lib/repos/pendingOutreach.repo";
 
@@ -55,6 +64,9 @@ import {
 import { splitE164 } from "@/lib/whatsapp/E164";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
+
+import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
+import { handleAssistantSwitch } from "@/lib/services/assistants/handleAssistantSwitch";
 
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 
@@ -678,39 +690,84 @@ export async function POST(req) {
     });
   }
 
+  let evt;
   try {
-    await handleEvent(rawBody);
+    evt = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ ok: true });
+  }
 
-    return NextResponse.json({
-      ok: true,
+  const payload = evt?.payload;
+  let eventKey;
+  if (evt?.event === "whatsapp.inbound" && payload?.id) {
+    eventKey = `inbound:${payload.id}`;
+  } else if (
+    evt?.event === "whatsapp.interaction" &&
+    payload?.type === "read" &&
+    payload?.messageId
+  ) {
+    eventKey = `read:${payload.messageId}`;
+  } else {
+    eventKey = `raw:${crypto.createHash("sha256").update(rawBody).digest("hex")}`;
+  }
+
+  let recorded;
+  try {
+    recorded = await recordWebhookEvent({
+      eventKey,
+      eventType: evt?.event,
+      payload: evt,
     });
   } catch (err) {
-    console.error("MessageBird webhook failed", {
-      message: err?.message,
-
-      status: err?.status,
-
-      type: err?.type,
-
-      request_id: err?.request_id,
-    });
-
-    /*
-     * Return 200 so Bird doesn't continually
-     * retry the same event and potentially
-     * produce duplicate AI messages.
-     */
-    return NextResponse.json(
-      {
-        ok: false,
-
-        error: err?.message || String(err),
-      },
-      {
-        status: 200,
-      },
-    );
+    console.error("Falha ao gravar evento do webhook do Bird", err);
+    return NextResponse.json({ error: "temporarily unavailable" }, { status: 503 });
   }
+
+  if (!recorded.inserted) {
+    console.log("Evento repetido do Bird ignorado", eventKey);
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
+  const { id } = recorded;
+  /*
+   * O evento fica gravado antes do 200; repetições não voltam a ser processadas.
+   * Se a gravação falhar, devolvemos 503 para o Bird repetir. O processamento
+   * continua em segundo plano, com estado registado e falhas de estado só em log.
+   */
+  after(async () => {
+    try {
+      await markWebhookEventProcessing(id);
+    } catch (err) {
+      console.error("Falha ao marcar evento do Bird em processamento", err);
+    }
+    try {
+      await handleEvent(rawBody);
+      try {
+        await markWebhookEventDone(id);
+      } catch (err) {
+        console.error("Falha ao marcar evento do Bird como concluído", err);
+      }
+    } catch (err) {
+      console.error("MessageBird webhook failed", {
+        message: err?.message,
+
+        status: err?.status,
+
+        type: err?.type,
+
+        request_id: err?.request_id,
+      });
+      try {
+        await markWebhookEventFailed(id, err?.message);
+      } catch (stateError) {
+        console.error("Falha ao marcar evento do Bird como falhado", stateError);
+      }
+    }
+  });
+
+  return NextResponse.json({
+    ok: true,
+  });
 }
 
 /* =========================================================
@@ -906,6 +963,197 @@ async function handleEvent(rawJSON) {
     throw new Error(
       "User organization does not match webhook channel organization",
     );
+  }
+
+  /*
+   * =========================================================
+   * TROCA DE ASSISTENTE
+   * =========================================================
+   *
+   * Quem tem vários assistentes pede a lista com uma
+   * palavra-chave e escolhe com quem quer falar. Vem
+   * antes das perguntas para a palavra-chave não contar
+   * como resposta a uma pergunta aberta.
+   */
+  const switchResult = await handleAssistantSwitch({
+    user,
+
+    payload: evt.payload,
+
+    inboundMsgId,
+
+    contactId,
+
+    send: ({ text: menuText, actions, list }) =>
+      sendBirdMessage({
+        channelId: normalizeId(organization.channel_id) || sentChannelId,
+
+        contactId,
+
+        phoneNumber: identity.phoneNumber || user.phone_number,
+
+        whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
+
+        body: list
+          ? {
+              type: "list",
+
+              list: {
+                text: menuText,
+
+                items: list.items,
+
+                metadata: { button: { label: list.buttonLabel } },
+              },
+            }
+          : {
+              type: "text",
+
+              text: {
+                text: menuText,
+
+                ...(actions?.length ? { actions } : {}),
+              },
+            },
+      }),
+  });
+
+  if (switchResult.handled) {
+    console.log("Assistant switch handled", {
+      userId: user.id,
+
+      inboundMsgId,
+
+      ...switchResult,
+    });
+
+    return;
+  }
+
+  /*
+   * =========================================================
+   * QUIZ / PERGUNTA
+   * =========================================================
+   *
+   * Um toque num botão de quiz (ou o texto de uma
+   * opção) regista a resposta e envia o feedback.
+   * Não passa pelo assistente. Só a primeira
+   * resposta de cada contacto conta.
+   */
+  const questionResult = await handleQuestionReply({
+    user,
+
+    payload: evt.payload,
+
+    inboundMsgId,
+
+    contactId,
+
+    organization,
+
+    sendText: (replyText) =>
+      sendBirdMessage({
+        channelId: normalizeId(organization.channel_id) || sentChannelId,
+
+        contactId,
+
+        phoneNumber: identity.phoneNumber || user.phone_number,
+
+        whatsappBsuid: identity.whatsappBsuid || user.whatsapp_bsuid,
+
+        body: {
+          type: "text",
+
+          text: {
+            text: replyText,
+          },
+        },
+      }),
+
+    resolveThread: async ({ question, message }) => {
+      try {
+        /*
+         * A resposta fica com o assistente com que a pergunta foi
+         * enviada, mesmo que o contacto tenha trocado entretanto.
+         */
+        const sentWithAssistantId = (user.assistant_ids || [])
+          .map(Number)
+          .includes(Number(message?.assistant_id))
+          ? message.assistant_id
+          : user.assistant_id;
+
+        const assistant = await getAssistantFromUser(
+          { ...user, assistant_id: sentWithAssistantId },
+          organization,
+        );
+
+        if (!assistant) return null;
+
+        let existingThread = await getUserThreadForChannel({
+          userId: user.id,
+
+          assistantId: assistant.id,
+
+          channel: "whatsapp",
+        });
+
+        let conversationId = existingThread?.openai_conversation_id ?? null;
+        if (question.kind === "open" && !conversationId) {
+          try {
+            const history = existingThread
+              ? buildConversationHistoryItems(await getMessagesInThread(existingThread.id))
+              : [];
+            const conversation = await createConversation(
+              {
+                assistantId: assistant.id,
+                organizationId: user.organization_id,
+                userId: user.id,
+                channel: "whatsapp",
+                scope: "user",
+              },
+              history,
+            );
+            conversationId = conversation.id;
+            existingThread = existingThread
+              ? await setThreadConversationId(existingThread.id, conversationId)
+              : await createThread({
+                  userId: user.id,
+                  assistantId: assistant.id,
+                  openAiConversationId: conversationId,
+                  channel: "whatsapp",
+                  scope: "user",
+                });
+          } catch (error) {
+            console.warn("Falha ao preparar a conversa da pergunta", {
+              userId: user.id,
+              error: error.message,
+            });
+            conversationId = null;
+          }
+        }
+
+        return {
+          threadId: existingThread?.id ?? null,
+          assistantId: assistant.id,
+          assistant,
+          conversationId,
+        };
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  if (questionResult.handled) {
+    console.log("Question reply handled", {
+      userId: user.id,
+
+      inboundMsgId,
+
+      ...questionResult,
+    });
+
+    return;
   }
 
   /*
@@ -1207,8 +1455,17 @@ async function handlePendingMessages({
   pendingMessages,
   sentChannelId,
 }) {
+  /*
+   * A conversa do contacto, para a resposta e as mensagens entregues
+   * aparecerem no histórico. Pode não existir ainda.
+   */
+  const thread = await getLatestUserThreadForChannel(
+    user.id,
+    "whatsapp",
+  ).catch(() => null);
+
   await createMessage({
-    threadId: null,
+    threadId: thread?.id ?? null,
 
     userId: user.id,
 
@@ -1239,11 +1496,19 @@ async function handlePendingMessages({
     normalizeId(organization.channel_id) || normalizeId(sentChannelId);
 
   for (const row of pendingMessages) {
+    if (!(await claimPendingOutreach(row.id, inboundMsgId))) continue;
     const p = safePayload(row.payload);
 
     const hasImages = Array.isArray(p.imageUrls) && p.imageUrls.length > 0;
 
     const hasText = Boolean(String(p.message || "").trim());
+
+    /*
+     * Quiz em espera: a mensagem leva os botões
+     * de resposta rápida.
+     */
+    const actions =
+      Array.isArray(p.actions) && p.actions.length > 0 ? p.actions : null;
 
     if (!hasImages && !hasText) {
       console.warn("Skipping empty pending outreach", {
@@ -1255,6 +1520,11 @@ async function handlePendingMessages({
       continue;
     }
 
+    /*
+     * Os botões vão em `actions` também na mensagem de imagem: o Bird
+     * entrega imagem, texto e botões numa só mensagem (verificado a
+     * 15-09-2026).
+     */
     const body = hasImages
       ? {
           type: "image",
@@ -1269,6 +1539,8 @@ async function handlePendingMessages({
                   text: p.message,
                 }
               : {}),
+
+            ...(actions ? { actions } : {}),
           },
         }
       : {
@@ -1276,6 +1548,8 @@ async function handlePendingMessages({
 
           text: {
             text: p.message || "",
+
+            ...(actions ? { actions } : {}),
           },
         };
 
@@ -1300,6 +1574,7 @@ async function handlePendingMessages({
         data: sendRes.data,
       });
 
+      await releasePendingOutreach(row.id);
       continue;
     }
 
@@ -1335,13 +1610,13 @@ async function handlePendingMessages({
       : null;
 
     await createMessage({
-      threadId: null,
+      threadId: thread?.id ?? null,
 
       userId: user.id,
 
       organizationId: user.organization_id,
 
-      assistantId: user.assistant_id ?? null,
+      assistantId: thread?.assistant_id ?? user.assistant_id ?? null,
 
       channel: "whatsapp",
 
@@ -1354,6 +1629,8 @@ async function handlePendingMessages({
       role: "assistant",
 
       deliveryStatus: "accepted",
+
+      questionId: p.questionId ?? null,
 
       messageChainId: chainContext?.chain.id || null,
 

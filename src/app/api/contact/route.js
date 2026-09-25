@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createContact } from "@/lib/repos/contact.repo";
+import { createContact, hasRecentContactFromEmail } from "@/lib/repos/contact.repo";
 
 function isValidEmail(email = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -7,6 +7,10 @@ function isValidEmail(email = "") {
 
 export async function POST(request) {
   try {
+    const contentLength = request.headers.get("content-length");
+    if (contentLength !== null && Number(contentLength) > 16384) {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
     const body = await request.json();
 
     const name = String(body?.name || "").trim();
@@ -21,10 +25,26 @@ export async function POST(request) {
       );
     }
 
+    if (body.website) {
+      return NextResponse.json({ ok: true });
+    }
+
+    if (name.length > 120 || email.length > 254 || company.length > 120 || message.length > 4000) {
+      return NextResponse.json({ error: "Field too long" }, { status: 400 });
+    }
+
     if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: "Invalid email address." },
         { status: 400 },
+      );
+    }
+
+    const sinceIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    if (await hasRecentContactFromEmail(email, sinceIso)) {
+      return NextResponse.json(
+        { error: "Please wait before sending another message." },
+        { status: 429 },
       );
     }
 

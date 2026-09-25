@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
 import {
   getTrackedLinkByToken,
   createTrackedLinkEvent,
@@ -38,6 +39,13 @@ export async function GET(req, { params }) {
     if (!trackedLink) {
       return NextResponse.json(
         { error: "Tracked link not found" },
+        { status: 400 },
+      );
+    }
+
+    if (!isAllowedDestinationUrl(trackedLink.destination_url)) {
+      return NextResponse.json(
+        { error: "Tracked link destination not allowed" },
         { status: 400 },
       );
     }

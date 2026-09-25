@@ -4,14 +4,8 @@ import styles from "../../broadcast.module.css";
 import { sanitizeTrackedKey } from "../../lib/helpers";
 
 export default function TrackedLinksPanel({
-  channel,
-  needsUrlVar,
   trackedLinks,
   trackedLinksValid,
-  trackedLinkOptions,
-  selectedTrackedUrlKey,
-  setSelectedTrackedUrlKey,
-  whatsappUrlBindingValid,
   addTrackedLink,
   updateTrackedLink,
   removeTrackedLink,
@@ -90,12 +84,18 @@ export default function TrackedLinksPanel({
               </label>
               <input
                 value={link.destinationUrl}
+                type="url"
                 onChange={(e) =>
                   updateTrackedLink(link.id, "destinationUrl", e.target.value)
                 }
                 placeholder="https://example.com/course/123"
                 className={styles.input}
               />
+              {link.destinationUrl.trim() && !/^https?:\/\//i.test(link.destinationUrl.trim()) && (
+                <p className={styles.helpDanger}>
+                  {translation("Broadcast.destinationUrlInvalid")}
+                </p>
+              )}
             </div>
 
             {sanitizeTrackedKey(link.key) && (
@@ -118,50 +118,6 @@ export default function TrackedLinksPanel({
         )}
       </div>
 
-      {channel === "whatsapp" && needsUrlVar && (
-        <div className={styles.modalSection}>
-          <div className={styles.panelTitle}>WhatsApp CTA Button</div>
-
-          <div className={styles.fieldWide}>
-            <label className={styles.smallLabel}>
-              Tracked link for CTA button
-            </label>
-
-            <select
-              value={selectedTrackedUrlKey}
-              onChange={(e) => setSelectedTrackedUrlKey(e.target.value)}
-              className={styles.select}
-              disabled={trackedLinkOptions.length === 0}
-            >
-              {trackedLinkOptions.length === 0 ? (
-                <option value="">Add a tracked link first</option>
-              ) : (
-                <>
-                  <option value="">Select tracked link</option>
-                  {trackedLinkOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-
-            {trackedLinkOptions.length === 0 && (
-              <div className={styles.inlineHelpText}>
-                This template needs a URL variable, so you should add at least
-                one tracked link.
-              </div>
-            )}
-          </div>
-
-          {!whatsappUrlBindingValid && (
-            <div className={styles.helpDanger}>
-              Select which tracked link should power the WhatsApp CTA button.
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
