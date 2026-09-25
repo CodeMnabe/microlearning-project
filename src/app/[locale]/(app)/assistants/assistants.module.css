@@ -519,6 +519,103 @@ body.modalOpen {
   margin-top: 14px;
 }
 
+.paperCard .ghostBtn {
+  border-color: #d6e2ee;
+  color: var(--text-dark);
+}
+
+.paperCard .ghostBtn:hover {
+  background: #f3f7fb;
+}
+
+.paperCard .ghostBtn:disabled,
+.paperCard .dangerBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vectorHeader .cardSubtitle {
+  margin-bottom: 0;
+}
+
+.vectorEditor {
+  display: grid;
+  gap: 10px;
+}
+
+.helperText {
+  margin: 0;
+  color: #5b6b7f;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.vectorFilesReadOnly {
+  margin-top: 8px;
+}
+
+.vectorFilesReadOnly + .rowEnd {
+  margin-top: 16px;
+}
+
+.vectorFileList {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.vectorFileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e5edf5;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.vectorFileRow > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vectorFileRemoved {
+  color: #8492a6;
+  background: #f1f4f7;
+}
+
+.vectorFileRemoved > span:first-child {
+  text-decoration: line-through;
+}
+
+.fileActionBtn {
+  flex: 0 0 auto;
+  border: 1px solid #d6e2ee;
+  border-radius: 8px;
+  padding: 5px 8px;
+  color: var(--text-dark);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.fileActionBtn:hover {
+  background: #eef5fb;
+}
+
 .formGroup input,
 .formGroup select,
 .formGroup textarea,

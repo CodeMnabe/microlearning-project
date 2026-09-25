@@ -1,14 +1,68 @@
 import { NextResponse } from "next/server";
 
-import { getStoreById, deleteStoreById } from "@/lib/repos/store.repo";
+import {
+  getStoreById,
+  updateStoreName,
+  deleteStoreById,
+} from "@/lib/repos/store.repo";
 
-import { deleteFileById } from "@/lib/repos/files.repo";
+import {
+  createDBFiles,
+  deleteFileById,
+} from "@/lib/repos/files.repo";
 
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 
-import { deleteOpenAiVectorStoreAndFiles } from "@/lib/services/openaiFiles.service";
+import {
+  attachOpenAiFileToVectorStore,
+  deleteOpenAiFile,
+  deleteOpenAiVectorStoreAndFiles,
+  detachOpenAiFileFromVectorStore,
+  updateOpenAiVectorStore,
+  uploadOpenAiFilesFromStorage,
+} from "@/lib/services/openaiFiles.service";
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
+
+function serializeStore(store) {
+  return {
+    id: store.id,
+    storeName: store.store_name,
+    files: (store.file || []).map(({ id, name, size }) => ({
+      id,
+      name,
+      size,
+    })),
+  };
+}
+
+async function cleanupNewOpenAiFiles(
+  vectorStoreId,
+  fileIds = [],
+  attachedFileIds = [],
+) {
+  for (const fileId of attachedFileIds) {
+    try {
+      await detachOpenAiFileFromVectorStore(vectorStoreId, fileId);
+    } catch (error) {
+      console.error(
+        `[Vector Store PATCH] failed to detach new file ${fileId}:`,
+        error,
+      );
+    }
+  }
+
+  for (const fileId of fileIds) {
+    try {
+      await deleteOpenAiFile(fileId);
+    } catch (error) {
+      console.error(
+        `[Vector Store PATCH] failed to clean up new file ${fileId}:`,
+        error,
+      );
+    }
+  }
+}
 
 /* =========================================================
    GET VECTOR STORE
@@ -65,24 +119,189 @@ export async function GET(_req, { params }) {
       );
     }
 
-    return NextResponse.json(
-      {
-        id: store.id,
-
-        storeName: store.store_name,
-
-        files: (store.file || []).map(({ id, name, size }) => ({
-          id,
-          name,
-          size,
-        })),
-      },
-      {
-        status: 200,
-      },
-    );
+    return NextResponse.json(serializeStore(store), {
+      status: 200,
+    });
   } catch (err) {
     return handleApiError(err, "Failed to load vector store");
+  }
+}
+
+/* =========================================================
+   UPDATE VECTOR STORE
+   ========================================================= */
+
+export async function PATCH(req, { params }) {
+  let uploadedOpenAiIds = [];
+  let attachedOpenAiIds = [];
+  let openAiStoreId = "";
+
+  try {
+    const { assistantId, storeId } = await params;
+
+    const auth = await requireOrgForAssistant(assistantId);
+
+    if (auth.error) {
+      return auth.error;
+    }
+
+    const sId = Number(storeId);
+
+    if (!Number.isInteger(sId) || sId <= 0) {
+      return NextResponse.json(
+        {
+          error: "Invalid store id",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (Number(auth.assistant.vector_store_id) !== sId) {
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const store = await getStoreById(sId);
+
+    if (!store) {
+      return NextResponse.json(
+        {
+          error: "Not found",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const body = await req.json();
+    const rawFiles = body?.files ?? [];
+    const rawRemovedFileIds = body?.removedFileIds ?? [];
+
+    if (!Array.isArray(rawFiles)) {
+      return NextResponse.json(
+        {
+          error: "Files must be an array",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!Array.isArray(rawRemovedFileIds)) {
+      return NextResponse.json(
+        {
+          error: "removedFileIds must be an array",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const storeFiles = store.file || [];
+    const filesById = new Map(storeFiles.map((file) => [Number(file.id), file]));
+    const removedFileIds = [
+      ...new Set(rawRemovedFileIds.map((fileId) => Number(fileId))),
+    ];
+
+    if (
+      removedFileIds.some(
+        (fileId) =>
+          !Number.isInteger(fileId) || fileId <= 0 || !filesById.has(fileId),
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error: "One or more files do not belong to this vector store",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const storeName =
+      body?.storeName === undefined
+        ? String(store.store_name || "").trim()
+        : typeof body.storeName === "string"
+          ? body.storeName.trim()
+          : "";
+
+    if (!storeName) {
+      return NextResponse.json(
+        {
+          error: "Vector store name is required",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    openAiStoreId = String(store.open_ai_id || "").trim();
+
+    if (!openAiStoreId) {
+      throw new Error("Vector store has no OpenAI vector store ID");
+    }
+
+    const uploaded = await uploadOpenAiFilesFromStorage(
+      rawFiles,
+      auth.orgId,
+    );
+    uploadedOpenAiIds = uploaded.fileIds;
+
+    for (const fileId of uploadedOpenAiIds) {
+      await attachOpenAiFileToVectorStore(openAiStoreId, fileId);
+      attachedOpenAiIds.push(fileId);
+    }
+
+    for (const fileId of removedFileIds) {
+      const existingFile = filesById.get(fileId);
+
+      // The local row is only removed after the OpenAI resource is detached.
+      await detachOpenAiFileFromVectorStore(
+        openAiStoreId,
+        existingFile.open_ai_id,
+      );
+      await deleteOpenAiFile(existingFile.open_ai_id);
+    }
+
+    if (storeName !== String(store.store_name || "").trim()) {
+      await updateOpenAiVectorStore(openAiStoreId, { name: storeName });
+      await updateStoreName(sId, storeName);
+    }
+
+    if (uploaded.fileRows.length) {
+      await createDBFiles(uploaded.fileRows, sId);
+    }
+
+    for (const fileId of removedFileIds) {
+      await deleteFileById(fileId);
+    }
+
+    const updatedStore = await getStoreById(sId);
+
+    return NextResponse.json(serializeStore(updatedStore || store), {
+      status: 200,
+    });
+  } catch (err) {
+    await cleanupNewOpenAiFiles(
+      openAiStoreId,
+      uploadedOpenAiIds,
+      attachedOpenAiIds,
+    );
+
+    return handleApiError(err, "Failed to update vector store");
   }
 }
 
