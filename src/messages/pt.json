@@ -897,7 +897,7 @@
     "broadcastCreate": "Enviar",
     "broadcastScheduled": "Ver Agendadas",
     "trackedLinks": "Links Rastreados",
-    "templates": "Templates",
+    "questions": "Perguntas",
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
@@ -1077,6 +1077,18 @@
     "assistants": "Assistentes",
     "empty": "Sem resultados."
   },
+  "CheckList": {
+    "selected": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "search": "Procurar",
+    "active": "Ativo",
+    "makeActive": "Tornar ativo",
+    "noResults": "Sem resultados."
+  },
+  "UserAssistants": {
+    "assigned": "Assistentes",
+    "none": "Sem assistentes disponíveis.",
+    "extraTitle": "{count} assistentes atribuídos"
+  },
   "EditUserModal": {
     "title": "Editar Utilizador",
     "name": "Nome",
@@ -1109,143 +1121,51 @@
     "communicationChannels": "Canais de Comunicação"
   },
   "ManageTagsModal": {
+    "nameTaken": "Já existe uma tag com esse nome.",
+    "saveFailed": "Não foi possível guardar. Tenta outra vez.",
     "title": "Gerir Tags",
     "loading": "A carregar…",
     "none": "Sem tags.",
     "name": "Nome:",
     "placeholder": "Grupo 1",
-    "save": "Guardar Alterações",
+    "save": "Guardar",
     "add": "Adicionar",
     "cancel": "Cancelar",
-    "removeLabel": "Remover {name}"
+    "removeLabel": "Remover {name}",
+    "newLabel": "Nova tag",
+    "listLabel": "Tags",
+    "search": "Procurar",
+    "rename": "Mudar nome",
+    "delete": "Eliminar",
+    "close": "Fechar",
+    "noResults": "Sem resultados.",
+    "confirmDeleteTitle": "Eliminar a tag {name}?",
+    "confirmDeleteMessage": "A tag sai de todos os utilizadores que a têm."
   },
 
-  "Templates": {
-    "title": "WhatsApp Templates",
-    "tabList": "Lista",
-    "tabCreate": "Criar",
-    "sync": "Sincronizar",
-    "syncing": "A sincronizar…",
+  "Options": {
+    "Title": "Definições",
+    "Subtitle": "Organização {organization}"
+  },
 
-    "name": "Nome",
-    "language": "Idioma",
-    "category": "Categoria",
-    "status": "Estado",
-
-    "noTemplates": "Sem templates. Vá a \"Criar\" para adicionar um.",
-    "sendTest": "Enviar teste",
-
-    "MARKETING": "Marketing",
-    "UTILITY": "Utilidade",
-    "AUTHENTICATION": "Autenticação",
-
-    "model": "Modelo",
-    "Model": "Modelo",
-
-    "text_quickreplies": "Texto + respostas rápidas",
-    "image_header_quickreplies": "Imagem no cabeçalho + respostas rápidas",
-    "quiz_url_button": "Quiz com botão URL variável",
-
-    "notices": {
-      "synced": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}",
-      "submitted": "Template \"{name}\" submetido. Estado: {status}",
-      "sent": "Template enviado."
-    },
-
-    "statuses": {
-      "new": "Novo",
-      "approved": "Aprovado",
-      "pending": "Pendente",
-      "rejected": "Rejeitado",
-      "paused": "Pausado",
-      "disabled": "Desativado",
-      "in_appeal": "Em recurso",
-      "pending_deletion": "A aguardar eliminação",
-      "unknown": "Desconhecido"
-    },
-
-    "createForm": {
-      "name": "Nome",
-      "language": "Idioma",
-      "category": "Categoria",
-      "preset": "Modelo",
-      "components": "Components (JSON)",
-      "submit": "Submeter para aprovação",
-      "reset": "Repor exemplo",
-      "creating": "A criar…"
-    },
-
-    "modal": {
-      "title": "Enviar teste",
-      "to": "Para (E.164 ou nacional)",
-      "bodyParams": "Parâmetros do corpo (separados por vírgula)",
-      "urlVar": "Variável do botão URL (opcional)",
-      "cancel": "Cancelar",
-      "send": "Enviar",
-      "sending": "A enviar…",
-      "close": "Fechar"
-    },
-
-    "errors": {
-      "noOrg": "Não foi encontrada uma organização.",
-      "fetch": "Falha ao carregar templates: {message}",
-      "componentsArray": "Os componentes devem ser um array.",
-      "invalidComponents": "JSON de componentes inválido: {message}",
-      "nameRequired": "O nome é obrigatório.",
-      "createFailed": "Falha ao criar template: {message}",
-      "sendFailed": "Falha ao enviar template: {message}"
-    },
-    "alerts": {
-      "syncFailed": {
-        "title": "Erro ao sincronizar templates",
-        "message": "Não foi possível carregar os templates. Tenta novamente dentro de alguns segundos."
-      },
-      "syncSuccess": {
-        "title": "Templates sincronizados",
-        "message": "{count, plural, =0 {Nenhum template sincronizado.} one {# template sincronizado.} other {# templates sincronizados.}}"
-      },
-      "invalidJson": {
-        "title": "JSON inválido",
-        "message": "O campo Components tem um erro de formato. Verifica vírgulas, aspas e chavetas."
-      },
-      "componentsNotArray": {
-        "title": "Formato inválido",
-        "message": "Os componentes devem estar dentro de um array JSON."
-      },
-      "nameRequired": {
-        "title": "Nome em falta",
-        "message": "Preenche o nome do template antes de submeter."
-      },
-      "templateSubmitted": {
-        "title": "Template submetido",
-        "message": "O template \"{name}\" foi submetido com o estado: {status}."
-      },
-      "createFailed": {
-        "title": "Erro ao criar template",
-        "message": "Não foi possível submeter o template. Verifica os dados e tenta novamente."
-      },
-      "recipientRequired": {
-        "title": "Destinatário em falta",
-        "message": "Indica o número para onde queres enviar o teste."
-      },
-      "noTemplateSelected": {
-        "title": "Template em falta",
-        "message": "Não foi possível identificar o template a testar. Fecha o modal e tenta novamente."
-      },
-      "testSent": {
-        "title": "Teste enviado",
-        "message": "O template de teste foi enviado com sucesso."
-      },
-      "testSendFailed": {
-        "title": "Erro ao enviar teste",
-        "message": "Não foi possível enviar o template de teste. Verifica o número e tenta novamente."
-      },
-
-      "noOrg": {
-        "title": "Organização em falta",
-        "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
-      }
-    }
+  "OpeningMessage": {
+    "title": "Mensagem de abertura WhatsApp",
+    "subtitle": "Enviada automaticamente quando um contacto está fora da janela de 24 horas. O início e o fim são fixos e aprovados pela Meta; só o corpo pode ser alterado.",
+    "bodyLabel": "Corpo da mensagem",
+    "bodyPlaceholder": "Escreve o corpo da mensagem...",
+    "sampleName": "Maria",
+    "counter": "{count} de {max} caracteres",
+    "save": "Guardar",
+    "saving": "A guardar...",
+    "saved": "Guardado.",
+    "reset": "Repor texto por omissão",
+    "usingDefault": "Ainda não definiste um corpo próprio. Está a ser usado o texto por omissão.",
+    "loading": "A carregar...",
+    "loadFailed": "Não foi possível carregar a mensagem de abertura.",
+    "saveFailed": "Não foi possível guardar. Tenta novamente.",
+    "empty": "O corpo não pode ficar vazio.",
+    "tooLong": "O corpo tem mais de {max} caracteres.",
+    "retry": "Tentar novamente"
   },
 
   "Automations": {
@@ -1316,16 +1236,8 @@
       "assistantFallbackHelp": "As regras de inatividade específicas por assistente têm prioridade. “Qualquer assistente (fallback)” só se aplica quando o assistente atual do utilizador não tem uma regra de inatividade específica neste canal.",
       "delay": "Atraso (minutos)",
       "message": "Mensagem",
-      "whatsappTemplate": "Template WhatsApp",
-      "noTemplate": "Sem template",
-      "templateBindings": "Variáveis do template",
+      "openingHint": "Se o contacto estiver fora da janela de 24 horas, recebe primeiro a mensagem de abertura e esta mensagem fica em espera até responder.",
       "comingSoon": "em breve",
-      "staticText": "Texto fixo",
-      "systemUserName": "Sistema: nome do utilizador",
-      "systemOrganizationName": "Sistema: nome da organização",
-      "systemUserEmail": "Sistema: email do utilizador",
-      "systemUserPhone": "Sistema: telefone do utilizador",
-      "valueFor": "Valor para {key}",
       "createAutomation": "Criar automação",
       "save": "Guardar",
       "saving": "A guardar...",
@@ -1347,14 +1259,6 @@
         "contentRequired": {
           "title": "Conteúdo em falta",
           "message": "Escreve uma mensagem ou escolhe um template WhatsApp antes de guardar."
-        },
-        "templateRequired": {
-          "title": "Template em falta",
-          "message": "Escolhe um template WhatsApp ou escreve uma mensagem manual."
-        },
-        "templateBindingsRequired": {
-          "title": "Campos do template em falta",
-          "message": "Preenche os campos obrigatórios do template: {fields}."
         }
       }
     },
@@ -1452,11 +1356,6 @@
     "sending": "A enviar…",
     "message": "Mensagem",
     "messagePlaceholder": "Escreva a sua mensagem...",
-    "templatePreview": "Pré-Visualização do Template",
-    "template": "Template",
-    "noTemplates": "Sem templates",
-    "varKeyDesc": "Parâmetros (key=value, separados por vírgula)",
-    "urlVar": "Variável do botão URL",
     "chooseRecipients": "Escolhe destinatários",
     "recipients": "Destinatários",
     "selectAll": "Selecionar todos",
@@ -1473,8 +1372,6 @@
     "timezone": "Fuso Horário",
     "hour": "Hora",
     "scheduleError": "Por favor escolha uma data e hora no futuro.",
-    "trackedPlaceholders": "Placeholder para o Rastreamento",
-    "messagePreview": "Visualizador de Mensagem",
     "images": "Imagens",
     "videos": "Vídeos",
     "thumbnail": "Miniatura",
@@ -1488,11 +1385,101 @@
     "key": "Chave",
     "label": "Rótulo",
     "destinationUrl": "URL Destino",
+    "destinationUrlInvalid": "O destino tem de começar por http:// ou https://",
     "addPlaceholders": {
       "first": "Adiciona o placeholder tipo",
       "second": "dentro da mensagem"
     },
+    "start": {
+      "title": "Como queres começar?",
+      "hint": "Escolhe um ponto de partida. Podes voltar aqui a qualquer altura.",
+      "blank": "Em branco",
+      "blankHint": "Mensagem livre com texto, imagens e links. Quem estiver fora da janela recebe primeiro a abertura.",
+      "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar.",
+      "quiz": "Quiz",
+      "quizHint": "Pergunta com até 3 opções de resposta rápida. Ideal para verificar o que ficou retido.",
+      "quizSample": "Olá {name}! Qual é a pressão certa dos pneus?",
+      "quizOptionA": "2,2 bar",
+      "quizOptionB": "2,8 bar",
+      "quizOptionC": "3,5 bar",
+      "survey": "Sondagem",
+      "surveyHint": "Pergunta com até 3 opções, sem resposta certa. Regista só a escolha de cada contacto.",
+      "surveySample": "Olá {name}! Qual o melhor horário para a próxima formação?",
+      "surveyOptionA": "Manhã",
+      "surveyOptionB": "Tarde",
+      "surveyOptionC": "Noite",
+      "question": "Pergunta aberta",
+      "questionHint": "Pergunta de resposta livre. As respostas ficam guardadas na conversa.",
+      "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
+      "soon": "Em breve"
+    },
+    "suggest": {
+      "title": "Sugerir texto",
+      "promptLabel": "Pedido para a sugestão",
+      "tag": "Sugestão da IA",
+      "placeholderWrite": "Descreve a mensagem à IA",
+      "placeholderChange": "O que queres mudar?",
+      "ask": "Pedir sugestão",
+      "close": "Fechar a sugestão",
+      "again": "Outra",
+      "discard": "Descartar",
+      "loading": "A escrever...",
+      "use": "Usar",
+      "failed": "Não foi possível gerar a sugestão. Tenta outra vez."
+    },
+    "composer": {
+      "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",
+      "openQuestionBody": "Pergunta aberta",
+      "openQuestionPlaceholder": "O que queres perguntar?",
+      "expectedAnswer": "Resposta esperada (obrigatória)",
+      "aiEvaluation": "Avaliar a resposta com IA",
+      "expectedAnswerHint": "O contacto recebe o feedback da IA e depois a resposta esperada. Se desligares a avaliação, recebe apenas a resposta esperada.",
+      "contact": "Contacto",
+      "back": "Mudar o tipo de mensagem",
+      "hint": "Escreve diretamente no balão. Usa o + para juntar imagens, links e variáveis.",
+      "placeholder": "Escreve a mensagem aqui...",
+      "barHint": "Toca no balão para escrever",
+      "add": "Adicionar",
+      "addImage": "Imagem",
+      "addVideo": "Vídeo",
+      "addDocument": "Documento",
+      "addLink": "Link rastreado",
+      "variables": "Variáveis",
+      "variableName": "Nome",
+      "variableCompany": "Empresa",
+      "openingTitle": "Mensagem de abertura",
+      "openingHint": "É enviado só o template aprovado. O início e o fim são fixos; o corpo pode ser ajustado para este envio.",
+      "openingBody": "Corpo da mensagem de abertura",
+      "openingPlaceholder": "Escreve o corpo da mensagem...",
+      "openingCounter": "{count} de {max} caracteres",
+      "openingLoading": "A carregar a mensagem de abertura...",
+      "openingLoadFailed": "Não foi possível carregar a mensagem de abertura.",
+      "retry": "Tentar novamente",
+      "quizTitle": "Quiz",
+      "quizHint": "Escreve a pergunta no balão e as opções nos botões. Marca a certa no círculo. Usa o + para imagens, links e variáveis. Quem estiver fora da janela recebe primeiro a abertura.",
+      "quizBody": "Pergunta do quiz",
+      "quizPlaceholder": "Escreve a pergunta...",
+      "quizOption": "Opção {index}",
+      "quizMarkCorrect": "Marcar a opção {index} como certa",
+      "quizRemoveOption": "Remover a opção {index}",
+      "quizAddOption": "Adicionar opção",
+      "quizOptionLimit": "Até {max} opções, com {chars} caracteres cada, como o WhatsApp exige.",
+      "quizFeedbackCorrect": "Resposta quando acerta",
+      "quizFeedbackIncorrect": "Resposta quando erra",
+      "quizFeedbackHint": "Se ficarem vazios, envia-se o texto por omissão. Podes escrever '{{'certa'}}' para incluir a opção certa.",
+      "quizValidity": "O quiz aceita respostas durante {days} dias. Só a primeira resposta de cada contacto conta.",
+      "surveyTitle": "Sondagem",
+      "surveyHint": "Escreve a pergunta no balão e as opções nos botões. Não há resposta certa: regista-se só a escolha. Usa o + para imagens, links e variáveis.",
+      "surveyBody": "Pergunta da sondagem",
+      "surveyPlaceholder": "Escreve a pergunta...",
+      "surveyOption": "Opção {index}",
+      "surveyRemoveOption": "Remover a opção {index}",
+      "surveyThanks": "Mensagem depois da escolha",
+      "surveyThanksHint": "Se ficar vazia, envia-se o agradecimento por omissão.",
+      "surveyValidity": "A sondagem aceita respostas durante {days} dias. Só a primeira escolha de cada contacto conta."
+    },
     "alerts": {
+      "openQuestionInvalid": {"title":"Completa a pergunta aberta","message":"Escreve a pergunta e a resposta esperada, com até 1024 caracteres cada."},
       "usersLoadFailed": {
         "title": "Erro ao carregar destinatários",
         "message": "Não foi possível carregar a lista de utilizadores. Tenta novamente dentro de alguns segundos."
@@ -1501,26 +1488,22 @@
         "title": "Erro ao carregar filtros",
         "message": "Não foi possível carregar as tags ou assistentes. Alguns filtros podem não estar disponíveis."
       },
-      "templatesLoadFailed": {
-        "title": "Erro ao carregar templates",
-        "message": "Não foi possível carregar os templates de WhatsApp. Tenta novamente dentro de alguns segundos."
-      },
-      "templateDetailsFailed": {
-        "title": "Erro no template",
-        "message": "Não foi possível carregar os detalhes deste template. Escolhe outro template ou tenta novamente."
-      },
       "contentMissing": {
         "title": "Conteúdo em falta",
-        "sendMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de enviar.",
-        "scheduleMessage": "Escreve uma mensagem, adiciona um ficheiro ou escolhe um template válido antes de agendar."
+        "sendMessage": "Escreve uma mensagem ou adiciona um ficheiro antes de enviar.",
+        "scheduleMessage": "Escreve uma mensagem ou adiciona um ficheiro antes de agendar."
       },
-      "templateParamsMissing": {
-        "title": "Parâmetros em falta",
-        "message": "Preenche todos os parâmetros obrigatórios do template antes de continuar."
+      "openingMissing": {
+        "title": "Corpo em falta",
+        "message": "Escreve o corpo da mensagem de abertura antes de continuar."
       },
-      "trackedLinkRemoved": {
-        "title": "Link removido",
-        "message": "O link usado no botão URL do template foi removido. Escolhe outro link antes de enviar."
+      "surveyInvalid": {
+        "title": "Sondagem incompleta",
+        "message": "Escreve a pergunta e preenche 2 a 3 opções diferentes com até 20 caracteres."
+      },
+      "quizInvalid": {
+        "title": "Quiz incompleto",
+        "message": "Escreve a pergunta, preenche 2 a 3 opções diferentes com até 20 caracteres e marca a certa."
       }
     },
     "recipient": "recipiente",
@@ -1531,6 +1514,10 @@
         "message": "Estás prestes a começar um corrente de mensagem para {recipientLabel}. A primeira mensagem vai ser mandada agora. As próximas vão ser mandadas depois de lidas e só depois do atraso.",
         "confirm": "Confirmar",
         "cancel": "Cancelar"
+      },
+      "opening": {
+        "title": "Enviar mensagem de abertura?",
+        "message": "Estás prestes a enviar a mensagem de abertura para {recipientLabel}."
       },
       "title": "Mandar Mensagem?",
       "message": "Estás prestes a mandar esta mensagem no {channelLabel} para {recipientLabel}",
@@ -1544,6 +1531,10 @@
         "confirm": "Confirmar",
         "cancel": "Cancelar"
       },
+      "opening": {
+        "title": "Agendar mensagem de abertura?",
+        "message": "Estás a agendar a mensagem de abertura para {recipientLabel} nesta data {formattedDate}."
+      },
       "title": "Agendar Mensagem?",
       "message": "Estás prestes a agendar esta mensagem no {channelLabel} para {recipientLabel} nesta data {formattedDate}",
       "confirm": "Confirmar",
@@ -1555,13 +1546,17 @@
       "createChain": "Cria Corrente",
       "exitChain": "Sai da Corrente",
       "chainOff": "Correntes de mensagens estão desativadas nas Automações. Ativa a opção antes de mandar.",
-      "chainTemplate": "Escolhe um template de whatsapp. Só será mandado se o recipiente não tiver uma conversa ativa.",
       "chainMessage": "Mensagem",
       "chainLengthMax": "Máximo de 10 Mensagens",
       "chainLengthAdd": "Adiciona Mensagem",
       "chainDuplicate": "Duplicar",
       "chainRemove": "Remover",
       "chainMessages": "mensagens",
+      "stepKind": "Tipo desta mensagem",
+      "stepKindMessage": "Mensagem",
+      "stepKindQuiz": "Quiz",
+      "stepKindSurvey": "Sondagem",
+      "stepKindOpen": "Pergunta aberta",
       "chainDelayBefore": "Atraso antes da Mensagem ",
       "chainHour": "Horas",
       "chainMinute": "Minutos",
@@ -1775,6 +1770,121 @@
       "loadFailed": {
         "title": "Erro ao carregar links rastreados",
         "message": "Não foi possível carregar os links rastreados. Tenta novamente dentro de alguns segundos."
+      }
+    }
+  },
+
+  "Questions": {
+    "title": "Perguntas",
+    "subtitle": "Resultados dos quizzes e das perguntas abertas enviadas por WhatsApp.",
+    "totalQuestions": "Perguntas",
+    "toReview": "Para rever",
+    "search": "Procura pelo texto da pergunta",
+    "filters": {
+      "allKinds": "Todos os tipos",
+      "sentBetween": "Enviada entre",
+      "and": "e",
+      "from": "Enviada desde",
+      "to": "Enviada até",
+      "clear": "Limpar filtros"
+    },
+    "loading": "A carregar perguntas...",
+    "noQuestions": "Ainda não foi enviada nenhuma pergunta nesta organização.",
+    "noMatches": "Nenhuma pergunta corresponde aos filtros.",
+    "kind": {
+      "quiz": "Quiz",
+      "survey": "Sondagem",
+      "open": "Pergunta aberta"
+    },
+    "table": {
+      "question": "Pergunta",
+      "answered": "Respostas",
+      "responseRate": "Taxa de resposta",
+      "result": "Resultado"
+    },
+    "sentOn": "Enviada a {date}",
+    "answersOf": "{answered} de {recipients}",
+    "correctRate": "{rate}% de acertos",
+    "verdictSummary": "{completa} completa · {parcial} parcial · {incompleta} incompleta",
+    "reviewCount": "{count} para rever",
+    "alerts": {
+      "noOrg": {
+        "title": "Organização em falta",
+        "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+      },
+      "loadFailed": {
+        "title": "Erro ao carregar perguntas",
+        "message": "Não foi possível carregar as perguntas. Tenta novamente dentro de alguns segundos."
+      }
+    },
+    "detail": {
+      "back": "Voltar",
+      "loading": "A carregar a pergunta...",
+      "options": "Opções",
+      "correctOption": "certa",
+      "expectedAnswer": "Resposta esperada",
+      "aiEvaluation": "Avaliação pela IA",
+      "aiOn": "ligada",
+      "aiOff": "desligada",
+      "sentAt": "Enviada",
+      "expiresAt": "Aceita respostas até",
+      "recipients": "Destinatários",
+      "answered": "Responderam",
+      "notAnswered": "Não responderam",
+      "responseRate": "Taxa de resposta",
+      "correct": "Acertos",
+      "correctRate": "Taxa de acertos",
+      "correctOf": "{correct} de {answered}",
+      "toReview": "Para rever",
+      "verdictsTitle": "Veredictos",
+      "answeredCount": "Responderam ({count})",
+      "notAnsweredCount": "Não responderam ({count})",
+      "filters": {
+        "search": "Procurar por nome, email ou telemóvel",
+        "allAnswers": "Todas as respostas",
+        "noMatches": "Nenhum contacto corresponde aos filtros."
+      },
+      "verdicts": {
+        "completa": "Completa",
+        "parcial": "Parcial",
+        "incompleta": "Incompleta",
+        "none": "Sem veredicto"
+      },
+      "table": {
+        "contact": "Contacto",
+        "phone": "Telemóvel",
+        "answer": "Resposta",
+        "result": "Resultado",
+        "verdict": "Veredicto",
+        "choice": "Escolha",
+        "aiVerdict": "IA: {verdict}",
+        "feedback": "Feedback enviado",
+        "answeredAt": "Respondida",
+        "sentAt": "Enviada"
+      },
+      "right": "Certo",
+      "wrong": "Errado",
+      "reviewNeeded": "Para rever",
+      "useAiVerdict": "Manter o veredicto da IA",
+      "noAnswers": "Ainda ninguém respondeu.",
+      "allAnswered": "Toda a gente respondeu.",
+      "alerts": {
+        "noOrg": {
+          "title": "Organização em falta",
+          "message": "Ainda não foi possível identificar a organização. Tenta novamente dentro de alguns segundos."
+        },
+        "missingQuestion": {
+          "title": "Pergunta inválida",
+          "message": "Não foi possível identificar a pergunta."
+        },
+        "loadFailed": {
+          "title": "Erro ao carregar a pergunta",
+          "message": "Não foi possível carregar os resultados desta pergunta. Tenta novamente dentro de alguns segundos."
+        },
+        "updateFailed": {
+          "title": "Erro ao guardar o veredicto",
+          "message": "Não foi possível guardar a correção. Tenta novamente."
+        }
       }
     }
   },
@@ -2149,7 +2259,9 @@
     "selected": "selecionados",
     "clear": "Limpar",
     "bulkLabel": "Definir Assistente",
-    "apply": "Aplicar",
+    "apply": "Substituir",
+    "addAssistantHint": "Junta este assistente aos que os utilizadores já têm",
+    "replaceAssistantHint": "Os utilizadores ficam só com este assistente",
     "tag": "Adicionar/Remover Tags",
     "add": "Adicionar",
     "addTags": "Adiciona as tags selecionadas aos users",

@@ -274,6 +274,8 @@ export default function UsersPage() {
         tags: u.tag_names ?? (u.tags || []).map((t) => t.name) ?? [],
         tagIds: u.tag_ids ?? (u.tags || []).map((t) => t.id) ?? [],
         assistantId: u.assistant_id ?? null,
+        assistantIds:
+          u.assistant_ids ?? (u.assistant_id ? [u.assistant_id] : []),
         teamsAadObjectId: u.teams_aad_object_id,
         teamsFromId: u.teams_from_id,
         assistantName: u.assistantName ?? "—",
@@ -303,7 +305,7 @@ export default function UsersPage() {
 
       const assistantOk =
         selectedAssistantIds.length === 0 ||
-        selectedAssistantIds.includes(u.assistantId);
+        selectedAssistantIds.some((id) => u.assistantIds.includes(id));
 
       return textOk && tagsOk && assistantOk;
     });
@@ -336,6 +338,7 @@ export default function UsersPage() {
       phoneNational,
       email,
       assistantId,
+      assistantIds,
       teamsAadObjectId,
       teamsFromId,
     }) {
@@ -361,6 +364,7 @@ export default function UsersPage() {
             name: userName,
             email: email || null,
             assistantId,
+            assistantIds,
             phoneCountryCode: phoneCode,
             phoneNational,
             teamsAadObjectId: teamsAadObjectId || null,
@@ -464,9 +468,11 @@ async function handleUserAssistantChange(u, newAssistantId) {
     const res = await fetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      // Com vários atribuídos só muda o ativo; com um (ou nenhum) troca-o.
       body: JSON.stringify({
         id: u.id,
         assistantId: newAssistantId,
+        ...(u.assistantIds.length > 1 ? {} : { assistantIds: [newAssistantId] }),
       }),
     });
 
@@ -764,12 +770,28 @@ async function openCreateUserModal() {
                   <div className={styles.cellAssistant}>
                     <PillSelect
                       value={u.assistantId}
-                      options={assistantsList.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                      }))}
+                      options={assistantsList
+                        .filter(
+                          (a) =>
+                            u.assistantIds.length <= 1 ||
+                            u.assistantIds.includes(a.id),
+                        )
+                        .map((a) => ({
+                          value: a.id,
+                          label: a.name,
+                        }))}
                       onChange={(newAssistantId) => handleUserAssistantChange(u, newAssistantId)}
                     />
+                    {u.assistantIds.length > 1 && (
+                      <span
+                        className={styles.assistantExtra}
+                        title={translation("UserAssistants.extraTitle", {
+                          count: u.assistantIds.length,
+                        })}
+                      >
+                        +{u.assistantIds.length - 1}
+                      </span>
+                    )}
                   </div>
 
                   <div className={styles.cellKebab}>

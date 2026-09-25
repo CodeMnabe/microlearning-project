@@ -11,6 +11,10 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import Slider from "@/app/components/Slider/Slider";
+import {
+  ASSISTANT_FILE_ACCEPT,
+  resolveAssistantFileType,
+} from "@/lib/uploads/assistantFiles";
 
 const STORAGE_BUCKET = "assistant-uploads";
 
@@ -202,12 +206,19 @@ export default function AssistantsHub() {
     const uploaded = [];
 
     for (const f of files) {
+      const contentType = resolveAssistantFileType(f);
+
+      if (!contentType) {
+        throw new Error("Este tipo de ficheiro não é aceite.");
+      }
+
       const path = `${basePath}-${f.name}`;
+
       const { error } = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(path, f, {
           upsert: true,
-          contentType: f.type || "application/octet-stream",
+          contentType,
         });
 
       if (error) {
@@ -646,6 +657,7 @@ export default function AssistantsHub() {
                   <input
                     className={styles.input}
                     type="file"
+                    accept={ASSISTANT_FILE_ACCEPT}
                     multiple
                     onChange={(e) =>
                       setVsFiles(Array.from(e.target.files || []))
@@ -692,7 +704,9 @@ export default function AssistantsHub() {
                         id="vector-store-name"
                         className={styles.input}
                         value={vectorStoreDraftName}
-                        onChange={(e) => setVectorStoreDraftName(e.target.value)}
+                        onChange={(e) =>
+                          setVectorStoreDraftName(e.target.value)
+                        }
                         placeholder={translation(
                           "Assistants.vector.storeNamePlaceholder",
                         )}
@@ -725,7 +739,9 @@ export default function AssistantsHub() {
                                   <button
                                     type="button"
                                     className={styles.fileActionBtn}
-                                    onClick={() => toggleVectorFileRemoval(file.id)}
+                                    onClick={() =>
+                                      toggleVectorFileRemoval(file.id)
+                                    }
                                   >
                                     {translation(
                                       isMarkedForRemoval
@@ -810,7 +826,9 @@ export default function AssistantsHub() {
                           <>
                             <div>
                               <span className={styles.metaLabel}>
-                                {translation("Assistants.vector.collectionTitle")}
+                                {translation(
+                                  "Assistants.vector.collectionTitle",
+                                )}
                               </span>
                               <span>{vectorStore.storeName}</span>
                             </div>
@@ -831,7 +849,10 @@ export default function AssistantsHub() {
                           </span>
                           <ul className={styles.vectorFileList}>
                             {vectorStore.files.map((file) => (
-                              <li key={file.id} className={styles.vectorFileRow}>
+                              <li
+                                key={file.id}
+                                className={styles.vectorFileRow}
+                              >
                                 <span>{file.name}</span>
                               </li>
                             ))}

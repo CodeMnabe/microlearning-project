@@ -884,7 +884,7 @@
     "broadcastCreate": "Send",
     "broadcastScheduled": "See Scheduled",
     "trackedLinks": "Tracked Links",
-    "templates": "Templates",
+    "questions": "Questions",
     "admin": "Admin",
     "login": "Login",
     "options": "Settings",
@@ -1067,6 +1067,18 @@
     "assistants": "Assistants",
     "empty": "No results."
   },
+  "CheckList": {
+    "selected": "{count} selected",
+    "search": "Search",
+    "active": "Active",
+    "makeActive": "Make active",
+    "noResults": "No results."
+  },
+  "UserAssistants": {
+    "assigned": "Assistants",
+    "none": "No assistants available.",
+    "extraTitle": "{count} assistants assigned"
+  },
   "EditUserModal": {
     "title": "Edit User",
     "name": "Name",
@@ -1100,143 +1112,51 @@
     "communicationChannels": "Communication Channels"
   },
   "ManageTagsModal": {
+    "nameTaken": "A tag with that name already exists.",
+    "saveFailed": "Could not save. Try again.",
     "title": "Manage Tags",
     "loading": "Loading…",
     "none": "No tags.",
     "name": "Name:",
     "placeholder": "Group 1",
-    "save": "Save Changes",
+    "save": "Save",
     "add": "Add",
     "cancel": "Cancel",
-    "removeLabel": "Remove {name}"
+    "removeLabel": "Remove {name}",
+    "newLabel": "New tag",
+    "listLabel": "Tags",
+    "search": "Search",
+    "rename": "Rename",
+    "delete": "Delete",
+    "close": "Close",
+    "noResults": "No results.",
+    "confirmDeleteTitle": "Delete the tag {name}?",
+    "confirmDeleteMessage": "The tag is removed from every user that has it."
   },
 
-  "Templates": {
-    "title": "WhatsApp Templates",
-    "tabList": "List",
-    "tabCreate": "Create",
-    "sync": "Sync",
-    "syncing": "Syncing…",
+  "Options": {
+    "Title": "Settings",
+    "Subtitle": "Organization {organization}"
+  },
 
-    "name": "Name",
-    "language": "Language",
-    "category": "Category",
-    "status": "Status",
-
-    "noTemplates": "No templates. Go to \"Create\" to add one.",
-    "sendTest": "Send test",
-
-    "MARKETING": "Marketing",
-    "UTILITY": "Utility",
-    "AUTHENTICATION": "Authentication",
-
-    "model": "Model",
-    "Model": "Model",
-
-    "text_quickreplies": "Text + quick replies",
-    "image_header_quickreplies": "Image header + quick replies",
-    "quiz_url_button": "Quiz with variable URL button",
-
-    "notices": {
-      "synced": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}",
-      "submitted": "Template \"{name}\" submitted. Status: {status}",
-      "sent": "Template sent."
-    },
-
-    "statuses": {
-      "new": "New",
-      "approved": "Approved",
-      "pending": "Pending",
-      "rejected": "Rejected",
-      "paused": "Paused",
-      "disabled": "Disabled",
-      "in_appeal": "In appeal",
-      "pending_deletion": "Pending deletion",
-      "unknown": "Unknown"
-    },
-
-    "createForm": {
-      "name": "Name",
-      "language": "Language",
-      "category": "Category",
-      "preset": "Model",
-      "components": "Components (JSON)",
-      "submit": "Submit for approval",
-      "reset": "Reset example",
-      "creating": "Creating…"
-    },
-
-    "modal": {
-      "title": "Send test",
-      "to": "To (E.164 or national)",
-      "bodyParams": "Body parameters (comma-separated)",
-      "urlVar": "URL button variable (optional)",
-      "cancel": "Cancel",
-      "send": "Send",
-      "sending": "Sending…",
-      "close": "Close"
-    },
-
-    "errors": {
-      "noOrg": "No organization found.",
-      "fetch": "Failed to fetch templates: {message}",
-      "componentsArray": "Components must be an array.",
-      "invalidComponents": "Invalid components JSON: {message}",
-      "nameRequired": "Name is required.",
-      "createFailed": "Create failed: {message}",
-      "sendFailed": "Send failed: {message}"
-    },
-
-    "alerts": {
-      "syncFailed": {
-        "title": "Failed to sync templates",
-        "message": "Templates could not be loaded. Please try again in a few seconds."
-      },
-      "syncSuccess": {
-        "title": "Templates synced",
-        "message": "{count, plural, =0 {No templates synced.} one {# template synced.} other {# templates synced.}}"
-      },
-      "invalidJson": {
-        "title": "Invalid JSON",
-        "message": "The Components field has a formatting error. Check commas, quotes and brackets."
-      },
-      "componentsNotArray": {
-        "title": "Invalid format",
-        "message": "Components must be inside a JSON array."
-      },
-      "nameRequired": {
-        "title": "Missing name",
-        "message": "Fill in the template name before submitting."
-      },
-      "templateSubmitted": {
-        "title": "Template submitted",
-        "message": "The template \"{name}\" was submitted with status: {status}."
-      },
-      "createFailed": {
-        "title": "Failed to create template",
-        "message": "The template could not be submitted. Check the data and try again."
-      },
-      "recipientRequired": {
-        "title": "Missing recipient",
-        "message": "Enter the number where you want to send the test."
-      },
-      "noTemplateSelected": {
-        "title": "Missing template",
-        "message": "The template to test could not be identified. Close the modal and try again."
-      },
-      "testSent": {
-        "title": "Test sent",
-        "message": "The test template was sent successfully."
-      },
-      "testSendFailed": {
-        "title": "Failed to send test",
-        "message": "The test template could not be sent. Check the number and try again."
-      },
-      "noOrg": {
-        "title": "Missing organization",
-        "message": "The organization could not be identified yet. Please try again in a few seconds."
-      }
-    }
+  "OpeningMessage": {
+    "title": "WhatsApp opening message",
+    "subtitle": "Sent automatically when a contact is outside the 24-hour window. The start and the end are fixed and approved by Meta; only the body can be changed.",
+    "bodyLabel": "Message body",
+    "bodyPlaceholder": "Write the message body...",
+    "sampleName": "Maria",
+    "counter": "{count} of {max} characters",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved.",
+    "reset": "Restore default text",
+    "usingDefault": "You have not set your own body yet. The default text is being used.",
+    "loading": "Loading...",
+    "loadFailed": "Could not load the opening message.",
+    "saveFailed": "Could not save. Please try again.",
+    "empty": "The body cannot be empty.",
+    "tooLong": "The body has more than {max} characters.",
+    "retry": "Try again"
   },
 
   "Automations": {
@@ -1308,16 +1228,8 @@
       "assistantFallbackHelp": "Assistant-specific inactivity rules win. “Any assistant (fallback)” only applies when the user’s current assistant does not already have a specific inactivity rule on this channel.",
       "delay": "Delay (minutes)",
       "message": "Message",
-      "whatsappTemplate": "WhatsApp template",
-      "noTemplate": "No template",
-      "templateBindings": "Template bindings",
+      "openingHint": "If the contact is outside the 24-hour window, they first receive the opening message and this message waits until they reply.",
       "comingSoon": "coming soon",
-      "staticText": "Static text",
-      "systemUserName": "System: user.name",
-      "systemOrganizationName": "System: organization.name",
-      "systemUserEmail": "System: user.email",
-      "systemUserPhone": "System: user.phone",
-      "valueFor": "Value for {key}",
       "createAutomation": "Create automation",
       "save": "Save",
       "saving": "Saving...",
@@ -1339,14 +1251,6 @@
         "contentRequired": {
           "title": "Missing content",
           "message": "Write a message or choose a WhatsApp template before saving."
-        },
-        "templateRequired": {
-          "title": "Missing template",
-          "message": "Choose a WhatsApp template or write a manual message."
-        },
-        "templateBindingsRequired": {
-          "title": "Missing template fields",
-          "message": "Fill in the required template fields: {fields}."
         }
       }
     },
@@ -1443,11 +1347,6 @@
     "sending": "Sending…",
     "message": "Message",
     "messagePlaceholder": "Type your message...",
-    "templatePreview": "Template Preview",
-    "template": "Template",
-    "noTemplates": "No templates",
-    "varKeyDesc": "Parameters (key=value, comma separated)",
-    "urlVar": "URL button variable",
     "chooseRecipients": "Choose recipients",
     "recipients": "Recipients",
     "selectAll": "Select all",
@@ -1464,8 +1363,6 @@
     "timezone": "Timezone",
     "hour": "Hour",
     "scheduleError": "Please choose a future date and time.",
-    "trackedPlaceholders": "Tracked Placeholders",
-    "messagePreview": "Message Preview",
     "images": "Images",
     "videos": "Videos",
     "thumbnail": "Thumbnail",
@@ -1479,12 +1376,102 @@
     "key": "Key",
     "label": "Label",
     "destinationUrl": "Destination URL",
+    "destinationUrlInvalid": "The destination must start with http:// or https://",
     "addPlaceholders": {
       "first": "Add placeholders like",
       "second": "inside the message."
     },
 
+    "start": {
+      "title": "How do you want to start?",
+      "hint": "Pick a starting point. You can come back here at any time.",
+      "blank": "Blank",
+      "blankHint": "Free message with text, images and links. Contacts outside the window receive the opening message first.",
+      "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip.",
+      "quiz": "Quiz",
+      "quizHint": "Question with up to 3 quick-reply options. Ideal to check what was retained.",
+      "quizSample": "Hi {name}! What is the right tyre pressure?",
+      "quizOptionA": "2.2 bar",
+      "quizOptionB": "2.8 bar",
+      "quizOptionC": "3.5 bar",
+      "survey": "Survey",
+      "surveyHint": "Question with up to 3 options and no right answer. Only the choice of each contact is recorded.",
+      "surveySample": "Hi {name}! What is the best time for the next training?",
+      "surveyOptionA": "Morning",
+      "surveyOptionB": "Afternoon",
+      "surveyOptionC": "Evening",
+      "question": "Open question",
+      "questionHint": "Free-text question. Replies are kept in the conversation.",
+      "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
+      "soon": "Coming soon"
+    },
+    "suggest": {
+      "title": "Suggest text",
+      "promptLabel": "Request for the suggestion",
+      "tag": "AI suggestion",
+      "placeholderWrite": "Describe the message to the AI",
+      "placeholderChange": "What do you want to change?",
+      "ask": "Ask for a suggestion",
+      "close": "Close the suggestion",
+      "again": "Another",
+      "discard": "Discard",
+      "loading": "Writing...",
+      "use": "Use",
+      "failed": "The suggestion could not be generated. Try again."
+    },
+    "composer": {
+      "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
+      "openQuestionBody": "Open question",
+      "openQuestionPlaceholder": "What would you like to ask?",
+      "expectedAnswer": "Expected answer (required)",
+      "aiEvaluation": "Evaluate the answer with AI",
+      "expectedAnswerHint": "The contact receives AI feedback followed by the expected answer. With evaluation disabled, only the expected answer is sent.",
+      "contact": "Contact",
+      "back": "Change message type",
+      "hint": "Write directly in the bubble. Use + to add images, links and variables.",
+      "placeholder": "Write your message here...",
+      "barHint": "Tap the bubble to write",
+      "add": "Add",
+      "addImage": "Image",
+      "addVideo": "Video",
+      "addDocument": "Document",
+      "addLink": "Tracked link",
+      "variables": "Variables",
+      "variableName": "Name",
+      "variableCompany": "Company",
+      "openingTitle": "Opening message",
+      "openingHint": "Only the approved template is sent. The start and the end are fixed; the body can be adjusted for this send.",
+      "openingBody": "Opening message body",
+      "openingPlaceholder": "Write the message body...",
+      "openingCounter": "{count} of {max} characters",
+      "openingLoading": "Loading the opening message...",
+      "openingLoadFailed": "Could not load the opening message.",
+      "retry": "Try again",
+      "quizTitle": "Quiz",
+      "quizHint": "Write the question in the bubble and the options in the buttons. Mark the right one in the circle. Use + for images, links and variables. Contacts outside the window receive the opening message first.",
+      "quizBody": "Quiz question",
+      "quizPlaceholder": "Write the question...",
+      "quizOption": "Option {index}",
+      "quizMarkCorrect": "Mark option {index} as correct",
+      "quizRemoveOption": "Remove option {index}",
+      "quizAddOption": "Add option",
+      "quizOptionLimit": "Up to {max} options of {chars} characters each, as WhatsApp requires.",
+      "quizFeedbackCorrect": "Reply when correct",
+      "quizFeedbackIncorrect": "Reply when wrong",
+      "quizFeedbackHint": "If left empty, the default text is sent. Write '{{'certa'}}' to include the correct option.",
+      "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts.",
+      "surveyTitle": "Survey",
+      "surveyHint": "Write the question in the bubble and the options in the buttons. There is no right answer: only the choice is recorded. Use + for images, links and variables.",
+      "surveyBody": "Survey question",
+      "surveyPlaceholder": "Write the question...",
+      "surveyOption": "Option {index}",
+      "surveyRemoveOption": "Remove option {index}",
+      "surveyThanks": "Message after the choice",
+      "surveyThanksHint": "If left empty, the default thank-you text is sent.",
+      "surveyValidity": "The survey accepts answers for {days} days. Only the first choice of each contact counts."
+    },
     "alerts": {
+      "openQuestionInvalid": {"title":"Complete the open question","message":"Write the question and expected answer, using up to 1024 characters each."},
       "usersLoadFailed": {
         "title": "Failed to load recipients",
         "message": "The user list could not be loaded. Please try again in a few seconds."
@@ -1493,26 +1480,22 @@
         "title": "Failed to load filters",
         "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
       },
-      "templatesLoadFailed": {
-        "title": "Failed to load templates",
-        "message": "WhatsApp templates could not be loaded. Please try again in a few seconds."
-      },
-      "templateDetailsFailed": {
-        "title": "Template error",
-        "message": "Could not load this template's details. Choose another template or try again."
-      },
       "contentMissing": {
         "title": "Missing content",
-        "sendMessage": "Write a message, add a file or choose a valid template before sending.",
-        "scheduleMessage": "Write a message, add a file or choose a valid template before scheduling."
+        "sendMessage": "Write a message or add a file before sending.",
+        "scheduleMessage": "Write a message or add a file before scheduling."
       },
-      "templateParamsMissing": {
-        "title": "Missing parameters",
-        "message": "Fill in all required template parameters before continuing."
+      "openingMissing": {
+        "title": "Missing body",
+        "message": "Write the opening message body before continuing."
       },
-      "trackedLinkRemoved": {
-        "title": "Link removed",
-        "message": "The link used in the template URL button was removed. Choose another link before sending."
+      "surveyInvalid": {
+        "title": "Incomplete survey",
+        "message": "Write the question and fill in 2 to 3 different options of up to 20 characters."
+      },
+      "quizInvalid": {
+        "title": "Incomplete quiz",
+        "message": "Write the question, fill in 2 to 3 different options of up to 20 characters and mark the correct one."
       }
     },
     "recipient": "recipient",
@@ -1523,6 +1506,10 @@
         "message": "You are about to start a WhatsApp read chain for {recipientLabel}. Message 1 will be sent now. The next messages will send after read receipts and configured delays.",
         "confirm": "Confirm",
         "cancel": "Cancel"
+      },
+      "opening": {
+        "title": "Send opening message?",
+        "message": "You are about to send the opening message to {recipientLabel}."
       },
       "title": "Send message?",
       "message": "You are about to send this {channelLabel} broadcast to {recipientLabel}.",
@@ -1536,6 +1523,10 @@
         "confirm": "Confirm",
         "cancel": "Cancel"
       },
+      "opening": {
+        "title": "Schedule opening message?",
+        "message": "You are scheduling the opening message for {recipientLabel} on {formattedDate}."
+      },
       "title": "Schedule message?",
       "message": "You are about to schedule this {channelLabel} broadcast for {recipientLabel} on {formattedDate}.",
       "confirm": "Confirm",
@@ -1547,13 +1538,17 @@
       "createChain": "Create Chain",
       "exitChain": "Leave Chain",
       "chainOff": "Read chains are disabled in Automations. Enable the feature before sending.",
-      "chainTemplate": "Choose a WhatsApp fallback template. It will only be used if the recipient&apos;s 24h window is closed.",
       "chainMessage": "Message",
       "chainLengthMax": "Maximum of 10 messages",
       "chainLengthAdd": "Add message",
       "chainDuplicate": "Duplicate",
       "chainRemove": "Remove",
       "chainMessages": "messages",
+      "stepKind": "Type of this message",
+      "stepKindMessage": "Message",
+      "stepKindQuiz": "Quiz",
+      "stepKindSurvey": "Survey",
+      "stepKindOpen": "Open question",
       "chainDelayBefore": "Delay before Message ",
       "chainHour": "Hours",
       "chainMinute": "Minutes",
@@ -1770,6 +1765,121 @@
       }
     }
   },
+  "Questions": {
+    "title": "Questions",
+    "subtitle": "Results of the quizzes and open questions sent on WhatsApp.",
+    "totalQuestions": "Questions",
+    "toReview": "To review",
+    "search": "Search by question text",
+    "filters": {
+      "allKinds": "All types",
+      "sentBetween": "Sent between",
+      "and": "and",
+      "from": "Sent from",
+      "to": "Sent until",
+      "clear": "Clear filters"
+    },
+    "loading": "Loading questions...",
+    "noQuestions": "No question has been sent in this organization yet.",
+    "noMatches": "No question matches the filters.",
+    "kind": {
+      "quiz": "Quiz",
+      "survey": "Survey",
+      "open": "Open question"
+    },
+    "table": {
+      "question": "Question",
+      "answered": "Answers",
+      "responseRate": "Response rate",
+      "result": "Result"
+    },
+    "sentOn": "Sent on {date}",
+    "answersOf": "{answered} of {recipients}",
+    "correctRate": "{rate}% correct",
+    "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
+    "reviewCount": "{count} to review",
+    "alerts": {
+      "noOrg": {
+        "title": "Missing organization",
+        "message": "The organization could not be identified yet. Please try again in a few seconds."
+      },
+      "loadFailed": {
+        "title": "Failed to load questions",
+        "message": "The questions could not be loaded. Please try again in a few seconds."
+      }
+    },
+    "detail": {
+      "back": "Back",
+      "loading": "Loading the question...",
+      "options": "Options",
+      "correctOption": "correct",
+      "expectedAnswer": "Expected answer",
+      "aiEvaluation": "AI evaluation",
+      "aiOn": "on",
+      "aiOff": "off",
+      "sentAt": "Sent",
+      "expiresAt": "Accepts answers until",
+      "recipients": "Recipients",
+      "answered": "Answered",
+      "notAnswered": "Did not answer",
+      "responseRate": "Response rate",
+      "correct": "Correct",
+      "correctRate": "Correct rate",
+      "correctOf": "{correct} of {answered}",
+      "toReview": "To review",
+      "verdictsTitle": "Verdicts",
+      "answeredCount": "Answered ({count})",
+      "notAnsweredCount": "Did not answer ({count})",
+      "filters": {
+        "search": "Search by name, email or phone",
+        "allAnswers": "All answers",
+        "noMatches": "No contact matches the filters."
+      },
+      "verdicts": {
+        "completa": "Complete",
+        "parcial": "Partial",
+        "incompleta": "Incomplete",
+        "none": "No verdict"
+      },
+      "table": {
+        "contact": "Contact",
+        "phone": "Phone",
+        "answer": "Answer",
+        "result": "Result",
+        "verdict": "Verdict",
+        "choice": "Choice",
+        "aiVerdict": "AI: {verdict}",
+        "feedback": "Feedback sent",
+        "answeredAt": "Answered",
+        "sentAt": "Sent"
+      },
+      "right": "Right",
+      "wrong": "Wrong",
+      "reviewNeeded": "To review",
+      "useAiVerdict": "Keep the AI verdict",
+      "noAnswers": "Nobody has answered yet.",
+      "allAnswered": "Everyone answered.",
+      "alerts": {
+        "noOrg": {
+          "title": "Missing organization",
+          "message": "The organization could not be identified yet. Please try again in a few seconds."
+        },
+        "missingQuestion": {
+          "title": "Invalid question",
+          "message": "The question could not be identified."
+        },
+        "loadFailed": {
+          "title": "Failed to load the question",
+          "message": "The results of this question could not be loaded. Please try again in a few seconds."
+        },
+        "updateFailed": {
+          "title": "Failed to save the verdict",
+          "message": "The correction could not be saved. Please try again."
+        }
+      }
+    }
+  },
+
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",
@@ -2141,7 +2251,9 @@
     "selected": "selected",
     "clear": "Clear",
     "bulkLabel": "Set Assistant",
-    "apply": "Apply",
+    "apply": "Replace",
+    "addAssistantHint": "Adds this assistant to the ones users already have",
+    "replaceAssistantHint": "Users keep only this assistant",
     "tag": "Add/Remove Tags",
     "add": "Add",
     "addTags": "Add selected tags to users",

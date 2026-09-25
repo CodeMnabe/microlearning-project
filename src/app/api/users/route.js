@@ -6,8 +6,10 @@ import {
   deleteUser,
 } from "@/lib/repos/user.repo";
 import { createUserWithAutomations } from "@/lib/services/automations/createUserWithAutomations";
+import { resolveAssistantAssignment } from "@/lib/services/users/assistantAssignment";
 import {
   assertAssistantBelongsToOrg,
+  assertAssistantsBelongToOrg,
   assertTagsBelongToOrg,
   handleApiError,
   requireOrgForUser,
@@ -44,6 +46,7 @@ export async function POST(req) {
       phoneNational,
       organizationId,
       assistantId,
+      assistantIds,
       email,
       teamsAadObjectId,
       teamsFromId,
@@ -65,6 +68,27 @@ export async function POST(req) {
       assistantId,
     );
 
+    if (assistantIds !== undefined && !Array.isArray(assistantIds)) {
+      return NextResponse.json(
+        { error: "assistantIds must be an array" },
+        { status: 400 },
+      );
+    }
+
+    const safeAssistantIds =
+      assistantIds !== undefined
+        ? await assertAssistantsBelongToOrg(
+            orgAuth.admin,
+            orgAuth.orgId,
+            assistantIds,
+          )
+        : undefined;
+
+    const assignment = resolveAssistantAssignment({
+      assistantIds: safeAssistantIds,
+      assistantId: safeAssistantId ?? undefined,
+    });
+
     const normalizedNational =
       typeof phoneNational === "string"
         ? phoneNational.replace(/\s+/g, "")
@@ -85,7 +109,8 @@ export async function POST(req) {
       organizationId: orgAuth.orgId,
       name,
       email,
-      assistantId: safeAssistantId,
+      assistantId: assignment?.activeId ?? null,
+      assistantIds: assignment?.ids,
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
       phoneNational: normalizedNational,
@@ -124,6 +149,7 @@ export async function PATCH(req) {
       teamsAadObjectId,
       teamsFromId,
       assistantId,
+      assistantIds,
       tagIds,
     } = await req.json();
 
@@ -143,6 +169,22 @@ export async function PATCH(req) {
             orgAuth.admin,
             orgAuth.orgId,
             assistantId,
+          )
+        : undefined;
+
+    if (assistantIds !== undefined && !Array.isArray(assistantIds)) {
+      return NextResponse.json(
+        { error: "assistantIds must be an array" },
+        { status: 400 },
+      );
+    }
+
+    const safeAssistantIds =
+      assistantIds !== undefined
+        ? await assertAssistantsBelongToOrg(
+            orgAuth.admin,
+            orgAuth.orgId,
+            assistantIds,
           )
         : undefined;
 
@@ -186,6 +228,7 @@ export async function PATCH(req) {
       name,
       email,
       assistantId: safeAssistantId,
+      assistantIds: safeAssistantIds,
       tagIds: safeTagIds,
       phoneNumber: fullPhone,
       phoneCountryCode: normalizedCode,
