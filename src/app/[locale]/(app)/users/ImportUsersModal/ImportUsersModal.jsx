@@ -145,11 +145,12 @@ export default function ImportUsersModal({
           );
 
           if (!mappedRow.assistantId && mappedRow.assistantPosition) {
-            const index = Number(mappedRow.assistantPosition) - 1;
+            const ids = String(mappedRow.assistantPosition)
+              .split(/[;|]/)
+              .map((position) => assistants[Number(position) - 1]?.id)
+              .filter(Boolean);
 
-            if (index >= 0 && index < assistants.length) {
-              mappedRow.assistantId = assistants[index]?.id ?? null;
-            }
+            mappedRow.assistantId = ids.length ? ids.join(";") : null;
           }
 
           return mappedRow;

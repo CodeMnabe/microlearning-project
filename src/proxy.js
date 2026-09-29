@@ -11,8 +11,10 @@ const PRIVATE_ROUTE_ROOTS = new Set([
   "assistants",
   "automations",
   "broadcast",
+  "dashboard",
   "options",
   "private",
+  "settings",
   "templates",
   "users",
 ]);

@@ -3,6 +3,15 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
+import { registerAppModulePacks, resetAppMocks } from "../utils/mocks";
+
+/**
+ * O ChatSandbox chama `useAlert` logo no corpo do componente, e esse
+ * hook rebenta sem um AlertProvider acima. O pack partilhado fornece-o,
+ * como já fornecia o de confirmação.
+ */
+registerAppModulePacks();
+
 import ChatSandbox from "@/app/[locale]/(app)/assistants/Chatbox/Chatbox.jsx";
 
 function makeResponse(data, ok = true) {
@@ -21,7 +30,7 @@ describe("Chatbox", () => {
   }));
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetAppMocks();
 
     mocks.fetch.mockImplementation((url, init = {}) => {
       if (String(url).includes("/messages")) {

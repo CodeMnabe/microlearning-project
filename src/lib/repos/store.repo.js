@@ -57,6 +57,25 @@ export async function getStoreById(storeId) {
   return data ?? null;
 }
 
+export async function updateStoreName(storeId, storeName) {
+  const cleanStoreName = typeof storeName === "string" ? storeName.trim() : "";
+
+  if (!cleanStoreName) {
+    throw new Error("Vector store name cannot be empty");
+  }
+
+  const { data, error } = await sb
+    .from("vector_store")
+    .update({ store_name: cleanStoreName })
+    .eq("id", storeId)
+    .select("id, store_name, open_ai_id")
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
 export async function deleteStoreById(storeId) {
   const { error } = await sb.from("vector_store").delete().eq("id", storeId);
   if (error) throw error;

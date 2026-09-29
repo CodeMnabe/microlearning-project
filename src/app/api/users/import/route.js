@@ -57,16 +57,30 @@ function buildFullPhone({ phoneNumber, phoneCountryCode, phoneNational }) {
   return null;
 }
 
-function parseAssistantId(value) {
-  if (value === "" || value == null) return null;
+// Aceita um id ou vários separados por ";" (ex.: "3;7"); o primeiro é o ativo.
+function parseAssistantIds(value) {
+  if (value === "" || value == null) return [];
 
-  const parsed = Number(value);
+  const ids = String(value)
+    .split(/[;|]/)
+    .map((part) => Number(part.trim()))
+    .filter((parsed) => Number.isInteger(parsed) && parsed > 0);
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return null;
-  }
+  return [...new Set(ids)];
+}
 
-  return parsed;
+async function addAssistantsToUser(admin, userId, assistantIds) {
+  if (!assistantIds.length) return;
+
+  const { error } = await admin.from("user_assistant").upsert(
+    assistantIds.map((assistantId) => ({
+      user_id: userId,
+      assistant_id: assistantId,
+    })),
+    { onConflict: "user_id,assistant_id", ignoreDuplicates: true },
+  );
+
+  if (error) throw error;
 }
 
 function parseTags(value) {
@@ -256,7 +270,8 @@ export async function POST(req) {
         phoneNational,
       });
 
-      const assistantId = parseAssistantId(rawUser.assistantId);
+      const assistantIds = parseAssistantIds(rawUser.assistantId);
+      const assistantId = assistantIds[0] ?? null;
 
       const tagNames = parseTags(rawUser.tags);
 
@@ -375,6 +390,7 @@ export async function POST(req) {
           action: "update",
           existingUserId: existingUser.id,
           patch,
+          assistantIds,
           tagIds,
           name: displayName,
           __row: rowNumber,
@@ -389,6 +405,7 @@ export async function POST(req) {
         name,
         email,
         assistantId,
+        assistantIds,
         phoneNumber: phoneNumber || undefined,
         phoneCountryCode: phoneNumber
           ? phoneCountryCode || undefined
@@ -403,9 +420,7 @@ export async function POST(req) {
 
     const requestedAssistantIds = [
       ...new Set(
-        toProcess
-          .map((item) => item.assistantId ?? item.patch?.assistant_id ?? null)
-          .filter(Boolean),
+        toProcess.flatMap((item) => item.assistantIds || []).filter(Boolean),
       ),
     ];
 
@@ -429,6 +444,10 @@ export async function POST(req) {
       if (item.patch?.assistant_id != null) {
         item.patch.assistant_id = safeAssistantIds.get(item.patch.assistant_id);
       }
+
+      item.assistantIds = (item.assistantIds || []).map((id) =>
+        safeAssistantIds.get(id),
+      );
     });
 
     const results = await Promise.allSettled(
@@ -439,6 +458,13 @@ export async function POST(req) {
             orgAuth.orgId,
             item.existingUserId,
             item.patch,
+          );
+
+          // Como nas tags: junta aos que o utilizador já tem, não retira.
+          await addAssistantsToUser(
+            orgAuth.admin,
+            item.existingUserId,
+            item.assistantIds,
           );
 
           if (item.tagIds.length) {
@@ -460,6 +486,7 @@ export async function POST(req) {
           name: item.name,
           email: item.email,
           assistantId: item.assistantId,
+          assistantIds: item.assistantIds,
           phoneNumber: item.phoneNumber,
           phoneCountryCode: item.phoneCountryCode,
           phoneNational: item.phoneNational,

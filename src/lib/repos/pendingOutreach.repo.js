@@ -66,11 +66,34 @@ export async function getAllPendingOutreachByUser(userId) {
     )
     .eq("user_id", userId)
     .eq("status", "pending")
+    .is("reply_message_id", null)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: true });
 
   if (error) throw error;
   return data ?? [];
+}
+
+export async function claimPendingOutreach(id, replyMessageId) {
+  const { data, error } = await supabase
+    .from("pending_outreach")
+    .update({ reply_message_id: replyMessageId })
+    .eq("id", id)
+    .eq("status", "pending")
+    .is("reply_message_id", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function releasePendingOutreach(id) {
+  const { error } = await supabase
+    .from("pending_outreach")
+    .update({ reply_message_id: null })
+    .eq("id", id)
+    .eq("status", "pending");
+  if (error) throw error;
 }
 
 export async function markPendingOutreachReplied(id, replyMessageId) {

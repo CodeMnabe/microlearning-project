@@ -38,6 +38,18 @@ export async function createContact({
   return data;
 }
 
+export async function hasRecentContactFromEmail(email, sinceIso) {
+  const { data, error } = await supabase
+    .from("contact")
+    .select("id")
+    .eq("email", String(email).trim().toLowerCase())
+    .gte("created_at", sinceIso)
+    .limit(1);
+
+  if (error) throw error;
+  return Boolean(data?.length);
+}
+
 export async function getContactById(contactId) {
   const { data, error } = await supabase
     .from("contact")

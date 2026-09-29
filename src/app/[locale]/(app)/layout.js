@@ -4,18 +4,33 @@ import GlobalLoadingOverlay from "../../LoadingScreen/GlobalLoadingOverlay";
 import Navbar from "../../components/Navbar/Navbar";
 import TopBar from "../../components/TopBar/TopBar";
 import { MobileNavProvider } from "@/app/components/MobileNav/MobileNavContext";
-import createSupabaseServerClient from "@/utils/supabase/server";
+import { getCurrentSession } from "@/lib/auth/session";
+import { getOrganizationMetadata } from "@/lib/helpers/organizationBranding.helpers";
 import { routing } from "@/i18n/routing";
 import "react-datepicker/dist/react-datepicker.css";
 
-export default async function AppLayout({ children, params }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+export async function generateMetadata() {
+  const { supabase, user } = await getCurrentSession();
+  if (!user) return {};
 
-  if (error || !user) {
+  const { data: org, error } = await supabase
+    .from("organization")
+    .select("name, favicon_url")
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[AppLayout] organization branding lookup failed", error);
+    return {};
+  }
+
+  return getOrganizationMetadata(org);
+}
+
+export default async function AppLayout({ children, params }) {
+  const { user } = await getCurrentSession();
+
+  if (!user) {
     const { locale } = await params;
     redirect(locale === routing.defaultLocale ? "/login" : `/${locale}/login`);
   }

@@ -6,7 +6,6 @@ import {
 } from "@/lib/repos/automationRules.repo";
 import {
   assertAssistantBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
 import { sanitizeAutomationPayload } from "@/lib/services/automations/automationEngine";
@@ -68,12 +67,6 @@ export async function POST(req) {
       assistantId,
     );
 
-    const safeTemplateId = await assertWhatsappTemplateBelongsToOrg(
-      orgAuth.admin,
-      orgAuth.orgId,
-      body.whatsapp_template_id,
-    );
-
     if (triggerType === "user.inactive" && isActive) {
       await assertNoActiveInactivityRuleConflict({
         organizationId: orgAuth.orgId,
@@ -91,7 +84,7 @@ export async function POST(req) {
       delay_minutes: Math.max(0, Number(body.delay_minutes || 0)),
       payload: sanitizeAutomationPayload(body.payload),
       is_active: isActive,
-      whatsapp_template_id: safeTemplateId,
+      whatsapp_template_id: null,
     });
 
     return NextResponse.json(row, { status: 201 });

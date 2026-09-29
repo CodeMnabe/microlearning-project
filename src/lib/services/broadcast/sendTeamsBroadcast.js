@@ -2,12 +2,14 @@ import crypto from "crypto";
 import { getBotToken } from "@/lib/teams/auth";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { getTeamsUserInstallation } from "@/lib/repos/teamsInstallations.repo";
+import { getUserById } from "@/lib/repos/user.repo";
 import {
   BroadcastError,
   normalizeFiles,
   isImageType,
   isVideoType,
 } from "./shared";
+import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
@@ -110,9 +112,12 @@ export async function sendTeamsBroadcast(input = {}) {
         createdByUserId,
       });
 
-      let text = replaceTrackedPlaceholders(
-        message,
-        resolvedTrackedLinks,
+      const user = await getUserById(userId);
+
+      // Nome, empresa, email e telemóvel, como no WhatsApp.
+      let text = interpolateBroadcastMessage(
+        replaceTrackedPlaceholders(message, resolvedTrackedLinks),
+        { user, org, assistant: null },
       ).trim();
 
       if (otherFiles.length) {

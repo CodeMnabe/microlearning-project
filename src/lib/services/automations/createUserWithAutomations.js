@@ -11,7 +11,8 @@ export async function createUserWithAutomations(input, options = {}) {
       type: "user.created",
       organizationId: user.organization_id,
       userId: user.id,
-      assistantId: user.assistant_id ?? null,
+      // Sem assistente: aplicam-se as regras de todos os atribuídos (#133).
+      assistantId: null,
       baseTime: new Date(),
       payload: {
         userName: user.name || "",

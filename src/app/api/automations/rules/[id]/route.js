@@ -6,7 +6,6 @@ import {
 } from "@/lib/repos/automationRules.repo";
 import {
   assertAssistantBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   requireOrgForAutomationRule,
 } from "@/lib/auth/guards";
 import { sanitizeAutomationPayload } from "@/lib/services/automations/automationEngine";
@@ -52,12 +51,9 @@ export async function PATCH(req, { params }) {
     }
     if (body.is_active !== undefined) patch.is_active = body.is_active;
 
-    if (body.whatsapp_template_id !== undefined) {
-      patch.whatsapp_template_id = await assertWhatsappTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        body.whatsapp_template_id,
-      );
+    // O template de abertura é implícito; regras antigas deixam de o guardar.
+    if (existing.whatsapp_template_id != null) {
+      patch.whatsapp_template_id = null;
     }
 
     const finalRule = {

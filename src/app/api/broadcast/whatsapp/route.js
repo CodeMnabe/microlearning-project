@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import {
   assertUsersBelongToOrg,
-  assertWhatsappProviderTemplateBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { parseOpeningOptions } from "@/lib/services/broadcast/openingOptions";
+import { parseQuestionOptions } from "@/lib/services/broadcast/questionOptions";
 
 export async function POST(req) {
   try {
@@ -25,30 +25,16 @@ export async function POST(req) {
       recipientUserIds,
     );
 
-    const safeWhatsappTemplateId = await assertWhatsappTemplateBelongsToOrg(
-      orgAuth.admin,
-      orgAuth.orgId,
-      body?.whatsappTemplateId,
-    );
+    const opening = parseOpeningOptions(body);
 
-    let safeTemplate = null;
-    if (!safeWhatsappTemplateId && body?.template?.projectId) {
-      const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        body.template.projectId,
-      );
+    if (opening.error) {
+      return NextResponse.json({ error: opening.error }, { status: 400 });
+    }
 
-      safeTemplate = {
-        projectId: templateRow.provider_template_id,
-        languageCode: body.template.languageCode,
-        varKeys: Array.isArray(body.template.varKeys)
-          ? body.template.varKeys
-          : [],
-        params: Array.isArray(body.template.params) ? body.template.params : [],
-        manualParams: body.template.manualParams || "",
-        trackedUrlKey: body.template.trackedUrlKey || null,
-      };
+    const question = parseQuestionOptions(body);
+
+    if (question.error) {
+      return NextResponse.json({ error: question.error }, { status: 400 });
     }
 
     const result = await sendWhatsappBroadcast({
@@ -58,11 +44,12 @@ export async function POST(req) {
       imageUrls: Array.isArray(body?.imageUrls) ? body.imageUrls : [],
       trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
       recipients: recipientUserIds.map((userId) => ({ userId })),
-      template: safeTemplate,
-      whatsappTemplateId: safeWhatsappTemplateId,
+      openingBody: opening.openingBody,
+      openingOnly: opening.openingOnly,
       scheduledBroadcastId: null,
       createdByUserId: null,
       chainMetadata: null,
+      question: question.question,
     });
 
     return NextResponse.json(result);

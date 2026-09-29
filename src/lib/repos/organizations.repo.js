@@ -145,3 +145,39 @@ export async function getOrganizationBirdConfig(orgId) {
     wabaNamespace: data.waba_namespace,
   };
 }
+/* =========================================================
+   MENSAGEM DE ABERTURA WHATSAPP
+   ========================================================= */
+
+export async function getOrganizationOpeningBody(orgId) {
+  if (!orgId) {
+    throw new Error("orgId is required");
+  }
+
+  const { data, error } = await sb
+    .from("organization")
+    .select("whatsapp_opening_body")
+    .eq("id", orgId)
+    .single();
+
+  if (error) throw error;
+
+  return data?.whatsapp_opening_body ?? null;
+}
+
+export async function updateOrganizationOpeningBody(orgId, body) {
+  if (!orgId) {
+    throw new Error("orgId is required");
+  }
+
+  const { data, error } = await sb
+    .from("organization")
+    .update({ whatsapp_opening_body: body })
+    .eq("id", orgId)
+    .select("whatsapp_opening_body")
+    .single();
+
+  if (error) throw error;
+
+  return data?.whatsapp_opening_body ?? null;
+}
