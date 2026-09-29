@@ -96,37 +96,7 @@
   border: 1px solid var(--ui-border);
   background: #fff;
   resize: vertical;
-}
-
-.placeholderHint {
-  margin-top: 10px;
-  font-size: 13px;
-  color: #666;
-  display: grid;
-  gap: 6px;
-}
-
-.messagePreviewBox {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  background: #fafafa;
-}
-
-.messagePreviewTitle {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #666;
-}
-
-.messagePreviewText {
-  white-space: pre-wrap;
-  font-size: 14px;
-}
-
-.messageToolsRow {
+}.messageToolsRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -180,37 +150,9 @@
   place-items: center;
   font-size: 12px;
   font-weight: 700;
-}
-
-.toolsGrid {
-  display: grid;
-  gap: var(--gutter-x);
-  align-items: start;
-}
-
-.toolsGridOne {
-  grid-template-columns: 280px;
-}
-
-.toolsGridTwo {
-  grid-template-columns: 280px minmax(0, 1fr);
-}
-
-.toolCard {
+}.toolCard {
   min-height: 100%;
-}
-
-.toolCardSchedule {
-  width: 100%;
-  max-width: none;
-  padding-bottom: 10px;
-}
-
-.toolCardTemplate {
-  overflow: hidden;
-}
-
-.label,
+}.label,
 .smallLabel {
   font-size: 12px;
   font-weight: 700;
@@ -221,18 +163,7 @@
 .fieldWide {
   display: grid;
   gap: 4px;
-}
-
-.input,
-.select {
-  width: 100%;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid var(--ui-border);
-  background: #fff;
-}
-
-.scheduleModeRow {
+}.scheduleModeRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -424,121 +355,14 @@
 
 .calendarWrap :global(.react-datepicker-time__header) {
   font-weight: 700;
-}
-
-.imagesRow {
-  display: grid;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.filesStack {
-  display: grid;
-  gap: 14px;
-  margin-top: 12px;
-}
-
-.thumbStrip {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.thumbWrap {
-  position: relative;
-}
-
-.imageThumb {
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.thumbClose {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.fileList {
+}.fileList {
   display: grid;
   gap: 10px;
   margin-top: 8px;
-}
-
-.fileItem {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: #fff;
-}
-
-.fileMeta {
-  display: grid;
-  gap: 4px;
-}
-
-.fileName {
-  font-weight: 600;
-  color: #0f1c3f;
-}
-
-.fileType {
-  font-size: 12px;
-  color: var(--ui-muted);
-  word-break: break-word;
-}
-
-.fileActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.emptyMini {
+}.emptyMini {
   color: #888;
   font-size: 13px;
-}
-
-.templateCardBody {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 14px;
-  align-items: start;
-}
-
-.templateFields {
-  display: grid;
-  gap: 12px;
-}
-
-.gridSingle {
-  display: grid;
-  gap: 12px;
-}
-
-.lockedField {
-  padding: 10px 12px;
-  border: 1px dashed #e5e7eb;
-  border-radius: 10px;
-  background: #f9fafb;
-  color: #111827;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  white-space: pre-wrap;
-}
-
-.errorBox {
+}.errorBox {
   padding: 10px;
   border-radius: 8px;
   background: #ffefef;
@@ -549,160 +373,7 @@
 .helpDanger {
   color: #c00;
   font-size: 12px;
-}
-
-.templatePreviewCol {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.previewPlaceholder {
-  width: 100%;
-  border: 1px dashed var(--ui-border);
-  border-radius: 12px;
-  padding: 16px;
-  color: var(--ui-muted);
-  font-size: 12px;
-}
-
-.previewUrlHint {
-  color: #6b7280;
-  font-size: 12px;
-  margin-top: 4px;
-  width: 100%;
-  word-break: break-word;
-}
-
-.waFrame {
-  width: 100%;
-  border: 1px solid var(--ui-border);
-  border-radius: 22px;
-  overflow: hidden;
-  background: #ece5dd;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-}
-
-.waFrameSmall {
-  width: 100%;
-  max-width: 260px;
-}
-
-.waHeader {
-  display: grid;
-  grid-template-columns: 44px 1fr 36px;
-  align-items: center;
-  gap: 8px;
-  height: 52px;
-  padding: 0 10px;
-  background: #075e54;
-  color: #fff;
-}
-
-.waAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: #128c7e;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-}
-
-.waHeaderText {
-  display: grid;
-  line-height: 1.05;
-}
-
-.waTitle {
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.waSubtitle {
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-.waIcons {
-  text-align: right;
-  font-size: 18px;
-  opacity: 0.9;
-}
-
-.waChat {
-  padding: 12px;
-  min-height: 120px;
-  background:
-    radial-gradient(
-        circle at 10px 10px,
-        rgba(255, 255, 255, 0.25) 2px,
-        transparent 2px
-      )
-      0 0/28px 28px,
-    radial-gradient(
-        circle at 20px 20px,
-        rgba(255, 255, 255, 0.18) 2px,
-        transparent 2px
-      )
-      0 0/28px 28px,
-    #ece5dd;
-}
-
-.waRowOut {
-  display: flex;
-  justify-content: flex-end;
-  margin: 6px 0;
-}
-
-.waBubbleOut {
-  position: relative;
-  max-width: 80%;
-  background: #dcf8c6;
-  border-radius: 10px 10px 0 10px;
-  padding: 8px 52px 8px 10px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.waBubbleOut::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  width: 0;
-  height: 0;
-  border-left: 6px solid #dcf8c6;
-  border-top: 6px solid transparent;
-}
-
-.waText {
-  color: #111b21;
-  font-size: 14px;
-}
-
-.waMeta {
-  position: absolute;
-  right: 8px;
-  bottom: 4px;
-  font-size: 11px;
-  color: #667781;
-}
-
-.waCtaBtn {
-  border: 1px solid #128c7e;
-  background: #ffffff;
-  color: #128c7e;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: default;
-}
-
-.channelSwitch {
+}.channelSwitch {
   display: inline-flex;
   height: 45px;
   padding: 2px;
@@ -986,46 +657,7 @@
   border-radius: 16px;
   padding: 16px;
   background: #fff;
-}
-
-.placeholderHintTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #666;
-}
-
-.placeholderInsertBtn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: fit-content;
-  max-width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: #fff;
-  color: #0f172a;
-  cursor: pointer;
-  text-align: left;
-}
-
-.placeholderInsertBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.placeholderInsertBtn code {
-  background: #f1f5f9;
-  padding: 3px 6px;
-  border-radius: 6px;
-}
-
-.placeholderInsertBtn span {
-  color: #475569;
-  font-size: 13px;
-}
-
-.chainBox {
+}.chainBox {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -1327,4 +959,563 @@
     width: 100%;
     justify-content: space-between;
   }
+}
+
+/* ---------- Início: escolher o tipo de mensagem ---------- */
+
+.startIntro {
+  margin-bottom: 12px;
+}
+
+.startTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.startHint {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.startGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .startGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.startCard {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  padding: 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: #111827;
+}
+
+.startCard:hover,
+.startCard:focus-visible {
+  border-color: #111827;
+  outline: none;
+}
+
+.startCardSoon {
+  cursor: default;
+}
+
+.startCardSoon:hover,
+.startCardSoon:focus-visible {
+  border-color: var(--ui-border);
+}
+
+.startCardSoon .startThumb,
+.startCardSoon .startCardHint {
+  opacity: 0.55;
+}
+
+.startThumb {
+  min-height: 300px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+}
+
+.startCard .startThumb > * {
+  width: 100%;
+  max-width: 300px;
+  font-size: 13.5px;
+  border-radius: 16px;
+}
+
+.startCardText {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding-top: 4px;
+}
+
+.startCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.startCardBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.startCardHint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+@media (max-width: 560px) {
+  .startCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Compor dentro do telemóvel ---------- */
+
+.composerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.backBtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.composerHint {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.phoneWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.tokenEditor {
+  min-height: 60px;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+
+.tokenEditor:empty::before {
+  content: attr(data-placeholder);
+  color: #8696a0;
+}
+
+.tokenChip {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--phone-accent, #00695c);
+  font-size: 0.92em;
+  font-weight: 600;
+  user-select: none;
+  vertical-align: baseline;
+  box-shadow: 0 0 0 1px var(--phone-accent, #00695c);
+}
+
+.bubbleImages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.bubbleImageWrap {
+  position: relative;
+}
+
+.bubbleImage {
+  display: block;
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.bubbleImageRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 27, 33, 0.7);
+  color: #fff;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.fileBubble {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+.fileBubbleName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.fileBubbleName span,
+.fileBubbleName a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.fileBubbleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fileBubbleActions button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--phone-accent, #128c7e);
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.plusWrap {
+  position: relative;
+}
+
+.plusBtn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #54656f;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.plusBtn[aria-expanded="true"] {
+  background: var(--phone-accent, #128c7e);
+  color: #fff;
+}
+
+.plusMenu {
+  position: absolute;
+  left: 0;
+  bottom: 42px;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: grid;
+  gap: 2px;
+  z-index: 5;
+}
+
+.plusItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #111b21;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plusItem:hover,
+.plusItem:focus-visible {
+  background: #f0f2f5;
+  outline: none;
+}
+
+.plusLabel {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.barHint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ---------- Mensagem de abertura ---------- */
+
+.openingMeta {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.counter {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.counterOver {
+  color: #b91c1c;
+}
+
+/* ---------- Quiz ---------- */
+
+/* Cada opção é um botão do WhatsApp com o texto editável lá dentro. */
+.quizOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.quizOptionCorrect {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #128c7e;
+  cursor: pointer;
+}
+
+.quizOptionInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+}
+
+.quizOptionInput::placeholder {
+  color: #8696a0;
+  font-weight: 500;
+}
+
+.quizOptionRemove {
+  flex: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  color: #8696a0;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quizOptionRemove:hover,
+.quizOptionRemove:focus-visible {
+  color: #b91c1c;
+}
+
+.quizAddOption {
+  width: 100%;
+  max-width: 88%;
+  padding: 6px 12px;
+  border: 1px dashed #128c7e;
+  border-radius: 8px;
+  background: transparent;
+  color: #128c7e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quizAddOption:hover,
+.quizAddOption:focus-visible {
+  background: rgba(18, 140, 126, 0.08);
+}
+
+.quizMeta {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quizField {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.quizField textarea {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+  min-height: 40px;
+}
+
+.quizFieldHint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Tipo do passo da cadeia: mensagem, quiz ou pergunta aberta */
+
+.chainKindRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.chainKindLabel {
+  margin-right: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Sugestão de texto dentro do telemóvel: pedido na barra, proposta no balão. */
+
+.suggestBar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestField {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border: 1.5px solid var(--phone-accent, #128c7e);
+  border-radius: 999px;
+  background: #fff;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.suggestSpark {
+  flex: none;
+  color: var(--phone-accent, #128c7e);
+}
+
+.suggestInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #111b21;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.suggestTag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  color: var(--phone-accent, #128c7e);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.suggestIconBtn,
+.suggestSendBtn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.suggestIconBtn {
+  background: transparent;
+  color: #54656f;
+}
+
+.suggestSendBtn {
+  background: var(--phone-accent, #128c7e);
+  color: #fff;
+}
+
+.suggestSendBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.suggestStatus {
+  color: #667781;
+  font-style: italic;
+}
+
+.suggestBubbleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.suggestBubbleActions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #027eb5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }

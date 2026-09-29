@@ -14,6 +14,7 @@ import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast"
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+import { summarizeBroadcastPayload } from "@/lib/logging/summarizeBroadcastPayload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,11 @@ async function syncAutomationRunSuccess(automationRunId, context) {
   }
 }
 
-async function syncAutomationRunFailure(automationRunId, errorMessage, context) {
+async function syncAutomationRunFailure(
+  automationRunId,
+  errorMessage,
+  context,
+) {
   if (!automationRunId) return;
 
   try {
@@ -172,9 +177,10 @@ async function processOneBroadcast(broadcast) {
             recipients: Array.isArray(storedPayload.recipients)
               ? storedPayload.recipients
               : [],
-            template: storedPayload.template || null,
-            whatsappTemplateId: storedPayload.whatsappTemplateId || null,
+            openingBody: storedPayload.openingBody || null,
+            openingOnly: storedPayload.openingOnly === true,
             chainMetadata: null,
+            question: storedPayload.question || null,
           }
         : {
             userIds: Array.isArray(storedPayload.userIds)
@@ -186,7 +192,7 @@ async function processOneBroadcast(broadcast) {
     console.log("[Schedule Broadcast] payload before send", {
       broadcastId: broadcast.id,
       channel: broadcast.channel,
-      payload,
+      summary: summarizeBroadcastPayload(payload),
     });
 
     let result;

@@ -131,3 +131,40 @@ export async function fetchRows(table, columns, applyFilters) {
    */
   return data ?? [];
 }
+
+/**
+ * Fetches every matching row in server-sized pages. Use this for metrics that
+ * must remain exact beyond PostgREST's configured max_rows limit.
+ */
+export async function fetchAllRows(
+  table,
+  columns,
+  applyFilters,
+  pageSize = 1000,
+) {
+  const supabaseAdmin = getSupabaseAdminClient();
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    let query = supabaseAdmin.from(table).select(columns);
+
+    if (typeof applyFilters === "function") {
+      query = applyFilters(query);
+    }
+
+    const { data, error } = await query.range(from, from + pageSize - 1);
+
+    if (error) {
+      throw new Error(`${table}: ${error.message}`);
+    }
+
+    const page = data ?? [];
+    rows.push(...page);
+
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}

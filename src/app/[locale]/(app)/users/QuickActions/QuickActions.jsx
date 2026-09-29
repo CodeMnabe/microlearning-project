@@ -101,12 +101,18 @@ export default function QuickActionsBar({
     [tags, tagSearch],
   );
 
-  async function bulkSetAssistant() {
+  // "add" junta o assistente aos que cada utilizador já tem; sem modo substitui-os.
+  async function bulkSetAssistant(mode) {
     if (!assistantId || !canAct) return;
     const res = await fetch("/api/users/bulk", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds, assistantId, orgId }),
+      body: JSON.stringify({
+        ids: selectedIds,
+        assistantId,
+        orgId,
+        ...(mode ? { mode } : {}),
+      }),
     });
     if (!res.ok) console.error(await res.text());
     await onDone?.();
@@ -249,9 +255,18 @@ export default function QuickActionsBar({
                   {t("QuickActions.clear")}
                 </button>
                 <button
-                  className={bar.bulkBtnPrimary}
-                  onClick={bulkSetAssistant}
+                  className={bar.bulkBtn}
+                  onClick={() => bulkSetAssistant("add")}
                   disabled={!assistantId || !canAct}
+                  title={t("QuickActions.addAssistantHint")}
+                >
+                  {t("QuickActions.add")}
+                </button>
+                <button
+                  className={bar.bulkBtnPrimary}
+                  onClick={() => bulkSetAssistant()}
+                  disabled={!assistantId || !canAct}
+                  title={t("QuickActions.replaceAssistantHint")}
                 >
                   {t("QuickActions.apply")}
                 </button>

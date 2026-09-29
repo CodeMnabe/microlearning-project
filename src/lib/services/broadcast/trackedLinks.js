@@ -1,5 +1,6 @@
 import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
 import crypto from "crypto";
+import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -42,6 +43,9 @@ export async function createTrackedLinkForRecipient({
   linkKey = null,
   createdByUserId = null,
 }) {
+  if (!isAllowedDestinationUrl(destinationUrl)) {
+    throw new Error("O destino do link tem de começar por http:// ou https://");
+  }
   const token = makeToken();
 
   const trackedLink = await createTrackedLink({

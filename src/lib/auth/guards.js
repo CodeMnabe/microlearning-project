@@ -617,79 +617,39 @@ export async function assertAssistantBelongsToOrg(admin, orgId, assistantId) {
   return parsedAssistantId;
 }
 
-/* =========================================================
-   WHATSAPP TEMPLATE SECURITY
-   ========================================================= */
+export async function assertAssistantsBelongToOrg(admin, orgId, assistantIds) {
+  const parsedIds = (assistantIds || []).map((id) => parsePositiveInt(id));
 
-export async function assertWhatsappTemplateBelongsToOrg(
-  admin,
-  orgId,
-  templateId,
-) {
-  if (templateId == null || templateId === "") {
-    return null;
+  if (parsedIds.some((id) => !id)) {
+    throwHttpError("Invalid assistant id", 400);
   }
 
-  if (typeof templateId !== "string") {
-    throwHttpError("Invalid WhatsApp template id", 400);
+  const uniqueIds = [...new Set(parsedIds)];
+
+  if (!uniqueIds.length) {
+    return [];
   }
 
   const { data, error } = await admin
-    .from("whatsapp_templates")
-    .select("id, org_id")
-    .eq("id", templateId)
-    .maybeSingle();
+    .from("assistant")
+    .select("id")
+    .eq("organization_id", orgId)
+    .in("id", uniqueIds);
 
   if (error) {
     throw error;
   }
 
-  if (!data) {
-    throwHttpError("WhatsApp template not found", 404);
-  }
+  const found = new Set((data || []).map((row) => Number(row.id)));
 
-  if (data.org_id != null && Number(data.org_id) !== Number(orgId)) {
+  if (uniqueIds.some((id) => !found.has(id))) {
     throwHttpError(
-      "WhatsApp template does not belong to this organization",
+      "One or more assistants do not belong to this organization",
       403,
     );
   }
 
-  return templateId;
-}
-
-export async function assertWhatsappProviderTemplateBelongsToOrg(
-  admin,
-  orgId,
-  providerTemplateId,
-) {
-  const normalizedId = String(providerTemplateId || "").trim();
-
-  if (!normalizedId) {
-    return null;
-  }
-
-  const { data, error } = await admin
-    .from("whatsapp_templates")
-    .select("id, org_id, provider_template_id")
-    .eq("provider_template_id", normalizedId);
-
-  if (error) {
-    throw error;
-  }
-
-  const template = (data || []).find(
-    (row) => row.org_id == null || Number(row.org_id) === Number(orgId),
-  );
-
-  if (!template) {
-    throwHttpError(
-      "WhatsApp template does not belong to this organization",
-      403,
-    );
-  }
-
-  return template;
+  return uniqueIds;
 }
 
 /* =========================================================
