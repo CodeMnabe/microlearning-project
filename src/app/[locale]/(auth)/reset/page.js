@@ -1,16 +1,23 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import {
+  DEFAULT_AUTH_REDIRECT,
+  getSafeRedirectPath,
+} from "@/lib/auth/safeRedirect";
+import { requestPasswordReset } from "./actions";
 import styles from "../login/login.module.css"; // reuse spinner/check/btn styles
 
 export default function ResetRequestPage() {
-  const supabase = createClient();
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations();
   const locale = useLocale();
+  const redirectPath = getSafeRedirectPath(
+    searchParams.get("next"),
+    `/${locale}${DEFAULT_AUTH_REDIRECT}`,
+  );
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'done'
@@ -21,16 +28,7 @@ export default function ResetRequestPage() {
     setErrorMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/${locale}/reset/confirm`,
-      flowType: "implicit",
-    });
-
-    if (error) {
-      setStatus("idle");
-      setErrorMsg(error.message);
-      return;
-    }
+    await requestPasswordReset({ email, locale, next: redirectPath });
 
     setStatus("done"); // label changes to “E-mail enviado”
     setEmail("");
@@ -77,7 +75,10 @@ export default function ResetRequestPage() {
           )}
         </button>
 
-        <Link href={`/${locale}/login`} className={styles.link}>
+        <Link
+          href={`/${locale}/login?next=${encodeURIComponent(redirectPath)}`}
+          className={styles.link}
+        >
           {t("Auth.reset.back")}
         </Link>
 
