@@ -8,6 +8,8 @@ import {
   createMessageChainSteps,
 } from "@/lib/repos/messageChain.repo";
 import { sendReadChainStep } from "@/lib/services/broadcast/readChains/sendReadChainStep";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   attachChainStepQuestions,
   parseChainStepQuestions,
@@ -217,7 +219,24 @@ export async function POST(req) {
       );
     }
 
+    const auditReadChain = (extra = {}) =>
+      recordAuditEvent(orgAuth, {
+        action: AUDIT_ACTIONS.BROADCAST_READ_CHAIN_CREATED,
+        entityType: "message_chain",
+        entityId: chain.id,
+        details: {
+          channel,
+          recipientCount: dedupedRecipients.length,
+          stepCount: steps.length,
+          scheduled: isScheduled,
+          scheduledFor: scheduledForIso || null,
+          ...extra,
+        },
+      });
+
     if (isScheduled) {
+      await auditReadChain();
+
       return NextResponse.json({
         ok: dedupedRecipients.length,
         failed: 0,
@@ -282,6 +301,13 @@ export async function POST(req) {
     const failedCount = results.length - okCount;
     const sentCount = results.filter((r) => r.sent).length;
     const waitingCount = results.filter((r) => r.waitingForReply).length;
+
+    await auditReadChain({
+      ok: okCount,
+      failed: failedCount,
+      sent: sentCount,
+      waitingForReply: waitingCount,
+    });
 
     return NextResponse.json({
       ok: okCount,

@@ -8,12 +8,14 @@ import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 
 import styles from "./options.module.css";
+import ActivityLog from "./components/ActivityLog";
 import OpeningMessageSettings from "./components/OpeningMessageSettings";
 
 export default function OptionsPage() {
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const translation = useTranslations("Options");
+  const activityTranslation = useTranslations("ActivityLog");
   const openingTranslation = useTranslations("OpeningMessage");
   const { stopLoading } = useGlobalLoader();
 
@@ -34,14 +36,24 @@ export default function OptionsPage() {
         </div>
       </div>
 
+      <section className={styles.section} aria-labelledby="activity-title">
+        <div className={styles.sectionHeader}>
+          <h2 id="activity-title" className={styles.sectionTitle}>
+            {activityTranslation("Title")}
+          </h2>
+          <p className={styles.sectionText}>
+            {activityTranslation("Subtitle")}
+          </p>
+        </div>
+
+        {org?.id ? <ActivityLog orgId={org.id} /> : null}
+      </section>
       <section className={styles.section} aria-labelledby="opening-title">
         <div className={styles.sectionHeader}>
           <h2 id="opening-title" className={styles.sectionTitle}>
             {openingTranslation("title")}
           </h2>
-          <p className={styles.sectionText}>
-            {openingTranslation("subtitle")}
-          </p>
+          <p className={styles.sectionText}>{openingTranslation("subtitle")}</p>
         </div>
 
         {org?.id ? (

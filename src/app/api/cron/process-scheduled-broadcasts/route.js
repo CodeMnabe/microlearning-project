@@ -12,6 +12,8 @@ import {
 } from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import { summarizeBroadcastPayload } from "@/lib/logging/summarizeBroadcastPayload";
 
 export const runtime = "nodejs";
@@ -60,7 +62,11 @@ async function syncAutomationRunSuccess(automationRunId, context) {
   }
 }
 
-async function syncAutomationRunFailure(automationRunId, errorMessage, context) {
+async function syncAutomationRunFailure(
+  automationRunId,
+  errorMessage,
+  context,
+) {
   if (!automationRunId) return;
 
   try {
@@ -71,6 +77,20 @@ async function syncAutomationRunFailure(automationRunId, errorMessage, context) 
       message: error?.message || String(error),
     });
   }
+}
+
+function auditScheduledSend(broadcast, details) {
+  return recordSystemAuditEvent(broadcast.organization_id, {
+    action: AUDIT_ACTIONS.BROADCAST_SCHEDULED_SENT,
+    entityType: "scheduled_broadcast",
+    entityId: broadcast.id,
+    details: {
+      channel: broadcast.channel,
+      recipientCount: broadcast.recipient_count ?? null,
+      automation: Boolean(broadcast?.payload?.automationRunId),
+      ...details,
+    },
+  });
 }
 
 function normalizeError(err) {
@@ -196,6 +216,12 @@ async function processOneBroadcast(broadcast) {
       status: finalStatus,
     });
 
+    await auditScheduledSend(broadcast, {
+      ok: okCount,
+      failed: failedCount,
+      status: finalStatus,
+    });
+
     if (finalStatus === "failed") {
       await syncAutomationRunFailure(
         verifiedAutomationRunId,
@@ -235,6 +261,11 @@ async function processOneBroadcast(broadcast) {
     }
 
     const normalizedError = normalizeError(err);
+
+    await auditScheduledSend(broadcast, {
+      status: "failed",
+      error: normalizedError,
+    });
 
     await syncAutomationRunFailure(
       verifiedAutomationRunId,

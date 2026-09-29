@@ -3,6 +3,8 @@ import {
   updateScheduledBroadcast,
   deleteScheduledBroadcast,
 } from "@/lib/repos/scheduledBroadcasts.repo";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   cleanPatch,
   handleApiError,
@@ -177,6 +179,18 @@ export async function PATCH(req, { params }) {
       patch,
     );
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SCHEDULE_UPDATED,
+      entityType: "scheduled_broadcast",
+      entityId: orgAuth.broadcastId,
+      details: {
+        fields: Object.keys(patch),
+        status: patch.status ?? null,
+        scheduledFor: patch.scheduled_for ?? null,
+        channel: data?.channel ?? null,
+      },
+    });
+
     return NextResponse.json({
       item: data,
     });
@@ -214,6 +228,16 @@ export async function DELETE(_req, { params }) {
     await deleteScheduledBroadcast(
       orgAuth.broadcastId,
     );
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SCHEDULE_DELETED,
+      entityType: "scheduled_broadcast",
+      entityId: orgAuth.broadcastId,
+      details: {
+        status: orgAuth.broadcast?.status ?? null,
+        scheduledFor: orgAuth.broadcast?.scheduled_for ?? null,
+      },
+    });
 
     return NextResponse.json({
       success: true,

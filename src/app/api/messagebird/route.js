@@ -70,6 +70,9 @@ import { handleAssistantSwitch } from "@/lib/services/assistants/handleAssistant
 
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 import { getSupabaseAdminClient } from "@/lib/db/admin";
 
 const SIGNING_KEY = process.env.MESSAGEBIRD_SIGNING_KEY;
@@ -1352,6 +1355,14 @@ async function handleEvent(rawJSON) {
     content: text,
 
     role: "user",
+  });
+
+  await recordSystemAuditEvent(user.organization_id, {
+    action: AUDIT_ACTIONS.MESSAGE_RECEIVED,
+    entityType: "user",
+    entityId: user.id,
+    entityLabel: user.name,
+    details: { channel },
   });
 
   /*

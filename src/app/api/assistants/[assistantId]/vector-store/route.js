@@ -11,6 +11,9 @@ import { createDBStore } from "@/lib/repos/store.repo";
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 export async function POST(req, ctx) {
   try {
     const { assistantId } = await ctx.params;
@@ -113,6 +116,18 @@ export async function POST(req, ctx) {
      * ]
      */
     await associateVectorStoreToDbAssistant(auth.assistantId, dbStore.id);
+
+    await recordAuditEvent(auth, {
+      action: AUDIT_ACTIONS.ASSISTANT_FILES_ADDED,
+      entityId: auth.assistantId,
+      entityLabel: auth.assistant?.name,
+      details: {
+        storeId: dbStore.id,
+        storeName: dbStore.store_name,
+        fileCount: fileRowsForDb.length,
+        fileNames: fileRowsForDb.map((file) => file.name),
+      },
+    });
 
     return NextResponse.json(
       {

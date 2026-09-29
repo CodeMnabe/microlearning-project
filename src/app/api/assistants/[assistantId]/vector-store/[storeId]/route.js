@@ -6,10 +6,7 @@ import {
   deleteStoreById,
 } from "@/lib/repos/store.repo";
 
-import {
-  createDBFiles,
-  deleteFileById,
-} from "@/lib/repos/files.repo";
+import { createDBFiles, deleteFileById } from "@/lib/repos/files.repo";
 
 import { nullifyVectorStoreToDbAssistant } from "@/lib/repos/assistants.repo";
 
@@ -23,6 +20,9 @@ import {
 } from "@/lib/services/openaiFiles.service";
 
 import { requireOrgForAssistant, handleApiError } from "@/lib/auth/guards";
+
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function serializeStore(store) {
   return {
@@ -209,7 +209,9 @@ export async function PATCH(req, { params }) {
     }
 
     const storeFiles = store.file || [];
-    const filesById = new Map(storeFiles.map((file) => [Number(file.id), file]));
+    const filesById = new Map(
+      storeFiles.map((file) => [Number(file.id), file]),
+    );
     const removedFileIds = [
       ...new Set(rawRemovedFileIds.map((fileId) => Number(fileId))),
     ];
@@ -254,10 +256,7 @@ export async function PATCH(req, { params }) {
       throw new Error("Vector store has no OpenAI vector store ID");
     }
 
-    const uploaded = await uploadOpenAiFilesFromStorage(
-      rawFiles,
-      auth.orgId,
-    );
+    const uploaded = await uploadOpenAiFilesFromStorage(rawFiles, auth.orgId);
     uploadedOpenAiIds = uploaded.fileIds;
 
     for (const fileId of uploadedOpenAiIds) {
@@ -407,6 +406,18 @@ export async function DELETE(_req, { params }) {
      * Delete local Vector Store row.
      */
     await deleteStoreById(sId);
+
+    await recordAuditEvent(auth, {
+      action: AUDIT_ACTIONS.ASSISTANT_FILES_REMOVED,
+      entityId: auth.assistantId,
+      entityLabel: auth.assistant?.name,
+      details: {
+        storeId: sId,
+        storeName: store.store_name,
+        fileCount: (store.file ?? []).length,
+        fileNames: (store.file ?? []).map((file) => file.name),
+      },
+    });
 
     return NextResponse.json(
       {

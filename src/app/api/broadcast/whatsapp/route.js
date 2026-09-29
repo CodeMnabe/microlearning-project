@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertUsersBelongToOrg,
   handleApiError,
@@ -50,6 +52,18 @@ export async function POST(req) {
       createdByUserId: null,
       chainMetadata: null,
       question: question.question,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SENT,
+      entityId: result?.sendGroupId,
+      details: {
+        channel: "whatsapp",
+        recipientCount: recipientUserIds.length,
+        ok: result?.ok ?? 0,
+        failed: result?.failed ?? 0,
+        hasTemplate: Boolean(safeWhatsappTemplateId || safeTemplate),
+      },
     });
 
     return NextResponse.json(result);
