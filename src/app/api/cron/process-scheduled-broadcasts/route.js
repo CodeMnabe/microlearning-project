@@ -186,6 +186,7 @@ async function processOneBroadcast(broadcast) {
             userIds: Array.isArray(storedPayload.userIds)
               ? storedPayload.userIds
               : [],
+            automationRunId: verifiedAutomationRunId,
           }),
     };
 

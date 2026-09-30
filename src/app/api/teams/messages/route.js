@@ -17,7 +17,11 @@ import {
 
 import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 
-import { createMessage, getMessagesInThread } from "@/lib/repos/messages.repo";
+import {
+  createMessage,
+  getMessagesInThread,
+  markTeamsMessagesReadUpTo,
+} from "@/lib/repos/messages.repo";
 
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
@@ -177,8 +181,12 @@ async function sendReply(activity, text, opts = {}) {
     };
   }
 
+  const data = await res.json().catch(() => null);
+
   return {
     ok: true,
+
+    id: data?.id ?? null,
   };
 }
 
@@ -1120,8 +1128,11 @@ async function handleUserInteraction(activity) {
     throw new Error("OpenAI returned an empty Teams response");
   }
 
+  const sent = await sendReply(activity, text);
+
   /*
-   * Save Assistant response locally.
+   * Save Assistant response locally, with the
+   * Teams activity id used by read receipts.
    */
   await createMessage({
     threadId: thread.id,
@@ -1134,16 +1145,44 @@ async function handleUserInteraction(activity) {
 
     channel,
 
-    messageId: null,
+    messageId: sent?.id ?? null,
 
     externalContactId: null,
 
     content: text,
 
     role: "assistant",
+
+    deliveryStatus: sent?.ok ? "accepted" : "failed",
+
+    failedAt: sent?.ok ? null : new Date().toISOString(),
+  });
+}
+
+/*
+ * Read receipts only exist in personal chats, and only
+ * reach the bot when the user has them turned on.
+ */
+async function handleReadReceipt(activity) {
+  if (GetConversationType(activity) !== "personal") return;
+
+  const org = await getOrganizationByTeamsTenantId(GetTenantId(activity));
+
+  if (!org) return;
+
+  const user = await getTeamsUserForOrganization({
+    aadObjectId: GetAadObjectId(activity),
+
+    organizationId: org.id,
   });
 
-  await sendReply(activity, text);
+  if (!user) return;
+
+  await markTeamsMessagesReadUpTo({
+    userId: user.id,
+
+    lastReadMessageId: activity?.value?.lastReadMessageId ?? null,
+  });
 }
 
 /* =========================================================
@@ -1496,6 +1535,13 @@ export async function POST(req) {
       activity.text.trim()
     ) {
       await handleUserInteraction(activity);
+    }
+
+    if (
+      activity.type === "event" &&
+      activity.name === "application/vnd.microsoft.readReceipt"
+    ) {
+      await handleReadReceipt(activity);
     }
 
     if (activity.type === "installationUpdate" && activity.action === "add") {

@@ -3,6 +3,8 @@ import { getBotToken } from "@/lib/teams/auth";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { getTeamsUserInstallation } from "@/lib/repos/teamsInstallations.repo";
 import { getUserById } from "@/lib/repos/user.repo";
+import { createMessage } from "@/lib/repos/messages.repo";
+import { getUserThreadForChannel } from "@/lib/repos/threads.repo";
 import {
   BroadcastError,
   normalizeFiles,
@@ -24,6 +26,7 @@ export async function sendTeamsBroadcast(input = {}) {
     imageUrls = [],
     trackedLinks = [],
     scheduledBroadcastId = null,
+    automationRunId = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
@@ -160,6 +163,41 @@ export async function sendTeamsBroadcast(input = {}) {
         data = JSON.parse(raw);
       } catch {
         data = raw;
+      }
+
+      /*
+       * Keep the Teams activity id so read receipts can mark it read.
+       * The message already went out, so a failure here is only logged.
+       */
+      if (res.ok && user) {
+        try {
+          const thread = user.assistant_id
+            ? await getUserThreadForChannel({
+                userId,
+                assistantId: user.assistant_id,
+                channel: "teams",
+              })
+            : null;
+
+          await createMessage({
+            threadId: thread?.id ?? null,
+            userId,
+            organizationId: orgId,
+            assistantId: user.assistant_id ?? null,
+            channel: "teams",
+            messageId: data?.id ?? null,
+            content: text,
+            role: "assistant",
+            deliveryStatus: "accepted",
+            scheduledBroadcastId,
+            automationRunId,
+          });
+        } catch (recordErr) {
+          console.error("[Teams broadcast] could not record message", {
+            userId,
+            error: recordErr?.message || String(recordErr),
+          });
+        }
       }
 
       results.push({

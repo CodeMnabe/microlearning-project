@@ -11,9 +11,19 @@ import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast"
 import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
-function getRecipientUserIds(recipients = []) {
-  return recipients
-    .map((recipient) => Number(recipient?.userId ?? recipient?.id))
+/*
+ * The composer sends `userIds` (same as the Teams
+ * schedule payload); `recipients` is still accepted.
+ */
+function getRecipientUserIds(body = {}) {
+  const raw = Array.isArray(body?.userIds)
+    ? body.userIds
+    : (Array.isArray(body?.recipients) ? body.recipients : []).map(
+        (recipient) => recipient?.userId ?? recipient?.id,
+      );
+
+  return raw
+    .map(Number)
     .filter((userId) => Number.isInteger(userId) && userId > 0);
 }
 
@@ -37,7 +47,7 @@ export async function POST(req) {
      * VALIDATE RECIPIENTS
      * =========================================================
      */
-    const userIds = getRecipientUserIds(body?.recipients);
+    const userIds = getRecipientUserIds(body);
 
     if (!userIds.length) {
       return jsonError("No valid recipients selected", 400);

@@ -337,6 +337,47 @@ export async function getPendingWhatsappMessagesForReadReceiptSync({
   return data || [];
 }
 
+/*
+ * Teams read receipts only carry the id of the last message read,
+ * so everything sent to the user up to that message counts as read.
+ * When that id is not stored (e.g. command replies), use `at`.
+ */
+export async function markTeamsMessagesReadUpTo({
+  userId,
+  lastReadMessageId = null,
+  at = new Date(),
+}) {
+  const iso = toIsoDate(at);
+  let cutoff = iso;
+
+  if (lastReadMessageId) {
+    const { data: lastRead, error: lookupError } = await supabase
+      .from("message")
+      .select("created_at")
+      .eq("user_id", userId)
+      .eq("channel", "teams")
+      .eq("message_id", lastReadMessageId)
+      .limit(1)
+      .maybeSingle();
+
+    if (lookupError) throw lookupError;
+    if (lastRead?.created_at) cutoff = lastRead.created_at;
+  }
+
+  const { data, error } = await supabase
+    .from("message")
+    .update({ delivery_status: "read", delivered_at: iso, read_at: iso })
+    .eq("user_id", userId)
+    .eq("channel", "teams")
+    .in("role", OUTBOUND_ROLES)
+    .is("read_at", null)
+    .lte("created_at", cutoff)
+    .select("id");
+
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 export async function getLastOutboundForUserAssistant(
   userId,
   assistantId,
