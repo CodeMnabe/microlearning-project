@@ -1,6 +1,6 @@
 import { RefreshCw, X } from "lucide-react";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
-import styles from "../options.module.css";
+import styles from "../settings.module.css";
 
 export default function ActivityFilters({
   translation,

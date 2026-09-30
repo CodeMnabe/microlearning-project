@@ -21,6 +21,8 @@ import {
 } from "@/lib/helpers/organizationLogo.helpers";
 import LogoUploader from "./LogoUploader";
 import ThemePreview from "./ThemePreview";
+import ActivityLog from "./components/ActivityLog";
+import OpeningMessageSettings from "./components/OpeningMessageSettings";
 import styles from "./settings.module.css";
 
 const EMPTY_FORM = {
@@ -35,8 +37,7 @@ const EMPTY_FORM = {
 function toForm(item) {
   return {
     name: item?.name ?? "",
-    default_phone_country_code:
-      item?.default_phone_country_code ?? "+351",
+    default_phone_country_code: item?.default_phone_country_code ?? "+351",
     theme: getSafeTheme(item?.theme),
     teams_tenant_id: item?.teams_tenant_id ?? "",
     waba_id: item?.waba_id ?? "",
@@ -48,6 +49,8 @@ export default function SettingsPage() {
   const t = useTranslations("Settings");
   const loadErrorMessage = t("loadError");
   const organizationMissingMessage = t("organizationMissing");
+  const activityTranslation = useTranslations("ActivityLog");
+  const openingTranslation = useTranslations("OpeningMessage");
   const showAlert = useAlert();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -153,7 +156,9 @@ export default function SettingsPage() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         const message =
-          response.status === 409 ? t("validation.teamsConflict") : payload.error;
+          response.status === 409
+            ? t("validation.teamsConflict")
+            : payload.error;
         throw new Error(message || t("saveError"));
       }
 
@@ -400,6 +405,31 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      <section className={styles.section} aria-labelledby="activity-title">
+        <div className={styles.sectionHeader}>
+          <h2 id="activity-title" className={styles.sectionTitle}>
+            {activityTranslation("Title")}
+          </h2>
+          <p className={styles.sectionText}>
+            {activityTranslation("Subtitle")}
+          </p>
+        </div>
+
+        {org?.id ? <ActivityLog orgId={org.id} /> : null}
+      </section>
+      <section className={styles.section} aria-labelledby="opening-title">
+        <div className={styles.sectionHeader}>
+          <h2 id="opening-title" className={styles.sectionTitle}>
+            {openingTranslation("title")}
+          </h2>
+          <p className={styles.sectionText}>{openingTranslation("subtitle")}</p>
+        </div>
+
+        {org?.id ? (
+          <OpeningMessageSettings orgId={org.id} orgName={org.name} />
+        ) : null}
+      </section>
     </main>
   );
 }

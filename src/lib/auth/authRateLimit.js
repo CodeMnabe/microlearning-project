@@ -17,9 +17,13 @@ export function getClientIp(headerStore) {
 
 export async function consumeAuthAttempt(action, email) {
   const headerStore = await headers();
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = String(email || "")
+    .trim()
+    .toLowerCase();
+
   const ip = getClientIp(headerStore);
   const supabase = getSupabaseAdminClient();
+
   const { data, error } = await supabase.rpc("consume_auth_attempt", {
     p_action: action,
     p_email_hash: hashIdentity("email", normalizedEmail),

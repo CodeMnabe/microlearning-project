@@ -10,7 +10,7 @@ import {
 
 registerAppModulePacks();
 
-import OptionsPage from "@/app/[locale]/(app)/options/page.jsx";
+import OpeningMessageSettings from "@/app/[locale]/(app)/settings/components/OpeningMessageSettings";
 
 const ORG_ID = 7;
 
@@ -32,15 +32,11 @@ function makeResponse(data, ok = true, status = ok ? 200 : 500) {
   });
 }
 
-describe("OptionsPage opening message", () => {
+describe("OpeningMessageSettings", () => {
   const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
 
   beforeEach(() => {
     resetAppMocks();
-    setDefaultAppMockReturns({
-      org: { org: { id: ORG_ID, name: "Digik" }, loading: false },
-    });
-
     mocks.fetch.mockImplementation((input, init = {}) => {
       const url = typeof input === "string" ? input : input.url;
       const method = (init.method || "GET").toUpperCase();
@@ -68,7 +64,7 @@ describe("OptionsPage opening message", () => {
   });
 
   it("shows the fixed parts with sample values and the editable body", async () => {
-    render(<OptionsPage />);
+    render(<OpeningMessageSettings orgId={ORG_ID} orgName="Digik" />);
 
     const input = await screen.findByLabelText("bodyLabel");
 
@@ -84,7 +80,7 @@ describe("OptionsPage opening message", () => {
   });
 
   it("saves the cleaned body and shows confirmation", async () => {
-    render(<OptionsPage />);
+    render(<OpeningMessageSettings orgId={ORG_ID} orgName="Digik" />);
 
     const input = await screen.findByLabelText("bodyLabel");
 
@@ -114,7 +110,7 @@ describe("OptionsPage opening message", () => {
   });
 
   it("blocks saving an empty body and restores the default text", async () => {
-    render(<OptionsPage />);
+    render(<OpeningMessageSettings orgId={ORG_ID} orgName="Digik" />);
 
     const input = await screen.findByLabelText("bodyLabel");
 
@@ -134,7 +130,7 @@ describe("OptionsPage opening message", () => {
       makeResponse({ error: "boom" }, false),
     );
 
-    render(<OptionsPage />);
+    render(<OpeningMessageSettings orgId={ORG_ID} orgName="Digik" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("loadFailed");
     expect(screen.getByRole("button", { name: "retry" })).toBeInTheDocument();

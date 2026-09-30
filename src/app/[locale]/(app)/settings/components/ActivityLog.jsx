@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-import styles from "../options.module.css";
+import styles from "../settings.module.css";
 import {
   ALL_AREAS,
   PAGE_SIZE,

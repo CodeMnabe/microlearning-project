@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import OpeningMessageEditor from "@/app/components/WhatsAppPhone/OpeningMessageEditor";
 import { sanitizeOpeningBody } from "@/lib/whatsapp/openingTemplate";
 
-import styles from "../options.module.css";
+import styles from "../settings.module.css";
 
 /**
  * Edição do corpo do template de abertura WhatsApp.
@@ -32,7 +32,9 @@ export default function OpeningMessageSettings({ orgId, orgName }) {
     setLoadFailed(false);
 
     try {
-      const res = await fetch(`/api/organizations/opening-message?orgId=${orgId}`);
+      const res = await fetch(
+        `/api/organizations/opening-message?orgId=${orgId}`,
+      );
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.item) {

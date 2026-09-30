@@ -1,5 +1,5 @@
 import { History } from "lucide-react";
-import styles from "../options.module.css";
+import styles from "../settings.module.css";
 import {
   actionLabelKey,
   actorLabel,

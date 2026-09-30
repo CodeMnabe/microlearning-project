@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import styles from "../options.module.css";
+import styles from "../settings.module.css";
 
 export default function ActivityPagination({
   translation,

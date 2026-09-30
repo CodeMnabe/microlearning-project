@@ -10,7 +10,7 @@ import {
   detailEntries,
   entityLabel,
   totalPages,
-} from "@/app/[locale]/(app)/options/helpers/activity.helpers";
+} from "@/app/[locale]/(app)/settings/helpers/activity.helpers";
 
 const t = (key, vars) => (vars ? `${key}(${JSON.stringify(vars)})` : key);
 
