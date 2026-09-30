@@ -15,13 +15,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const {
-      orgId,
-      channel,
-      scheduledFor,
-      timezone,
-      payload,
-    } = body;
+    const { orgId, channel, scheduledFor, timezone, payload } = body;
 
     if (!orgId || !channel || !scheduledFor || !payload) {
       return NextResponse.json(
@@ -124,7 +118,6 @@ export async function POST(req) {
         recipientCount: recipientUserIds.length,
         scheduledFor: when.toISOString(),
         timezone: timezone || null,
-        hasTemplate: Boolean(safeWhatsappTemplateId || safeTemplate),
       },
     });
 

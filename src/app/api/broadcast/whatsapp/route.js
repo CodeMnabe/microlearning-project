@@ -62,7 +62,6 @@ export async function POST(req) {
         recipientCount: recipientUserIds.length,
         ok: result?.ok ?? 0,
         failed: result?.failed ?? 0,
-        hasTemplate: Boolean(safeWhatsappTemplateId || safeTemplate),
       },
     });
 
