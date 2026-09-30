@@ -1,25 +1,21 @@
 import { NextResponse } from "next/server";
 import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   assertUsersBelongToOrg,
-  assertWhatsappProviderTemplateBelongsToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import { parseOpeningOptions } from "@/lib/services/broadcast/openingOptions";
+import { parseQuestionOptions } from "@/lib/services/broadcast/questionOptions";
 
 export async function POST(req) {
   try {
     const body = await req.json();
 
-    const {
-      orgId,
-      channel,
-      scheduledFor,
-      timezone,
-      payload,
-    } = body;
+    const { orgId, channel, scheduledFor, timezone, payload } = body;
 
     if (!orgId || !channel || !scheduledFor || !payload) {
       return NextResponse.json(
@@ -66,35 +62,21 @@ export async function POST(req) {
       recipientUserIds,
     );
 
-    let safeWhatsappTemplateId = null;
-    let safeTemplate = null;
+    let opening = { openingBody: null, openingOnly: false };
+
+    let question = { question: null };
 
     if (channel === "whatsapp") {
-      safeWhatsappTemplateId = await assertWhatsappTemplateBelongsToOrg(
-        orgAuth.admin,
-        orgAuth.orgId,
-        payload?.whatsappTemplateId,
-      );
+      opening = parseOpeningOptions(payload);
 
-      if (!safeWhatsappTemplateId && payload?.template?.projectId) {
-        const templateRow = await assertWhatsappProviderTemplateBelongsToOrg(
-          orgAuth.admin,
-          orgAuth.orgId,
-          payload.template.projectId,
-        );
+      if (opening.error) {
+        return NextResponse.json({ error: opening.error }, { status: 400 });
+      }
 
-        safeTemplate = {
-          projectId: templateRow.provider_template_id,
-          languageCode: payload.template.languageCode,
-          varKeys: Array.isArray(payload.template.varKeys)
-            ? payload.template.varKeys
-            : [],
-          params: Array.isArray(payload.template.params)
-            ? payload.template.params
-            : [],
-          manualParams: payload.template.manualParams || "",
-          trackedUrlKey: payload.template.trackedUrlKey || null,
-        };
+      question = parseQuestionOptions(payload);
+
+      if (question.error) {
+        return NextResponse.json({ error: question.error }, { status: 400 });
       }
     }
 
@@ -110,8 +92,9 @@ export async function POST(req) {
         ? { userIds: recipientUserIds }
         : {
             recipients: recipientUserIds.map((userId) => ({ userId })),
-            template: safeTemplate,
-            whatsappTemplateId: safeWhatsappTemplateId,
+            openingBody: opening.openingBody,
+            openingOnly: opening.openingOnly,
+            question: question.question,
           }),
     };
 
@@ -124,6 +107,18 @@ export async function POST(req) {
       timezone: timezone || null,
       payload: cleanPayload,
       recipient_count: recipientUserIds.length,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.BROADCAST_SCHEDULED,
+      entityType: "scheduled_broadcast",
+      entityId: row?.id,
+      details: {
+        channel,
+        recipientCount: recipientUserIds.length,
+        scheduledFor: when.toISOString(),
+        timezone: timezone || null,
+      },
     });
 
     return NextResponse.json({ ok: true, item: row });

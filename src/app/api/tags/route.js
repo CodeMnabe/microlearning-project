@@ -8,6 +8,8 @@ import {
   updateTag,
   deleteTag,
 } from "@/lib/repos/tag.repo.js";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   cleanPatch,
   handleApiError,
@@ -68,6 +70,22 @@ function validateColor(value) {
   }
 
   return { value: normalized || null };
+}
+
+/*
+ * O nome repete-se quando o slug já existe na organização (índice
+ * tags_org_slug_uidx). É um erro de quem pede, não do servidor.
+ */
+function duplicateNameResponse(error) {
+  if (error?.code !== "23505") return null;
+
+  return NextResponse.json(
+    {
+      error: "A tag with this name already exists.",
+      code: "tag_name_taken",
+    },
+    { status: 409 },
+  );
 }
 
 export async function GET(req) {
@@ -163,14 +181,21 @@ export async function POST(req) {
       color: colorResult.value,
     });
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_CREATED,
+      entityId: tag?.id,
+      entityLabel: tag?.name ?? nameResult.value,
+      details: { color: tag?.color ?? colorResult.value },
+    });
+
     return NextResponse.json(
       tag,
       { status: 201 },
     );
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to create tag",
+    return (
+      duplicateNameResponse(error) ??
+      handleApiError(error, "Failed to create tag")
     );
   }
 }
@@ -277,11 +302,18 @@ export async function PATCH(req) {
       patch,
     );
 
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_UPDATED,
+      entityId: orgAuth.tagId,
+      entityLabel: updated?.name ?? orgAuth.tag?.name,
+      details: { fields: Object.keys(patch) },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to update tag",
+    return (
+      duplicateNameResponse(error) ??
+      handleApiError(error, "Failed to update tag")
     );
   }
 }
@@ -305,6 +337,13 @@ export async function DELETE(req) {
       orgAuth.admin,
       orgAuth.tagId,
     );
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.TAG_DELETED,
+      entityId: orgAuth.tagId,
+      entityLabel: orgAuth.tag?.name,
+      details: { color: orgAuth.tag?.color ?? null },
+    });
 
     return NextResponse.json({
       success: true,

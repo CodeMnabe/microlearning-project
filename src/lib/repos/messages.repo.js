@@ -33,6 +33,7 @@ const MESSAGE_SELECT = `
   message_chain_step_id,
   message_chain_recipient_id,
   message_chain_step_index,
+  question_id,
   created_at
 `;
 
@@ -57,6 +58,8 @@ export async function createMessage({
   messageChainStepId = null,
   messageChainRecipientId = null,
   messageChainStepIndex = null,
+
+  questionId = null,
 }) {
   const { data, error } = await supabase
     .from("message")
@@ -82,6 +85,8 @@ export async function createMessage({
         message_chain_step_id: messageChainStepId,
         message_chain_recipient_id: messageChainRecipientId,
         message_chain_step_index: messageChainStepIndex,
+
+        question_id: questionId,
       },
     ])
     .select(MESSAGE_SELECT)
@@ -394,4 +399,25 @@ export async function isWindowOpenForUser(userId) {
 
   const diffMs = Date.now() - new Date(last.created_at).getTime();
   return diffMs < 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Últimas mensagens com pergunta entregues a um contacto, da mais recente
+ * para a mais antiga. Serve para ligar uma resposta escrita à mão (sem
+ * referência à mensagem) à pergunta mais recente.
+ */
+export async function getRecentQuestionMessagesForUser(userId, limit = 5) {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from("message")
+    .select(MESSAGE_SELECT)
+    .eq("user_id", userId)
+    .not("question_id", "is", null)
+    .in("role", OUTBOUND_ROLES)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
 }

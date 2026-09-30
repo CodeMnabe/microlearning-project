@@ -10,7 +10,12 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useTranslations } from "next-intl";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
-import Slider from "@/app/components/Slider/Slider";
+import PresetPicker from "./PresetPicker";
+import { findPreset, getAssistantPreset } from "./assistantPresets";
+import {
+  ASSISTANT_FILE_ACCEPT,
+  resolveAssistantFileType,
+} from "@/lib/uploads/assistantFiles";
 
 const STORAGE_BUCKET = "assistant-uploads";
 
@@ -35,6 +40,11 @@ export default function AssistantsHub() {
   const [vectorStore, setVectorStore] = useState(null);
   const [vsName, setVsName] = useState("");
   const [vsFiles, setVsFiles] = useState([]);
+  const [isEditingVectorStore, setIsEditingVectorStore] = useState(false);
+  const [vectorStoreDraftName, setVectorStoreDraftName] = useState("");
+  const [vectorStoreEditFiles, setVectorStoreEditFiles] = useState([]);
+  const [removedVectorFileIds, setRemovedVectorFileIds] = useState([]);
+  const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -72,6 +82,10 @@ export default function AssistantsHub() {
       startLoading();
       setSelected(null);
       setVectorStore(null);
+      setIsEditingVectorStore(false);
+      setVectorStoreDraftName("");
+      setVectorStoreEditFiles([]);
+      setRemovedVectorFileIds([]);
 
       try {
         const res = await fetch(`/api/assistants/${id}`);
@@ -188,34 +202,49 @@ export default function AssistantsHub() {
     }
   }
 
+  async function stageFiles(files) {
+    const basePath = `${orgId}/${selected.id}/${Date.now()}`;
+    const uploaded = [];
+
+    for (const f of files) {
+      const contentType = resolveAssistantFileType(f);
+
+      if (!contentType) {
+        throw new Error("Este tipo de ficheiro não é aceite.");
+      }
+
+      const path = `${basePath}-${f.name}`;
+
+      const { error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, f, {
+          upsert: true,
+          contentType,
+        });
+
+      if (error) {
+        throw new Error("Erro no upload: " + error.message);
+      }
+
+      uploaded.push({
+        bucket: STORAGE_BUCKET,
+        path,
+        name: f.name,
+        size: f.size,
+        type: f.type,
+      });
+    }
+
+    return uploaded;
+  }
+
   async function handleAddVectorStore() {
     if (!selected) return;
     if (!vsName.trim() || vsFiles.length === 0) return;
 
     startLoading();
     try {
-      const basePath = `${orgId}/${selected.id}/${Date.now()}`;
-      const uploaded = [];
-      for (const f of vsFiles) {
-        const path = `${basePath}-${f.name}`;
-        const { error } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(path, f, {
-            upsert: true,
-            contentType: f.type || "application/octet-stream",
-          });
-        if (error) {
-          alert("Erro no upload: " + error.message);
-          return;
-        }
-        uploaded.push({
-          bucket: STORAGE_BUCKET,
-          path,
-          name: f.name,
-          size: f.size,
-          type: f.type,
-        });
-      }
+      const uploaded = await stageFiles(vsFiles);
 
       const res = await fetch(`/api/assistants/${selected.id}/vector-store`, {
         method: "POST",
@@ -230,7 +259,74 @@ export default function AssistantsHub() {
       setVsName("");
       setVsFiles([]);
       await fetchOne(selected.id);
+    } catch (error) {
+      alert(error?.message || "Erro ao carregar os ficheiros");
     } finally {
+      stopLoading();
+    }
+  }
+
+  function beginVectorStoreEdit() {
+    if (!vectorStore) return;
+
+    setVectorStoreDraftName(vectorStore.storeName || "");
+    setVectorStoreEditFiles([]);
+    setRemovedVectorFileIds([]);
+    setIsEditingVectorStore(true);
+  }
+
+  function toggleVectorFileRemoval(fileId) {
+    const normalizedId = Number(fileId);
+
+    setRemovedVectorFileIds((previous) =>
+      previous.includes(normalizedId)
+        ? previous.filter((id) => id !== normalizedId)
+        : [...previous, normalizedId],
+    );
+  }
+
+  function cancelVectorStoreEdit() {
+    setIsEditingVectorStore(false);
+    setVectorStoreDraftName("");
+    setVectorStoreEditFiles([]);
+    setRemovedVectorFileIds([]);
+  }
+
+  async function handleUpdateVectorStore() {
+    if (!selected || !vectorStore || !selected.vectorStoreId) return;
+
+    if (!vectorStoreDraftName.trim()) return;
+
+    setIsSavingVectorStore(true);
+    startLoading();
+
+    try {
+      const uploaded = await stageFiles(vectorStoreEditFiles);
+      const res = await fetch(
+        `/api/assistants/${selected.id}/vector-store/${selected.vectorStoreId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storeName: vectorStoreDraftName.trim(),
+            files: uploaded,
+            removedFileIds: removedVectorFileIds,
+          }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert("Erro: " + (data.error || "Falha ao atualizar a coleção"));
+        return;
+      }
+
+      cancelVectorStoreEdit();
+      await fetchOne(selected.id);
+    } catch (error) {
+      alert(error?.message || "Erro ao atualizar a coleção");
+    } finally {
+      setIsSavingVectorStore(false);
       stopLoading();
     }
   }
@@ -266,6 +362,31 @@ export default function AssistantsHub() {
   // helpers to read either draft (editing) or selected (read-only)
   const read = (key, fallback = "") =>
     (isEditing ? draft?.[key] : selected?.[key]) ?? fallback;
+
+  /**
+   * A predefinição a que os valores atuais correspondem.
+   *
+   * `null` quer dizer que o assistente foi afinado à mão — o caso de
+   * todos os que existiam antes das predefinições. Aí mostramos
+   * "Personalizado" com o valor, em vez de lhe chamar Normal.
+   */
+  const currentPreset = findPreset({
+    temperature: read("temperature", null),
+    top_p: read("top_p", null),
+  });
+
+  /**
+   * Escolher uma predefinição escreve os dois parâmetros de uma vez.
+   *
+   * São dois `setDraft` seguidos, mas ambos na forma funcional, por isso
+   * o segundo parte do resultado do primeiro mesmo quando o React os
+   * agrupa no mesmo render.
+   */
+  function applyPreset(id) {
+    const preset = getAssistantPreset(id);
+    handleChange("temperature", preset.temperature);
+    handleChange("top_p", preset.top_p);
+  }
 
   return (
     <div className={styles.hub}>
@@ -371,109 +492,49 @@ export default function AssistantsHub() {
               </div>
 
               <div className={styles.specs}>
-                {/* Creativity */}
-                <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>
-                    {translation("Assistants.details.creativity")}
-                  </span>
+                {/*
+                  Comportamento.
 
-                  {isEditing ? (
-                    <div className={styles.sliderRowEditing}>
-                      <Slider
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={read("top_p", 0)}
-                        onChange={(e) =>
-                          handleChange("top_p", parseFloat(e.target.value))
-                        }
-                      />
-                      <span className={styles.sliderValueRight}>
-                        {(read("top_p", 0) || 0).toFixed(2)}
-                      </span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className={styles.specTrack}>
-                        <div
-                          className={styles.specFill}
-                          style={{ width: `${(selected.top_p || 0) * 100}%` }}
-                        />
-                      </div>
-                      <span className={styles.specValue}>
-                        {(selected.top_p || 0).toFixed(1)}
-                      </span>
-                    </>
-                  )}
-                </div>
+                  Em leitura mostramos o nome da predefinição: "Criativo"
+                  diz ao cliente o que o assistente faz, "1.10" não diz.
 
-                {/* Variety */}
-                <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>
-                    {translation("Assistants.details.variety")}
-                  </span>
-
-                  {isEditing ? (
-                    <div className={styles.sliderRowEditing}>
-                      <Slider
-                        min={0}
-                        max={2}
-                        step={0.01}
-                        value={read("temperature", 0)}
-                        onChange={(e) =>
-                          handleChange(
-                            "temperature",
-                            parseFloat(e.target.value),
-                          )
-                        }
-                      />
-                      <span className={styles.sliderValueRight}>
-                        {(read("temperature", 0) || 0).toFixed(2)}
-                      </span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className={styles.specTrack}>
-                        <div
-                          className={styles.specFill}
-                          style={{
-                            width: `${
-                              Math.min((selected.temperature || 0) / 2, 1) * 100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <span className={styles.specValue}>
-                        {(selected.temperature || 0).toFixed(0)}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Model */}
-                <div className={styles.specRowGrid}>
-                  <span className={styles.specLabel}>
-                    {translation("Assistants.details.model")}
-                  </span>
-                  <div className={styles.specTrack} />
-                  {isEditing ? (
-                    <select
-                      className={styles.select}
-                      value={read("model", "gpt-5.6-luna")}
-                      onChange={(e) => handleChange("model", e.target.value)}
-                    >
-                      <option value="gpt-5.6-luna">Económico</option>
-
-                      <option value="gpt-5.6-terra">Equilibrado</option>
-
-                      <option value="gpt-5.6-sol">Avançado</option>
-                    </select>
-                  ) : (
-                    <span className={styles.specValueBold}>
-                      {selected.model}
+                  Em edição escolhe-se entre as três — as mesmas da
+                  criação. Os deslizadores de Criatividade e Variedade
+                  saíram: além de exigirem saber o que é `top_p`, tinham
+                  os rótulos trocados (a "Variedade" mostrava a
+                  `temperature` e vice-versa).
+                */}
+                {isEditing ? (
+                  <div className={styles.specRowStacked}>
+                    <span className={styles.specLabel}>
+                      {translation("Assistants.details.behavior")}
                     </span>
-                  )}
-                </div>
+
+                    <PresetPicker
+                      name="assistant-behavior"
+                      value={currentPreset?.id ?? null}
+                      onChange={applyPreset}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.specRowBehavior}>
+                    <span className={styles.specLabel}>
+                      {translation("Assistants.details.behavior")}
+                    </span>
+                    <span className={styles.specValueBold}>
+                      {currentPreset
+                        ? translation(
+                            `AssistantPresets.${currentPreset.id}.name`,
+                          )
+                        : translation("Assistants.details.customBehavior", {
+                            temperature: Number(
+                              selected.temperature ?? 0,
+                            ).toFixed(2),
+                          })}
+                    </span>
+                  </div>
+                )}
+
               </div>
 
               {/* Meta + Actions */}
@@ -562,6 +623,7 @@ export default function AssistantsHub() {
                   <input
                     className={styles.input}
                     type="file"
+                    accept={ASSISTANT_FILE_ACCEPT}
                     multiple
                     onChange={(e) =>
                       setVsFiles(Array.from(e.target.files || []))
@@ -579,49 +641,202 @@ export default function AssistantsHub() {
                 </>
               ) : (
                 <>
-                  <h3 className={styles.cardSubtitle}>
-                    {translation("Assistants.vector.docCollection")}
-                  </h3>
-                  <div className={styles.metaGrid}>
-                    {vectorStore && (
-                      <>
-                        <div>
-                          <span className={styles.metaLabel}>
-                            {translation("Assistants.vector.collectionTitle")}
-                          </span>
-                          <span>{vectorStore.storeName}</span>
-                        </div>
-                        <div>
-                          <span className={styles.metaLabel}>
-                            {translation("Assistants.vector.quantity")}
-                          </span>
-                          <span>{vectorStore.files?.length || 0}</span>
-                        </div>
-                      </>
+                  <div className={styles.vectorHeader}>
+                    <h3 className={styles.cardSubtitle}>
+                      {translation("Assistants.vector.docCollection")}
+                    </h3>
+                    {!isEditingVectorStore && (
+                      <button
+                        type="button"
+                        className={styles.ghostBtn}
+                        onClick={beginVectorStoreEdit}
+                        disabled={!vectorStore}
+                        title={translation("Assistants.vector.editTitle")}
+                      >
+                        {translation("Assistants.vector.edit")}
+                      </button>
                     )}
                   </div>
 
-                  {vectorStore?.files?.length ? (
-                    <div style={{ marginTop: 8 }}>
-                      <span className={styles.metaLabel}>
-                        {translation("Assistants.vector.filenames")}
-                      </span>
-                      <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
-                        {vectorStore.files.map((f) => (
-                          <li key={f.id}>{f.name}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
+                  {isEditingVectorStore ? (
+                    <div className={styles.vectorEditor}>
+                      <label
+                        className={styles.label}
+                        htmlFor="vector-store-name"
+                      >
+                        {translation("Assistants.vector.collectionName")}
+                      </label>
+                      <input
+                        id="vector-store-name"
+                        className={styles.input}
+                        value={vectorStoreDraftName}
+                        onChange={(e) =>
+                          setVectorStoreDraftName(e.target.value)
+                        }
+                        placeholder={translation(
+                          "Assistants.vector.storeNamePlaceholder",
+                        )}
+                      />
 
-                  <div className={styles.rowEnd}>
-                    <button
-                      className={styles.dangerBtn}
-                      onClick={deleteVectorStore}
-                    >
-                      {translation("Common.delete")}
-                    </button>
-                  </div>
+                      <p className={styles.helperText}>
+                        {translation("Assistants.vector.replaceHelp")}
+                      </p>
+
+                      <div>
+                        <span className={styles.metaLabel}>
+                          {translation("Assistants.vector.filenames")}
+                        </span>
+                        {vectorStore?.files?.length ? (
+                          <ul className={styles.vectorFileList}>
+                            {vectorStore.files.map((file) => {
+                              const isMarkedForRemoval =
+                                removedVectorFileIds.includes(Number(file.id));
+
+                              return (
+                                <li
+                                  key={file.id}
+                                  className={`${styles.vectorFileRow} ${
+                                    isMarkedForRemoval
+                                      ? styles.vectorFileRemoved
+                                      : ""
+                                  }`}
+                                >
+                                  <span>{file.name}</span>
+                                  <button
+                                    type="button"
+                                    className={styles.fileActionBtn}
+                                    onClick={() =>
+                                      toggleVectorFileRemoval(file.id)
+                                    }
+                                  >
+                                    {translation(
+                                      isMarkedForRemoval
+                                        ? "Assistants.vector.keep"
+                                        : "Assistants.vector.remove",
+                                    )}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p className={styles.helperText}>
+                            {translation("Assistants.vector.noFiles")}
+                          </p>
+                        )}
+                      </div>
+
+                      <label
+                        className={styles.label}
+                        htmlFor="vector-store-edit-files"
+                      >
+                        {translation("Assistants.vector.addFiles")}
+                      </label>
+                      <input
+                        id="vector-store-edit-files"
+                        className={styles.input}
+                        type="file"
+                        multiple
+                        onChange={(e) =>
+                          setVectorStoreEditFiles(
+                            Array.from(e.target.files || []),
+                          )
+                        }
+                      />
+
+                      {vectorStoreEditFiles.length > 0 && (
+                        <div>
+                          <span className={styles.metaLabel}>
+                            {translation("Assistants.vector.newFiles")}
+                          </span>
+                          <ul className={styles.vectorFileList}>
+                            {vectorStoreEditFiles.map((file) => (
+                              <li
+                                key={`${file.name}-${file.size}-${file.lastModified}`}
+                                className={styles.vectorFileRow}
+                              >
+                                <span>{file.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className={styles.rowEnd}>
+                        <button
+                          type="button"
+                          className={styles.ctaPrimary}
+                          onClick={handleUpdateVectorStore}
+                          disabled={
+                            isSavingVectorStore || !vectorStoreDraftName.trim()
+                          }
+                        >
+                          {isSavingVectorStore
+                            ? translation("Assistants.vector.saving")
+                            : translation("Assistants.vector.save")}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.ghostBtn}
+                          onClick={cancelVectorStoreEdit}
+                          disabled={isSavingVectorStore}
+                        >
+                          {translation("Common.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.metaGrid}>
+                        {vectorStore && (
+                          <>
+                            <div>
+                              <span className={styles.metaLabel}>
+                                {translation(
+                                  "Assistants.vector.collectionTitle",
+                                )}
+                              </span>
+                              <span>{vectorStore.storeName}</span>
+                            </div>
+                            <div>
+                              <span className={styles.metaLabel}>
+                                {translation("Assistants.vector.quantity")}
+                              </span>
+                              <span>{vectorStore.files?.length || 0}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {vectorStore?.files?.length ? (
+                        <div className={styles.vectorFilesReadOnly}>
+                          <span className={styles.metaLabel}>
+                            {translation("Assistants.vector.filenames")}
+                          </span>
+                          <ul className={styles.vectorFileList}>
+                            {vectorStore.files.map((file) => (
+                              <li
+                                key={file.id}
+                                className={styles.vectorFileRow}
+                              >
+                                <span>{file.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+
+                      <div className={styles.rowEnd}>
+                        <button
+                          type="button"
+                          className={styles.dangerBtn}
+                          onClick={deleteVectorStore}
+                        >
+                          {translation("Common.delete")}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </section>

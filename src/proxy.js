@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 import { updateSession } from "./utils/supabase/middleware";
+import { getSafeRedirectPath } from "./lib/auth/safeRedirect";
 
 const intl = createMiddleware(routing);
 const PRIVATE_ROUTE_ROOTS = new Set([
@@ -10,8 +11,10 @@ const PRIVATE_ROUTE_ROOTS = new Set([
   "assistants",
   "automations",
   "broadcast",
+  "dashboard",
   "options",
   "private",
+  "settings",
   "templates",
   "users",
 ]);
@@ -42,6 +45,12 @@ export async function proxy(request) {
     loginUrl.pathname =
       locale === routing.defaultLocale ? "/login" : `/${locale}/login`;
     loginUrl.search = "";
+    loginUrl.searchParams.set(
+      "next",
+      getSafeRedirectPath(
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      ),
+    );
 
     return copyResponseCookies(
       sessionResponse,

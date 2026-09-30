@@ -1,19 +1,31 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import LoaderLink from "../../(marketing)/components/TopLoader/LoaderLink";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import {
+  DEFAULT_AUTH_REDIRECT,
+  getSafeRedirectPath,
+} from "@/lib/auth/safeRedirect";
 import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+import { useAuth } from "@/app/AuthContext";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import { login } from "./actions";
 
 export default function LoginPage() {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = getSafeRedirectPath(
+    searchParams.get("next"),
+    `/${locale}${DEFAULT_AUTH_REDIRECT}`,
+  );
   const { startLoading, stopLoading } = useGlobalLoader();
   const supabase = useMemo(() => createClient(), []);
+  const { setUser } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -23,12 +35,12 @@ export default function LoginPage() {
 
       if (session) {
         startLoading();
-        router.replace(`/${locale}/users`);
+        router.replace(redirectPath);
         return;
       }
       stopLoading?.();
     })();
-  }, [router, startLoading, stopLoading, locale, supabase]);
+  }, [router, startLoading, stopLoading, redirectPath, supabase]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,22 +52,26 @@ export default function LoginPage() {
     setErrorMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await login({ email, password });
 
-    if (error) {
+    if (!result.success) {
       setStatus("idle");
-      setErrorMsg(error.message);
+      setErrorMsg(t("Auth.login.genericError"));
       return;
     }
+
+    // The session cookie was set by the server action, so the browser client
+    // never fires SIGNED_IN; hand the user to AuthContext before navigating.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    setUser(session?.user ?? null);
 
     setStatus("success");
     // give the tick a brief moment, then navigate
     setTimeout(() => {
       startLoading?.();
-      router.push(`/${locale}/users`);
+      router.push(redirectPath);
     }, 650);
   }
 
@@ -134,7 +150,10 @@ export default function LoginPage() {
           )}
         </button>
 
-        <LoaderLink href={`/${locale}/reset`} className={styles.link}>
+        <LoaderLink
+          href={`/${locale}/reset?next=${encodeURIComponent(redirectPath)}`}
+          className={styles.link}
+        >
           {t("Auth.login.forgot")}
         </LoaderLink>
 

@@ -3,6 +3,8 @@ import {
   getOrCreateOrganizationMessagingFeature,
   setReadChainsEnabled,
 } from "@/lib/repos/organizationMessagingFeature.repo";
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
   handleApiError,
   parsePositiveInt,
@@ -150,6 +152,16 @@ export async function PATCH(req) {
       organizationId: orgAuth.orgId,
       channel,
       enabled: body.readChainsEnabled,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ORGANIZATION_SETTINGS_UPDATED,
+      entityId: orgAuth.orgId,
+      details: {
+        setting: "read_chains_enabled",
+        channel,
+        enabled: body.readChainsEnabled,
+      },
     });
 
     return NextResponse.json({

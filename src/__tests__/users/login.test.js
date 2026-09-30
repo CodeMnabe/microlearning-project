@@ -10,9 +10,9 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   startLoading: vi.fn(),
   stopLoading: vi.fn(),
+  login: vi.fn(),
   auth: {
     getSession: vi.fn(),
-    signInWithPassword: vi.fn(),
   },
 }));
 
@@ -21,10 +21,31 @@ vi.mock("next/navigation", () => ({
     push: mocks.push,
     replace: mocks.replace,
   }),
+  usePathname: () => "/pt/login",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock("next-intl", () => ({
+  useLocale: () => "pt",
+  useTranslations: () => (key) => key,
+}));
+
+vi.mock("@/app/[locale]/(auth)/login/actions", () => ({
+  login: mocks.login,
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) =>
+    React.createElement("a", { href, ...rest }, children),
 }));
 
 // No JSX here either
 vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }) =>
+    React.createElement("a", { href, ...rest }, children),
+}));
+
+vi.mock("@/app/[locale]/(marketing)/components/TopLoader/LoaderLink", () => ({
   default: ({ href, children, ...rest }) =>
     React.createElement("a", { href, ...rest }, children),
 }));
@@ -48,7 +69,7 @@ beforeEach(() => {
 });
 
 describe("LoginPage", () => {
-  it("redirects to /pt/users if session exists", async () => {
+  it("redirects to /pt/dashboard if session exists", async () => {
     mocks.auth.getSession.mockResolvedValueOnce({
       data: { session: { user: { id: "123" } } },
     });
@@ -57,7 +78,7 @@ describe("LoginPage", () => {
 
     await waitFor(() => {
       expect(mocks.startLoading).toHaveBeenCalled();
-      expect(mocks.replace).toHaveBeenCalledWith("/pt/users");
+      expect(mocks.replace).toHaveBeenCalledWith("/pt/dashboard");
     });
 
     expect(mocks.stopLoading).not.toHaveBeenCalled();
@@ -79,9 +100,7 @@ describe("LoginPage", () => {
 
   it("shows error message when login fails", async () => {
     mocks.auth.getSession.mockResolvedValueOnce({ data: { session: null } });
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({
-      error: { message: "Invalid login credentials" },
-    });
+    mocks.login.mockResolvedValueOnce({ error: "auth_failed" });
 
     const user = userEvent.setup();
     render(React.createElement(LoginPage));
@@ -92,14 +111,14 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Auth.login.login" }));
 
     expect(
-      await screen.findByText("Invalid login credentials"),
+      await screen.findByText("Auth.login.genericError"),
     ).toBeInTheDocument();
 
     expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it("navigates to /pt/users on login success after 650ms", async () => {
+  it("navigates to /pt/dashboard on login success after 650ms", async () => {
     const realSetTimeout = globalThis.setTimeout;
 
     const timeoutSpy = vi
@@ -113,7 +132,7 @@ describe("LoginPage", () => {
         return realSetTimeout(cb, ms, ...args);
       });
 
-    mocks.auth.signInWithPassword.mockResolvedValueOnce({ error: null });
+    mocks.login.mockResolvedValueOnce({ success: true });
 
     const user = userEvent.setup();
     render(React.createElement(LoginPage));
@@ -129,7 +148,7 @@ describe("LoginPage", () => {
     expect(await screen.findByLabelText("Common.ok")).toBeInTheDocument();
 
     expect(mocks.startLoading).toHaveBeenCalled();
-    expect(mocks.push).toHaveBeenCalledWith("/pt/users");
+    expect(mocks.push).toHaveBeenCalledWith("/pt/dashboard");
 
     timeoutSpy.mockRestore();
   });

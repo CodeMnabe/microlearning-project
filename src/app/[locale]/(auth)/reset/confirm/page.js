@@ -1,16 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import {
+  DEFAULT_AUTH_REDIRECT,
+  getSafeRedirectPath,
+} from "@/lib/auth/safeRedirect";
+import { changePassword } from "./actions";
 import styles from "../../login/login.module.css";
 import Link from "next/link";
 
 export default function ResetConfirmPage() {
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations();
   const locale = useLocale();
+  const redirectPath = getSafeRedirectPath(
+    searchParams.get("next"),
+    `/${locale}${DEFAULT_AUTH_REDIRECT}`,
+  );
 
   const [newPw, setNewPw] = useState("");
   const [msg, setMsg] = useState("");
@@ -47,15 +57,21 @@ export default function ResetConfirmPage() {
     setMsg("");
     setStatus("loading");
 
-    const { error } = await supabase.auth.updateUser({ password: newPw });
-    if (error) {
+    const result = await changePassword(newPw);
+    if (!result.success) {
       setStatus("idle");
-      setMsg(error.message);
+      setMsg(
+        t(
+          result.error === "password_policy"
+            ? "Auth.resetConfirm.passwordPolicy"
+            : "Auth.resetConfirm.genericError",
+        ),
+      );
       return;
     }
 
     setStatus("done");
-    setTimeout(() => router.push(`/${locale}/login`), 800);
+    setTimeout(() => router.push(redirectPath), 800);
   }
 
   if (!ready) {
@@ -85,7 +101,7 @@ export default function ResetConfirmPage() {
           placeholder="••••••••"
           value={newPw}
           onChange={(e) => setNewPw(e.target.value)}
-          minLength={6}
+          minLength={8}
           required
           disabled={disabled}
         />
@@ -110,7 +126,10 @@ export default function ResetConfirmPage() {
             />
           )}
         </button>
-        <Link href={`/${locale}/login`} className={styles.link}>
+        <Link
+          href={`/${locale}/login?next=${encodeURIComponent(redirectPath)}`}
+          className={styles.link}
+        >
           {t("Auth.resetConfirm.back")}
         </Link>
         {msg && <p className={styles.message}>{msg}</p>}

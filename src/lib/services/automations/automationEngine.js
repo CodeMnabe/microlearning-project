@@ -1,6 +1,8 @@
 import { getUserById } from "@/lib/repos/user.repo";
 import { getActiveAutomationRules } from "@/lib/repos/automationRules.repo";
 import { createAutomationRunIfMissing } from "@/lib/repos/automationRuns.repo";
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 function addMinutes(baseTime, minutes) {
   const date = new Date(baseTime);
@@ -33,6 +35,8 @@ const CLIENT_CONTROLLED_SECURITY_FIELDS = new Set([
   "userIds",
   "template",
   "whatsappTemplateId",
+  "openingBody",
+  "openingOnly",
 ]);
 
 export function sanitizeAutomationPayload(payload) {
@@ -64,13 +68,20 @@ function buildDefaultTriggerKey({
   return `${type}:${userId}:${assistantId ?? "none"}:${sourceMessageRowId ?? "none"}`;
 }
 
-function shouldRuleApplyToContext({ rule, user, assistantId }) {
-  const userAssistantId = user?.assistant_id ?? null;
-  const contextAssistantId = assistantId ?? userAssistantId;
+// Sem assistente no evento, contam todos os atribuídos ao utilizador (#133).
+function getContextAssistantIds({ user, assistantId }) {
+  if (assistantId != null) return [Number(assistantId)];
 
+  const assigned = (user?.assistant_ids || []).map(Number);
+  if (assigned.length) return assigned;
+
+  return user?.assistant_id != null ? [Number(user.assistant_id)] : [];
+}
+
+function shouldRuleApplyToContext({ rule, user, assistantId }) {
   if (rule.assistant_id != null) {
-    if (contextAssistantId == null) return false;
-    if (Number(rule.assistant_id) !== Number(contextAssistantId)) return false;
+    const contextIds = getContextAssistantIds({ user, assistantId });
+    if (!contextIds.includes(Number(rule.assistant_id))) return false;
   }
 
   if (rule.channel === "whatsapp" && !hasWhatsappDestination(user)) {
@@ -101,8 +112,9 @@ export async function queueAutomationRunForRule({
     return null;
   }
 
+  // Uma regra de um assistente corre em nome desse assistente.
   const effectiveAssistantId =
-    assistantId ?? effectiveUser.assistant_id ?? null;
+    assistantId ?? rule.assistant_id ?? effectiveUser.assistant_id ?? null;
 
   const effectiveTriggerKey =
     triggerKey ||
@@ -117,7 +129,6 @@ export async function queueAutomationRunForRule({
 
   const mergedPayload = {
     ...sanitizeAutomationPayload(rule.payload),
-    whatsappTemplateId: rule.whatsapp_template_id ?? null,
     _automation: {
       triggerType: rule.trigger_type,
       triggerAt: new Date(baseTime).toISOString(),
@@ -126,7 +137,7 @@ export async function queueAutomationRunForRule({
     },
   };
 
-  return await createAutomationRunIfMissing({
+  const run = await createAutomationRunIfMissing({
     rule_id: rule.id,
     organization_id: rule.organization_id,
     user_id: effectiveUser.id,
@@ -138,6 +149,28 @@ export async function queueAutomationRunForRule({
     scheduled_for: scheduledFor,
     payload: mergedPayload,
   });
+
+  /*
+   * Só há registo quando o run foi mesmo criado. Um null
+   * significa que já existia um run para este gatilho.
+   */
+  if (run) {
+    await recordSystemAuditEvent(rule.organization_id, {
+      action: AUDIT_ACTIONS.AUTOMATION_TRIGGERED,
+      entityType: "automation_rule",
+      entityId: rule.id,
+      entityLabel: rule.name,
+      details: {
+        triggerType: rule.trigger_type,
+        channel: rule.channel,
+        userId: effectiveUser.id,
+        userName: effectiveUser.name ?? null,
+        scheduledFor,
+      },
+    });
+  }
+
+  return run;
 }
 
 export async function emitAutomationEvent({

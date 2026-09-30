@@ -19,6 +19,9 @@ import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 
 import { createMessage, getMessagesInThread } from "@/lib/repos/messages.repo";
 
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 import {
   getUserByAadObjectId,
   getUserByEmail,
@@ -1079,6 +1082,14 @@ async function handleUserInteraction(activity) {
     content: message,
 
     role: "user",
+  });
+
+  await recordSystemAuditEvent(org.id, {
+    action: AUDIT_ACTIONS.MESSAGE_RECEIVED,
+    entityType: "user",
+    entityId: user.id,
+    entityLabel: user.name,
+    details: { channel, scope },
   });
 
   /*

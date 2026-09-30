@@ -12,6 +12,9 @@ import {
 } from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
+import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+import { summarizeBroadcastPayload } from "@/lib/logging/summarizeBroadcastPayload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,7 +62,11 @@ async function syncAutomationRunSuccess(automationRunId, context) {
   }
 }
 
-async function syncAutomationRunFailure(automationRunId, errorMessage, context) {
+async function syncAutomationRunFailure(
+  automationRunId,
+  errorMessage,
+  context,
+) {
   if (!automationRunId) return;
 
   try {
@@ -70,6 +77,20 @@ async function syncAutomationRunFailure(automationRunId, errorMessage, context) 
       message: error?.message || String(error),
     });
   }
+}
+
+function auditScheduledSend(broadcast, details) {
+  return recordSystemAuditEvent(broadcast.organization_id, {
+    action: AUDIT_ACTIONS.BROADCAST_SCHEDULED_SENT,
+    entityType: "scheduled_broadcast",
+    entityId: broadcast.id,
+    details: {
+      channel: broadcast.channel,
+      recipientCount: broadcast.recipient_count ?? null,
+      automation: Boolean(broadcast?.payload?.automationRunId),
+      ...details,
+    },
+  });
 }
 
 function normalizeError(err) {
@@ -156,9 +177,10 @@ async function processOneBroadcast(broadcast) {
             recipients: Array.isArray(storedPayload.recipients)
               ? storedPayload.recipients
               : [],
-            template: storedPayload.template || null,
-            whatsappTemplateId: storedPayload.whatsappTemplateId || null,
+            openingBody: storedPayload.openingBody || null,
+            openingOnly: storedPayload.openingOnly === true,
             chainMetadata: null,
+            question: storedPayload.question || null,
           }
         : {
             userIds: Array.isArray(storedPayload.userIds)
@@ -170,7 +192,7 @@ async function processOneBroadcast(broadcast) {
     console.log("[Schedule Broadcast] payload before send", {
       broadcastId: broadcast.id,
       channel: broadcast.channel,
-      payload,
+      summary: summarizeBroadcastPayload(payload),
     });
 
     let result;
@@ -191,6 +213,12 @@ async function processOneBroadcast(broadcast) {
     if (okCount === 0 && failedCount > 0) finalStatus = "failed";
 
     await finishScheduledBroadcast(broadcast.id, {
+      status: finalStatus,
+    });
+
+    await auditScheduledSend(broadcast, {
+      ok: okCount,
+      failed: failedCount,
       status: finalStatus,
     });
 
@@ -233,6 +261,11 @@ async function processOneBroadcast(broadcast) {
     }
 
     const normalizedError = normalizeError(err);
+
+    await auditScheduledSend(broadcast, {
+      status: "failed",
+      error: normalizedError,
+    });
 
     await syncAutomationRunFailure(
       verifiedAutomationRunId,

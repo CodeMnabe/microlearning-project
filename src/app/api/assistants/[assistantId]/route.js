@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { updateAssistant, deleteAssistant } from "@/lib/repos/assistants.repo";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 import {
   cleanPatch,
   handleApiError,
@@ -15,7 +18,6 @@ const ALLOWED_ASSISTANT_PATCH_FIELDS = [
   "model",
   "top_p",
   "temperature",
-  "vector_store_id",
 ];
 
 export async function GET(_req, { params }) {
@@ -56,55 +58,6 @@ export async function PATCH(req, { params }) {
 
     const patch = cleanPatch(updates, ALLOWED_ASSISTANT_PATCH_FIELDS);
 
-    /*
-     * =========================================================
-     * VECTOR STORE SECURITY
-     * =========================================================
-     *
-     * If somebody tries to assign a Vector Store manually,
-     * make sure it belongs to the same organization.
-     */
-    if (patch.vector_store_id !== undefined && patch.vector_store_id !== null) {
-      const vectorStoreId = Number(patch.vector_store_id);
-
-      if (!Number.isInteger(vectorStoreId) || vectorStoreId <= 0) {
-        return NextResponse.json(
-          {
-            error: "Invalid vector store id",
-          },
-          {
-            status: 400,
-          },
-        );
-      }
-
-      const { data: vectorStore, error } = await orgAuth.admin
-        .from("vector_store")
-        .select("id, organization_id")
-        .eq("id", vectorStoreId)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (
-        !vectorStore ||
-        Number(vectorStore.organization_id) !== Number(orgAuth.orgId)
-      ) {
-        return NextResponse.json(
-          {
-            error: "Vector store does not belong to this organization",
-          },
-          {
-            status: 403,
-          },
-        );
-      }
-
-      patch.vector_store_id = vectorStoreId;
-    }
-
     if (!Object.keys(patch).length) {
       return NextResponse.json(
         {
@@ -128,6 +81,13 @@ export async function PATCH(req, { params }) {
      * from our DB Assistant configuration.
      */
     const updated = await updateAssistant(orgAuth.assistantId, patch);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ASSISTANT_UPDATED,
+      entityId: orgAuth.assistantId,
+      entityLabel: updated?.name ?? orgAuth.assistant?.name,
+      details: { fields: Object.keys(patch) },
+    });
 
     return NextResponse.json(
       {
@@ -160,6 +120,13 @@ export async function DELETE(_req, { params }) {
      * Delete only our DB Assistant.
      */
     await deleteAssistant(orgAuth.assistantId);
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ASSISTANT_DELETED,
+      entityId: orgAuth.assistantId,
+      entityLabel: orgAuth.assistant?.name,
+      details: { model: orgAuth.assistant?.model ?? null },
+    });
 
     return new NextResponse(null, {
       status: 204,

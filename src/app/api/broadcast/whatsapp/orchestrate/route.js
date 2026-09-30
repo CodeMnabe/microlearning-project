@@ -8,7 +8,6 @@ import { getUserByNumber } from "@/lib/repos/user.repo";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import {
   assertUsersBelongToOrg,
-  assertWhatsappTemplateBelongsToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
@@ -27,8 +26,6 @@ export async function POST(req) {
       recipients = [],
       message = "",
       imageUrls = [],
-      templateId = null,
-      languageCode = "pt-PT",
       waitHours = 48,
     } = await req.json();
 
@@ -48,12 +45,6 @@ export async function POST(req) {
       orgAuth.admin,
       orgAuth.orgId,
       recipientUserIds,
-    );
-
-    const safeTemplateId = await assertWhatsappTemplateBelongsToOrg(
-      orgAuth.admin,
-      orgAuth.orgId,
-      templateId,
     );
 
     const org = await getOrganization(orgAuth.orgId);
@@ -78,7 +69,6 @@ export async function POST(req) {
       ok: true,
       orgId: orgAuth.orgId,
       recipients: recipientUserIds.length,
-      templateId: safeTemplateId,
       results,
     });
   } catch (err) {

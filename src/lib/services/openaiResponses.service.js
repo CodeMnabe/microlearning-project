@@ -28,6 +28,10 @@ export async function createConversation(metadata = {}, items = []) {
   return conversation;
 }
 
+export async function getConversation(conversationId) {
+  return openai.conversations.retrieve(conversationId);
+}
+
 export async function resolveAssistantVectorStore(assistant) {
   if (!assistant?.vector_store_id) {
     return null;

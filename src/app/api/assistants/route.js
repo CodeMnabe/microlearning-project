@@ -5,6 +5,9 @@ import {
   getAssistantsInOrg,
 } from "@/lib/repos/assistants.repo";
 
+import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
+
 import {
   handleApiError,
   requireOwnedOrg,
@@ -121,6 +124,13 @@ export async function POST(req) {
       top_p: body.top_p ?? null,
 
       temperature: body.temperature ?? null,
+    });
+
+    await recordAuditEvent(orgAuth, {
+      action: AUDIT_ACTIONS.ASSISTANT_CREATED,
+      entityId: assistant?.id,
+      entityLabel: assistant?.name ?? name,
+      details: { model },
     });
 
     return NextResponse.json(assistant, {

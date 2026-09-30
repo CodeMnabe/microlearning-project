@@ -1,5 +1,6 @@
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { createMessage } from "@/lib/repos/messages.repo";
+import { getLatestUserThreadForChannel } from "@/lib/repos/threads.repo";
 import {
   createMessageChainDelivery,
   markMessageChainDeliveryFailed,
@@ -24,18 +25,6 @@ function getStepContentForMessageRow({ stepPayload, result, stepIndex }) {
 
   const raw = String(stepPayload?.message || "").trim();
   if (raw) return raw;
-
-  if (stepPayload?.template?.name) {
-    return `[WhatsApp template: ${stepPayload.template.name}]`;
-  }
-
-  if (stepPayload?.template?.projectId) {
-    return `[WhatsApp template: ${stepPayload.template.projectId}]`;
-  }
-
-  if (stepPayload?.whatsappTemplateId) {
-    return `[WhatsApp template id: ${stepPayload.whatsappTemplateId}]`;
-  }
 
   return `[Read chain step ${stepIndex}]`;
 }
@@ -72,11 +61,11 @@ export async function sendReadChainStep({
         userId: chainRecipient.user_id,
       },
     ],
-    template: stepPayload.template || null,
-    whatsappTemplateId: stepPayload.whatsappTemplateId || null,
     trackedLinks: Array.isArray(stepPayload.trackedLinks)
       ? stepPayload.trackedLinks
       : [],
+    /* Pergunta do passo, criada ao criar a cadeia e partilhada por todos. */
+    questionId: stepPayload.questionId || null,
     scheduledBroadcastId: null,
     sendGroupId: `${chain.id}-step-${stepIndex}`,
     createdByUserId: chain.created_by_user_id || null,
@@ -178,11 +167,17 @@ export async function sendReadChainStep({
 
   const providerMessageId = recipientResult.providerMessageId || null;
 
+  /* Liga a mensagem à conversa do contacto, quando já existe. */
+  const thread = await getLatestUserThreadForChannel(
+    chainRecipient.user_id,
+    "whatsapp",
+  ).catch(() => null);
+
   const messageRow = await createMessage({
-    threadId: null,
+    threadId: thread?.id ?? null,
     userId: chainRecipient.user_id,
     organizationId: chain.organization_id,
-    assistantId: null,
+    assistantId: thread?.assistant_id ?? null,
     channel: "whatsapp",
     messageId: providerMessageId,
     externalContactId:
@@ -203,6 +198,7 @@ export async function sendReadChainStep({
     messageChainStepId: chainStep.id,
     messageChainRecipientId: chainRecipient.id,
     messageChainStepIndex: stepIndex,
+    questionId: stepPayload.questionId || null,
   });
 
   await createMessageChainDelivery({

@@ -170,7 +170,6 @@ export default function AutomationsPage() {
   const [rules, setRules] = useState([]);
   const [runs, setRuns] = useState([]);
   const [assistants, setAssistants] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [materialized, setMaterialized] = useState([]);
 
   const [q, setQ] = useState("");
@@ -224,7 +223,6 @@ export default function AutomationsPage() {
           fetch(`/api/automations/runs?orgId=${orgId}&limit=100`),
           fetch(`/api/automations/materialized?orgId=${orgId}&limit=100`),
           fetch(`/api/assistants?orgId=${orgId}`),
-          fetch(`/api/template/list?orgId=${orgId}`),
           fetch(
             `/api/organizations/messaging-feature?orgId=${orgId}&channel=whatsapp`,
           ),
@@ -235,7 +233,6 @@ export default function AutomationsPage() {
           runsRes,
           materializedRes,
           assistantsRes,
-          templatesRes,
           featureRes,
         ] = responses;
 
@@ -244,7 +241,6 @@ export default function AutomationsPage() {
           runsData,
           materializedData,
           assistantsData,
-          templatesData,
           featureData,
         ] = await Promise.all(
           responses.map((res) => res.json().catch(() => ({}))),
@@ -274,10 +270,6 @@ export default function AutomationsPage() {
           );
         }
 
-        if (!templatesRes.ok) {
-          throw new Error(templatesData?.error || "Failed to load templates.");
-        }
-
         if (!featureRes.ok) {
           throw new Error(
             featureData?.error || "Failed to load messaging feature settings.",
@@ -290,9 +282,6 @@ export default function AutomationsPage() {
           Array.isArray(materializedData?.items) ? materializedData.items : [],
         );
         setAssistants(Array.isArray(assistantsData) ? assistantsData : []);
-        setTemplates(
-          Array.isArray(templatesData?.items) ? templatesData.items : [],
-        );
         setReadChainsEnabled(Boolean(featureData?.item?.read_chains_enabled));
 
         if (showSuccessAlert && typeof showAlertRef.current === "function") {
@@ -608,19 +597,14 @@ export default function AutomationsPage() {
     }
   }
 
-  async function runCron(path) {
+  async function runAutomation(path) {
     try {
       const res = await fetch(path, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(process.env.NEXT_PUBLIC_CRON_SECRET
-            ? {
-                Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET}`,
-              }
-            : {}),
         },
-        body: JSON.stringify({ limit: 100 }),
+        body: JSON.stringify({ organizationId: orgId, limit: 100 }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -673,7 +657,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/inactivity")}
+            onClick={() => runAutomation("/api/automations/run/inactivity")}
           >
             <Clock3 size={16} />
             <span>{translation("runInactivity")}</span>
@@ -682,7 +666,7 @@ export default function AutomationsPage() {
           <button
             type="button"
             className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}
-            onClick={() => runCron("/api/cron/automations/materialize")}
+            onClick={() => runAutomation("/api/automations/run/materialize")}
           >
             <PlayCircle size={16} />
             <span>{translation("materialize")}</span>
@@ -1074,7 +1058,6 @@ export default function AutomationsPage() {
         }}
         onSave={handleSaveRule}
         assistants={assistants}
-        whatsappTemplates={templates}
         initialRule={editingRule}
         saving={saving}
         triggerOptions={translatedTriggerOptions}
