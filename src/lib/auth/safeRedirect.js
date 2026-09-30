@@ -1,4 +1,4 @@
-export const DEFAULT_AUTH_REDIRECT = "/users";
+export const DEFAULT_AUTH_REDIRECT = "/dashboard";
 
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 
