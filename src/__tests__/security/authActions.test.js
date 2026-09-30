@@ -80,7 +80,7 @@ describe("limited auth actions", () => {
       "owner@example.com",
       expect.objectContaining({
         redirectTo:
-          "https://app.example.com/en/reset/confirm?next=%2Fen%2Fusers",
+          "https://app.example.com/en/reset/confirm?next=%2Fen%2Fdashboard",
       }),
     );
   });

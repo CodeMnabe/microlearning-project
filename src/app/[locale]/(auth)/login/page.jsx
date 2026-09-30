@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/safeRedirect";
 import styles from "./login.module.css";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
+import { useAuth } from "@/app/AuthContext";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { login } from "./actions";
@@ -24,6 +25,7 @@ export default function LoginPage() {
   );
   const { startLoading, stopLoading } = useGlobalLoader();
   const supabase = useMemo(() => createClient(), []);
+  const { setUser } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -57,6 +59,13 @@ export default function LoginPage() {
       setErrorMsg(t("Auth.login.genericError"));
       return;
     }
+
+    // The session cookie was set by the server action, so the browser client
+    // never fires SIGNED_IN; hand the user to AuthContext before navigating.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    setUser(session?.user ?? null);
 
     setStatus("success");
     // give the tick a brief moment, then navigate
