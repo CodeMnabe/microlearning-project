@@ -1,5 +1,6 @@
 import { createUser } from "@/lib/repos/user.repo";
 import { emitAutomationEvent } from "./automationEngine";
+import { linkPendingTeamsInstallations } from "@/lib/services/teams/teamsConnection";
 
 export async function createUserWithAutomations(input, options = {}) {
   const { strictAutomations = false } = options;
@@ -34,6 +35,19 @@ export async function createUserWithAutomations(input, options = {}) {
     if (strictAutomations) {
       throw error;
     }
+  }
+
+  /*
+   * Se já tinha instalado a app do Teams antes de ser adicionado, fica
+   * ligado agora pelo email (#153), e as regras do Teams disparam aí.
+   */
+  try {
+    await linkPendingTeamsInstallations({ user });
+  } catch (error) {
+    console.error("[Teams] Failed to link pending installation", {
+      userId: user.id,
+      message: error?.message || String(error),
+    });
   }
 
   return user;

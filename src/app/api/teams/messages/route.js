@@ -26,7 +26,11 @@ import {
 
 import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
 
-import { emitAutomationEvent } from "@/lib/services/automations/automationEngine";
+import {
+  linkTeamsUserByEmail,
+  savePendingTeamsInstallation,
+  upsertPersonalInstallation,
+} from "@/lib/services/teams/teamsConnection";
 
 import { extractTeamsReply } from "@/lib/teams/questionCard";
 
@@ -199,38 +203,44 @@ async function sendReply(activity, text, opts = {}) {
   };
 }
 
+const NOT_REGISTERED_TEXT =
+  "Ainda não estás registado na MyDigitalBot.<br>Pede ao administrador da tua empresa para te adicionar com o email da tua conta Microsoft. Assim que o fizer, ficas ligado automaticamente.";
+
 /*
- * The bot can only write to a user after a personal
- * installation exists, so Teams "user created" rules
- * start counting here. The run key is per user, so
- * reconnecting does not send the welcome again.
+ * Someone the bot does not know yet (#153): link them
+ * by their Microsoft email, or keep the installation
+ * until the admin adds them with that email.
  */
-async function upsertPersonalInstallation(row) {
-  const installation = await upsertTeamsInstallation(row);
+async function resolveUnknownTeamsUser(activity, org) {
+  const context = {
+    organization: org,
 
-  try {
-    await emitAutomationEvent({
-      type: "user.created",
+    tenantId: GetTenantId(activity),
 
-      organizationId: row.organization_id,
+    aadObjectId: GetAadObjectId(activity),
 
-      userId: row.user_id,
+    teamsUserId: GetFromId(activity),
 
-      baseTime: new Date(),
+    serviceUrl: activity?.serviceUrl ?? null,
 
-      payload: { source: "teams.connected" },
+    conversationId: activity?.conversation?.id ?? null,
 
-      channels: ["teams"],
-    });
-  } catch (error) {
-    console.error("[TEAMS] Failed to emit user.created", {
-      userId: row.user_id,
+    conversationType: GetConversationType(activity),
+  };
 
-      error: error?.message || String(error),
-    });
+  if (context.conversationType !== "personal" || !context.aadObjectId) {
+    return null;
   }
 
-  return installation;
+  const result = await linkTeamsUserByEmail(context);
+
+  if (result.linked) return result.user;
+
+  console.log("[TEAMS] Could not link by email", { reason: result.reason });
+
+  await savePendingTeamsInstallation(context);
+
+  return null;
 }
 
 /* =========================================================
@@ -921,16 +931,14 @@ async function handleUserInteraction(activity) {
    * Resolve the user ONLY inside the tenant's
    * organization.
    */
-  const user = await getTeamsUserForOrganization({
-    aadObjectId,
-    organizationId: org.id,
-  });
+  const user =
+    (await getTeamsUserForOrganization({
+      aadObjectId,
+      organizationId: org.id,
+    })) || (await resolveUnknownTeamsUser(activity, org));
 
   if (!user) {
-    await sendReply(
-      activity,
-      "De momento não estás inscrito nesta organização.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br><br>Para mais opções, escreve: --help",
-    );
+    await sendReply(activity, NOT_REGISTERED_TEXT);
 
     return;
   }
@@ -1400,17 +1408,15 @@ async function handleUserInstallation(activity) {
     return;
   }
 
-  const user = await getTeamsUserForOrganization({
-    aadObjectId,
+  const user =
+    (await getTeamsUserForOrganization({
+      aadObjectId,
 
-    organizationId: org.id,
-  });
+      organizationId: org.id,
+    })) || (await resolveUnknownTeamsUser(activity, org));
 
   if (!user) {
-    await sendReply(
-      activity,
-      "Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo:<br>--register nome@email.pt<br><br>Para mais opções, escreve:<br>--help",
-    );
+    await sendReply(activity, NOT_REGISTERED_TEXT);
 
     return;
   }
