@@ -28,12 +28,14 @@ export default function QuestionPhone({
   bodyPlaceholder,
   tools = null,
   translation,
+  variant = "whatsapp",
   children,
 }) {
   return (
     <div className={styles.phoneWrap}>
       <WhatsAppPhone
         contactName={contactName}
+        variant={variant}
         footer={<PlusMenuBar tools={tools} translation={translation} />}
       >
         {tools && (

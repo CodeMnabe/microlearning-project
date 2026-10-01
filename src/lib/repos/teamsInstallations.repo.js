@@ -54,3 +54,29 @@ export async function getTeamsUserInstallation({
   if (error) throw error;
   return data;
 }
+
+/*
+ * Personal installations of people the bot could not match to a
+ * platform user yet (#153). They get a user when the admin adds
+ * someone with the same Microsoft email.
+ */
+export async function getPendingTeamsUserInstallations(
+  organizationId,
+  limit = 50,
+) {
+  if (!organizationId) return [];
+
+  const { data, error } = await sb
+    .from("teams_installation")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("scope", "user")
+    .eq("conversation_type", "personal")
+    .eq("is_active", true)
+    .is("user_id", null)
+    .order("last_seen_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}

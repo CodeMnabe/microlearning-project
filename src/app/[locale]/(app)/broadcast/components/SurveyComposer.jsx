@@ -27,6 +27,7 @@ export default function SurveyComposer({
   previewTime,
   tools,
   translation,
+  variant,
 }) {
   const options = Array.isArray(survey.options) ? survey.options : [];
 
@@ -60,6 +61,7 @@ export default function SurveyComposer({
 
       <QuestionPhone
         contactName={contactName}
+        variant={variant}
         previewTime={previewTime}
         body={survey.body}
         onBodyChange={(body) => update({ body })}

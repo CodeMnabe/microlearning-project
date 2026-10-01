@@ -17,9 +17,31 @@ import {
 
 import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 
-import { createMessage, getMessagesInThread } from "@/lib/repos/messages.repo";
+import {
+  createMessage,
+  getMessagesInThread,
+  getRecentQuestionMessagesForUser,
+  markTeamsMessagesReadUpTo,
+} from "@/lib/repos/messages.repo";
+
+import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
+
+import {
+  linkTeamsUserByEmail,
+  savePendingTeamsInstallation,
+  upsertPersonalInstallation,
+} from "@/lib/services/teams/teamsConnection";
+
+import { extractTeamsReply } from "@/lib/teams/questionCard";
+
+import {
+  handleTeamsAssistantSwitch,
+  isSwitchCommand,
+} from "@/lib/services/teams/teamsAssistantSwitch";
 
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+
+import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 import {
@@ -121,6 +143,8 @@ async function sendReply(activity, text, opts = {}) {
     serviceUrl = activity?.serviceUrl,
 
     conversationId = activity?.conversation?.id,
+
+    attachments = null,
   } = opts;
 
   if (!serviceUrl || !conversationId) {
@@ -145,6 +169,8 @@ async function sendReply(activity, text, opts = {}) {
     type: "message",
 
     text: String(text ?? ""),
+
+    ...(attachments ? { attachments } : {}),
 
     ...(replyToId
       ? {
@@ -177,9 +203,53 @@ async function sendReply(activity, text, opts = {}) {
     };
   }
 
+  const data = await res.json().catch(() => null);
+
   return {
     ok: true,
+
+    id: data?.id ?? null,
   };
+}
+
+const NOT_REGISTERED_TEXT =
+  "Ainda não estás registado na MyDigitalBot.<br>Pede ao administrador da tua empresa para te adicionar com o email da tua conta Microsoft. Assim que o fizer, ficas ligado automaticamente.";
+
+/*
+ * Someone the bot does not know yet (#153): link them
+ * by their Microsoft email, or keep the installation
+ * until the admin adds them with that email.
+ */
+async function resolveUnknownTeamsUser(activity, org) {
+  const context = {
+    organization: org,
+
+    tenantId: GetTenantId(activity),
+
+    aadObjectId: GetAadObjectId(activity),
+
+    teamsUserId: GetFromId(activity),
+
+    serviceUrl: activity?.serviceUrl ?? null,
+
+    conversationId: activity?.conversation?.id ?? null,
+
+    conversationType: GetConversationType(activity),
+  };
+
+  if (context.conversationType !== "personal" || !context.aadObjectId) {
+    return null;
+  }
+
+  const result = await linkTeamsUserByEmail(context);
+
+  if (result.linked) return result.user;
+
+  console.log("[TEAMS] Could not link by email", { reason: result.reason });
+
+  await savePendingTeamsInstallation(context);
+
+  return null;
 }
 
 /* =========================================================
@@ -251,7 +321,7 @@ async function cmdConnect(activity) {
 
   await assertAssistantMatchesOrganization(assistant, org.id);
 
-  await upsertTeamsInstallation({
+  await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
@@ -337,7 +407,7 @@ async function cmdCreateUser(args, activity) {
 
     await assertAssistantMatchesOrganization(assistant, org.id);
 
-    await upsertTeamsInstallation({
+    await upsertPersonalInstallation({
       organization_id: org.id,
 
       assistant_id: assistant.id,
@@ -427,7 +497,7 @@ async function cmdCreateUser(args, activity) {
       teamsFromId: fromId,
     });
 
-    await upsertTeamsInstallation({
+    await upsertPersonalInstallation({
       organization_id: org.id,
 
       assistant_id: assistant.id,
@@ -549,7 +619,7 @@ async function cmdReconnect(args, activity) {
     teamsFromId: fromId,
   });
 
-  await upsertTeamsInstallation({
+  await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
@@ -614,7 +684,7 @@ async function CheckForCommandMessage(activity) {
 async function CheckCommands(cmd, activity) {
   switch (cmd.command) {
     case "help":
-      return `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
+      return `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--assistentes: Trocar de assistente<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
 
     case "status":
       return "Bot is active";
@@ -830,7 +900,8 @@ async function ensureTeamsConversation({
 async function handleUserInteraction(activity) {
   const cmd = await CheckForCommandMessage(activity);
 
-  if (cmd.isCommand) {
+  /* --assistentes needs the user, so it goes on below (#155). */
+  if (cmd.isCommand && !isSwitchCommand(cmd.command)) {
     const text = await CheckCommands(cmd, activity);
 
     await sendReply(activity, text);
@@ -870,15 +941,43 @@ async function handleUserInteraction(activity) {
    * Resolve the user ONLY inside the tenant's
    * organization.
    */
-  const user = await getTeamsUserForOrganization({
-    aadObjectId,
-    organizationId: org.id,
-  });
+  const user =
+    (await getTeamsUserForOrganization({
+      aadObjectId,
+      organizationId: org.id,
+    })) || (await resolveUnknownTeamsUser(activity, org));
 
   if (!user) {
+    await sendReply(activity, NOT_REGISTERED_TEXT);
+
+    return;
+  }
+
+  /*
+   * Assistant switch (#155): the "assistentes"
+   * keyword, the --assistentes command or a tap
+   * on the menu card. Personal chats only; a
+   * group uses the assistant of its installation.
+   */
+  if (conversationType === "personal") {
+    const switchResult = await handleTeamsAssistantSwitch({
+      userId: user.id,
+
+      text: message,
+
+      value: activity?.value ?? null,
+
+      isCommand: cmd.isCommand,
+
+      send: ({ text, attachments }) =>
+        sendReply(activity, text ?? "", { attachments }),
+    });
+
+    if (switchResult.handled) return;
+  } else if (cmd.isCommand) {
     await sendReply(
       activity,
-      "De momento não estás inscrito nesta organização.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo: --register nome@email.pt<br><br>Para mais opções, escreve: --help",
+      "A troca de assistente só está disponível na conversa privada com o bot.",
     );
 
     return;
@@ -1062,6 +1161,29 @@ async function handleUserInteraction(activity) {
   }
 
   /*
+   * Quiz, survey or open question (#151): the
+   * answer is recorded and gets its feedback
+   * without going to the assistant.
+   */
+  if (scope === "user") {
+    const questionResult = await handleTeamsQuestionReply({
+      activity,
+
+      user,
+
+      org,
+
+      assistant,
+
+      thread,
+
+      conversationId: openAiConversationId,
+    });
+
+    if (questionResult.handled) return;
+  }
+
+  /*
    * Save incoming Teams message locally.
    */
   await createMessage({
@@ -1120,8 +1242,11 @@ async function handleUserInteraction(activity) {
     throw new Error("OpenAI returned an empty Teams response");
   }
 
+  const sent = await sendReply(activity, text);
+
   /*
-   * Save Assistant response locally.
+   * Save Assistant response locally, with the
+   * Teams activity id used by read receipts.
    */
   await createMessage({
     threadId: thread.id,
@@ -1134,16 +1259,118 @@ async function handleUserInteraction(activity) {
 
     channel,
 
-    messageId: null,
+    messageId: sent?.id ?? null,
 
     externalContactId: null,
 
     content: text,
 
     role: "assistant",
+
+    deliveryStatus: sent?.ok ? "accepted" : "failed",
+
+    failedAt: sent?.ok ? null : new Date().toISOString(),
+  });
+}
+
+async function handleTeamsQuestionReply({
+  activity,
+  user,
+  org,
+  assistant,
+  thread,
+  conversationId,
+}) {
+  const reply = extractTeamsReply(activity);
+
+  /*
+   * A card tap should carry the card's id in
+   * replyToId; if not, use the latest question
+   * sent to this user on Teams.
+   */
+  if (reply.isTap && !reply.replyToMessageId) {
+    const [latest] = await getRecentQuestionMessagesForUser(
+      user.id,
+      1,
+      "teams",
+    );
+
+    reply.replyToMessageId = latest?.message_id ?? null;
+  }
+
+  return handleQuestionReply({
+    user,
+
+    reply,
+
+    channel: "teams",
+
+    inboundMsgId: activity?.id ?? null,
+
+    contactId: activity?.from?.id ?? null,
+
+    organization: org,
+
+    sendText: async (text) => {
+      const sent = await sendReply(activity, text);
+
+      return { ...sent, providerMessageId: sent?.id ?? null };
+    },
+
+    resolveThread: async () => ({
+      threadId: thread.id,
+
+      assistantId: assistant.id,
+
+      assistant,
+
+      conversationId,
+    }),
+  });
+}
+
+/*
+ * Read receipts only exist in personal chats, and only
+ * reach the bot when the user has them turned on.
+ */
+async function handleReadReceipt(activity) {
+  if (GetConversationType(activity) !== "personal") return;
+
+  const org = await getOrganizationByTeamsTenantId(GetTenantId(activity));
+
+  if (!org) return;
+
+  const user = await getTeamsUserForOrganization({
+    aadObjectId: GetAadObjectId(activity),
+
+    organizationId: org.id,
   });
 
-  await sendReply(activity, text);
+  if (!user) return;
+
+  const readMessages = await markTeamsMessagesReadUpTo({
+    userId: user.id,
+
+    lastReadMessageId: activity?.value?.lastReadMessageId ?? null,
+  });
+
+  /*
+   * A chain step that was just read sends the next
+   * step, same as a WhatsApp read status.
+   */
+  for (const message of readMessages) {
+    if (!message.message_chain_id) continue;
+
+    try {
+      await processReadChainAfterRead(message);
+    } catch (error) {
+      console.error("[TEAMS] Read chain step failed", {
+        messageId: message.id,
+
+        error: error?.message || String(error),
+      });
+    }
+  }
 }
 
 /* =========================================================
@@ -1221,17 +1448,15 @@ async function handleUserInstallation(activity) {
     return;
   }
 
-  const user = await getTeamsUserForOrganization({
-    aadObjectId,
+  const user =
+    (await getTeamsUserForOrganization({
+      aadObjectId,
 
-    organizationId: org.id,
-  });
+      organizationId: org.id,
+    })) || (await resolveUnknownTeamsUser(activity, org));
 
   if (!user) {
-    await sendReply(
-      activity,
-      "Bem-vindo à aplicação MyDigitalBot.<br>Para começares a usar a aplicação, regista-te escrevendo --register e depois o teu email.<br>Exemplo:<br>--register nome@email.pt<br><br>Para mais opções, escreve:<br>--help",
-    );
+    await sendReply(activity, NOT_REGISTERED_TEXT);
 
     return;
   }
@@ -1240,7 +1465,7 @@ async function handleUserInstallation(activity) {
 
   await assertAssistantMatchesOrganization(assistant, org.id);
 
-  const installation = await upsertTeamsInstallation({
+  const installation = await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
@@ -1496,6 +1721,13 @@ export async function POST(req) {
       activity.text.trim()
     ) {
       await handleUserInteraction(activity);
+    }
+
+    if (
+      activity.type === "event" &&
+      activity.name === "application/vnd.microsoft.readReceipt"
+    ) {
+      await handleReadReceipt(activity);
     }
 
     if (activity.type === "installationUpdate" && activity.action === "add") {

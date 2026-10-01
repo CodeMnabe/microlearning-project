@@ -64,20 +64,19 @@ export async function POST(req) {
 
     let opening = { openingBody: null, openingOnly: false };
 
-    let question = { question: null };
-
     if (channel === "whatsapp") {
       opening = parseOpeningOptions(payload);
 
       if (opening.error) {
         return NextResponse.json({ error: opening.error }, { status: 400 });
       }
+    }
 
-      question = parseQuestionOptions(payload);
+    /* Perguntas nos dois canais; no Teams desde o #151. */
+    const question = parseQuestionOptions(payload);
 
-      if (question.error) {
-        return NextResponse.json({ error: question.error }, { status: 400 });
-      }
+    if (question.error) {
+      return NextResponse.json({ error: question.error }, { status: 400 });
     }
 
     const cleanPayload = {
@@ -89,7 +88,7 @@ export async function POST(req) {
         ? payload.trackedLinks
         : [],
       ...(channel === "teams"
-        ? { userIds: recipientUserIds }
+        ? { userIds: recipientUserIds, question: question.question }
         : {
             recipients: recipientUserIds.map((userId) => ({ userId })),
             openingBody: opening.openingBody,

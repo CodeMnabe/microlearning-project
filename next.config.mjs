@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 import createNextIntlPlugin from "next-intl/plugin";
-import { buildSecurityHeaders } from "./src/lib/security/headers.js";
+import { buildSecurityHeaders } from "./src/lib/security/headers.mjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.js");
 

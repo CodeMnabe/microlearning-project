@@ -172,10 +172,11 @@ export default function BroadcastPage() {
   );
 
   const isWhatsapp = channel === "whatsapp";
-  const showStartMenu = isWhatsapp && composeMode === null;
-  const isSurveyMode = isWhatsapp && composeMode === "survey";
-  const isQuizMode = isWhatsapp && composeMode === "quiz";
-  const isOpenQuestionMode = isWhatsapp && composeMode === "question";
+  /* Quiz, sondagem e pergunta aberta nos dois canais (#151). */
+  const showStartMenu = composeMode === null;
+  const isSurveyMode = composeMode === "survey";
+  const isQuizMode = composeMode === "quiz";
+  const isOpenQuestionMode = composeMode === "question";
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -541,15 +542,15 @@ export default function BroadcastPage() {
   }, [org?.id, getUsers, stopLoading]);
 
   /*
-   * A corrente só existe na mensagem livre WhatsApp. Sair dela (mudar de
-   * canal ou de tipo de mensagem) desliga-a, senão o envio seguia pela
+   * A corrente só existe na mensagem livre, no WhatsApp e no Teams. Sair
+   * dela (mudar de tipo de mensagem) desliga-a, senão o envio seguia pela
    * corrente.
    */
   useEffect(() => {
-    if (chainMode && (channel !== "whatsapp" || composeMode !== "blank")) {
+    if (chainMode && composeMode !== "blank") {
       setChainMode(false);
     }
-  }, [channel, chainMode, composeMode]);
+  }, [chainMode, composeMode]);
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -1005,7 +1006,6 @@ export default function BroadcastPage() {
   const chainValid =
     !chainMode ||
     (readChainsFeatureEnabled &&
-      channel === "whatsapp" &&
       chainSteps.length >= 2 &&
       chainSteps.length <= 10 &&
       chainSteps.every(chainStepHasContent) &&
@@ -1175,12 +1175,15 @@ export default function BroadcastPage() {
       };
     }
 
+    const question = composerQuestionPayload();
+
     return {
       orgId: org?.id,
       userIds: chosen.map((u) => u.id),
-      message: composerMessage,
+      message: question ? "" : composerMessage,
       files: composerFiles,
       trackedLinks: normalizedTrackedLinks,
+      ...(question ? { question } : {}),
     };
   }
 
@@ -1188,8 +1191,10 @@ export default function BroadcastPage() {
     return {
       orgId: org?.id,
       createdByUserId: user?.id || null,
-      channel: "whatsapp",
-      recipients: buildRecipients(chosen),
+      channel,
+      recipients: isWhatsapp
+        ? buildRecipients(chosen)
+        : chosen.map((u) => ({ userId: u.id })),
       steps: chainSteps.map((step, index) => {
         const question = chainStepQuestionPayload(step);
 
@@ -1452,15 +1457,6 @@ export default function BroadcastPage() {
     }
 
     if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -1518,7 +1514,9 @@ export default function BroadcastPage() {
             failed: counts.failed,
             note:
               data?.note ||
-              "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply.",
+              (isWhatsapp
+                ? "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply."
+                : "Message 1 was sent. Each next message follows once the previous one is read."),
             failedRecipients,
           }),
           tone: counts.failed > 0 ? "warning" : "success",
@@ -1676,15 +1674,6 @@ export default function BroadcastPage() {
     }
 
     if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -1982,6 +1971,7 @@ export default function BroadcastPage() {
   if (showStartMenu) {
     composer = (
       <StartMenu
+        channel={channel}
         onChoose={setComposeMode}
         sampleName={sampleName}
         previewTime={previewTime}
@@ -2000,6 +1990,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <SurveyComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             survey={survey}
             onChange={setSurvey}
             contactName={sampleName}
@@ -2025,6 +2016,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <OpenQuestionComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             question={openQuestion}
             onChange={setOpenQuestion}
             contactName={sampleName}
@@ -2050,6 +2042,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <QuizComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             quiz={quiz}
             onChange={setQuiz}
             contactName={sampleName}
@@ -2067,7 +2060,7 @@ export default function BroadcastPage() {
     composer = (
       <MessageComposer
         title={translation("Broadcast.message")}
-        onBack={isWhatsapp ? () => setComposeMode(null) : null}
+        onBack={() => setComposeMode(null)}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
@@ -2076,28 +2069,27 @@ export default function BroadcastPage() {
         translation={translation}
         leftToolsContent={chainDelayTools}
         chainControls={
-          isWhatsapp ? (
-            <ChainMessagesBar
-              enabled={readChainsFeatureEnabled}
-              chainMode={chainMode}
-              setChainMode={setChainMode}
-              chainSteps={chainSteps}
-              activeChainStepIndex={activeChainStepIndex}
-              setActiveChainStepIndex={setActiveChainStepIndex}
-              addChainStep={addChainStep}
-              duplicateChainStep={duplicateChainStep}
-              removeChainStep={removeChainStep}
-              activeStepKind={activeChainStep?.kind || "message"}
-              onChangeStepKind={(kind) =>
-                updateChainStepKind(activeChainStepIndex, kind)
-              }
-              translation={translation}
-            />
-          ) : null
+          <ChainMessagesBar
+            enabled={readChainsFeatureEnabled}
+            chainMode={chainMode}
+            setChainMode={setChainMode}
+            chainSteps={chainSteps}
+            activeChainStepIndex={activeChainStepIndex}
+            setActiveChainStepIndex={setActiveChainStepIndex}
+            addChainStep={addChainStep}
+            duplicateChainStep={duplicateChainStep}
+            removeChainStep={removeChainStep}
+            activeStepKind={activeChainStep?.kind || "message"}
+            onChangeStepKind={(kind) =>
+              updateChainStepKind(activeChainStepIndex, kind)
+            }
+            translation={translation}
+          />
         }
         phone={
           chainQuestionKind === "quiz" ? (
             <QuizComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               quiz={activeChainStep.quiz}
               onChange={(next) => updateActiveChainStep({ quiz: next })}
               contactName={sampleName}
@@ -2107,6 +2099,7 @@ export default function BroadcastPage() {
             />
           ) : chainQuestionKind === "survey" ? (
             <SurveyComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               survey={activeChainStep.survey}
               onChange={(next) => updateActiveChainStep({ survey: next })}
               contactName={sampleName}
@@ -2116,6 +2109,7 @@ export default function BroadcastPage() {
             />
           ) : chainQuestionKind === "open" ? (
             <OpenQuestionComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               question={activeChainStep.openQuestion}
               onChange={(next) => updateActiveChainStep({ openQuestion: next })}
               contactName={sampleName}
