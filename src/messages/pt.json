@@ -1346,6 +1346,23 @@
         "title": "Envios materializados",
         "message": "A rotina de materialização foi executada com sucesso."
       }
+    },
+    "readChains": {
+      "title": "Mensagens em cadeia",
+      "text": "Envia a mensagem seguinte depois de a anterior ser lida, no WhatsApp e no Teams.",
+      "active": "Funcionalidade ativa",
+      "inactive": "Funcionalidade inativa",
+      "on": "Ligado",
+      "off": "Desligado",
+      "saving": "A guardar...",
+      "enable": "Ligar mensagens em cadeia",
+      "disable": "Desligar mensagens em cadeia",
+      "enabledTitle": "Mensagens em cadeia ligadas",
+      "enabledMessage": "Os envios podem criar cadeias de mensagens no WhatsApp e no Teams, que avançam quando cada mensagem é lida.",
+      "disabledTitle": "Mensagens em cadeia desligadas",
+      "disabledMessage": "Os envios deixam de poder criar novas cadeias de mensagens.",
+      "errorTitle": "Não foi possível alterar as mensagens em cadeia",
+      "errorMessage": "Não foi possível atualizar a funcionalidade."
     }
   },
 
