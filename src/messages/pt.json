@@ -1185,7 +1185,7 @@
     "messageUnread": "Mensagem por ler",
 
     "triggerDescriptions": {
-      "userCreated": "Enviar X minutos depois de um novo utilizador ser criado.",
+      "userCreated": "Enviar X minutos depois de um novo utilizador ser criado. No Teams, conta a partir do momento em que se liga ao bot.",
       "userInactive": "Enviar X minutos após um período de inatividade do utilizador.",
       "messageRead": "Reservado para futuras automações com confirmação de leitura.",
       "messageUnread": "Reservado para futuras automações com mensagens por ler."

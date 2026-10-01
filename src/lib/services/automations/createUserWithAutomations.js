@@ -18,6 +18,11 @@ export async function createUserWithAutomations(input, options = {}) {
         userName: user.name || "",
         email: user.email || null,
       },
+      /*
+       * No Teams o bot só consegue escrever depois de o colaborador se
+       * ligar a ele; essas regras disparam nessa altura (rota do Teams).
+       */
+      channels: ["whatsapp"],
     });
   } catch (error) {
     console.error("[Automations] Failed to emit user.created", {

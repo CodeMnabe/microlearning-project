@@ -29,7 +29,10 @@ vi.mock("@/lib/services/audit/recordAuditEvent", () => ({
   recordSystemAuditEvent: (...args) => mocks.recordSystemAuditEvent(...args),
 }));
 
-import { queueAutomationRunForRule } from "@/lib/services/automations/automationEngine";
+import {
+  emitAutomationEvent,
+  queueAutomationRunForRule,
+} from "@/lib/services/automations/automationEngine";
 
 const rule = {
   id: "rule-1",
@@ -101,5 +104,29 @@ describe("registo de automações disparadas", () => {
     expect(run).toBeNull();
     expect(mocks.createAutomationRunIfMissing).not.toHaveBeenCalled();
     expect(mocks.recordSystemAuditEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("utilizador criado por canal", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.recordSystemAuditEvent.mockResolvedValue({});
+    mocks.getUserById.mockResolvedValue({ ...user, teams_aad_object_id: "aad-1" });
+    mocks.getActiveAutomationRules.mockResolvedValue([
+      rule,
+      { ...rule, id: "rule-teams", channel: "teams" },
+    ]);
+    mocks.createAutomationRunIfMissing.mockImplementation(async (row) => row);
+  });
+
+  it("só cria runs para os canais pedidos", async () => {
+    const runs = await emitAutomationEvent({
+      type: "user.created",
+      organizationId: 4,
+      userId: 42,
+      channels: ["teams"],
+    });
+
+    expect(runs.map((run) => run.rule_id)).toEqual(["rule-teams"]);
   });
 });

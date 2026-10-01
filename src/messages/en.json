@@ -1177,7 +1177,7 @@
     "unknown": "Other / unknown",
 
     "triggerDescriptions": {
-      "userCreated": "Send X minutes after a user is created.",
+      "userCreated": "Send X minutes after a user is created. On Teams, counted from when they connect to the bot.",
       "userInactive": "Send X minutes without a user inbound message.",
       "messageRead": "Reserved for future read-receipt automations.",
       "messageUnread": "Reserved for future unread-message automations."

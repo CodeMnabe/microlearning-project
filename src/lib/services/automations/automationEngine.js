@@ -182,14 +182,17 @@ export async function emitAutomationEvent({
   baseTime = new Date(),
   triggerKey = null,
   payload = {},
+  channels = null,
 }) {
   const user = await getUserById(userId);
   if (!user) return [];
 
-  const rules = await getActiveAutomationRules({
-    organizationId,
-    triggerType: type,
-  });
+  const rules = (
+    await getActiveAutomationRules({
+      organizationId,
+      triggerType: type,
+    })
+  ).filter((rule) => !channels || channels.includes(rule.channel));
 
   if (!rules.length) return [];
 

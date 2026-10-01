@@ -26,6 +26,8 @@ import {
 
 import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
 
+import { emitAutomationEvent } from "@/lib/services/automations/automationEngine";
+
 import { extractTeamsReply } from "@/lib/teams/questionCard";
 
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
@@ -197,6 +199,40 @@ async function sendReply(activity, text, opts = {}) {
   };
 }
 
+/*
+ * The bot can only write to a user after a personal
+ * installation exists, so Teams "user created" rules
+ * start counting here. The run key is per user, so
+ * reconnecting does not send the welcome again.
+ */
+async function upsertPersonalInstallation(row) {
+  const installation = await upsertTeamsInstallation(row);
+
+  try {
+    await emitAutomationEvent({
+      type: "user.created",
+
+      organizationId: row.organization_id,
+
+      userId: row.user_id,
+
+      baseTime: new Date(),
+
+      payload: { source: "teams.connected" },
+
+      channels: ["teams"],
+    });
+  } catch (error) {
+    console.error("[TEAMS] Failed to emit user.created", {
+      userId: row.user_id,
+
+      error: error?.message || String(error),
+    });
+  }
+
+  return installation;
+}
+
 /* =========================================================
    COMMANDS
    ========================================================= */
@@ -266,7 +302,7 @@ async function cmdConnect(activity) {
 
   await assertAssistantMatchesOrganization(assistant, org.id);
 
-  await upsertTeamsInstallation({
+  await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
@@ -352,7 +388,7 @@ async function cmdCreateUser(args, activity) {
 
     await assertAssistantMatchesOrganization(assistant, org.id);
 
-    await upsertTeamsInstallation({
+    await upsertPersonalInstallation({
       organization_id: org.id,
 
       assistant_id: assistant.id,
@@ -442,7 +478,7 @@ async function cmdCreateUser(args, activity) {
       teamsFromId: fromId,
     });
 
-    await upsertTeamsInstallation({
+    await upsertPersonalInstallation({
       organization_id: org.id,
 
       assistant_id: assistant.id,
@@ -564,7 +600,7 @@ async function cmdReconnect(args, activity) {
     teamsFromId: fromId,
   });
 
-  await upsertTeamsInstallation({
+  await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
@@ -1383,7 +1419,7 @@ async function handleUserInstallation(activity) {
 
   await assertAssistantMatchesOrganization(assistant, org.id);
 
-  const installation = await upsertTeamsInstallation({
+  const installation = await upsertPersonalInstallation({
     organization_id: org.id,
 
     assistant_id: assistant.id,
