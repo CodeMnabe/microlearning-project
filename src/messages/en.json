@@ -1337,6 +1337,23 @@
         "title": "Deliveries materialized",
         "message": "The materialization routine ran successfully."
       }
+    },
+    "readChains": {
+      "title": "Read chain messages",
+      "text": "Send the next message after the previous one is read, on WhatsApp and Teams.",
+      "active": "Feature active",
+      "inactive": "Feature inactive",
+      "on": "On",
+      "off": "Off",
+      "saving": "Saving...",
+      "enable": "Enable read chains",
+      "disable": "Disable read chains",
+      "enabledTitle": "Read chains enabled",
+      "enabledMessage": "Broadcasts can now create message chains on WhatsApp and Teams that continue after each read receipt.",
+      "disabledTitle": "Read chains disabled",
+      "disabledMessage": "Broadcasts can no longer create new read chains.",
+      "errorTitle": "Could not update read chains",
+      "errorMessage": "Failed to update read chain feature."
     }
   },
 

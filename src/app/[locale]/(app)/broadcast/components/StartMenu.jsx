@@ -86,7 +86,10 @@ export default function StartMenu({
   ];
 
   return (
-    <div className={styles.panel} data-testid="start-menu">
+    <div
+      className={`${styles.panel} ${styles.startMenu}`}
+      data-testid="start-menu"
+    >
       <div className={styles.startIntro}>
         <div className={styles.startTitle}>
           {translation("Broadcast.start.title")}
