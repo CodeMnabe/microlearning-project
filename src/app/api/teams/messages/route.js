@@ -34,6 +34,11 @@ import {
 
 import { extractTeamsReply } from "@/lib/teams/questionCard";
 
+import {
+  handleTeamsAssistantSwitch,
+  isSwitchCommand,
+} from "@/lib/services/teams/teamsAssistantSwitch";
+
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
@@ -138,6 +143,8 @@ async function sendReply(activity, text, opts = {}) {
     serviceUrl = activity?.serviceUrl,
 
     conversationId = activity?.conversation?.id,
+
+    attachments = null,
   } = opts;
 
   if (!serviceUrl || !conversationId) {
@@ -162,6 +169,8 @@ async function sendReply(activity, text, opts = {}) {
     type: "message",
 
     text: String(text ?? ""),
+
+    ...(attachments ? { attachments } : {}),
 
     ...(replyToId
       ? {
@@ -675,7 +684,7 @@ async function CheckForCommandMessage(activity) {
 async function CheckCommands(cmd, activity) {
   switch (cmd.command) {
     case "help":
-      return `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
+      return `--help: Lista de Comandos<br>--status: Verificar o estado do MyDigitalBot<br>--whoami: Mostra os teus IDs do Teams<br>--assistentes: Trocar de assistente<br>--reconnect: Voltar a ligar ao banco de dados<br>--register email@example.com: Registo na MyDigitalBot, escrevendo o comando e de seguida o endereço de e-mail`;
 
     case "status":
       return "Bot is active";
@@ -891,7 +900,8 @@ async function ensureTeamsConversation({
 async function handleUserInteraction(activity) {
   const cmd = await CheckForCommandMessage(activity);
 
-  if (cmd.isCommand) {
+  /* --assistentes needs the user, so it goes on below (#155). */
+  if (cmd.isCommand && !isSwitchCommand(cmd.command)) {
     const text = await CheckCommands(cmd, activity);
 
     await sendReply(activity, text);
@@ -939,6 +949,36 @@ async function handleUserInteraction(activity) {
 
   if (!user) {
     await sendReply(activity, NOT_REGISTERED_TEXT);
+
+    return;
+  }
+
+  /*
+   * Assistant switch (#155): the "assistentes"
+   * keyword, the --assistentes command or a tap
+   * on the menu card. Personal chats only; a
+   * group uses the assistant of its installation.
+   */
+  if (conversationType === "personal") {
+    const switchResult = await handleTeamsAssistantSwitch({
+      userId: user.id,
+
+      text: message,
+
+      value: activity?.value ?? null,
+
+      isCommand: cmd.isCommand,
+
+      send: ({ text, attachments }) =>
+        sendReply(activity, text ?? "", { attachments }),
+    });
+
+    if (switchResult.handled) return;
+  } else if (cmd.isCommand) {
+    await sendReply(
+      activity,
+      "A troca de assistente só está disponível na conversa privada com o bot.",
+    );
 
     return;
   }
