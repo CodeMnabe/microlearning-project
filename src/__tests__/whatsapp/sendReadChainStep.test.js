@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   sendWhatsappBroadcast: vi.fn(),
+  sendTeamsBroadcast: vi.fn(),
   createMessage: vi.fn(),
   createMessageChainDelivery: vi.fn(),
   markMessageChainDeliveryFailed: vi.fn(),
@@ -11,6 +12,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/services/broadcast/sendWhatsappBroadcast", () => ({
   sendWhatsappBroadcast: (...args) => mocks.sendWhatsappBroadcast(...args),
+}));
+
+vi.mock("@/lib/services/broadcast/sendTeamsBroadcast", () => ({
+  sendTeamsBroadcast: (...args) => mocks.sendTeamsBroadcast(...args),
 }));
 
 vi.mock("@/lib/repos/messages.repo", () => ({
@@ -106,5 +111,65 @@ describe("sendReadChainStep with a question step", () => {
       questionId: null,
       threadId: null,
     });
+  });
+});
+
+describe("sendReadChainStep on Teams", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.sendTeamsBroadcast.mockResolvedValue({
+      results: [
+        { ok: true, providerMessageId: "teams-1", messageRowId: 901 },
+      ],
+    });
+  });
+
+  it("sends through Teams with the chain data and links the delivery to the stored message", async () => {
+    const result = await sendReadChainStep({
+      chain: { ...CHAIN, channel: "teams" },
+      chainRecipient: RECIPIENT,
+      chainStep: { id: "step-1", payload: { message: "Olá", files: [] } },
+      stepIndex: 1,
+    });
+
+    expect(result).toMatchObject({ ok: true, sent: true, kind: "teams" });
+    expect(mocks.sendWhatsappBroadcast).not.toHaveBeenCalled();
+    expect(mocks.sendTeamsBroadcast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orgId: 1,
+        userIds: [42],
+        message: "Olá",
+        chainMetadata: expect.objectContaining({
+          messageChainId: "chain-1",
+          messageChainRecipientId: "rec-1",
+          messageChainStepIndex: 1,
+        }),
+      }),
+    );
+    expect(mocks.createMessageChainDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageDbId: 901,
+        providerMessageId: "teams-1",
+        status: "sent",
+      }),
+    );
+  });
+
+  it("marks the step failed when Teams did not deliver it", async () => {
+    mocks.sendTeamsBroadcast.mockResolvedValue({
+      results: [{ ok: false, error: "No Teams installation found." }],
+    });
+
+    const result = await sendReadChainStep({
+      chain: { ...CHAIN, channel: "teams" },
+      chainRecipient: RECIPIENT,
+      chainStep: { id: "step-1", payload: { message: "Olá" } },
+      stepIndex: 1,
+    });
+
+    expect(result).toMatchObject({ ok: false, sent: false });
+    expect(mocks.markMessageChainDeliveryFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ errorMessage: "No Teams installation found." }),
+    );
   });
 });

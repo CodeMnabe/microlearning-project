@@ -27,6 +27,7 @@ export async function sendTeamsBroadcast(input = {}) {
     trackedLinks = [],
     scheduledBroadcastId = null,
     automationRunId = null,
+    chainMetadata = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
@@ -169,6 +170,8 @@ export async function sendTeamsBroadcast(input = {}) {
        * Keep the Teams activity id so read receipts can mark it read.
        * The message already went out, so a failure here is only logged.
        */
+      let messageRow = null;
+
       if (res.ok && user) {
         try {
           const thread = user.assistant_id
@@ -179,7 +182,7 @@ export async function sendTeamsBroadcast(input = {}) {
               })
             : null;
 
-          await createMessage({
+          messageRow = await createMessage({
             threadId: thread?.id ?? null,
             userId,
             organizationId: orgId,
@@ -191,6 +194,7 @@ export async function sendTeamsBroadcast(input = {}) {
             deliveryStatus: "accepted",
             scheduledBroadcastId,
             automationRunId,
+            ...(chainMetadata || {}),
           });
         } catch (recordErr) {
           console.error("[Teams broadcast] could not record message", {
@@ -204,6 +208,8 @@ export async function sendTeamsBroadcast(input = {}) {
         userId,
         ok: res.ok,
         status: res.status,
+        providerMessageId: data?.id ?? null,
+        messageRowId: messageRow?.id ?? null,
         data,
       });
     } catch (err) {

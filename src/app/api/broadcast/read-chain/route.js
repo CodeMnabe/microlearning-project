@@ -99,9 +99,9 @@ export async function POST(req) {
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
 
-    if (channel !== "whatsapp") {
+    if (!["whatsapp", "teams"].includes(channel)) {
       return NextResponse.json(
-        { error: "Read chains currently only support WhatsApp." },
+        { error: "Read chains only support WhatsApp and Teams." },
         { status: 400 },
       );
     }
@@ -165,6 +165,14 @@ export async function POST(req) {
         {
           error: `Message ${emptyStepIndex + 1} is empty. Add text, files, or images.`,
         },
+        { status: 400 },
+      );
+    }
+
+    /* Quiz, sondagem e pergunta aberta só existem no WhatsApp. */
+    if (channel === "teams" && steps.some((step) => step.question)) {
+      return NextResponse.json(
+        { error: "Teams chains only support plain messages." },
         { status: 400 },
       );
     }

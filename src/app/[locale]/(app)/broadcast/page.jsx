@@ -541,12 +541,25 @@ export default function BroadcastPage() {
   }, [org?.id, getUsers, stopLoading]);
 
   /*
-   * A corrente só existe na mensagem livre WhatsApp. Sair dela (mudar de
-   * canal ou de tipo de mensagem) desliga-a, senão o envio seguia pela
-   * corrente.
+   * A corrente existe na mensagem livre WhatsApp e no Teams (só com
+   * mensagens). Sair do tipo de mensagem desliga-a, senão o envio seguia
+   * pela corrente. Mudar de canal também recomeça os passos, porque os do
+   * WhatsApp podem ser perguntas que o Teams não tem.
    */
+  const chainChannelRef = useRef(channel);
+
   useEffect(() => {
-    if (chainMode && (channel !== "whatsapp" || composeMode !== "blank")) {
+    const channelChanged = chainChannelRef.current !== channel;
+    chainChannelRef.current = channel;
+
+    if (channelChanged) {
+      setChainMode(false);
+      setChainSteps([makeChainStep(), makeChainStep()]);
+      setActiveChainStepIndex(0);
+      return;
+    }
+
+    if (chainMode && channel === "whatsapp" && composeMode !== "blank") {
       setChainMode(false);
     }
   }, [channel, chainMode, composeMode]);
@@ -1005,7 +1018,6 @@ export default function BroadcastPage() {
   const chainValid =
     !chainMode ||
     (readChainsFeatureEnabled &&
-      channel === "whatsapp" &&
       chainSteps.length >= 2 &&
       chainSteps.length <= 10 &&
       chainSteps.every(chainStepHasContent) &&
@@ -1188,8 +1200,10 @@ export default function BroadcastPage() {
     return {
       orgId: org?.id,
       createdByUserId: user?.id || null,
-      channel: "whatsapp",
-      recipients: buildRecipients(chosen),
+      channel,
+      recipients: isWhatsapp
+        ? buildRecipients(chosen)
+        : chosen.map((u) => ({ userId: u.id })),
       steps: chainSteps.map((step, index) => {
         const question = chainStepQuestionPayload(step);
 
@@ -1452,15 +1466,6 @@ export default function BroadcastPage() {
     }
 
     if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -1518,7 +1523,9 @@ export default function BroadcastPage() {
             failed: counts.failed,
             note:
               data?.note ||
-              "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply.",
+              (isWhatsapp
+                ? "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply."
+                : "Message 1 was sent. Each next message follows once the previous one is read."),
             failedRecipients,
           }),
           tone: counts.failed > 0 ? "warning" : "success",
@@ -1676,15 +1683,6 @@ export default function BroadcastPage() {
     }
 
     if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -2076,24 +2074,24 @@ export default function BroadcastPage() {
         translation={translation}
         leftToolsContent={chainDelayTools}
         chainControls={
-          isWhatsapp ? (
-            <ChainMessagesBar
-              enabled={readChainsFeatureEnabled}
-              chainMode={chainMode}
-              setChainMode={setChainMode}
-              chainSteps={chainSteps}
-              activeChainStepIndex={activeChainStepIndex}
-              setActiveChainStepIndex={setActiveChainStepIndex}
-              addChainStep={addChainStep}
-              duplicateChainStep={duplicateChainStep}
-              removeChainStep={removeChainStep}
-              activeStepKind={activeChainStep?.kind || "message"}
-              onChangeStepKind={(kind) =>
-                updateChainStepKind(activeChainStepIndex, kind)
-              }
-              translation={translation}
-            />
-          ) : null
+          <ChainMessagesBar
+            enabled={readChainsFeatureEnabled}
+            chainMode={chainMode}
+            setChainMode={setChainMode}
+            chainSteps={chainSteps}
+            activeChainStepIndex={activeChainStepIndex}
+            setActiveChainStepIndex={setActiveChainStepIndex}
+            addChainStep={addChainStep}
+            duplicateChainStep={duplicateChainStep}
+            removeChainStep={removeChainStep}
+            activeStepKind={activeChainStep?.kind || "message"}
+            onChangeStepKind={
+              isWhatsapp
+                ? (kind) => updateChainStepKind(activeChainStepIndex, kind)
+                : null
+            }
+            translation={translation}
+          />
         }
         phone={
           chainQuestionKind === "quiz" ? (

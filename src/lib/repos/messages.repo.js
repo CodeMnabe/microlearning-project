@@ -372,10 +372,10 @@ export async function markTeamsMessagesReadUpTo({
     .in("role", OUTBOUND_ROLES)
     .is("read_at", null)
     .lte("created_at", cutoff)
-    .select("id");
+    .select(MESSAGE_SELECT);
 
   if (error) throw error;
-  return data?.length ?? 0;
+  return data ?? [];
 }
 
 export async function getLastOutboundForUserAssistant(

@@ -24,6 +24,8 @@ import {
 } from "@/lib/repos/messages.repo";
 
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
+
+import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 
 import {
@@ -1178,11 +1180,29 @@ async function handleReadReceipt(activity) {
 
   if (!user) return;
 
-  await markTeamsMessagesReadUpTo({
+  const readMessages = await markTeamsMessagesReadUpTo({
     userId: user.id,
 
     lastReadMessageId: activity?.value?.lastReadMessageId ?? null,
   });
+
+  /*
+   * A chain step that was just read sends the next
+   * step, same as a WhatsApp read status.
+   */
+  for (const message of readMessages) {
+    if (!message.message_chain_id) continue;
+
+    try {
+      await processReadChainAfterRead(message);
+    } catch (error) {
+      console.error("[TEAMS] Read chain step failed", {
+        messageId: message.id,
+
+        error: error?.message || String(error),
+      });
+    }
+  }
 }
 
 /* =========================================================
