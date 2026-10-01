@@ -168,3 +168,87 @@ export async function fetchAllRows(
 
   return rows;
 }
+
+
+/** Paginated reads for export; existing dashboard readers remain unchanged. */
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 200;
+
+export async function fetchExportRows(table, columns, applyFilters, options = {}) {
+  const supabaseAdmin = getSupabaseAdminClient();
+
+  // Sem ORDER BY, o Postgres não garante a mesma ordem entre queries.
+  // A paginar sem ordem estável, receberíamos linhas repetidas numas
+  // páginas e nunca receberíamos outras.
+  const orderColumn = options.orderColumn ?? "id";
+
+  const rows = [];
+  let from = 0;
+  let total = null;
+  let countRequested = false;
+  let complete = false;
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    // Só pedimos a contagem na primeira página: é ela que nos diz quando
+    // parar. Repeti-la em cada página seria obrigar o Postgres a contar
+    // a tabela toda de cada vez.
+    const selectOptions = countRequested ? {} : { count: "exact" };
+
+    let query = supabaseAdmin.from(table).select(columns, selectOptions);
+
+    // Os filtros de quem chamou entram primeiro, para que a ordem
+    // e o intervalo que aplicamos a seguir não sejam substituídos.
+    if (typeof applyFilters === "function") {
+      query = applyFilters(query);
+    }
+
+    query = query
+      .order(orderColumn, { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    const { data, count, error } = await query;
+
+    if (error) {
+      throw new Error(`${table}: ${error.message}`);
+    }
+
+    const received = data ?? [];
+
+    rows.push(...received);
+
+    countRequested = true;
+
+    // Guardamos a contagem só se ela vier mesmo. Cair para
+    // received.length seria dizer "o total é o tamanho da primeira
+    // página", que é exatamente o truncamento que viemos corrigir.
+    if (total === null && typeof count === "number") {
+      total = count;
+    }
+
+    // Chegámos ao fim quando já temos tudo o que a contagem anunciou.
+    // Se a contagem não veio, voltamos a depender da página vazia:
+    // uma otimização que remove a rede de segurança antiga não é uma
+    // otimização, é uma troca.
+    if (received.length === 0 && total !== null && rows.length < total) {
+      throw new Error(`${table}: incomplete export (${rows.length}/${total} rows).`);
+    }
+
+    if ((total !== null && rows.length >= total) || received.length === 0) {
+      complete = true;
+      break;
+    }
+
+    // Avançamos pelo que recebemos, não por PAGE_SIZE.
+    from += received.length;
+  }
+
+  // Se saímos do ciclo sem chegar ao fim, é melhor rebentar do que
+  // devolver dados incompletos em silêncio — que é o bug que viemos corrigir.
+  if (!complete) {
+    throw new Error(
+      `${table}: mais de ${MAX_PAGES * PAGE_SIZE} linhas; revê o filtro ou pagina no chamador.`,
+    );
+  }
+
+  return rows;
+}

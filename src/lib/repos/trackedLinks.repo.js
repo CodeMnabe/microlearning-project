@@ -1,3 +1,4 @@
+import { fetchExportRows } from "./analytics/analyticsBase.repo";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -43,40 +44,74 @@ export async function createTrackedLinkEvent(row) {
   return data;
 }
 
-export async function getTrackedLinkReportsByOrg(orgId) {
-  const { data: links, error } = await supabaseAdmin
-    .from("tracked_link")
-    .select(
-      `
-      id,
-      org_id,
-      channel,
-      recipient_user_id,
-      scheduled_broadcast_id,
-      send_group_id,
-      destination_url,
-      link_label,
-      link_key,
-      source_type,
-      created_at,
-      recipient:user!tracked_link_recipient_user_id_fkey (
+export async function getTrackedLinkReportsByOrg(
+  orgId,
+  periodStart = null,
+  { paginate = false } = {},
+) {
+  let rows;
+  if (paginate) {
+    rows = await fetchExportRows(
+      "tracked_link",
+      "id, org_id, channel, recipient_user_id, scheduled_broadcast_id, send_group_id, destination_url, link_label, link_key, source_type, created_at",
+      (query) => {
+        query = query.eq("org_id", orgId);
+        return periodStart ? query.gte("created_at", periodStart) : query;
+      },
+    );
+    // Read events separately: embedded arrays can also be capped by PostgREST.
+    const eventsByLink = new Map();
+    for (let offset = 0; offset < rows.length; offset += 200) {
+      const ids = rows.slice(offset, offset + 200).map((row) => row.id);
+      const events = await fetchExportRows(
+        "tracked_link_event",
+        "id, tracked_link_id, created_at",
+        (query) => query.in("tracked_link_id", ids),
+      );
+      for (const event of events) {
+        const eventsForLink = eventsByLink.get(event.tracked_link_id) ?? [];
+        eventsForLink.push(event);
+        eventsByLink.set(event.tracked_link_id, eventsForLink);
+      }
+    }
+    rows = rows.map((row) => ({ ...row, tracked_link_event: eventsByLink.get(row.id) ?? [] }));
+    rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else {
+    const { data: links, error } = await supabaseAdmin
+      .from("tracked_link")
+      .select(
+        `
         id,
-        name,
-        email,
-        phone_number
-      ),
-      tracked_link_event (
-        id,
-        created_at
+        org_id,
+        channel,
+        recipient_user_id,
+        scheduled_broadcast_id,
+        send_group_id,
+        destination_url,
+        link_label,
+        link_key,
+        source_type,
+        created_at,
+        recipient:user!tracked_link_recipient_user_id_fkey (
+          id,
+          name,
+          email,
+          phone_number
+        ),
+        tracked_link_event (
+          id,
+          created_at
+        )
+      `,
       )
-    `,
-    )
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false });
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const rows = Array.isArray(links) ? links : [];
+    rows = Array.isArray(links) ? links : [];
+  }
+
   const grouped = new Map();
 
   for (const row of rows) {

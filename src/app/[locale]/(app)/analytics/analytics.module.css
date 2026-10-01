@@ -1286,3 +1286,27 @@ tr[data-medal="gold"] .rankingLabel {
     grid-template-columns: 72px minmax(0, 1fr) 72px;
   }
 }
+
+/* Export controls use the current dashboard button styles. */
+.exportBusy { pointer-events: none; }
+
+.exportWarning {
+  padding: 12px 16px;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+}
+.exportWarning p { margin: 0; }
+
+/* Applied only to the cloned DOM used for PDF capture. */
+.exportingPdf .section,
+.exportingPdf .header { box-shadow: none; overflow: visible; }
+.exportingPdf .sectionActions,
+.exportingPdf .lcTooltip { visibility: hidden; }
+
+.exportingPdf .columns > .section:only-child,
+.exportingPdf .columnsWide > .section:only-child {
+  grid-column: 1 / -1;
+}
