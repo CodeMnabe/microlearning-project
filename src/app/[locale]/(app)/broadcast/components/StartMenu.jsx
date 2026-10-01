@@ -18,6 +18,7 @@ export default function StartMenu({
   sampleName,
   previewTime,
   translation,
+  channel = "whatsapp",
 }) {
   const cards = [
     {
@@ -105,7 +106,12 @@ export default function StartMenu({
             onClick={() => onChoose(card.key)}
           >
             <div className={styles.startThumb}>
-              <WhatsAppPhone contactName={sampleName} compact centered>
+              <WhatsAppPhone
+                contactName={sampleName}
+                variant={channel === "teams" ? "teams" : "whatsapp"}
+                compact
+                centered
+              >
                 {card.preview}
               </WhatsAppPhone>
             </div>

@@ -169,6 +169,36 @@ describe("handleQuestionReply", () => {
     );
   });
 
+  it("handles a Teams card tap and leaves the uuid inbound id empty", async () => {
+    getMessageByProviderId.mockResolvedValue({
+      ...QUESTION_MESSAGE,
+      message_id: "1790844261646",
+    });
+
+    const result = await handleQuestionReply({
+      user: USER,
+      channel: "teams",
+      reply: {
+        text: "3,5 bar",
+        isTap: true,
+        tappedIndex: 2,
+        tappedText: "3,5 bar",
+        replyToMessageId: "1790844261646",
+      },
+      inboundMsgId: "f:91e331ba-3789-5f98-48af-af2d90929ef5",
+      sendText,
+      resolveThread,
+    });
+
+    expect(result).toMatchObject({ outcome: "answered", isCorrect: false });
+    expect(createQuestionAnswer).toHaveBeenCalledWith(
+      expect.objectContaining({ optionIndex: 2, inboundMessageId: null }),
+    );
+    expect(createMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: "teams", role: "user" }),
+    );
+  });
+
   it("keeps only the first answer: a second tap is stored but gets no feedback", async () => {
     getMessageByProviderId.mockResolvedValue(QUESTION_MESSAGE);
     createQuestionAnswer.mockResolvedValue(null);
@@ -236,7 +266,11 @@ describe("handleQuestionReply", () => {
       resolveThread,
     });
 
-    expect(getRecentQuestionMessagesForUser).toHaveBeenCalledWith(42, 1);
+    expect(getRecentQuestionMessagesForUser).toHaveBeenCalledWith(
+      42,
+      1,
+      "whatsapp",
+    );
     expect(result).toMatchObject({
       outcome: "answered",
       matchedBy: "text",

@@ -20,8 +20,13 @@ import { getOrganizationByTeamsTenantId } from "@/lib/repos/organizations.repo";
 import {
   createMessage,
   getMessagesInThread,
+  getRecentQuestionMessagesForUser,
   markTeamsMessagesReadUpTo,
 } from "@/lib/repos/messages.repo";
+
+import { handleQuestionReply } from "@/lib/services/questions/handleQuestionReply";
+
+import { extractTeamsReply } from "@/lib/teams/questionCard";
 
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 
@@ -1072,6 +1077,29 @@ async function handleUserInteraction(activity) {
   }
 
   /*
+   * Quiz, survey or open question (#151): the
+   * answer is recorded and gets its feedback
+   * without going to the assistant.
+   */
+  if (scope === "user") {
+    const questionResult = await handleTeamsQuestionReply({
+      activity,
+
+      user,
+
+      org,
+
+      assistant,
+
+      thread,
+
+      conversationId: openAiConversationId,
+    });
+
+    if (questionResult.handled) return;
+  }
+
+  /*
    * Save incoming Teams message locally.
    */
   await createMessage({
@@ -1158,6 +1186,62 @@ async function handleUserInteraction(activity) {
     deliveryStatus: sent?.ok ? "accepted" : "failed",
 
     failedAt: sent?.ok ? null : new Date().toISOString(),
+  });
+}
+
+async function handleTeamsQuestionReply({
+  activity,
+  user,
+  org,
+  assistant,
+  thread,
+  conversationId,
+}) {
+  const reply = extractTeamsReply(activity);
+
+  /*
+   * A card tap should carry the card's id in
+   * replyToId; if not, use the latest question
+   * sent to this user on Teams.
+   */
+  if (reply.isTap && !reply.replyToMessageId) {
+    const [latest] = await getRecentQuestionMessagesForUser(
+      user.id,
+      1,
+      "teams",
+    );
+
+    reply.replyToMessageId = latest?.message_id ?? null;
+  }
+
+  return handleQuestionReply({
+    user,
+
+    reply,
+
+    channel: "teams",
+
+    inboundMsgId: activity?.id ?? null,
+
+    contactId: activity?.from?.id ?? null,
+
+    organization: org,
+
+    sendText: async (text) => {
+      const sent = await sendReply(activity, text);
+
+      return { ...sent, providerMessageId: sent?.id ?? null };
+    },
+
+    resolveThread: async () => ({
+      threadId: thread.id,
+
+      assistantId: assistant.id,
+
+      assistant,
+
+      conversationId,
+    }),
   });
 }
 

@@ -1386,7 +1386,7 @@
       "title": "How do you want to start?",
       "hint": "Pick a starting point. You can come back here at any time.",
       "blank": "Blank",
-      "blankHint": "Free message with text, images and links. Contacts outside the window receive the opening message first.",
+      "blankHint": "Free message with text, images and links.",
       "blankSample": "Hi {name}! Today's tip: check the tyre pressure before a trip.",
       "quiz": "Quiz",
       "quizHint": "Question with up to 3 quick-reply options. Ideal to check what was retained.",

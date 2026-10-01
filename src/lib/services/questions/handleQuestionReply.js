@@ -42,15 +42,20 @@ const defaultDeps = {
  *    responder, ou a uma opção do quiz mais recente com texto igual.
  *
  * Devolve null quando a mensagem não é resposta a nenhuma pergunta.
+ *
+ * `reply` já interpretado substitui o `payload` do Bird (é o caso do Teams,
+ * #151). Só conta a pergunta enviada pelo mesmo canal.
  */
 export async function findQuestionForReply({
   user,
   payload,
+  reply: givenReply = null,
+  channel = "whatsapp",
   inboundMsgId = null,
   deps,
 }) {
   const d = { ...defaultDeps, ...deps };
-  const reply = extractInboundReply(payload);
+  const reply = givenReply ?? extractInboundReply(payload);
 
   if (reply.replyToMessageId) {
     const message = await d.getMessageByProviderId(
@@ -78,7 +83,7 @@ export async function findQuestionForReply({
 
   if (reply.isTap || !reply.text.trim()) return null;
 
-  const recent = await d.getRecentQuestionMessagesForUser(user.id, 1);
+  const recent = await d.getRecentQuestionMessagesForUser(user.id, 1, channel);
   const message = recent[0];
 
   if (!message?.question_id) return null;
@@ -124,6 +129,8 @@ export async function findQuestionForReply({
 export async function handleQuestionReply({
   user,
   payload,
+  reply: givenReply = null,
+  channel = "whatsapp",
   inboundMsgId = null,
   contactId = null,
   organization = null,
@@ -140,6 +147,8 @@ export async function handleQuestionReply({
   const found = await findQuestionForReply({
     user,
     payload,
+    reply: givenReply,
+    channel,
     inboundMsgId,
     deps: d,
   });
@@ -166,7 +175,7 @@ export async function handleQuestionReply({
     userId: user.id,
     organizationId: user.organization_id,
     assistantId: thread.assistantId ?? user.assistant_id ?? null,
-    channel: "whatsapp",
+    channel,
     messageId: inboundMsgId,
     externalContactId: contactId,
     content: reply.text,
@@ -181,7 +190,7 @@ export async function handleQuestionReply({
       userId: user.id,
       organizationId: user.organization_id,
       assistantId: thread.assistantId ?? user.assistant_id ?? null,
-      channel: "whatsapp",
+      channel,
       messageId: sendRes?.providerMessageId || null,
       externalContactId: contactId,
       content: text,
@@ -214,7 +223,8 @@ export async function handleQuestionReply({
     organizationId: user.organization_id,
     userId: user.id,
     messageId: message?.id ?? null,
-    inboundMessageId: inboundMsgId,
+    /* A coluna é uuid (ids do Bird); os ids do Teams têm outro formato. */
+    inboundMessageId: channel === "whatsapp" ? inboundMsgId : null,
     answerText: reply.text,
     optionIndex: option?.index ?? null,
     isCorrect,

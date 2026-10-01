@@ -14,6 +14,7 @@ export default function OpenQuestionComposer({
   previewTime,
   tools,
   translation,
+  variant,
 }) {
   const update = (patch) => onChange({ ...question, ...patch });
 
@@ -24,6 +25,7 @@ export default function OpenQuestionComposer({
       </div>
       <QuestionPhone
         contactName={contactName}
+        variant={variant}
         previewTime={previewTime}
         body={question.body}
         onBodyChange={(body) => update({ body })}

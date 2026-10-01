@@ -77,6 +77,9 @@ export async function POST(req) {
 
       trackedLinks: Array.isArray(body?.trackedLinks) ? body.trackedLinks : [],
 
+      /* Quiz, survey or open question (#151), validated by the service. */
+      question: body?.question ?? null,
+
       /*
        * This is an immediate broadcast.
        *

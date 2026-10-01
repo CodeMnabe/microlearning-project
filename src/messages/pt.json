@@ -1394,7 +1394,7 @@
       "title": "Como queres começar?",
       "hint": "Escolhe um ponto de partida. Podes voltar aqui a qualquer altura.",
       "blank": "Em branco",
-      "blankHint": "Mensagem livre com texto, imagens e links. Quem estiver fora da janela recebe primeiro a abertura.",
+      "blankHint": "Mensagem livre com texto, imagens e links.",
       "blankSample": "Olá {name}! Dica de hoje: verifica a pressão dos pneus antes de viajar.",
       "quiz": "Quiz",
       "quizHint": "Pergunta com até 3 opções de resposta rápida. Ideal para verificar o que ficou retido.",

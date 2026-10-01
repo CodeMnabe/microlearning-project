@@ -83,6 +83,8 @@ async function sendTeamsChainStep({
     trackedLinks: Array.isArray(stepPayload.trackedLinks)
       ? stepPayload.trackedLinks
       : [],
+    /* Pergunta do passo, criada ao criar a cadeia e partilhada por todos. */
+    questionId: stepPayload.questionId || null,
     scheduledBroadcastId: null,
     sendGroupId: `${chain.id}-step-${stepIndex}`,
     createdByUserId: chain.created_by_user_id || null,

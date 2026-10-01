@@ -169,14 +169,6 @@ export async function POST(req) {
       );
     }
 
-    /* Quiz, sondagem e pergunta aberta só existem no WhatsApp. */
-    if (channel === "teams" && steps.some((step) => step.question)) {
-      return NextResponse.json(
-        { error: "Teams chains only support plain messages." },
-        { status: 400 },
-      );
-    }
-
     const parsedQuestions = parseChainStepQuestions(steps);
 
     if (parsedQuestions.error) {

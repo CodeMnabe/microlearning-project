@@ -187,6 +187,7 @@ async function processOneBroadcast(broadcast) {
               ? storedPayload.userIds
               : [],
             automationRunId: verifiedAutomationRunId,
+            question: storedPayload.question || null,
           }),
     };
 

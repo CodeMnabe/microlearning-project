@@ -447,10 +447,14 @@ export async function isWindowOpenForUser(userId) {
  * para a mais antiga. Serve para ligar uma resposta escrita à mão (sem
  * referência à mensagem) à pergunta mais recente.
  */
-export async function getRecentQuestionMessagesForUser(userId, limit = 5) {
+export async function getRecentQuestionMessagesForUser(
+  userId,
+  limit = 5,
+  channel = null,
+) {
   if (!userId) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("message")
     .select(MESSAGE_SELECT)
     .eq("user_id", userId)
@@ -458,6 +462,12 @@ export async function getRecentQuestionMessagesForUser(userId, limit = 5) {
     .in("role", OUTBOUND_ROLES)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (channel) {
+    query = query.eq("channel", channel);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data || [];
