@@ -61,9 +61,14 @@ import {
 import {
   upsertTeamsInstallation,
   getTeamsInstallationByConversation,
+  getGroupInstallationForConversation,
+  deactivateGroupInstallation,
 } from "@/lib/repos/teamsInstallations.repo";
 
 import { getBotToken } from "@/lib/teams/auth";
+import { stripBotMention } from "@/lib/teams/mentions";
+import { getChannelPostContext } from "@/lib/services/teams/channelPostContext";
+import { getTeamName } from "@/lib/teams/members";
 
 import { handleApiError, requireValidTeamsRequest } from "@/lib/auth/guards";
 
@@ -758,6 +763,7 @@ async function ensureTeamsConversation({
   channel,
   scope,
   externalConversationId,
+  initialItems = [],
 }) {
   let currentThread = thread;
 
@@ -769,19 +775,23 @@ async function ensureTeamsConversation({
    * =========================================================
    */
   if (!currentThread) {
-    const conversation = await createConversation({
-      assistantId: assistant.id,
+    const conversation = await createConversation(
+      {
+        assistantId: assistant.id,
 
-      organizationId,
+        organizationId,
 
-      userId,
+        userId,
 
-      channel,
+        channel,
 
-      scope,
+        scope,
 
-      externalConversationId,
-    });
+        externalConversationId,
+      },
+
+      initialItems,
+    );
 
     conversationId = normalizeId(conversation?.id);
 
@@ -1001,12 +1011,12 @@ async function handleUserInteraction(activity) {
      * Use the Assistant stored on this Teams
      * installation.
      */
-    const installation = await getTeamsInstallationByConversation({
+    const installation = await getGroupInstallationForConversation({
       tenantId,
 
       conversationId: teamsConversationId,
 
-      organizationId: org.id,
+      teamId: activity?.channelData?.team?.id ?? null,
     });
 
     if (
@@ -1126,6 +1136,16 @@ async function handleUserInteraction(activity) {
     scope,
 
     externalConversationId: teamsConversationId,
+
+    /* Fio novo num canal: começa com a publicação da plataforma. */
+    initialItems:
+      !thread && scope === "group"
+        ? await getChannelPostContext({
+            conversationId: teamsConversationId,
+
+            organizationId: org.id,
+          })
+        : [],
   });
 
   thread = ensured.thread;
@@ -1397,6 +1417,16 @@ function GetConversationType(activity) {
   return activity?.conversation?.conversationType || "personal";
 }
 
+/* Nome do chat de grupo, ou "Equipa · Canal" num canal (#164). */
+function GetGroupName(activity) {
+  const team = activity?.channelData?.team?.name || null;
+  const channel = activity?.channelData?.channel?.name || null;
+
+  if (team) return channel && channel !== team ? `${team} · ${channel}` : team;
+
+  return activity?.conversation?.name || null;
+}
+
 /* =========================================================
    PERSONAL INSTALLATION
    ========================================================= */
@@ -1549,7 +1579,23 @@ async function handleGroupInstallation(activity) {
     return;
   }
 
-  const defaultAssistant = await getFirstAssistantInOrg(org.id);
+  /*
+   * Ao reinstalar, o grupo mantém o assistente e o nome que o administrador
+   * escolheu na página de grupos (#165).
+   */
+  const existing = await getTeamsInstallationByConversation({
+    tenantId,
+
+    conversationId,
+  });
+
+  const keepExisting =
+    existing && Number(existing.organization_id) === Number(org.id);
+
+  const defaultAssistant =
+    keepExisting && existing.assistant_id
+      ? await getAssistantById(existing.assistant_id)
+      : await getFirstAssistantInOrg(org.id);
 
   if (!defaultAssistant) {
     throw new Error("Organization does not have an assistant");
@@ -1557,10 +1603,19 @@ async function handleGroupInstallation(activity) {
 
   await assertAssistantMatchesOrganization(defaultAssistant, org.id);
 
+  const groupName =
+    (keepExisting && existing.name) ||
+    GetGroupName(activity) ||
+    (await getTeamName({ serviceUrl, teamId }));
+
   await upsertTeamsInstallation({
     organization_id: org.id,
 
     assistant_id: defaultAssistant.id,
+
+    name: groupName || null,
+
+    is_active: true,
 
     scope: "group",
 
@@ -1668,8 +1723,8 @@ async function handleGroupInstallation(activity) {
     activity,
 
     conversationType === "channel"
-      ? "Installed in this channel. Mention me (@MyDigitalBot) to talk."
-      : "Installed in this group chat. Mention me (@MyDigitalBot) to talk.",
+      ? "Fui adicionado a este canal. Menciona-me (@MyDigitalBot) para falares comigo."
+      : "Fui adicionado a este chat. Menciona-me (@MyDigitalBot) para falares comigo.",
   );
 }
 
@@ -1715,6 +1770,18 @@ export async function POST(req) {
       return teamsAuth.error;
     }
 
+    /*
+     * Num grupo ou canal o texto traz a menção ao bot, que tem de sair antes
+     * dos comandos e do assistente (#164).
+     */
+    if (
+      activity.type === "message" &&
+      typeof activity.text === "string" &&
+      GetConversationType(activity) !== "personal"
+    ) {
+      activity.text = stripBotMention(activity);
+    }
+
     if (
       activity.type === "message" &&
       typeof activity.text === "string" &&
@@ -1753,6 +1820,14 @@ export async function POST(req) {
 
         tenantId: GetTenantId(activity),
       });
+
+      const tenantId = GetTenantId(activity);
+
+      const conversationId = activity?.conversation?.id ?? null;
+
+      if (tenantId && conversationId) {
+        await deactivateGroupInstallation({ tenantId, conversationId });
+      }
     }
 
     return NextResponse.json(
