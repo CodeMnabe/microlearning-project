@@ -885,6 +885,7 @@
     "broadcastScheduled": "See Scheduled",
     "trackedLinks": "Tracked Links",
     "questions": "Questions",
+    "media": "Media",
     "admin": "Admin",
     "login": "Login",
     "options": "Settings",
@@ -1885,6 +1886,51 @@
     }
   },
 
+  "Media": {
+    "title": "Media",
+    "subtitle": "Images, PDFs and videos uploaded in the organization's messages.",
+    "totalSize": "Space used",
+    "totalFiles": "Files",
+    "search": "Search by name",
+    "loading": "Loading files...",
+    "noFiles": "No files have been uploaded in messages yet.",
+    "noMatches": "No files match your search.",
+    "inUseHint": "It is in a scheduled message or an active chain. It can only be deleted after it is sent or cancelled.",
+    "table": {
+      "file": "File",
+      "size": "Size",
+      "uploaded": "Uploaded on",
+      "status": "Status"
+    },
+    "type": {
+      "image": "Image",
+      "pdf": "PDF",
+      "video": "Video",
+      "other": "File"
+    },
+    "status": {
+      "inUse": "In use",
+      "free": "Free"
+    },
+    "confirm": {
+      "title": "Delete {name}?",
+      "message": "The file will stop opening in messages already sent with it. This cannot be undone."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Loading error",
+        "message": "The files could not be loaded."
+      },
+      "deleteFailed": {
+        "title": "Delete error",
+        "message": "The file could not be deleted."
+      },
+      "inUse": {
+        "title": "File in use"
+      }
+    }
+  },
+
   "Assistants": {
     "myAssistants": "My Assistants",
     "createAssistant": "Create Assistant",
@@ -2756,6 +2802,7 @@
       "broadcast": "Messages",
       "message": "Individual messages",
       "template": "Templates",
+      "media": "Media",
       "organization": "Organization"
     },
     "Channels": {
@@ -2788,6 +2835,7 @@
       "broadcast_read_chain_created": "Read chain created",
       "message_template_sent": "Template sent to a user",
       "template_created": "WhatsApp template created",
+      "media_deleted": "Media file deleted",
       "organization_created": "Organization created",
       "organization_settings_updated": "Organization settings changed",
       "automation_triggered": "Automation triggered",

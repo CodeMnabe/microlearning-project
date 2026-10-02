@@ -898,6 +898,7 @@
     "broadcastScheduled": "Ver Agendadas",
     "trackedLinks": "Links Rastreados",
     "questions": "Perguntas",
+    "media": "Multimédia",
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
@@ -1894,6 +1895,51 @@
     }
   },
 
+  "Media": {
+    "title": "Multimédia",
+    "subtitle": "Imagens, PDF e vídeos carregados nas mensagens da organização.",
+    "totalSize": "Espaço usado",
+    "totalFiles": "Ficheiros",
+    "search": "Pesquisar por nome",
+    "loading": "A carregar ficheiros...",
+    "noFiles": "Ainda não foram carregados ficheiros nas mensagens.",
+    "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+    "inUseHint": "Está numa mensagem agendada ou numa cadeia ativa. Só pode ser eliminado depois de enviada ou cancelada.",
+    "table": {
+      "file": "Ficheiro",
+      "size": "Tamanho",
+      "uploaded": "Carregado em",
+      "status": "Estado"
+    },
+    "type": {
+      "image": "Imagem",
+      "pdf": "PDF",
+      "video": "Vídeo",
+      "other": "Ficheiro"
+    },
+    "status": {
+      "inUse": "Em uso",
+      "free": "Livre"
+    },
+    "confirm": {
+      "title": "Eliminar {name}?",
+      "message": "O ficheiro deixa de abrir nas mensagens já enviadas que o usam. Esta ação não pode ser desfeita."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Erro ao carregar",
+        "message": "Não foi possível carregar os ficheiros."
+      },
+      "deleteFailed": {
+        "title": "Erro ao eliminar",
+        "message": "Não foi possível eliminar o ficheiro."
+      },
+      "inUse": {
+        "title": "Ficheiro em uso"
+      }
+    }
+  },
+
   "Assistants": {
     "myAssistants": "Os meus Assistentes",
     "createAssistant": "Criar Assistente",
@@ -2613,6 +2659,7 @@
       "broadcast": "Mensagens",
       "message": "Mensagens individuais",
       "template": "Templates",
+      "media": "Multimédia",
       "organization": "Organização"
     },
     "Channels": {
@@ -2645,6 +2692,7 @@
       "broadcast_read_chain_created": "Sequência de leitura criada",
       "message_template_sent": "Template enviado a um colaborador",
       "template_created": "Template WhatsApp criado",
+      "media_deleted": "Ficheiro de multimédia eliminado",
       "organization_created": "Organização criada",
       "organization_settings_updated": "Definições da organização alteradas",
       "automation_triggered": "Automação disparada",
