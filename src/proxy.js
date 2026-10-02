@@ -15,6 +15,7 @@ const PRIVATE_ROUTE_ROOTS = new Set([
   "options",
   "private",
   "settings",
+  "teams-groups",
   "templates",
   "users",
 ]);

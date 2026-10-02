@@ -50,6 +50,8 @@ export const AUDIT_ACTIONS = Object.freeze({
 
   ORGANIZATION_CREATED: "organization.created",
   ORGANIZATION_SETTINGS_UPDATED: "organization.settings_updated",
+
+  TEAMS_GROUP_UPDATED: "teams_group.updated",
 });
 
 export const AUDIT_ACTION_LIST = Object.freeze(Object.values(AUDIT_ACTIONS));
@@ -83,6 +85,7 @@ export const AUDIT_ENTITY_TYPES = Object.freeze({
   MESSAGE_CHAIN: "message_chain",
   WHATSAPP_TEMPLATE: "whatsapp_template",
   ORGANIZATION: "organization",
+  TEAMS_GROUP: "teams_group",
 });
 
 const MAX_LABEL_LENGTH = 200;

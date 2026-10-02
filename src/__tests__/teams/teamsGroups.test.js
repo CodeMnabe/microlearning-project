@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { stripBotMention } from "@/lib/teams/mentions";
+import { belongsToGroupConversation } from "@/lib/services/teams/teamsGroups.service";
 
 describe("stripBotMention", () => {
   it("tira a menção ao bot e deixa os comandos chegar intactos", () => {
@@ -8,7 +9,11 @@ describe("stripBotMention", () => {
       text: "<at>MyDigitalBot</at>&nbsp;--help",
       recipient: { id: "28:bot" },
       entities: [
-        { type: "mention", text: "<at>MyDigitalBot</at>", mentioned: { id: "28:bot" } },
+        {
+          type: "mention",
+          text: "<at>MyDigitalBot</at>",
+          mentioned: { id: "28:bot" },
+        },
       ],
     };
 
@@ -20,11 +25,36 @@ describe("stripBotMention", () => {
       text: "<at>MyDigitalBot</at> o que achas da ideia da <at>Ana Silva</at>?",
       recipient: { id: "28:bot" },
       entities: [
-        { type: "mention", text: "<at>MyDigitalBot</at>", mentioned: { id: "28:bot" } },
-        { type: "mention", text: "<at>Ana Silva</at>", mentioned: { id: "29:ana" } },
+        {
+          type: "mention",
+          text: "<at>MyDigitalBot</at>",
+          mentioned: { id: "28:bot" },
+        },
+        {
+          type: "mention",
+          text: "<at>Ana Silva</at>",
+          mentioned: { id: "29:ana" },
+        },
       ],
     };
 
-    expect(stripBotMention(activity)).toBe("o que achas da ideia da Ana Silva?");
+    expect(stripBotMention(activity)).toBe(
+      "o que achas da ideia da Ana Silva?",
+    );
+  });
+});
+
+describe("belongsToGroupConversation", () => {
+  it("junta ao grupo as publicações do canal e mais nada", () => {
+    const channel = "19:abc@thread.tacv2";
+
+    expect(belongsToGroupConversation(channel, channel)).toBe(true);
+    expect(
+      belongsToGroupConversation(`${channel};messageid=171`, channel),
+    ).toBe(true);
+    expect(belongsToGroupConversation("19:abc@thread.tacv2x", channel)).toBe(
+      false,
+    );
+    expect(belongsToGroupConversation(channel, "")).toBe(false);
   });
 });

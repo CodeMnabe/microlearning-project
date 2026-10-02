@@ -891,6 +891,7 @@
   "Nav": {
     "home": "Início",
     "users": "Colaboradores",
+    "teamsGroups": "Grupos Teams",
     "assistants": "Assistentes",
     "automations": "Automações",
     "broadcast": "Mensagens",
@@ -1035,6 +1036,65 @@
       "importSuccess": {
         "title": "Importação concluída",
         "message": "Os utilizadores foram importados com sucesso."
+      }
+    }
+  },
+
+  "TeamsGroups": {
+    "title": "Grupos Teams",
+    "subtitle": "Chats de grupo e equipas do Teams onde o MyDigitalBot foi adicionado.",
+    "totalGroups": "Grupos",
+    "activeGroups": "Ativos",
+    "search": "Pesquisar por nome",
+    "loading": "A carregar grupos...",
+    "empty": "Ainda não há grupos. Adiciona o MyDigitalBot a um chat de grupo ou a uma equipa no Teams para ele aparecer aqui.",
+    "noMatches": "Nenhum grupo corresponde à pesquisa.",
+    "unnamed": "Grupo sem nome",
+    "never": "Sem mensagens",
+    "type": {
+      "groupChat": "Chat de grupo",
+      "channel": "Canal de equipa"
+    },
+    "status": {
+      "active": "Ativo",
+      "removed": "Bot removido"
+    },
+    "table": {
+      "group": "Grupo",
+      "assistant": "Assistente",
+      "lastMessage": "Última mensagem",
+      "status": "Estado"
+    },
+    "detail": {
+      "back": "Grupos Teams",
+      "settings": "Definições do grupo",
+      "name": "Nome",
+      "namePlaceholder": "Nome do grupo na plataforma",
+      "nameHint": "Os chats de grupo do Teams nem sempre trazem nome. Aqui podes dar-lhe um.",
+      "assistant": "Assistente que responde no grupo",
+      "save": "Guardar",
+      "saved": "Alterações guardadas.",
+      "members": "Membros",
+      "membersLoading": "A carregar membros...",
+      "membersFailed": "Não foi possível obter os membros no Teams.",
+      "membersRemoved": "O bot já não está neste grupo, por isso os membros não podem ser lidos.",
+      "noMembers": "Sem membros.",
+      "colleague": "Colaborador",
+      "conversation": "Conversa",
+      "conversationHint": "Últimas mensagens trocadas com o bot neste grupo.",
+      "noMessages": "Ainda não há mensagens neste grupo.",
+      "platform": "Mensagem enviada pela plataforma",
+      "unknownUser": "Membro do grupo",
+      "removedNotice": "O MyDigitalBot foi removido deste grupo no Teams. As mensagens antigas continuam aqui, mas já não é possível enviar mensagens nem ler os membros."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Erro ao carregar",
+        "message": "Não foi possível carregar os grupos."
+      },
+      "saveFailed": {
+        "title": "Erro ao guardar",
+        "message": "Não foi possível guardar as alterações do grupo."
       }
     }
   },
@@ -2604,6 +2664,7 @@
     },
     "Areas": {
       "all": "Todas as áreas",
+      "teams_group": "Grupos Teams",
       "user": "Colaboradores",
       "tag": "Tags",
       "assistant": "Assistentes",
@@ -2648,6 +2709,7 @@
       "automation_triggered": "Automação disparada",
       "broadcast_scheduled_sent": "Mensagem agendada enviada",
       "message_received": "Mensagem recebida",
+      "teams_group_updated": "Grupo Teams editado",
       "unknown": "Ação desconhecida"
     },
     "Table": {
