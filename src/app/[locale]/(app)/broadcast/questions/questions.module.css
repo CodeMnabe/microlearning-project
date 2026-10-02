@@ -326,6 +326,15 @@
   background: #f7fbff;
 }
 
+.exportButton {
+  margin-left: auto;
+}
+
+.exportButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 @media (max-width: 900px) {
   .toolbar .searchWrap,
   .kindFilter,
