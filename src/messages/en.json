@@ -1406,6 +1406,23 @@
       "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
       "soon": "Coming soon"
     },
+    "mediaPicker": {
+      "fromComputer": "From computer",
+      "fromMedia": "From media",
+      "title": {
+        "image": "Images from media",
+        "video": "Videos from media",
+        "document": "Documents from media"
+      },
+      "search": "Search by name",
+      "loading": "Loading files...",
+      "loadFailed": "The files could not be loaded.",
+      "empty": "There are no files of this type in media yet. Use \"From computer\" to upload the first one.",
+      "noMatches": "No files match your search.",
+      "attached": "Already added",
+      "add": "Add ({count})",
+      "close": "Close"
+    },
     "suggest": {
       "title": "Suggest text",
       "promptLabel": "Request for the suggestion",

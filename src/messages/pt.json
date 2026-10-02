@@ -1414,6 +1414,23 @@
       "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
       "soon": "Em breve"
     },
+    "mediaPicker": {
+      "fromComputer": "Do computador",
+      "fromMedia": "Da multimédia",
+      "title": {
+        "image": "Imagens da multimédia",
+        "video": "Vídeos da multimédia",
+        "document": "Documentos da multimédia"
+      },
+      "search": "Pesquisar por nome",
+      "loading": "A carregar ficheiros...",
+      "loadFailed": "Não foi possível carregar os ficheiros.",
+      "empty": "Ainda não há ficheiros deste tipo na multimédia. Usa \"Do computador\" para carregar o primeiro.",
+      "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+      "attached": "Já adicionado",
+      "add": "Adicionar ({count})",
+      "close": "Fechar"
+    },
     "suggest": {
       "title": "Sugerir texto",
       "promptLabel": "Pedido para a sugestão",

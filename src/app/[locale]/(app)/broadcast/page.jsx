@@ -36,6 +36,7 @@ import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
+import MediaPickerModal from "./components/MediaPickerModal";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
@@ -125,6 +126,8 @@ export default function BroadcastPage() {
   const thumbInputRef = useRef(null);
   const editorRef = useRef(null);
   const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
+  /* Tipo escolhido em "Da multimédia" no menu "+"; null com a janela fechada. */
+  const [mediaPickerKind, setMediaPickerKind] = useState(null);
 
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
@@ -931,6 +934,7 @@ export default function BroadcastPage() {
     onPickThumbnail: openThumbnailPicker,
     onRemoveThumbnail: removeThumbnail,
     onAddFile: openFilePicker,
+    onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
   };
@@ -2173,6 +2177,17 @@ export default function BroadcastPage() {
         data-testid="file-input"
         onChange={handlePickFiles}
       />
+
+      {mediaPickerKind ? (
+        <MediaPickerModal
+          kind={mediaPickerKind}
+          orgId={org?.id}
+          attachedUrls={composerFiles.map((f) => f.url)}
+          onAdd={(picked) => setComposerFiles((prev) => [...prev, ...picked])}
+          onClose={() => setMediaPickerKind(null)}
+          translation={translation}
+        />
+      ) : null}
 
       <input
         ref={thumbInputRef}
