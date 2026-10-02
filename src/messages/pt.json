@@ -1576,6 +1576,7 @@
       "fileTooLarge": "O ficheiro {name} tem mais de 20 MB.",
       "fileTypeNotAllowed": "O ficheiro {name} não é suportado. Usa imagens (PNG, JPG, WebP, GIF), PDF ou MP4.",
       "addLink": "Link rastreado",
+      "linkButtonHint": "No WhatsApp, o link sai do texto e vai neste botão.",
       "variables": "Variáveis",
       "variableName": "Nome",
       "variableCompany": "Empresa",

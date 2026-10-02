@@ -1355,6 +1355,23 @@
   color: #b91c1c;
 }
 
+/* ---------- Botão de link rastreado ---------- */
+
+.linkButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.linkButtonHint {
+  justify-self: end;
+  max-width: 88%;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+
 /* ---------- Quiz ---------- */
 
 /* Cada opção é um botão do WhatsApp com o texto editável lá dentro. */

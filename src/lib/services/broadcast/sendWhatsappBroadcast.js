@@ -17,6 +17,11 @@ import {
   getOpeningTemplateConfig,
   sanitizeOpeningBody,
 } from "@/lib/whatsapp/openingTemplate";
+import {
+  LINK_BUTTON_BODY_MAX_LENGTH,
+  buildLinkButtonActions,
+  pickLinkButton,
+} from "@/lib/whatsapp/linkButton";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import { parseQuestionOptions } from "./questionOptions";
 import {
@@ -487,19 +492,46 @@ export async function sendWhatsappBroadcast(input = {}) {
       createdByUserId,
     });
 
-    const messageWithTrackedLinks = replaceTrackedPlaceholders(
-      messageText,
-      resolvedTrackedLinks,
-    );
+    const resolveText = (text) =>
+      interpolateBroadcastMessage(
+        replaceTrackedPlaceholders(text, resolvedTrackedLinks),
+        {
+          user,
+          org,
+          assistant: null,
+        },
+      );
 
-    const resolvedMessage = interpolateBroadcastMessage(
-      messageWithTrackedLinks,
-      {
-        user,
-        org,
-        assistant: null,
-      },
-    );
+    let resolvedMessage = resolveText(messageText);
+
+    /*
+     * O primeiro link rastreado do texto vai num botão, sem o URL à vista.
+     * Um corpo acima do limite de uma mensagem com botão leva o link no
+     * texto, como antes.
+     */
+    let linkActions = null;
+
+    const linkButton = pickLinkButton({
+      message: messageText,
+      trackedLinks: resolvedTrackedLinks,
+      hasReplyButtons: Boolean(withButtons),
+      hasImages: onlyImageUrls.length > 0,
+    });
+
+    if (linkButton) {
+      const messageWithoutLink = resolveText(linkButton.message);
+
+      if (messageWithoutLink.length <= LINK_BUTTON_BODY_MAX_LENGTH) {
+        resolvedMessage = messageWithoutLink;
+        linkActions = buildLinkButtonActions(
+          linkButton.buttonText,
+          linkButton.link.trackedUrl,
+        );
+      }
+    }
+
+    /* Quiz e sondagem têm botões de resposta; os outros, talvez o do link. */
+    const actions = quizActions || linkActions;
 
     const hasResolvedFreeformContent =
       String(resolvedMessage || "").trim().length > 0 ||
@@ -516,7 +548,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         contact,
         message: resolvedMessage,
         imageUrls: onlyImageUrls,
-        actions: quizActions,
+        actions,
       });
 
       /*
@@ -638,6 +670,8 @@ export async function sendWhatsappBroadcast(input = {}) {
                 actions: quizActions,
               }
             : {}),
+          /* A entrega em espera envia o que estiver em `actions`. */
+          ...(linkActions ? { actions: linkActions } : {}),
         },
         expiresAt,
         templateMessageId,

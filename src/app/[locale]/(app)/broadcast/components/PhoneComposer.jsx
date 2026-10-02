@@ -6,6 +6,7 @@ import WhatsAppPhone, {
 
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
+import LinkButtonPreview from "./LinkButtonPreview";
 import { PlusMenuBar } from "./PlusMenu";
 import { SuggestBubble } from "./SuggestInPhone";
 import TokenTextEditor from "./TokenTextEditor";
@@ -54,6 +55,11 @@ export default function PhoneComposer({
             />
           </div>
         </WhatsAppBubble>
+
+        <LinkButtonPreview
+          linkButton={tools.linkButton}
+          translation={translation}
+        />
 
         <FileBubbles
           videoFiles={tools.videoFiles}

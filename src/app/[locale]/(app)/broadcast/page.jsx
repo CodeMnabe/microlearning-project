@@ -17,6 +17,7 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import {
+  hasReplyButtons,
   isQuizValid,
   isSurveyValid,
   makeEmptyQuiz,
@@ -24,6 +25,7 @@ import {
   makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
+import { pickLinkButton } from "@/lib/whatsapp/linkButton";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -1033,6 +1035,33 @@ export default function BroadcastPage() {
   });
 
   /*
+   * No WhatsApp, o primeiro link rastreado do texto vai num botão por baixo
+   * do balão. A pré-visualização usa a mesma regra do envio.
+   */
+  const activeQuestionKind = isQuizMode
+    ? "quiz"
+    : isSurveyMode
+      ? "survey"
+      : isOpenQuestionMode
+        ? "open"
+        : chainQuestionKind;
+
+  const activeBody = isOpenQuestionMode
+    ? openQuestion.body
+    : chainQuestionKind === "open"
+      ? activeChainStep.openQuestion?.body
+      : composerMessage;
+
+  const linkButton = isWhatsapp
+    ? pickLinkButton({
+        message: activeBody,
+        trackedLinks: normalizedTrackedLinks,
+        hasReplyButtons: hasReplyButtons(activeQuestionKind),
+        hasImages: imageFiles.length > 0,
+      })
+    : null;
+
+  /*
    * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
    * ficheiros e os links rastreados pertencem ao composer (ou ao passo
    * ativo da corrente), não ao tipo escolhido.
@@ -1052,6 +1081,7 @@ export default function BroadcastPage() {
     onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
+    linkButton,
   };
 
   /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
