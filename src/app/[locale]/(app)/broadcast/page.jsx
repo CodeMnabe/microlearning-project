@@ -7,9 +7,11 @@ import styles from "./broadcast.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import {
-  BROADCAST_IMAGES_BUCKET,
-  buildBroadcastImageKey,
-} from "@/lib/uploads/broadcastImages";
+  BROADCAST_MEDIA_ACCEPT,
+  BROADCAST_MEDIA_BUCKET,
+  broadcastMediaRejection,
+  buildBroadcastMediaKey,
+} from "@/lib/uploads/broadcastMedia";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
@@ -717,20 +719,31 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = BROADCAST_IMAGES_BUCKET;
+    const bucket = BROADCAST_MEDIA_BUCKET;
     const uploaded = [];
 
-    const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[̀-ͯ]/g, "");
-      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-      if (!safe) safe = "file";
-      return safe;
-    };
+    const contentTypeOf = (file) =>
+      file.type || guessContentTypeFromName(file.name);
+
+    /* Valida todos antes de subir o primeiro, para não ficar meio envio. */
+    for (const file of pickedFiles) {
+      const reason = broadcastMediaRejection(contentTypeOf(file), file.size);
+
+      if (reason) {
+        throw new Error(
+          translation(
+            reason === "size"
+              ? "Broadcast.composer.fileTooLarge"
+              : "Broadcast.composer.fileTypeNotAllowed",
+            { name: file.name },
+          ),
+        );
+      }
+    }
 
     for (const file of pickedFiles) {
-      const safeName = makeSafeName(file.name);
-      const key = buildBroadcastImageKey(org?.id, safeName);
-      const ct = file.type || guessContentTypeFromName(file.name);
+      const key = buildBroadcastMediaKey(org?.id, file.name);
+      const ct = contentTypeOf(file);
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
@@ -746,8 +759,8 @@ export default function BroadcastPage() {
       if (pub?.publicUrl) {
         uploaded.push({
           url: pub.publicUrl,
-          name: file.name || safeName,
-          contentType: ct || "application/octet-stream",
+          name: file.name || "file",
+          contentType: ct,
         });
       }
     }
@@ -773,7 +786,7 @@ export default function BroadcastPage() {
     }
   }
 
-  function openFilePicker(accept = "*/*") {
+  function openFilePicker(accept = BROADCAST_MEDIA_ACCEPT.image) {
     const input = fileInputRef.current;
     if (!input) return;
     input.accept = accept;
@@ -2154,7 +2167,7 @@ export default function BroadcastPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="*/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         multiple
         hidden
         data-testid="file-input"
@@ -2164,7 +2177,7 @@ export default function BroadcastPage() {
       <input
         ref={thumbInputRef}
         type="file"
-        accept="image/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         hidden
         onChange={handlePickThumbnail}
       />

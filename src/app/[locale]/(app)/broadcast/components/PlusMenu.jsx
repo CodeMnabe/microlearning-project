@@ -12,6 +12,8 @@ import {
   User,
 } from "lucide-react";
 
+import { BROADCAST_MEDIA_ACCEPT } from "@/lib/uploads/broadcastMedia";
+
 import styles from "../broadcast.module.css";
 import { SuggestBar } from "./SuggestInPhone";
 
@@ -82,7 +84,7 @@ export default function PlusMenu({
             type="button"
             role="menuitem"
             className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("image/*"))}
+            onClick={() => pick(() => onAddFile(BROADCAST_MEDIA_ACCEPT.image))}
           >
             <ImageIcon size={16} />
             <span>{translation("Broadcast.composer.addImage")}</span>
@@ -92,7 +94,7 @@ export default function PlusMenu({
             type="button"
             role="menuitem"
             className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("video/*"))}
+            onClick={() => pick(() => onAddFile(BROADCAST_MEDIA_ACCEPT.video))}
           >
             <FileVideo size={16} />
             <span>{translation("Broadcast.composer.addVideo")}</span>
@@ -102,7 +104,7 @@ export default function PlusMenu({
             type="button"
             role="menuitem"
             className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("*/*"))}
+            onClick={() => pick(() => onAddFile(BROADCAST_MEDIA_ACCEPT.document))}
           >
             <FileText size={16} />
             <span>{translation("Broadcast.composer.addDocument")}</span>

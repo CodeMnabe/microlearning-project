@@ -1435,6 +1435,8 @@
       "addImage": "Image",
       "addVideo": "Video",
       "addDocument": "Document",
+      "fileTooLarge": "The file {name} is larger than 20 MB.",
+      "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
       "addLink": "Tracked link",
       "variables": "Variables",
       "variableName": "Name",
