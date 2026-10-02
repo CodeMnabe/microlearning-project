@@ -4,6 +4,7 @@ import {
   buildQuestionDetail,
   buildQuestionReports,
 } from "@/lib/services/questions/questionReports";
+import { buildQuestionExport } from "@/lib/services/questions/questionExport";
 
 const supabase = createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -197,7 +198,7 @@ async function getQuestionMessages(questionIds) {
 
   const { data, error } = await supabase
     .from("message")
-    .select("question_id, user_id, created_at")
+    .select("question_id, user_id, channel, assistant_id, created_at")
     .in("question_id", questionIds)
     .in("role", ["assistant", "system"]);
 
@@ -281,6 +282,71 @@ export async function getQuestionReportDetail({ orgId, questionId }) {
   ]);
 
   return buildQuestionDetail({ question, messages, answers, users });
+}
+
+/**
+ * Perguntas e respostas da organização para a exportação em Excel, com
+ * as etiquetas de cada colaborador e os nomes dos assistentes.
+ */
+export async function getQuestionExportByOrg(orgId) {
+  const { data: questions, error } = await supabase
+    .from("question")
+    .select(QUESTION_SELECT)
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const ids = (questions || []).map((question) => question.id);
+  const [messages, answers, assistants] = await Promise.all([
+    getQuestionMessages(ids),
+    getQuestionAnswers(ids),
+    supabase.from("assistant").select("id, name").eq("organization_id", orgId),
+  ]);
+
+  if (assistants.error) throw assistants.error;
+
+  const userIds = [
+    ...new Set(
+      [...messages, ...answers]
+        .map((row) => row.user_id)
+        .filter((id) => id != null),
+    ),
+  ];
+
+  let userRows = [];
+  if (userIds.length) {
+    const { data, error: usersError } = await supabase
+      .from("user")
+      .select("id, name, email, phone_number, user_tag ( tag:tags ( name ) )")
+      .in("id", userIds);
+
+    if (usersError) throw usersError;
+    userRows = data || [];
+  }
+
+  const users = new Map(
+    userRows.map((user) => [
+      String(user.id),
+      {
+        ...user,
+        tags: (user.user_tag || [])
+          .map((link) => link.tag?.name)
+          .filter(Boolean)
+          .join(", "),
+      },
+    ]),
+  );
+
+  return buildQuestionExport({
+    questions: questions || [],
+    messages,
+    answers,
+    users,
+    assistantNames: new Map(
+      (assistants.data || []).map((row) => [String(row.id), row.name]),
+    ),
+  });
 }
 
 /**

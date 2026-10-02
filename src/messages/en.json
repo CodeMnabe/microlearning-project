@@ -1801,6 +1801,47 @@
     "correctRate": "{rate}% correct",
     "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
     "reviewCount": "{count} to review",
+    "export": {
+      "button": "Export Excel",
+      "exporting": "Exporting...",
+      "fileName": "questions",
+      "failed": {
+        "title": "Export failed",
+        "message": "The Excel file could not be generated. Try again in a few seconds."
+      },
+      "columns": {
+        "questionsSheet": "Questions",
+        "answersSheet": "Answers",
+        "sentAt": "Sent at",
+        "kindColumn": "Type",
+        "question": "Question",
+        "channels": "Channels",
+        "recipients": "Recipients",
+        "answered": "Answered",
+        "responseRate": "Response rate",
+        "correctRate": "Correct rate",
+        "correctOption": "Correct option",
+        "topOption": "Most chosen",
+        "expectedAnswer": "Expected answer",
+        "reviewNeeded": "To review",
+        "expiresAt": "Accepts answers until",
+        "questionId": "Question ID",
+        "answeredAt": "Answered at",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "tags": "Tags",
+        "assistant": "Assistant",
+        "channel": "Channel",
+        "answer": "Answer",
+        "isCorrect": "Correct",
+        "verdict": "Verdict",
+        "feedback": "Feedback sent",
+        "userId": "Contact ID",
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
     "alerts": {
       "noOrg": {
         "title": "Missing organization",
