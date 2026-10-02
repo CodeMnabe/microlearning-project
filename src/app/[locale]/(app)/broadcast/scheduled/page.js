@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./scheduled.module.css";
@@ -162,6 +163,7 @@ function uniqueSavedRecipients(recipients, channel) {
 
 export default function ScheduledPage() {
   const t = useTranslations("BroadcastScheduled");
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const confirm = useConfirm();
@@ -314,6 +316,25 @@ export default function ScheduledPage() {
       if (timers.edit) clearTimeout(timers.edit);
     };
   }, []);
+
+  /*
+   * ?view=<id> abre logo essa mensagem (vem da página de multimédia). Espera
+   * que ela apareça na lista, porque a organização e a lista chegam depois do
+   * primeiro render. O parâmetro sai do URL para não reabrir ao atualizar.
+   */
+  const viewParam = searchParams.get("view");
+  const viewHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (!viewParam || viewHandledRef.current) return;
+
+    const item = items.find((x) => String(x.id) === viewParam);
+    if (!item) return;
+
+    viewHandledRef.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    openViewModal(item);
+  }, [viewParam, items]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();

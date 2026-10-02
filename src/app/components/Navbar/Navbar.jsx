@@ -18,6 +18,7 @@ import {
   CalendarClock,
   Link2,
   ListChecks,
+  Images,
   Zap,
   BarChart3,
 } from "lucide-react";
@@ -257,6 +258,17 @@ export default function Navbar() {
                     >
                       <ListChecks aria-hidden className={styles.subnavIcon} />
                       <span>{translation("Nav.questions")}</span>
+                    </Link>
+
+                    <Link
+                      href="/broadcast/media"
+                      onClick={onNavClick("/broadcast/media")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/media") ? styles.active : ""
+                      }`}
+                    >
+                      <Images aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.media")}</span>
                     </Link>
                   </div>
                 )}
