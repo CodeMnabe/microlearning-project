@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 
 import styles from "../scheduled.module.css";
-import { formatDateTime } from "../helpers/scheduled.helpers";
+import {
+  formatDateTime,
+  getScheduledGroups,
+} from "../helpers/scheduled.helpers";
 import {
   cleanText,
   looksLikeWhatsappBsuid,
@@ -240,7 +243,30 @@ function getStatusIcon(status) {
   return <Clock3 aria-hidden />;
 }
 
-function buildRecipientRows(selectedItem, orgUsers) {
+function buildRecipientRows(selectedItem, orgUsers, unnamedGroupLabel) {
+  /* Mensagem para grupos do Teams (#166): uma linha por grupo. */
+  const groups = getScheduledGroups(selectedItem);
+
+  if (groups) {
+    return groups.map((group, index) => ({
+      id: `group-${group.id}-${index}`,
+      label: cleanText(group.name) || unnamedGroupLabel,
+      userId: "",
+      phoneNumber: "",
+      email: "",
+      whatsappBsuid: "",
+      whatsappUsername: "",
+      birdContactId: "",
+      status: getRecipientStatus({
+        itemStatus: selectedItem?.status,
+        result: null,
+      }),
+      resultStatusCode: null,
+      reason: "",
+      kind: "",
+    }));
+  }
+
   const payload = getItemPayload(selectedItem);
   const resultRows = getResultRows(selectedItem);
   const normalizedUsers = Array.isArray(orgUsers)
@@ -348,10 +374,18 @@ export default function ScheduledViewModal({
   const payload = getItemPayload(selectedItem);
   const result = getItemResult(selectedItem);
 
-  const recipientRows = useMemo(
-    () => buildRecipientRows(selectedItem, orgUsers),
-    [selectedItem, orgUsers],
+  const unnamedGroupLabel = safeTranslate(
+    translation,
+    "EditModal.unnamedGroup",
+    "Unnamed group",
   );
+
+  const recipientRows = useMemo(
+    () => buildRecipientRows(selectedItem, orgUsers, unnamedGroupLabel),
+    [selectedItem, orgUsers, unnamedGroupLabel],
+  );
+
+  const isGroupItem = Boolean(getScheduledGroups(selectedItem));
 
   const files = useMemo(() => getFiles(payload), [payload]);
 
@@ -531,11 +565,13 @@ export default function ScheduledViewModal({
             <div className={styles.viewSectionTitle}>
               <Users aria-hidden />
               <span>
-                {safeTranslate(
-                  translation,
-                  "ViewModal.recipients",
-                  "Recipients",
-                )}
+                {isGroupItem
+                  ? safeTranslate(translation, "ViewModal.groups", "Teams groups")
+                  : safeTranslate(
+                      translation,
+                      "ViewModal.recipients",
+                      "Recipients",
+                    )}
               </span>
             </div>
 

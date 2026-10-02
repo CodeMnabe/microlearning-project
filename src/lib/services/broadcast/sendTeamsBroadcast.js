@@ -9,12 +9,8 @@ import { hasReplyButtons, questionExpiryDate } from "@/lib/whatsapp/question";
 import { buildQuestionCard } from "@/lib/teams/questionCard";
 import { parseQuestionOptions } from "./questionOptions";
 import { getUserThreadForChannel } from "@/lib/repos/threads.repo";
-import {
-  BroadcastError,
-  normalizeFiles,
-  isImageType,
-  isVideoType,
-} from "./shared";
+import { BroadcastError, normalizeFiles } from "./shared";
+import { buildTeamsFileParts } from "./teamsAttachments";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,
@@ -134,36 +130,7 @@ export async function sendTeamsBroadcast(input = {}) {
 
       const endpoint = `${String(install.service_url).replace(/\/$/, "")}/v3/conversations/${install.conversation_id}/activities`;
 
-      const imageFiles = normalizedFiles.filter((f) =>
-        isImageType(f.contentType),
-      );
-
-      const videoFiles = normalizedFiles.filter((f) =>
-        isVideoType(f.contentType),
-      );
-
-      const otherFiles = normalizedFiles.filter(
-        (f) => !isImageType(f.contentType) && !isVideoType(f.contentType),
-      );
-
-      const imageAttachments = imageFiles.map((f) => ({
-        contentType: f.contentType || "image/png",
-        contentUrl: f.url,
-        name: f.name || "image",
-      }));
-
-      const videoCardAttachments = videoFiles.map((f) => {
-        const hasThumb = Boolean(f.thumbnailUrl);
-
-        return {
-          contentType: "application/vnd.microsoft.card.hero",
-          content: {
-            title: f.name || "Video",
-            ...(hasThumb ? { images: [{ url: f.thumbnailUrl }] } : {}),
-            buttons: [{ type: "openUrl", title: "▶ Ver vídeo", value: f.url }],
-          },
-        };
-      });
+      const fileParts = buildTeamsFileParts(normalizedFiles);
 
       const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
         trackedLinks,
@@ -188,12 +155,8 @@ export async function sendTeamsBroadcast(input = {}) {
         ? buildQuestionCard({ text, options: question.options })
         : null;
 
-      if (otherFiles.length) {
-        const links = otherFiles
-          .map((f) => `[${f.name || "file"}](${f.url})`)
-          .join("\n");
-
-        text = [text, links].filter(Boolean).join("\n\n");
+      if (fileParts.linksText) {
+        text = [text, fileParts.linksText].filter(Boolean).join("\n\n");
       }
 
       if (!text) text = " ";
@@ -209,8 +172,7 @@ export async function sendTeamsBroadcast(input = {}) {
         type: "message",
         ...(questionCard ? {} : { text, textFormat: "markdown" }),
         attachments: [
-          ...imageAttachments,
-          ...videoCardAttachments,
+          ...fileParts.attachments,
           ...(questionCard ? [questionCard] : []),
         ],
       };

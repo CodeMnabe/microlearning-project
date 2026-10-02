@@ -78,6 +78,21 @@ export async function getGroupInstallationForConversation({
   return data;
 }
 
+/* Grupos da organização com estes ids, ativos ou não (#166). */
+export async function getGroupInstallationsByIds({ organizationId, ids }) {
+  if (!organizationId || !ids?.length) return [];
+
+  const { data, error } = await sb
+    .from("teams_installation")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("scope", "group")
+    .in("id", ids);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 /* O bot saiu do grupo: deixa de aparecer como destino de mensagens. */
 export async function deactivateGroupInstallation({ tenantId, conversationId }) {
   const { error } = await sb

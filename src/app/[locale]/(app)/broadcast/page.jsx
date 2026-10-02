@@ -33,6 +33,8 @@ import OpenQuestionComposer from "./components/OpenQuestionComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
+import AudienceTabs from "./components/recipients/AudienceTabs";
+import GroupsPanel from "./components/recipients/GroupsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
@@ -111,6 +113,12 @@ export default function BroadcastPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
 
+  /* Destinatários: colaboradores ou grupos do Teams (#166). */
+  const [audience, setAudience] = useState("users");
+  const [teamsGroups, setTeamsGroups] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState(new Set());
+  const [groupQuery, setGroupQuery] = useState("");
+
   const [allTags, setAllTags] = useState([]);
   const [assistantsList, setAssistantsList] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -177,6 +185,16 @@ export default function BroadcastPage() {
   const isSurveyMode = composeMode === "survey";
   const isQuizMode = composeMode === "quiz";
   const isOpenQuestionMode = composeMode === "question";
+
+  /*
+   * Os grupos só recebem mensagens em branco, sem cadeia: num grupo não há
+   * um destinatário único para as perguntas nem para a leitura.
+   */
+  const isGroupAudience = audience === "groups";
+  const canUseGroups =
+    channel === "teams" &&
+    (composeMode === null || composeMode === "blank") &&
+    !chainMode;
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -552,6 +570,91 @@ export default function BroadcastPage() {
     }
   }, [chainMode, composeMode]);
 
+  /* Fora da mensagem em branco do Teams, volta aos colaboradores (#166). */
+  useEffect(() => {
+    if (
+      audience === "groups" &&
+      (channel !== "teams" || composeMode !== "blank" || chainMode)
+    ) {
+      setAudience("users");
+    }
+  }, [audience, channel, composeMode, chainMode]);
+
+  /* Só os grupos onde o bot ainda está podem receber mensagens. */
+  useEffect(() => {
+    if (!org?.id || channel !== "teams") return;
+
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/teams-groups?orgId=${org.id}`, {
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) throw new Error(data?.error || "Failed to load groups.");
+        if (!alive) return;
+
+        setTeamsGroups(
+          (Array.isArray(data?.items) ? data.items : []).filter(
+            (group) => group.isActive,
+          ),
+        );
+      } catch (err) {
+        console.warn("[Broadcast] Teams groups load error:", err);
+        if (alive) setTeamsGroups([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [org?.id, channel]);
+
+  const filteredGroups = useMemo(() => {
+    const term = groupQuery.trim().toLowerCase();
+    if (!term) return teamsGroups;
+
+    return teamsGroups.filter((group) =>
+      String(group.name || "").toLowerCase().includes(term),
+    );
+  }, [teamsGroups, groupQuery]);
+
+  const allGroupsSelected =
+    filteredGroups.length > 0 &&
+    filteredGroups.every((group) => selectedGroups.has(group.id));
+
+  function toggleGroup(id) {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      const ids = filteredGroups.map((group) => group.id);
+
+      if (allGroupsSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+
+      return next;
+    });
+  }
+
+  /* Na mensagem em branco do Teams, "Grupos" escolhe logo esse tipo. */
+  function chooseGroupAudience() {
+    if (!canUseGroups) return;
+    if (composeMode === null) setComposeMode("blank");
+    setAudience("groups");
+  }
+
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
       ...u,
@@ -827,8 +930,10 @@ export default function BroadcastPage() {
   }
 
   const sampleRecipient = selectedUsers[0] || null;
-  const sampleName =
-    sampleRecipient?.name || translation("Broadcast.composer.contact");
+  const sampleGroup = teamsGroups.find((group) => selectedGroups.has(group.id));
+  const sampleName = isGroupAudience
+    ? sampleGroup?.name || translation("Broadcast.groups.groupFallback")
+    : sampleRecipient?.name || translation("Broadcast.composer.contact");
 
   /*
    * Rótulos das pastilhas no balão. Nome e empresa são preenchidos no envio;
@@ -857,25 +962,35 @@ export default function BroadcastPage() {
     [normalizedTrackedLinks, translation],
   );
 
+  /* Num grupo não há nome do destinatário nem links rastreados (#166). */
   const composerVariables = useMemo(
-    () => [
-      {
-        key: "nome",
-        kind: "name",
-        label: translation("Broadcast.composer.variableName"),
-      },
-      {
-        key: "empresa",
-        kind: "company",
-        label: translation("Broadcast.composer.variableCompany"),
-      },
-      ...normalizedTrackedLinks.map((l) => ({
-        key: `link.${l.key}`,
-        kind: "link",
-        label: `Link: ${l.label}`,
-      })),
-    ],
-    [normalizedTrackedLinks, translation],
+    () =>
+      isGroupAudience
+        ? [
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+          ]
+        : [
+            {
+              key: "nome",
+              kind: "name",
+              label: translation("Broadcast.composer.variableName"),
+            },
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+            ...normalizedTrackedLinks.map((l) => ({
+              key: `link.${l.key}`,
+              kind: "link",
+              label: `Link: ${l.label}`,
+            })),
+          ],
+    [isGroupAudience, normalizedTrackedLinks, translation],
   );
 
   function insertToken(key) {
@@ -921,6 +1036,9 @@ export default function BroadcastPage() {
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
   };
+
+  /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
+  if (isGroupAudience) composerTools.onAddLink = null;
 
   const trackedLinksValid =
     normalizedTrackedLinks.length === composerTrackedLinks.length &&
@@ -1109,7 +1227,7 @@ export default function BroadcastPage() {
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
 
   const baseCanSend =
-    selected.size > 0 &&
+    (isGroupAudience ? selectedGroups.size : selected.size) > 0 &&
     (isSurveyMode
       ? surveyValid && trackedLinksValid
       : isOpenQuestionMode
@@ -1445,7 +1563,197 @@ export default function BroadcastPage() {
     return true;
   }
 
+  /* =========================================================
+     GRUPOS DO TEAMS (#166)
+     ========================================================= */
+
+  const nameTokenPattern = new RegExp(
+    `\\{\\{\\s*(${NAME_KEYS.join("|")})\\s*\\}\\}`,
+    "i",
+  );
+
+  async function validateGroupBroadcast(action) {
+    if (!selectedGroups.size) {
+      await showAlert({
+        title: translation("Broadcast.groups.tabGroups"),
+        message: translation("Broadcast.groups.chooseGroups"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (!(await validateContentBeforeAction(action))) return false;
+
+    if (composerTrackedLinks.length) {
+      await showAlert({
+        title: translation("Broadcast.groups.noTrackedLinks.title"),
+        message: translation("Broadcast.groups.noTrackedLinks.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (nameTokenPattern.test(composerMessage)) {
+      await showAlert({
+        title: translation("Broadcast.groups.noNameVariable.title"),
+        message: translation("Broadcast.groups.noNameVariable.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  function buildGroupPayload() {
+    return {
+      orgId: org?.id,
+      groupIds: [...selectedGroups],
+      message: composerMessage,
+      files: composerFiles,
+      imageUrls,
+    };
+  }
+
+  function groupResultSummary(data) {
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const ok = results.filter((r) => r.ok).length;
+
+    const failedLines = results
+      .filter((r) => !r.ok)
+      .map((r) => {
+        const group = teamsGroups.find((g) => g.id === r.groupId);
+        const name = group?.name || translation("Broadcast.groups.unnamed");
+
+        return `- ${name}: ${r.error || translation("Common.error")}`;
+      });
+
+    return {
+      failed: results.length - ok,
+      message: [
+        translation("Broadcast.groups.sent.message", {
+          ok,
+          total: results.length,
+        }),
+        failedLines.join("\n"),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+  }
+
+  async function sendToGroups() {
+    if (!(await validateGroupBroadcast("send"))) return;
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSend.title"),
+      message: translation("Broadcast.groups.confirmSend.message", {
+        count: selectedGroups.size,
+      }),
+      confirmText: translation("Broadcast.confirmSend.confirm"),
+      cancelText: translation("Broadcast.confirmSend.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/teams-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildGroupPayload()),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      const summary = groupResultSummary(data);
+
+      await showAlert({
+        title: translation(
+          summary.failed
+            ? "Broadcast.groups.sent.titleWithIssues"
+            : "Broadcast.groups.sent.title",
+        ),
+        message: summary.message,
+        tone: summary.failed ? "warning" : "success",
+      });
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function scheduleToGroups(scheduledDate) {
+    if (!(await validateGroupBroadcast("schedule"))) return;
+
+    const date = scheduledDate.toLocaleString();
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSchedule.title"),
+      message: translation("Broadcast.groups.confirmSchedule.message", {
+        count: selectedGroups.size,
+        date,
+      }),
+      confirmText: translation("Broadcast.confirmSchedule.confirm"),
+      cancelText: translation("Broadcast.confirmSchedule.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: org?.id,
+          channel: "teams",
+          scheduledFor: scheduledDate.toISOString(),
+          timezone: browserTimeZone,
+          payload: buildGroupPayload(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      await showAlert({
+        title: translation("Broadcast.groups.scheduled.title"),
+        message: translation("Broadcast.groups.scheduled.message", {
+          count: selectedGroups.size,
+          date,
+        }),
+        tone: "success",
+      });
+
+      setDeliveryMode("now");
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function handleSend() {
+    if (isGroupAudience) {
+      await sendToGroups();
+      return;
+    }
+
     if (!(await validateTrackedDestinationsBeforeAction())) return;
     if (!selectedUsers.length) {
       await showAlert({
@@ -1632,7 +1940,7 @@ export default function BroadcastPage() {
 
   async function handleSchedule() {
     if (!(await validateTrackedDestinationsBeforeAction())) return;
-    if (!selectedUsers.length) {
+    if (!isGroupAudience && !selectedUsers.length) {
       await showAlert({
         title: "Choose recipients",
         message: translation("Broadcast.chooseRecipients"),
@@ -1670,6 +1978,11 @@ export default function BroadcastPage() {
         message: "The scheduled date must be in the future.",
         tone: "warning",
       });
+      return;
+    }
+
+    if (isGroupAudience) {
+      await scheduleToGroups(scheduledDate);
       return;
     }
 
@@ -2068,23 +2381,26 @@ export default function BroadcastPage() {
         trackedLinksCount={trackedLinksCount}
         translation={translation}
         leftToolsContent={chainDelayTools}
+        showLinks={!isGroupAudience}
         chainControls={
-          <ChainMessagesBar
-            enabled={readChainsFeatureEnabled}
-            chainMode={chainMode}
-            setChainMode={setChainMode}
-            chainSteps={chainSteps}
-            activeChainStepIndex={activeChainStepIndex}
-            setActiveChainStepIndex={setActiveChainStepIndex}
-            addChainStep={addChainStep}
-            duplicateChainStep={duplicateChainStep}
-            removeChainStep={removeChainStep}
-            activeStepKind={activeChainStep?.kind || "message"}
-            onChangeStepKind={(kind) =>
-              updateChainStepKind(activeChainStepIndex, kind)
-            }
-            translation={translation}
-          />
+          isGroupAudience ? null : (
+            <ChainMessagesBar
+              enabled={readChainsFeatureEnabled}
+              chainMode={chainMode}
+              setChainMode={setChainMode}
+              chainSteps={chainSteps}
+              activeChainStepIndex={activeChainStepIndex}
+              setActiveChainStepIndex={setActiveChainStepIndex}
+              addChainStep={addChainStep}
+              duplicateChainStep={duplicateChainStep}
+              removeChainStep={removeChainStep}
+              activeStepKind={activeChainStep?.kind || "message"}
+              onChangeStepKind={(kind) =>
+                updateChainStepKind(activeChainStepIndex, kind)
+              }
+              translation={translation}
+            />
+          )
         }
         phone={
           chainQuestionKind === "quiz" ? (
@@ -2141,7 +2457,7 @@ export default function BroadcastPage() {
       <BroadcastHeader
         channel={channel}
         setChannel={setChannel}
-        selectedCount={selected.size}
+        selectedCount={isGroupAudience ? selectedGroups.size : selected.size}
         sending={sending}
         canSend={canSend}
         deliveryMode={deliveryMode}
@@ -2173,27 +2489,50 @@ export default function BroadcastPage() {
         <div className={styles.leftCol}>{composer}</div>
 
         <div className={styles.rightCol}>
-          <RecipientsPanel
-            filterBtnRef={filterBtnRef}
-            filterOpen={filterOpen}
-            setFilterOpen={setFilterOpen}
-            activeFilterCount={activeFilterCount}
-            allTags={allTags}
-            assistantsList={assistantsList}
-            selectedTagIds={selectedTagIds}
-            setSelectedTagIds={setSelectedTagIds}
-            selectedAssistantIds={selectedAssistantIds}
-            setSelectedAssistantIds={setSelectedAssistantIds}
-            q={q}
-            setQ={setQ}
-            filtered={filtered}
-            selected={selected}
-            toggleOne={toggleOne}
-            toggleAllCurrent={toggleAllCurrent}
-            allOnPageSelected={allOnPageSelected}
-            channel={channel}
-            translation={translation}
-          />
+          {channel === "teams" && (
+            <AudienceTabs
+              audience={audience}
+              canUseGroups={canUseGroups}
+              onChooseUsers={() => setAudience("users")}
+              onChooseGroups={chooseGroupAudience}
+              translation={translation}
+            />
+          )}
+
+          {isGroupAudience ? (
+            <GroupsPanel
+              groups={filteredGroups}
+              q={groupQuery}
+              setQ={setGroupQuery}
+              selected={selectedGroups}
+              toggleOne={toggleGroup}
+              toggleAll={toggleAllGroups}
+              allSelected={allGroupsSelected}
+              translation={translation}
+            />
+          ) : (
+            <RecipientsPanel
+              filterBtnRef={filterBtnRef}
+              filterOpen={filterOpen}
+              setFilterOpen={setFilterOpen}
+              activeFilterCount={activeFilterCount}
+              allTags={allTags}
+              assistantsList={assistantsList}
+              selectedTagIds={selectedTagIds}
+              setSelectedTagIds={setSelectedTagIds}
+              selectedAssistantIds={selectedAssistantIds}
+              setSelectedAssistantIds={setSelectedAssistantIds}
+              q={q}
+              setQ={setQ}
+              filtered={filtered}
+              selected={selected}
+              toggleOne={toggleOne}
+              toggleAllCurrent={toggleAllCurrent}
+              allOnPageSelected={allOnPageSelected}
+              channel={channel}
+              translation={translation}
+            />
+          )}
         </div>
       </div>
     </div>

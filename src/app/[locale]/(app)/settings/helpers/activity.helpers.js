@@ -256,6 +256,12 @@ export function detailEntries(item, translation, locale = "pt") {
     consume("recipientCount");
   }
 
+  /* Envio para grupos do Teams (#166). */
+  if (has(details, "groupCount")) {
+    push("groups", details.groupCount);
+    consume("groupCount");
+  }
+
   if (has(details, "created") || has(details, "updated")) {
     push(
       "result",

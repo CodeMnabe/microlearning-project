@@ -1479,6 +1479,41 @@
       "use": "Use",
       "failed": "The suggestion could not be generated. Try again."
     },
+    "groups": {
+      "tabUsers": "Colleagues",
+      "tabGroups": "Teams groups",
+      "onlyBlank": "Groups only receive blank messages, without a chain.",
+      "search": "Search group...",
+      "empty": "There are no active groups yet. Add MyDigitalBot to a group chat or a team in Teams.",
+      "unnamed": "Unnamed group",
+      "groupFallback": "Group",
+      "chooseGroups": "Choose at least one group.",
+      "noTrackedLinks": {
+        "title": "Tracked links",
+        "message": "Tracked links are per person and cannot go to groups. Remove them before sending."
+      },
+      "noNameVariable": {
+        "title": "Name variable",
+        "message": "The Name variable has no value in a group. Remove it before sending."
+      },
+      "confirmSend": {
+        "title": "Send to groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}}."
+      },
+      "confirmSchedule": {
+        "title": "Schedule for groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      },
+      "sent": {
+        "title": "Message sent",
+        "titleWithIssues": "Message sent with issues",
+        "message": "Posted in {ok} of {total} groups."
+      },
+      "scheduled": {
+        "title": "Message scheduled",
+        "message": "It will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      }
+    },
     "composer": {
       "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
       "openQuestionBody": "Open question",
@@ -1672,10 +1707,13 @@
       "delete": "Delete"
     },
     "ViewModal": {
+      "groups": "Teams groups",
       "title": "Message details",
       "createdAt": "Created at"
     },
     "EditModal": {
+      "groups": "Teams groups",
+      "unnamedGroup": "Unnamed group",
       "title": "Edit scheduled message",
       "message": "Message",
       "recipients": "Recipients",
@@ -2886,6 +2924,7 @@
         "assistant": "Assistant",
         "fields": "Changed fields",
         "recipients": "Recipients",
+        "groups": "Teams groups",
         "result": "Result",
         "count": "Users",
         "failedCount": "Failed",

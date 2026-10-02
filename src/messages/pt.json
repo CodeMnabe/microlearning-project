@@ -1487,6 +1487,41 @@
       "use": "Usar",
       "failed": "Não foi possível gerar a sugestão. Tenta outra vez."
     },
+    "groups": {
+      "tabUsers": "Colaboradores",
+      "tabGroups": "Grupos Teams",
+      "onlyBlank": "Os grupos só recebem mensagens em branco, sem cadeia.",
+      "search": "Procurar grupo...",
+      "empty": "Ainda não há grupos ativos. Adiciona o MyDigitalBot a um chat de grupo ou a uma equipa no Teams.",
+      "unnamed": "Grupo sem nome",
+      "groupFallback": "Grupo",
+      "chooseGroups": "Escolhe pelo menos um grupo.",
+      "noTrackedLinks": {
+        "title": "Links rastreados",
+        "message": "Os links rastreados são por pessoa e não podem ir para grupos. Remove-os antes de enviar."
+      },
+      "noNameVariable": {
+        "title": "Variável Nome",
+        "message": "A variável Nome não tem valor num grupo. Remove-a antes de enviar."
+      },
+      "confirmSend": {
+        "title": "Enviar para grupos?",
+        "message": "A mensagem vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams."
+      },
+      "confirmSchedule": {
+        "title": "Agendar para grupos?",
+        "message": "A mensagem vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams a {date}."
+      },
+      "sent": {
+        "title": "Mensagem enviada",
+        "titleWithIssues": "Mensagem enviada com falhas",
+        "message": "Publicada em {ok} de {total} grupos."
+      },
+      "scheduled": {
+        "title": "Mensagem agendada",
+        "message": "Vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams a {date}."
+      }
+    },
     "composer": {
       "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",
       "openQuestionBody": "Pergunta aberta",
@@ -1680,10 +1715,13 @@
       "delete": "Eliminar"
     },
     "ViewModal": {
+      "groups": "Grupos Teams",
       "title": "Detalhes da mensagem",
       "createdAt": "Criada em"
     },
     "EditModal": {
+      "groups": "Grupos Teams",
+      "unnamedGroup": "Grupo sem nome",
       "title": "Editar mensagem agendada",
       "message": "Mensagem",
       "recipients": "Destinatários",
@@ -2743,6 +2781,7 @@
         "assistant": "Assistente",
         "fields": "Campos alterados",
         "recipients": "Destinatários",
+        "groups": "Grupos Teams",
         "result": "Resultado",
         "count": "Colaboradores",
         "failedCount": "Falhados",

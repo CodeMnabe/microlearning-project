@@ -15,6 +15,7 @@ import {
   normalizeBroadcast,
   canEditItem,
   canDeleteItem,
+  getScheduledGroups,
   toDateInputValue,
 } from "./helpers/scheduled.helpers";
 
@@ -434,7 +435,10 @@ export default function ScheduledPage() {
       return;
     }
 
-    if (!recipients.length) {
+    /* Nas mensagens para grupos do Teams (#166) não há colaboradores. */
+    const groupItems = getScheduledGroups(editingItem);
+
+    if (!groupItems && !recipients.length) {
       setError(t("Errors.invalidForm"));
 
       await showAlert({
@@ -465,7 +469,7 @@ export default function ScheduledPage() {
       if (formData.channel === "whatsapp") {
         nextPayload.recipients = recipients;
         delete nextPayload.userIds;
-      } else {
+      } else if (!groupItems) {
         const userIds = recipients
           .map((recipient) => recipient.userId)
           .filter(Boolean);
@@ -491,7 +495,7 @@ export default function ScheduledPage() {
             status:
               formData.status === "scheduled" ? "queued" : formData.status,
             payload: nextPayload,
-            recipient_count: recipients.length,
+            recipient_count: groupItems ? groupItems.length : recipients.length,
           }),
         },
       );
