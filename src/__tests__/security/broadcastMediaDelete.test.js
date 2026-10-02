@@ -8,7 +8,7 @@ vi.mock("@/lib/auth/guards", () => ({
   },
 }));
 vi.mock("@/lib/repos/broadcastMedia.repo", () => ({
-  getPendingMessagePayloads: mocks.payloads,
+  getPendingMessageRefs: mocks.payloads,
   removeStorageObject: mocks.remove,
   getStoragePublicUrl: vi.fn(),
   listStorageFolder: vi.fn(),
@@ -38,7 +38,11 @@ describe("deleteBroadcastMedia", () => {
 
   it("não apaga um ficheiro usado numa mensagem por enviar", async () => {
     mocks.payloads.mockResolvedValue([
-      { files: [{ url: `https://x.supabase.co/storage/v1/object/public/broadcast-media/${PATH}` }] },
+      {
+        kind: "scheduled",
+        id: "b1",
+        payload: { files: [{ url: `https://x.supabase.co/storage/v1/object/public/broadcast-media/${PATH}` }] },
+      },
     ]);
     await expect(
       deleteBroadcastMedia({}, 7, { bucket: "broadcast-media", path: PATH }),

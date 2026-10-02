@@ -143,7 +143,7 @@
 }
 
 .colAction {
-  width: 120px;
+  width: 170px;
 }
 
 .table thead th {
@@ -242,12 +242,82 @@
   cursor: help;
 }
 
+.statusCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.infoHint {
+  position: relative;
+  display: inline-flex;
+  color: var(--ui-muted);
+  cursor: help;
+  border-radius: 50%;
+}
+
+.infoHint:hover,
+.infoHint:focus-visible {
+  color: #0f1c3f;
+  outline: none;
+}
+
+/* Fixa no ecrã (posição vinda do ícone) e abre para a esquerda, por cima
+   das colunas de tamanho e data. */
+.infoTooltip {
+  position: fixed;
+  transform: translateY(-50%);
+  z-index: 50;
+  width: 300px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #0f1c3f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(15, 28, 63, 0.18);
+}
+
+.inUseLink {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.inUseLink:hover,
+.inUseLink:focus-visible {
+  text-decoration: underline;
+}
+
 .muted {
   color: var(--ui-muted);
 }
 
 .actionCell {
   text-align: right;
+  white-space: nowrap;
+}
+
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: #fff;
+  color: #0f1c3f;
+  box-sizing: border-box;
+}
+
+.downloadButton:hover,
+.downloadButton:focus-visible {
+  background: #f7fbff;
 }
 
 .deleteButton {

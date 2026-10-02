@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Download, Info, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useAlert } from "@/app/components/Alert/AlertProvider";
@@ -43,6 +44,43 @@ function mediaKind(contentType) {
   if (type.startsWith("video/")) return "video";
 
   return "other";
+}
+
+/**
+ * Ícone com explicação ao passar o rato ou ao focar. A explicação é fixa no
+ * ecrã, para não ser cortada pela tabela, que tem scroll próprio.
+ */
+function InfoHint({ text }) {
+  const [pos, setPos] = useState(null);
+
+  function show(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setPos({ top: rect.top + rect.height / 2, right: window.innerWidth - rect.left + 8 });
+  }
+
+  return (
+    <span
+      className={styles.infoHint}
+      tabIndex={0}
+      role="img"
+      aria-label={text}
+      onMouseEnter={show}
+      onFocus={show}
+      onMouseLeave={() => setPos(null)}
+      onBlur={() => setPos(null)}
+    >
+      <Info size={15} aria-hidden />
+      {pos ? (
+        <span
+          className={styles.infoTooltip}
+          style={{ top: pos.top, right: pos.right }}
+          aria-hidden
+        >
+          {text}
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 /**
@@ -310,11 +348,22 @@ export default function MediaPage() {
 
                       <td>
                         {item.inUse ? (
-                          <span
-                            className={styles.inUse}
-                            title={translation("Media.inUseHint")}
-                          >
-                            {translation("Media.status.inUse")}
+                          <span className={styles.statusCell}>
+                            {item.usedBy?.kind === "scheduled" ? (
+                              <Link
+                                href={`/broadcast/scheduled?view=${encodeURIComponent(item.usedBy.id)}`}
+                                className={`${styles.inUse} ${styles.inUseLink}`}
+                                title={translation("Media.openScheduled")}
+                              >
+                                {translation("Media.status.inUse")}
+                              </Link>
+                            ) : (
+                              <span className={styles.inUse}>
+                                {translation("Media.status.inUse")}
+                              </span>
+                            )}
+
+                            <InfoHint text={translation("Media.inUseHint")} />
                           </span>
                         ) : (
                           <span className={styles.muted}>
@@ -324,6 +373,21 @@ export default function MediaPage() {
                       </td>
 
                       <td className={styles.actionCell}>
+                        {item.downloadUrl ? (
+                          <a
+                            href={item.downloadUrl}
+                            className={styles.downloadButton}
+                            aria-label={translation("Media.download", {
+                              name: item.name,
+                            })}
+                            title={translation("Media.download", {
+                              name: item.name,
+                            })}
+                          >
+                            <Download size={16} aria-hidden />
+                          </a>
+                        ) : null}
+
                         <button
                           type="button"
                           className={styles.deleteButton}

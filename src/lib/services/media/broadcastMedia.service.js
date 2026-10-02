@@ -3,7 +3,7 @@ import {
   broadcastMediaFolder,
 } from "@/lib/uploads/broadcastMedia";
 import {
-  getPendingMessagePayloads,
+  getPendingMessageRefs,
   getStoragePublicUrl,
   listStorageFolder,
   removeStorageObject,
@@ -16,13 +16,14 @@ function displayName(fileName) {
 }
 
 /**
- * O caminho do ficheiro é único (leva data e um sufixo aleatório), por isso
- * basta procurá-lo no texto do payload, onde aparece dentro do URL.
+ * Primeira mensagem por enviar que usa o ficheiro, ou null. O caminho é único
+ * (leva data e um sufixo aleatório), por isso basta procurá-lo no texto do
+ * payload, onde aparece dentro do URL. As agendadas vêm antes das cadeias.
  */
-export function isMediaInUse(path, payloads = []) {
-  return payloads.some((payload) =>
-    JSON.stringify(payload ?? {}).includes(path),
-  );
+export function findMediaUsage(path, refs = []) {
+  const ref = refs.find((r) => JSON.stringify(r.payload ?? {}).includes(path));
+
+  return ref ? { kind: ref.kind, id: ref.id } : null;
 }
 
 /**
@@ -41,7 +42,7 @@ export function isOwnMediaPath(orgId, bucket, path) {
 
 export async function listBroadcastMedia(admin, orgId) {
   const folder = broadcastMediaFolder(orgId);
-  const payloads = await getPendingMessagePayloads(admin, orgId);
+  const refs = await getPendingMessageRefs(admin, orgId);
   const items = [];
 
   for (const bucket of BROADCAST_MEDIA_BUCKETS) {
@@ -49,16 +50,22 @@ export async function listBroadcastMedia(admin, orgId) {
 
     for (const file of files) {
       const path = `${folder}/${file.name}`;
+      const usedBy = findMediaUsage(path, refs);
+      const name = displayName(file.name);
 
       items.push({
         bucket,
         path,
-        name: displayName(file.name),
+        name,
         contentType: file.metadata?.mimetype || null,
         size: Number(file.metadata?.size) || 0,
         createdAt: file.created_at || null,
         url: getStoragePublicUrl(admin, bucket, path),
-        inUse: isMediaInUse(path, payloads),
+        downloadUrl: getStoragePublicUrl(admin, bucket, path, {
+          download: name,
+        }),
+        inUse: Boolean(usedBy),
+        usedBy,
       });
     }
   }
@@ -78,9 +85,9 @@ export async function deleteBroadcastMedia(admin, orgId, { bucket, path }) {
     throwHttpError("Invalid file", 400);
   }
 
-  const payloads = await getPendingMessagePayloads(admin, orgId);
+  const refs = await getPendingMessageRefs(admin, orgId);
 
-  if (isMediaInUse(path, payloads)) {
+  if (findMediaUsage(path, refs)) {
     throwHttpError("File is used by a pending message", 409);
   }
 

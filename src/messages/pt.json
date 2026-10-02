@@ -1904,7 +1904,9 @@
     "loading": "A carregar ficheiros...",
     "noFiles": "Ainda não foram carregados ficheiros nas mensagens.",
     "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
-    "inUseHint": "Está numa mensagem agendada ou numa cadeia ativa. Só pode ser eliminado depois de enviada ou cancelada.",
+    "inUseHint": "Este ficheiro vai ser enviado numa mensagem agendada ou numa cadeia ativa. Se fosse eliminado agora, a mensagem sairia sem ele. Pode ser eliminado depois de a mensagem ser enviada ou cancelada.",
+    "openScheduled": "Ver a mensagem agendada que usa este ficheiro",
+    "download": "Transferir {name}",
     "table": {
       "file": "Ficheiro",
       "size": "Tamanho",

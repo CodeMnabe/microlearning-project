@@ -1895,7 +1895,9 @@
     "loading": "Loading files...",
     "noFiles": "No files have been uploaded in messages yet.",
     "noMatches": "No files match your search.",
-    "inUseHint": "It is in a scheduled message or an active chain. It can only be deleted after it is sent or cancelled.",
+    "inUseHint": "This file will be sent in a scheduled message or an active chain. If it were deleted now, the message would go out without it. It can be deleted after the message is sent or cancelled.",
+    "openScheduled": "Open the scheduled message that uses this file",
+    "download": "Download {name}",
     "table": {
       "file": "File",
       "size": "Size",

@@ -35,8 +35,12 @@ export async function listStorageFolder(admin, bucket, folder) {
   return files;
 }
 
-export function getStoragePublicUrl(admin, bucket, path) {
-  return admin.storage.from(bucket).getPublicUrl(path)?.data?.publicUrl || null;
+/* Com { download: "<nome>" } o Storage responde como anexo com esse nome. */
+export function getStoragePublicUrl(admin, bucket, path, options) {
+  return (
+    admin.storage.from(bucket).getPublicUrl(path, options)?.data?.publicUrl ||
+    null
+  );
 }
 
 export async function removeStorageObject(admin, bucket, path) {
@@ -46,15 +50,17 @@ export async function removeStorageObject(admin, bucket, path) {
 }
 
 /**
- * Payloads das mensagens agendadas por enviar e dos passos das cadeias ainda
- * ativas da organização. É aqui que ficam os URLs dos ficheiros.
+ * Mensagens agendadas por enviar (da mais próxima para a mais distante) e
+ * passos das cadeias ainda ativas da organização, com o payload onde ficam
+ * os URLs dos ficheiros.
  */
-export async function getPendingMessagePayloads(admin, orgId) {
+export async function getPendingMessageRefs(admin, orgId) {
   const { data: broadcasts, error: broadcastsError } = await admin
     .from("scheduled_broadcast")
-    .select("payload")
+    .select("id, payload")
     .eq("organization_id", orgId)
-    .in("status", PENDING_BROADCAST_STATUSES);
+    .in("status", PENDING_BROADCAST_STATUSES)
+    .order("scheduled_for", { ascending: true });
 
   if (broadcastsError) throw broadcastsError;
 
@@ -72,7 +78,7 @@ export async function getPendingMessagePayloads(admin, orgId) {
   if (chainIds.length) {
     const { data, error } = await admin
       .from("message_chain_step")
-      .select("payload")
+      .select("chain_id, payload")
       .in("chain_id", chainIds);
 
     if (error) throw error;
@@ -80,5 +86,16 @@ export async function getPendingMessagePayloads(admin, orgId) {
     steps = data || [];
   }
 
-  return [...(broadcasts || []), ...steps].map((row) => row.payload);
+  return [
+    ...(broadcasts || []).map((row) => ({
+      kind: "scheduled",
+      id: row.id,
+      payload: row.payload,
+    })),
+    ...steps.map((row) => ({
+      kind: "chain",
+      id: row.chain_id,
+      payload: row.payload,
+    })),
+  ];
 }
