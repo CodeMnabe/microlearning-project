@@ -1580,6 +1580,8 @@
       "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
       "addLink": "Tracked link",
       "linkButtonHint": "On WhatsApp, the link leaves the text and goes in this button.",
+      "linkNeedsText": "Write some text: on WhatsApp, the link goes in a button and the message needs text.",
+      "chainStepNeedsText": "Step {step}: write some text. On WhatsApp, the link goes in a button and the message needs text.",
       "variables": "Variables",
       "variableName": "Name",
       "variableCompany": "Company",

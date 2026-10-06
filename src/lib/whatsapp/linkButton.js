@@ -17,8 +17,24 @@
 export const LINK_BUTTON_TEXT_MAX_LENGTH = 20;
 export const LINK_BUTTON_BODY_MAX_LENGTH = 1024;
 
+const LINK_PLACEHOLDERS = /\{\{link\.[a-z0-9_-]+\}\}/gi;
+
 function placeholderFor(key) {
   return `{{link.${key}}}`;
+}
+
+/*
+ * Mensagem só com links rastreados, sem texto à volta. O composer não a
+ * deixa enviar no WhatsApp, porque o link vai num botão e uma mensagem com
+ * botão precisa de texto. O envio continua a aceitá-la (agendamentos e
+ * automações antigos): aí o link segue no texto.
+ */
+export function isOnlyTrackedLinks(message = "") {
+  const text = String(message || "");
+
+  if (!text.match(LINK_PLACEHOLDERS)) return false;
+
+  return text.replace(LINK_PLACEHOLDERS, "").trim() === "";
 }
 
 /* Arruma os espaços e as linhas vazias que o link deixa para trás. */

@@ -466,6 +466,144 @@ describe("BroadcastPage", () => {
     expect(lastPostTo("/api/broadcast/whatsapp").openingOnly).toBeUndefined();
   });
 
+  describe("mensagem só com link", () => {
+    /* Cria o link no painel e põe-no no balão como pastilha. */
+    function insertTrackedLink() {
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      );
+      fireEvent.change(screen.getByPlaceholderText("training"), {
+        target: { value: "guia" },
+      });
+      fireEvent.change(screen.getByPlaceholderText("Aceder à formação"), {
+        target: { value: "Guia" },
+      });
+      fireEvent.change(
+        screen.getByPlaceholderText("https://example.com/course/123"),
+        { target: { value: "https://x.test/guia" } },
+      );
+      pickFromPlusMenu("Link: Guia");
+    }
+
+    it("no WhatsApp, não deixa enviar sem texto e explica porquê", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      insertTrackedLink();
+
+      const send = screen.getByRole("button", { name: "Broadcast.send" });
+      expect(send).toBeDisabled();
+      expect(
+        screen.getByText("Broadcast.composer.linkNeedsText"),
+      ).toBeInTheDocument();
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Vê o guia",
+      );
+
+      expect(send).toBeEnabled();
+      expect(
+        screen.queryByText("Broadcast.composer.linkNeedsText"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("no WhatsApp, deixa enviar o link com uma imagem", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      insertTrackedLink();
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: {
+          files: [new File(["x"], "foto.png", { type: "image/png" })],
+        },
+      });
+      await screen.findByAltText("foto.png");
+
+      expect(
+        screen.getByRole("button", { name: "Broadcast.send" }),
+      ).toBeEnabled();
+    });
+
+    it("numa corrente, diz qual é o passo que só tem o link", async () => {
+      const baseFetch = mocks.fetch.getMockImplementation();
+      mocks.fetch.mockImplementation((input, init = {}) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.startsWith("/api/organizations/messaging-feature")) {
+          return makeResponse({ item: { read_chains_enabled: true } });
+        }
+        return baseFetch(input, init);
+      });
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.broadcastChain.createChain",
+        }),
+      );
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Primeira mensagem",
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 2",
+        }),
+      );
+      insertTrackedLink();
+
+      const send = screen.getByRole("button", { name: "Broadcast.send" });
+      expect(send).toBeDisabled();
+
+      /* O aviso continua visível noutro passo e aponta para o certo. */
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 1",
+        }),
+      );
+      expect(
+        screen.getByText("Broadcast.composer.chainStepNeedsText"),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 2",
+        }),
+      );
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Vê o guia",
+      );
+
+      expect(
+        screen.queryByText("Broadcast.composer.chainStepNeedsText"),
+      ).not.toBeInTheDocument();
+      expect(send).toBeEnabled();
+    });
+
+    it("no Teams, deixa enviar só o link", async () => {
+      render(<BroadcastPage />);
+      await screen.findByText("Pedro Silva");
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      insertTrackedLink();
+
+      expect(
+        screen.getByRole("button", { name: "Broadcast.send" }),
+      ).toBeEnabled();
+      expect(
+        screen.queryByText("Broadcast.composer.linkNeedsText"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("goes back to the start menu from the editor", async () => {
     await openWhatsapp();
 

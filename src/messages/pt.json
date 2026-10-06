@@ -1588,6 +1588,8 @@
       "fileTypeNotAllowed": "O ficheiro {name} não é suportado. Usa imagens (PNG, JPG, WebP, GIF), PDF ou MP4.",
       "addLink": "Link rastreado",
       "linkButtonHint": "No WhatsApp, o link sai do texto e vai neste botão.",
+      "linkNeedsText": "Escreve algum texto: no WhatsApp, o link vai num botão e a mensagem precisa de texto.",
+      "chainStepNeedsText": "Passo {step}: escreve algum texto. No WhatsApp, o link vai num botão e a mensagem precisa de texto.",
       "variables": "Variáveis",
       "variableName": "Nome",
       "variableCompany": "Empresa",

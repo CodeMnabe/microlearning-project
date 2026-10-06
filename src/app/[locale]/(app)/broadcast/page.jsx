@@ -25,7 +25,7 @@ import {
   makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
-import { pickLinkButton } from "@/lib/whatsapp/linkButton";
+import { isOnlyTrackedLinks, pickLinkButton } from "@/lib/whatsapp/linkButton";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -1149,10 +1149,22 @@ export default function BroadcastPage() {
     if (step.kind === "survey") return isSurveyValid(step.survey);
     if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
 
+    const message = String(step.message || "");
+    const files = Array.isArray(step.files) ? step.files : [];
+
     return (
-      String(step.message || "").trim().length > 0 ||
-      (Array.isArray(step.files) && step.files.length > 0)
+      (message.trim().length > 0 || files.length > 0) &&
+      !needsTextBesideLinks(message, files)
     );
+  }
+
+  /*
+   * No WhatsApp o link vai num botão, e uma mensagem com botão precisa de
+   * texto: só links, sem anexos, não se envia. No Teams o link aparece com
+   * o nome e fica bem sozinho; com um anexo, o link segue no texto.
+   */
+  function needsTextBesideLinks(message, files = []) {
+    return isWhatsapp && files.length === 0 && isOnlyTrackedLinks(message);
   }
 
   /*
@@ -1287,6 +1299,31 @@ export default function BroadcastPage() {
   const hasManualContent =
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
+  const messageNeedsText =
+    !isSurveyMode &&
+    !isOpenQuestionMode &&
+    !isQuizMode &&
+    !chainQuestionKind &&
+    needsTextBesideLinks(composerMessage, composerFiles);
+
+  /* Numa corrente, o aviso diz qual é o passo que só tem links. */
+  const chainStepNeedingText = chainMode
+    ? chainSteps.findIndex(
+        (step) =>
+          (step.kind || "message") === "message" &&
+          needsTextBesideLinks(step.message, step.files || []),
+      )
+    : -1;
+
+  const composerWarning =
+    chainStepNeedingText >= 0
+      ? translation("Broadcast.composer.chainStepNeedsText", {
+          step: chainStepNeedingText + 1,
+        })
+      : messageNeedsText
+        ? translation("Broadcast.composer.linkNeedsText")
+        : null;
+
   const quizValid = isQuizValid(quiz);
   const surveyValid = isSurveyValid(survey);
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
@@ -1301,7 +1338,7 @@ export default function BroadcastPage() {
           ? quizValid && trackedLinksValid
           : chainMode
             ? chainValid
-            : trackedLinksValid && hasManualContent);
+            : trackedLinksValid && hasManualContent && !messageNeedsText);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -2442,6 +2479,7 @@ export default function BroadcastPage() {
         title={translation("Broadcast.message")}
         onBack={() => setComposeMode(null)}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
+        warning={composerWarning}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}

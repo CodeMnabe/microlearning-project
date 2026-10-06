@@ -1188,6 +1188,13 @@
   margin-bottom: 12px;
 }
 
+.composerWarning {
+  font-size: 13px;
+  color: #b91c1c;
+  text-align: center;
+  margin-top: 8px;
+}
+
 .phoneWrap {
   display: flex;
   justify-content: center;

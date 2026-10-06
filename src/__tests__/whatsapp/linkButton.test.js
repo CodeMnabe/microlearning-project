@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   LINK_BUTTON_TEXT_MAX_LENGTH,
   buildLinkButtonActions,
+  isOnlyTrackedLinks,
   linkButtonText,
   pickLinkButton,
 } from "@/lib/whatsapp/linkButton";
@@ -96,6 +97,25 @@ describe("linkButtonText", () => {
 
     expect(text).toBe("Guia passo a passo…");
     expect(text.length).toBeLessThanOrEqual(LINK_BUTTON_TEXT_MAX_LENGTH);
+  });
+});
+
+describe("isOnlyTrackedLinks", () => {
+  it.each([
+    ["{{link.guia}}"],
+    ["  {{link.guia}}\n"],
+    ["{{link.guia}} {{link.curso}}"],
+  ])("deteta uma mensagem só com links: %j", (message) => {
+    expect(isOnlyTrackedLinks(message)).toBe(true);
+  });
+
+  it.each([
+    ["Guia: {{link.guia}}"],
+    ["{{nome}} {{link.guia}}"],
+    ["Sem links"],
+    [""],
+  ])("não bloqueia uma mensagem com texto ou sem links: %j", (message) => {
+    expect(isOnlyTrackedLinks(message)).toBe(false);
   });
 });
 
