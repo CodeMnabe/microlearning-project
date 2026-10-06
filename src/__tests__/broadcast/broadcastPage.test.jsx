@@ -466,6 +466,57 @@ describe("BroadcastPage", () => {
     expect(lastPostTo("/api/broadcast/whatsapp").openingOnly).toBeUndefined();
   });
 
+  it("Usar num link já usado põe-no logo no balão", async () => {
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.startsWith("/api/tracked-links/library")) {
+        return makeResponse({
+          items: [
+            {
+              key: "ola",
+              label: "ola",
+              destinationUrl: "https://www.digik.pt/pt/",
+              lastUsedAt: "2026-10-02T16:58:59Z",
+            },
+          ],
+        });
+      }
+      return baseFetch(input, init);
+    });
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByText("Broadcast.start.blank"));
+
+    const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
+    typeInEditor(editor, "Vê o guia: ");
+
+    pickFromPlusMenu("Broadcast.composer.addLink");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Broadcast.linkLibrary.use" }),
+    );
+
+    /* A pastilha mostra o nome do link, não o placeholder. */
+    expect(editor.querySelector("[data-token]")).toHaveTextContent(
+      "Link: ola",
+    );
+    expect(editor).not.toHaveTextContent("{{link.ola}}");
+
+    fireEvent.click(screen.getByText("Pedro Silva"));
+    fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+    await waitFor(() => {
+      expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+    });
+
+    expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
+      message: "Vê o guia: {{link.ola}} ",
+      trackedLinks: [
+        { key: "ola", label: "ola", destinationUrl: "https://www.digik.pt/pt/" },
+      ],
+    });
+  });
+
   describe("mensagem só com link", () => {
     /* Cria o link no painel e põe-no no balão como pastilha. */
     function insertTrackedLink() {

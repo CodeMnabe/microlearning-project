@@ -807,12 +807,23 @@ export default function BroadcastPage() {
     setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
   }
 
-  /* Um link já usado só entra uma vez na mesma mensagem. */
+  /*
+   * Um link já usado entra na mensagem e logo no balão, onde estava o
+   * cursor. Só entra uma vez na mesma mensagem.
+   */
   function addTrackedLinkFromLibrary(item) {
-    setComposerTrackedLinks((prev) =>
-      prev.some((link) => isSameTrackedLink(link, item))
-        ? prev
-        : [...prev, makeTrackedLinkFromLibrary(item, prev)],
+    if (composerTrackedLinks.some((link) => isSameTrackedLink(link, item))) {
+      return;
+    }
+
+    const draft = makeTrackedLinkFromLibrary(item, composerTrackedLinks);
+
+    setComposerTrackedLinks((prev) => [...prev, draft]);
+
+    /* O nome vai já: a lista de links só se atualiza no render seguinte. */
+    editorRef.current?.insertToken?.(
+      `link.${draft.key}`,
+      `Link: ${draft.label}`,
     );
   }
 

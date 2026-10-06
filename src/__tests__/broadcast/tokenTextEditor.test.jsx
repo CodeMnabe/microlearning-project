@@ -79,6 +79,28 @@ describe("TokenTextEditor", () => {
     expect(editor.querySelector("[data-token]")).toHaveTextContent("Empresa");
   });
 
+  it("usa o nome dado quando a pastilha ainda não é conhecida", () => {
+    const ref = createRef();
+
+    render(
+      <TokenTextEditor
+        ref={ref}
+        value="Vê "
+        tokenLabel={() => null}
+        onChange={() => {}}
+        ariaLabel="Mensagem"
+      />,
+    );
+
+    ref.current.insertToken("link.ola", "Link: ola");
+
+    const chip = screen
+      .getByRole("textbox", { name: "Mensagem" })
+      .querySelector("[data-token]");
+    expect(chip).toHaveTextContent("Link: ola");
+    expect(chip.getAttribute("data-token")).toBe("{{link.ola}}");
+  });
+
   it("re-renders chips when the value changes from outside", () => {
     const { rerender } = render(
       <TokenTextEditor
