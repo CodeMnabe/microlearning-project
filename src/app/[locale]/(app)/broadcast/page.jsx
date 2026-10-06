@@ -44,6 +44,7 @@ import MediaPickerModal from "./components/MediaPickerModal";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
+import useTrackedLinkLibrary from "./hooks/useTrackedLinkLibrary";
 import {
   asList,
   buildInitialScheduledDate,
@@ -51,8 +52,10 @@ import {
   formatMinute,
   guessContentTypeFromName,
   isImageContentType,
+  isSameTrackedLink,
   isVideoContentType,
   makeTrackedLinkDraft,
+  makeTrackedLinkFromLibrary,
   sanitizeTrackedKey,
   makeChainStep,
   formatDelayLabel,
@@ -804,6 +807,15 @@ export default function BroadcastPage() {
     setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
   }
 
+  /* Um link já usado só entra uma vez na mesma mensagem. */
+  function addTrackedLinkFromLibrary(item) {
+    setComposerTrackedLinks((prev) =>
+      prev.some((link) => isSameTrackedLink(link, item))
+        ? prev
+        : [...prev, makeTrackedLinkFromLibrary(item, prev)],
+    );
+  }
+
   function updateTrackedLink(id, field, value) {
     setComposerTrackedLinks((prev) =>
       prev.map((link) => {
@@ -1032,6 +1044,12 @@ export default function BroadcastPage() {
     kind: suggestKind,
     editorRef,
     resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
+  });
+
+  /* Links já usados noutros envios, carregados quando o painel abre. */
+  const trackedLinkLibrary = useTrackedLinkLibrary({
+    orgId: org?.id,
+    enabled: activeToolPanel === "links",
   });
 
   /*
@@ -2322,6 +2340,8 @@ export default function BroadcastPage() {
         addTrackedLink={addTrackedLink}
         updateTrackedLink={updateTrackedLink}
         removeTrackedLink={removeTrackedLink}
+        library={trackedLinkLibrary}
+        onUseLibraryLink={addTrackedLinkFromLibrary}
         translation={translation}
       />
     ) : null;

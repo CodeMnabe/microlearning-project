@@ -101,6 +101,63 @@ export function sanitizeTrackedKey(value = "") {
     .replace(/[^a-z0-9_-]/g, "");
 }
 
+/* O mesmo link é o mesmo nome com o mesmo destino; a chave pode mudar. */
+export function isSameTrackedLink(a, b) {
+  return (
+    String(a?.label || "").trim() === String(b?.label || "").trim() &&
+    String(a?.destinationUrl || "").trim() ===
+      String(b?.destinationUrl || "").trim()
+  );
+}
+
+/* Chave livre no composer: a pedida ou, se já existir, com _2, _3, ... */
+export function uniqueTrackedKey(value, takenKeys = []) {
+  const base = sanitizeTrackedKey(value) || "link";
+  const taken = new Set(takenKeys.map((key) => sanitizeTrackedKey(key)));
+
+  if (!taken.has(base)) return base;
+
+  let n = 2;
+  while (taken.has(`${base}_${n}`)) n += 1;
+
+  return `${base}_${n}`;
+}
+
+/*
+ * Um link já usado entra no composer como um link novo, com o mesmo nome e
+ * destino. No envio recebe tokens novos, um por destinatário, como sempre.
+ */
+export function makeTrackedLinkFromLibrary(item, existingLinks = []) {
+  return {
+    id: makeId(),
+    key: uniqueTrackedKey(
+      item?.key || item?.label,
+      existingLinks.map((link) => link.key),
+    ),
+    label: String(item?.label || "").trim(),
+    destinationUrl: String(item?.destinationUrl || "").trim(),
+  };
+}
+
+function foldForSearch(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+export function filterTrackedLinkLibrary(items = [], query = "") {
+  const needle = foldForSearch(query).trim();
+
+  if (!needle) return items;
+
+  return items.filter(
+    (item) =>
+      foldForSearch(item.label).includes(needle) ||
+      foldForSearch(item.destinationUrl).includes(needle),
+  );
+}
+
 export function replaceTrackedPlaceholders(
   str = "",
   trackedLinks = [],

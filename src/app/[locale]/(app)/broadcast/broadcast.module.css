@@ -668,6 +668,55 @@
   color: #666;
 }
 
+/* Links já usados noutros envios, para escolher em vez de escrever */
+
+.linkLibrary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.linkLibraryFailed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linkLibraryList {
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linkLibraryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.linkLibraryText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.linkLibraryUrl {
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .inlineHelpText {
   font-size: 12px;
   color: #666;

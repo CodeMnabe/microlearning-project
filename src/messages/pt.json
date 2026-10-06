@@ -1460,6 +1460,17 @@
     "chooseTime": "Escolhe um tempo entre as 08:00 e as 20:00",
     "trackedLinks": "Links Rastreados",
     "addLink": "Adicionar Link",
+    "linkLibrary": {
+      "title": "Links já usados",
+      "search": "Procurar por nome ou URL",
+      "use": "Usar",
+      "added": "Adicionado",
+      "lastUsed": "Usado a {date, date, short}",
+      "loading": "A carregar os links...",
+      "failed": "Não foi possível carregar os links já usados.",
+      "retry": "Tentar novamente",
+      "noMatches": "Nenhum link corresponde à pesquisa."
+    },
     "key": "Chave",
     "label": "Rótulo",
     "destinationUrl": "URL Destino",

@@ -1,4 +1,7 @@
-import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
+import {
+  createTrackedLink,
+  getTrackedLinkLibraryByOrg,
+} from "@/lib/repos/trackedLinks.repo";
 import crypto from "crypto";
 import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
 
@@ -66,6 +69,38 @@ export async function createTrackedLinkForRecipient({
     row: trackedLink,
     trackedUrl: `${getAppBaseUrl()}/r/${token}`,
   };
+}
+
+/**
+ * Links já usados pela organização, para o composer os poder escolher em vez
+ * de os escrever outra vez. Chegam do mais recente para o mais antigo; os
+ * que só diferem em espaços juntam-se no mais recente. Um link sem nome ou
+ * com um destino que o envio recusaria não aparece.
+ */
+export async function listReusableTrackedLinks(orgId) {
+  const rows = await getTrackedLinkLibraryByOrg(orgId);
+  const seen = new Set();
+  const items = [];
+
+  for (const row of rows) {
+    const label = String(row?.link_label || "").trim();
+    const destinationUrl = String(row?.destination_url || "").trim();
+
+    if (!label || !isAllowedDestinationUrl(destinationUrl)) continue;
+
+    const identity = `${label}\n${destinationUrl}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+
+    items.push({
+      key: String(row.link_key || "").trim(),
+      label,
+      destinationUrl,
+      lastUsedAt: row.last_used_at || null,
+    });
+  }
+
+  return items;
 }
 
 export async function resolveTrackedLinksForRecipient({

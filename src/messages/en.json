@@ -1451,6 +1451,17 @@
     "chooseTime": "Choose a time between 08:00 and 20:00.",
     "trackedLinks": "Tracked Links",
     "addLink": "Add Link",
+    "linkLibrary": {
+      "title": "Links already used",
+      "search": "Search by name or URL",
+      "use": "Use",
+      "added": "Added",
+      "lastUsed": "Used on {date, date, short}",
+      "loading": "Loading links...",
+      "failed": "Could not load the links already used.",
+      "retry": "Try again",
+      "noMatches": "No link matches your search."
+    },
     "key": "Key",
     "label": "Label",
     "destinationUrl": "Destination URL",
