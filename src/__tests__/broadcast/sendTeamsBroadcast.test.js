@@ -27,7 +27,27 @@ vi.mock("@/lib/repos/user.repo", () => ({
 
 vi.mock("@/lib/repos/trackedLinks.repo", () => ({
   createTrackedLink: vi.fn(),
+}));
+
+vi.mock("@/lib/repos/trackedLinkLibrary.repo", () => ({
   getTrackedLinkLibraryByOrg: vi.fn(),
+}));
+
+/*
+ * No staging, o envio do Teams também regista a mensagem e as perguntas.
+ * Simular já estes repositórios deixa o teste a passar dos dois lados.
+ */
+vi.mock("@/lib/repos/messages.repo", () => ({
+  createMessage: vi.fn(async () => ({ id: 1 })),
+}));
+
+vi.mock("@/lib/repos/questions.repo", () => ({
+  createQuestion: vi.fn(),
+  getQuestionById: vi.fn(),
+}));
+
+vi.mock("@/lib/repos/threads.repo", () => ({
+  getUserThreadForChannel: vi.fn(async () => null),
 }));
 
 /* Só a criação dos links é simulada; a troca no texto é a verdadeira. */

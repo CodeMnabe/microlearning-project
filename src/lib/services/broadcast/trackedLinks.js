@@ -1,9 +1,8 @@
-import {
-  createTrackedLink,
-  getTrackedLinkLibraryByOrg,
-} from "@/lib/repos/trackedLinks.repo";
+import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
+import { getTrackedLinkLibraryByOrg } from "@/lib/repos/trackedLinkLibrary.repo";
 import crypto from "crypto";
 import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
+import { withButtonLinksInText } from "@/lib/whatsapp/linkButton";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -24,8 +23,14 @@ function getAppBaseUrl() {
   return String(base).replace(/\/$/, "");
 }
 
+/*
+ * Troca cada {{link.chave}} pelo URL rastreado. Um link marcado como botão
+ * (`button: true`) que não está no texto vai antes para o fim, com o nome
+ * em Markdown: é o caso do Teams, que não tem os botões do WhatsApp. O
+ * WhatsApp trata o botão à parte e passa os links sem essa marca.
+ */
 export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
-  let out = String(message || "");
+  let out = withButtonLinksInText(message, resolvedLinks, { markdown: true });
 
   for (const link of resolvedLinks) {
     const placeholder = `{{link.${link.key}}}`;

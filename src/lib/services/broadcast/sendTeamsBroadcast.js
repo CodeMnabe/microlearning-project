@@ -16,7 +16,6 @@ import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
-import { withButtonLinksInText } from "@/lib/whatsapp/linkButton";
 
 export async function sendTeamsBroadcast(input = {}) {
   const {
@@ -145,9 +144,7 @@ export async function sendTeamsBroadcast(input = {}) {
 
       const user = await getUserById(userId);
 
-      // Nome, empresa, email e telemóvel, como no WhatsApp. O Teams não tem
-      // os botões de link do WhatsApp: esses links vão no fim do texto,
-      // com o nome.
+      // Nome, empresa, email e telemóvel, como no WhatsApp.
       let text = interpolateBroadcastMessage(
         replaceTrackedPlaceholders(
           withButtonLinksInText(messageText, resolvedTrackedLinks, {

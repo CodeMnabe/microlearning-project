@@ -728,6 +728,11 @@ describe("BroadcastPage", () => {
     it("no Teams, o link entra no texto e deixa enviar só o link", async () => {
       render(<BroadcastPage />);
       await screen.findByText("Pedro Silva");
+
+      /* No staging, o Teams também abre com o menu inicial. */
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
       fireEvent.click(screen.getByText("Pedro Silva"));
 
       createTrackedLink();

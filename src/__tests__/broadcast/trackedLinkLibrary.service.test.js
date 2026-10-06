@@ -6,14 +6,46 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/repos/trackedLinks.repo", () => ({
   createTrackedLink: vi.fn(async (row) => row),
+}));
+
+vi.mock("@/lib/repos/trackedLinkLibrary.repo", () => ({
   getTrackedLinkLibraryByOrg: (...args) =>
     mocks.getTrackedLinkLibraryByOrg(...args),
 }));
 
 import {
   listReusableTrackedLinks,
+  replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "@/lib/services/broadcast/trackedLinks";
+
+describe("replaceTrackedPlaceholders", () => {
+  const GUIA = {
+    key: "guia",
+    label: "Guia",
+    trackedUrl: "https://app.test/r/abc",
+  };
+
+  it("troca o placeholder pelo URL rastreado", () => {
+    expect(replaceTrackedPlaceholders("Vê: {{link.guia}}", [GUIA])).toBe(
+      "Vê: https://app.test/r/abc",
+    );
+  });
+
+  it("põe no fim, com o nome, o link do botão que não está no texto (Teams)", () => {
+    expect(
+      replaceTrackedPlaceholders("Ativa a MFA.", [{ ...GUIA, button: true }]),
+    ).toBe("Ativa a MFA.\n\n[Guia](https://app.test/r/abc)");
+  });
+
+  it("não repete o link do botão quando já está no texto", () => {
+    expect(
+      replaceTrackedPlaceholders("Vê: {{link.guia}}", [
+        { ...GUIA, button: true },
+      ]),
+    ).toBe("Vê: https://app.test/r/abc");
+  });
+});
 
 describe("resolveTrackedLinksForRecipient", () => {
   it("mantém a marca de botão no link resolvido", async () => {

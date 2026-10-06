@@ -525,9 +525,19 @@ export async function sendWhatsappBroadcast(input = {}) {
       createdByUserId,
     });
 
+    /*
+     * No texto só se trocam os placeholders: o link do botão é tratado à
+     * parte (planLinkMessages), por isso vai sem a marca `button`.
+     */
+    const textLinks = resolvedTrackedLinks.map(({ key, label, trackedUrl }) => ({
+      key,
+      label,
+      trackedUrl,
+    }));
+
     const resolveText = (text) =>
       interpolateBroadcastMessage(
-        replaceTrackedPlaceholders(text, resolvedTrackedLinks),
+        replaceTrackedPlaceholders(text, textLinks),
         {
           user,
           org,
