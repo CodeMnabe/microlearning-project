@@ -28,6 +28,7 @@ import {
 import {
   buttonLinkBubbles,
   chooseButtonLink,
+  convertLinksForButton,
   isOnlyTrackedLinks,
 } from "@/lib/whatsapp/linkButton";
 
@@ -315,6 +316,62 @@ export default function BroadcastPage() {
     },
     [chainMode, updateActiveChainStep],
   );
+
+  /* Texto do tipo de mensagem aberto: mensagem livre ou enunciado. */
+  const activeBodyText = isQuizMode
+    ? quiz.body
+    : isSurveyMode
+      ? survey.body
+      : isOpenQuestionMode
+        ? openQuestion.body
+        : chainQuestionKind === "open"
+          ? activeChainStep.openQuestion?.body
+          : chainQuestionKind
+            ? activeChainStep[chainQuestionKind]?.body
+            : composerMessage;
+
+  function setActiveBodyText(text) {
+    if (isQuizMode) return setQuiz((q) => ({ ...q, body: text }));
+    if (isSurveyMode) return setSurvey((s) => ({ ...s, body: text }));
+    if (isOpenQuestionMode) {
+      return setOpenQuestion((q) => ({ ...q, body: text }));
+    }
+
+    if (chainQuestionKind) {
+      const field =
+        chainQuestionKind === "open" ? "openQuestion" : chainQuestionKind;
+
+      return updateActiveChainStep((step) => ({
+        [field]: { ...step[field], body: text },
+      }));
+    }
+
+    return setComposerMessage(text);
+  }
+
+  /*
+   * Ao trocar de canal ou de tipo de mensagem, o link muda de forma: na
+   * mensagem de WhatsApp vai no botão; no Teams, no quiz e na sondagem
+   * volta ao texto, como pastilha. Só converte quando se muda de um lado
+   * para o outro, nunca a meio da escrita.
+   */
+  const lastLinkButtonAllowed = useRef(linkButtonAllowed);
+
+  useEffect(() => {
+    if (lastLinkButtonAllowed.current === linkButtonAllowed) return;
+    lastLinkButtonAllowed.current = linkButtonAllowed;
+
+    const result = convertLinksForButton({
+      text: activeBodyText,
+      links: composerTrackedLinks,
+      buttonAllowed: linkButtonAllowed,
+    });
+
+    if (!result.changed) return;
+
+    setComposerTrackedLinks(result.links);
+    setActiveBodyText(result.text);
+  });
 
   function addChainStep() {
     setChainSteps((prev) => {

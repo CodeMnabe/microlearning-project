@@ -222,6 +222,60 @@ export function followUpBodies(followUps) {
     }));
 }
 
+/**
+ * Muda a forma do link quando se passa entre um sítio com botão de link
+ * (mensagem de WhatsApp) e um sem ele (Teams, quiz, sondagem):
+ * - com botão: o link sai do texto e fica marcado como botão;
+ * - sem botão: perde a marca e volta ao texto, no fim, se lá não estiver.
+ *
+ * Devolve `{ text, links, changed }`; `changed` é false quando o link já
+ * estava na forma certa. Um link ainda sem chave fica como está.
+ */
+export function convertLinksForButton({
+  text = "",
+  links = [],
+  buttonAllowed = false,
+} = {}) {
+  let nextText = String(text || "");
+  let changed = false;
+
+  const nextLinks = (links || []).map((link) => {
+    const key = String(link?.key || "").trim();
+
+    if (!key) return link;
+
+    const placeholder = placeholderFor(key);
+
+    if (buttonAllowed) {
+      if (nextText.includes(placeholder)) {
+        nextText = tidyText(nextText.split(placeholder).join(""));
+        changed = true;
+      }
+
+      if (link.button) return link;
+
+      changed = true;
+      return { ...link, button: true };
+    }
+
+    if (!link.button) return link;
+
+    if (!nextText.includes(placeholder)) {
+      nextText = nextText.trim()
+        ? `${nextText.trimEnd()}\n${placeholder}`
+        : placeholder;
+    }
+
+    changed = true;
+    const textLink = { ...link };
+    delete textLink.button;
+    delete textLink.buttonMessage;
+    return textLink;
+  });
+
+  return { text: nextText, links: nextLinks, changed };
+}
+
 /*
  * Onde não há botões (Teams), os links marcados como botão vão no fim do
  * texto, um por linha, para chegarem na mesma. Em Markdown mostram o nome.

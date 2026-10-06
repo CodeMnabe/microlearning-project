@@ -3,6 +3,7 @@ import {
   LINK_BUTTON_TEXT_MAX_LENGTH,
   buildLinkButtonActions,
   chooseButtonLink,
+  convertLinksForButton,
   followUpBodies,
   isOnlyTrackedLinks,
   linkButtonText,
@@ -216,6 +217,80 @@ describe("followUpBodies", () => {
       ]),
     ).toEqual([]);
     expect(followUpBodies(undefined)).toEqual([]);
+  });
+});
+
+describe("convertLinksForButton", () => {
+  const BOTAO = { ...GUIA, button: true };
+
+  it("ao passar para um sítio com botão, o link sai do texto e vai no botão", () => {
+    expect(
+      convertLinksForButton({
+        text: "Olá {{link.guia}} ",
+        links: [GUIA],
+        buttonAllowed: true,
+      }),
+    ).toEqual({ text: "Olá", links: [BOTAO], changed: true });
+  });
+
+  it("um link que não estava no texto passa a ser o botão", () => {
+    expect(
+      convertLinksForButton({ text: "Olá", links: [GUIA], buttonAllowed: true }),
+    ).toEqual({ text: "Olá", links: [BOTAO], changed: true });
+  });
+
+  it("ao passar para um sítio sem botão, o link volta ao fim do texto", () => {
+    expect(
+      convertLinksForButton({
+        text: "Olá",
+        links: [BOTAO],
+        buttonAllowed: false,
+      }),
+    ).toEqual({ text: "Olá\n{{link.guia}}", links: [GUIA], changed: true });
+  });
+
+  it("com o texto vazio, o texto passa a ser o link", () => {
+    expect(
+      convertLinksForButton({ text: "", links: [BOTAO], buttonAllowed: false })
+        .text,
+    ).toBe("{{link.guia}}");
+  });
+
+  it("não repete o link que já está no texto", () => {
+    expect(
+      convertLinksForButton({
+        text: "Vê {{link.guia}}",
+        links: [BOTAO],
+        buttonAllowed: false,
+      }),
+    ).toEqual({ text: "Vê {{link.guia}}", links: [GUIA], changed: true });
+  });
+
+  it("não muda nada quando o link já está na forma certa", () => {
+    expect(
+      convertLinksForButton({ text: "Olá", links: [BOTAO], buttonAllowed: true })
+        .changed,
+    ).toBe(false);
+    expect(
+      convertLinksForButton({
+        text: "Vê {{link.guia}}",
+        links: [GUIA],
+        buttonAllowed: false,
+      }).changed,
+    ).toBe(false);
+    expect(
+      convertLinksForButton({ text: "Olá", links: [], buttonAllowed: true })
+        .changed,
+    ).toBe(false);
+  });
+
+  it("um link ainda sem chave fica como está até ser preenchido", () => {
+    const draft = { key: "", label: "", destinationUrl: "" };
+
+    expect(
+      convertLinksForButton({ text: "Olá", links: [draft], buttonAllowed: true })
+        .changed,
+    ).toBe(false);
   });
 });
 

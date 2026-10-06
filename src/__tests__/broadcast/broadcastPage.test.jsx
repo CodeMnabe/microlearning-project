@@ -725,6 +725,57 @@ describe("BroadcastPage", () => {
       expect(send).toBeEnabled();
     });
 
+    it("ao trocar do Teams para o WhatsApp, o link sai do texto e vai no botão", async () => {
+      render(<BroadcastPage />);
+      await screen.findByText("Pedro Silva");
+
+      /* No staging, o Teams também abre com o menu inicial. */
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Olá ",
+      );
+      createTrackedLink();
+      pickFromPlusMenu("Link: Guia");
+
+      fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
+
+      /* No staging, a mensagem aberta continua aberta ao trocar de canal. */
+      const blankOnWhatsapp = screen.queryByText("Broadcast.start.blank");
+      if (blankOnWhatsapp) fireEvent.click(blankOnWhatsapp);
+
+      const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
+      expect(editor.querySelector("[data-token]")).toBeNull();
+      expect(editor).toHaveTextContent("Olá");
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "Guia",
+      );
+    });
+
+    it("ao trocar do WhatsApp para o Teams, o link volta ao texto", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Olá",
+      );
+      createTrackedLink();
+      expect(screen.getByTestId("link-button-preview")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
+      const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
+      expect(editor.querySelector("[data-token]")).toHaveTextContent(
+        "Link: Guia",
+      );
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+    });
+
     it("no Teams, o link entra no texto e deixa enviar só o link", async () => {
       render(<BroadcastPage />);
       await screen.findByText("Pedro Silva");
