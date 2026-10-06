@@ -101,6 +101,15 @@ export function sanitizeTrackedKey(value = "") {
     .replace(/[^a-z0-9_-]/g, "");
 }
 
+/* Campos de botão de um link: a marca e, se escrito, o texto do balão. */
+export function buttonFieldsOf(link) {
+  if (!link?.button) return {};
+
+  const buttonMessage = String(link.buttonMessage || "").trim();
+
+  return { button: true, ...(buttonMessage ? { buttonMessage } : {}) };
+}
+
 /* O mesmo link é o mesmo nome com o mesmo destino; a chave pode mudar. */
 export function isSameTrackedLink(a, b) {
   return (

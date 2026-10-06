@@ -6,7 +6,7 @@ import WhatsAppPhone, {
 
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
-import LinkButtonPreview from "./LinkButtonPreview";
+import LinkButtonPreview, { LinkBubblesPreview } from "./LinkButtonPreview";
 import { PlusMenuBar } from "./PlusMenu";
 import { SuggestBubble } from "./SuggestInPhone";
 import TokenTextEditor from "./TokenTextEditor";
@@ -76,13 +76,21 @@ export default function QuestionPhone({
           </div>
         </WhatsAppBubble>
 
-        {/* Só a pergunta aberta: quiz e sondagem já têm botões de resposta. */}
+        {/* Botão só na pergunta aberta: quiz e sondagem têm as opções. */}
         <LinkButtonPreview
-          linkButton={tools?.linkButton}
+          linkButton={tools?.linkPreview?.button}
+          onRemove={tools?.onRemoveLink}
           translation={translation}
         />
 
         {children}
+
+        <LinkBubblesPreview
+          bubbles={tools?.linkPreview?.bubbles}
+          time={previewTime}
+          onRemove={tools?.onRemoveLink}
+          translation={translation}
+        />
       </WhatsAppPhone>
     </div>
   );

@@ -25,7 +25,11 @@ import {
   makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
-import { isOnlyTrackedLinks, pickLinkButton } from "@/lib/whatsapp/linkButton";
+import {
+  buttonLinkBubbles,
+  chooseButtonLink,
+  isOnlyTrackedLinks,
+} from "@/lib/whatsapp/linkButton";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -42,12 +46,13 @@ import GroupsPanel from "./components/recipients/GroupsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 import MediaPickerModal from "./components/MediaPickerModal";
 
-import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
+import { COMPANY_KEYS, MAX_TRACKED_LINKS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
 import useTrackedLinkLibrary from "./hooks/useTrackedLinkLibrary";
 import {
   asList,
   buildInitialScheduledDate,
+  buttonFieldsOf,
   formatHour,
   formatMinute,
   guessContentTypeFromName,
@@ -223,6 +228,21 @@ export default function BroadcastPage() {
   const composerTrackedLinks = chainMode
     ? activeChainStepTrackedLinks
     : trackedLinks;
+
+  const activeQuestionKind = isQuizMode
+    ? "quiz"
+    : isSurveyMode
+      ? "survey"
+      : isOpenQuestionMode
+        ? "open"
+        : chainQuestionKind;
+
+  /*
+   * No WhatsApp, o link vai num botão e não entra no texto. Quiz e
+   * sondagem já têm botões de resposta, e o Teams não tem este botão: aí o
+   * link entra no texto, como pastilha.
+   */
+  const linkButtonAllowed = isWhatsapp && !hasReplyButtons(activeQuestionKind);
 
   const updateActiveChainStep = useCallback(
     (patchOrUpdater) => {
@@ -450,6 +470,7 @@ export default function BroadcastPage() {
           key: sanitizeTrackedKey(l.key),
           label: String(l.label || "").trim(),
           destinationUrl: String(l.destinationUrl || "").trim(),
+          ...buttonFieldsOf(l),
         }))
         .filter((l) => l.key && l.label && l.destinationUrl),
     [composerTrackedLinks],
@@ -627,7 +648,9 @@ export default function BroadcastPage() {
     if (!term) return teamsGroups;
 
     return teamsGroups.filter((group) =>
-      String(group.name || "").toLowerCase().includes(term),
+      String(group.name || "")
+        .toLowerCase()
+        .includes(term),
     );
   }, [teamsGroups, groupQuery]);
 
@@ -803,20 +826,42 @@ export default function BroadcastPage() {
     setComposerFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
+  /*
+   * Um só link por mensagem (MAX_TRACKED_LINKS): o painel desativa os
+   * botões e estas funções não deixam passar do limite.
+   */
+  const trackedLinksFull = composerTrackedLinks.length >= MAX_TRACKED_LINKS;
+
+  /* No WhatsApp, o link novo passa a ser o botão. */
   function addTrackedLink() {
-    setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
+    if (trackedLinksFull) return;
+
+    const draft = makeTrackedLinkDraft();
+
+    setComposerTrackedLinks((prev) => [
+      ...prev,
+      linkButtonAllowed ? { ...draft, button: true } : draft,
+    ]);
   }
 
   /*
-   * Um link já usado entra na mensagem e logo no balão, onde estava o
-   * cursor. Só entra uma vez na mesma mensagem.
+   * Um link já usado entra na mensagem: no WhatsApp, como botão; fora
+   * dele, logo no balão, onde estava o cursor.
    */
   function addTrackedLinkFromLibrary(item) {
-    if (composerTrackedLinks.some((link) => isSameTrackedLink(link, item))) {
+    if (
+      trackedLinksFull ||
+      composerTrackedLinks.some((link) => isSameTrackedLink(link, item))
+    ) {
       return;
     }
 
     const draft = makeTrackedLinkFromLibrary(item, composerTrackedLinks);
+
+    if (linkButtonAllowed) {
+      setComposerTrackedLinks((prev) => [...prev, { ...draft, button: true }]);
+      return;
+    }
 
     setComposerTrackedLinks((prev) => [...prev, draft]);
 
@@ -1025,13 +1070,15 @@ export default function BroadcastPage() {
               kind: "company",
               label: translation("Broadcast.composer.variableCompany"),
             },
-            ...normalizedTrackedLinks.map((l) => ({
-              key: `link.${l.key}`,
-              kind: "link",
-              label: `Link: ${l.label}`,
-            })),
+            ...normalizedTrackedLinks
+              .filter((l) => !(linkButtonAllowed && l.button))
+              .map((l) => ({
+                key: `link.${l.key}`,
+                kind: "link",
+                label: `Link: ${l.label}`,
+              })),
           ],
-    [isGroupAudience, normalizedTrackedLinks, translation],
+    [isGroupAudience, linkButtonAllowed, normalizedTrackedLinks, translation],
   );
 
   function insertToken(key) {
@@ -1063,32 +1110,45 @@ export default function BroadcastPage() {
     enabled: activeToolPanel === "links",
   });
 
-  /*
-   * No WhatsApp, o primeiro link rastreado do texto vai num botão por baixo
-   * do balão. A pré-visualização usa a mesma regra do envio.
-   */
-  const activeQuestionKind = isQuizMode
-    ? "quiz"
-    : isSurveyMode
-      ? "survey"
-      : isOpenQuestionMode
-        ? "open"
-        : chainQuestionKind;
-
   const activeBody = isOpenQuestionMode
     ? openQuestion.body
     : chainQuestionKind === "open"
       ? activeChainStep.openQuestion?.body
       : composerMessage;
 
-  const linkButton = isWhatsapp
-    ? pickLinkButton({
-        message: activeBody,
-        trackedLinks: normalizedTrackedLinks,
-        hasReplyButtons: hasReplyButtons(activeQuestionKind),
-        hasImages: imageFiles.length > 0,
-      })
+  /*
+   * Pré-visualização do link, com as regras do envio (planLinkMessages):
+   * o botão por baixo da mensagem, que aparece mesmo sem texto para se ver
+   * logo (o envio é que fica à espera do texto). Com imagem ou num quiz, a
+   * mensagem não leva o botão e o link segue num balão à parte. No Teams
+   * não há botões: avisa que o link vai no fim do texto.
+   */
+  const buttonCanGo = linkButtonAllowed && imageFiles.length === 0;
+  const buttonChoice = buttonCanGo
+    ? chooseButtonLink(activeBody, composerTrackedLinks)
     : null;
+  const allBubbles = buttonLinkBubbles(composerTrackedLinks);
+
+  const linkPreview = {
+    button: buttonChoice
+      ? {
+          id: buttonChoice.link.button ? buttonChoice.link.id : null,
+          buttonText: buttonChoice.buttonText,
+        }
+      : null,
+    bubbles: isWhatsapp
+      ? allBubbles
+          .filter((bubble) => bubble.link !== buttonChoice?.link)
+          .map((bubble) => ({
+            id: bubble.link.id,
+            buttonText: bubble.buttonText,
+            text: bubble.text,
+          }))
+      : [],
+    inTextLabels: isWhatsapp
+      ? []
+      : allBubbles.map((bubble) => String(bubble.link.label).trim()),
+  };
 
   /*
    * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
@@ -1110,7 +1170,8 @@ export default function BroadcastPage() {
     onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
-    linkButton,
+    linkPreview,
+    onRemoveLink: removeTrackedLink,
   };
 
   /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
@@ -1127,6 +1188,7 @@ export default function BroadcastPage() {
         key: sanitizeTrackedKey(link.key),
         label: String(link.label || "").trim(),
         destinationUrl: String(link.destinationUrl || "").trim(),
+        ...buttonFieldsOf(link),
       }))
       .filter((link) => link.key && link.label && link.destinationUrl);
   }
@@ -1158,24 +1220,33 @@ export default function BroadcastPage() {
   function chainStepHasContent(step) {
     if (step.kind === "quiz") return isQuizValid(step.quiz);
     if (step.kind === "survey") return isSurveyValid(step.survey);
-    if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
+    if (step.kind === "open")
+      return !normalizeOpenQuestion(step.openQuestion).error;
 
     const message = String(step.message || "");
     const files = Array.isArray(step.files) ? step.files : [];
 
     return (
       (message.trim().length > 0 || files.length > 0) &&
-      !needsTextBesideLinks(message, files)
+      !needsTextBesideLinks(message, files, step.trackedLinks)
     );
   }
 
   /*
    * No WhatsApp o link vai num botão, e uma mensagem com botão precisa de
-   * texto: só links, sem anexos, não se envia. No Teams o link aparece com
-   * o nome e fica bem sozinho; com um anexo, o link segue no texto.
+   * texto: só links (no texto ou no botão), sem anexos, não se envia. No
+   * Teams o link aparece com o nome e fica bem sozinho; com um anexo, o
+   * link segue no texto.
    */
-  function needsTextBesideLinks(message, files = []) {
-    return isWhatsapp && files.length === 0 && isOnlyTrackedLinks(message);
+  function needsTextBesideLinks(message, files = [], links = []) {
+    if (!isWhatsapp || files.length > 0) return false;
+
+    const text = String(message || "");
+
+    return (
+      isOnlyTrackedLinks(text) ||
+      (!text.trim() && (links || []).some((link) => link.button))
+    );
   }
 
   /*
@@ -1315,14 +1386,18 @@ export default function BroadcastPage() {
     !isOpenQuestionMode &&
     !isQuizMode &&
     !chainQuestionKind &&
-    needsTextBesideLinks(composerMessage, composerFiles);
+    needsTextBesideLinks(composerMessage, composerFiles, composerTrackedLinks);
 
   /* Numa corrente, o aviso diz qual é o passo que só tem links. */
   const chainStepNeedingText = chainMode
     ? chainSteps.findIndex(
         (step) =>
           (step.kind || "message") === "message" &&
-          needsTextBesideLinks(step.message, step.files || []),
+          needsTextBesideLinks(
+            step.message,
+            step.files || [],
+            step.trackedLinks,
+          ),
       )
     : -1;
 
@@ -2390,6 +2465,7 @@ export default function BroadcastPage() {
         removeTrackedLink={removeTrackedLink}
         library={trackedLinkLibrary}
         onUseLibraryLink={addTrackedLinkFromLibrary}
+        bubbleLinkIds={linkPreview.bubbles.map((bubble) => bubble.id)}
         translation={translation}
       />
     ) : null;

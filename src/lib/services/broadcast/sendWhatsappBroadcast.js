@@ -20,7 +20,8 @@ import {
 import {
   LINK_BUTTON_BODY_MAX_LENGTH,
   buildLinkButtonActions,
-  pickLinkButton,
+  buttonLinkBubbles,
+  planLinkMessages,
 } from "@/lib/whatsapp/linkButton";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import { parseQuestionOptions } from "./questionOptions";
@@ -205,6 +206,38 @@ async function sendFreeform({
     data,
     providerMessageId: extractBirdMessageId(data),
   };
+}
+
+/*
+ * Balões à parte de uma mensagem com vários links, cada um com o seu
+ * botão. Seguem por ordem, à espera da resposta do Bird entre um e outro;
+ * um balão que falhe não impede os seguintes.
+ */
+async function sendFollowUps({ endpoint, accessKey, contact, followUps }) {
+  const results = [];
+
+  for (const followUp of followUps) {
+    const r = await sendFreeform({
+      endpoint,
+      accessKey,
+      contact,
+      message: followUp.message,
+      imageUrls: [],
+      actions: followUp.actions,
+    });
+
+    if (!r.ok) {
+      console.warn("[WA follow-up failed]", { status: r.status, data: r.data });
+    }
+
+    results.push({
+      ok: r.ok,
+      status: r.status,
+      providerMessageId: r.providerMessageId,
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -502,33 +535,47 @@ export async function sendWhatsappBroadcast(input = {}) {
         },
       );
 
-    let resolvedMessage = resolveText(messageText);
-
     /*
-     * O primeiro link rastreado do texto vai num botão, sem o URL à vista.
-     * Um corpo acima do limite de uma mensagem com botão leva o link no
-     * texto, como antes.
+     * Os links dos botões vão em botões, sem o URL à vista: o primeiro na
+     * mensagem, os outros em balões à parte, logo a seguir (o WhatsApp só
+     * deixa um botão de link por mensagem).
      */
-    let linkActions = null;
-
-    const linkButton = pickLinkButton({
+    const plan = planLinkMessages({
       message: messageText,
       trackedLinks: resolvedTrackedLinks,
       hasReplyButtons: Boolean(withButtons),
       hasImages: onlyImageUrls.length > 0,
     });
 
-    if (linkButton) {
-      const messageWithoutLink = resolveText(linkButton.message);
+    let resolvedMessage = resolveText(plan.message);
+    let linkActions = plan.button
+      ? buildLinkButtonActions(
+          plan.button.buttonText,
+          plan.button.link.trackedUrl,
+        )
+      : null;
+    let linkBubbles = plan.extras;
 
-      if (messageWithoutLink.length <= LINK_BUTTON_BODY_MAX_LENGTH) {
-        resolvedMessage = messageWithoutLink;
-        linkActions = buildLinkButtonActions(
-          linkButton.buttonText,
-          linkButton.link.trackedUrl,
-        );
-      }
+    /*
+     * Um corpo acima do limite de uma mensagem com botão vai sem botão: o
+     * link do botão segue num balão à parte e um link antigo, que estava no
+     * texto, volta para o texto.
+     */
+    if (linkActions && resolvedMessage.length > LINK_BUTTON_BODY_MAX_LENGTH) {
+      resolvedMessage = resolveText(messageText);
+      linkActions = null;
+      linkBubbles = plan.button.link.button
+        ? buttonLinkBubbles(resolvedTrackedLinks)
+        : plan.extras;
     }
+
+    const followUps = linkBubbles.map((bubble) => ({
+      message: resolveText(bubble.text),
+      actions: buildLinkButtonActions(
+        bubble.buttonText,
+        bubble.link.trackedUrl,
+      ),
+    }));
 
     /* Quiz e sondagem têm botões de resposta; os outros, talvez o do link. */
     const actions = quizActions || linkActions;
@@ -550,6 +597,16 @@ export async function sendWhatsappBroadcast(input = {}) {
         imageUrls: onlyImageUrls,
         actions,
       });
+
+      /* Os balões à parte só saem depois da mensagem, e um de cada vez. */
+      const followUpResults = r.ok
+        ? await sendFollowUps({
+            endpoint: messagesEndpoint,
+            accessKey,
+            contact,
+            followUps,
+          })
+        : [];
 
       /*
        * Regista a mensagem da pergunta. Numa cadeia de leitura é o passo
@@ -596,6 +653,7 @@ export async function sendWhatsappBroadcast(input = {}) {
         resolvedMessage,
         questionId: questionRow?.id ?? null,
         ...r,
+        ...(followUpResults.length ? { followUps: followUpResults } : {}),
       };
     }
 
@@ -672,6 +730,8 @@ export async function sendWhatsappBroadcast(input = {}) {
             : {}),
           /* A entrega em espera envia o que estiver em `actions`. */
           ...(linkActions ? { actions: linkActions } : {}),
+          /* E depois os balões à parte, pela mesma ordem. */
+          ...(followUps.length ? { followUps } : {}),
         },
         expiresAt,
         templateMessageId,

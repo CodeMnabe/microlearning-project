@@ -466,60 +466,139 @@ describe("BroadcastPage", () => {
     expect(lastPostTo("/api/broadcast/whatsapp").openingOnly).toBeUndefined();
   });
 
-  it("Usar num link já usado põe-no logo no balão", async () => {
-    const baseFetch = mocks.fetch.getMockImplementation();
-    mocks.fetch.mockImplementation((input, init = {}) => {
-      const url = typeof input === "string" ? input : input.url;
-      if (url.startsWith("/api/tracked-links/library")) {
-        return makeResponse({
-          items: [
-            {
-              key: "ola",
-              label: "ola",
-              destinationUrl: "https://www.digik.pt/pt/",
-              lastUsedAt: "2026-10-02T16:58:59Z",
-            },
-          ],
-        });
-      }
-      return baseFetch(input, init);
+  describe("link como botão", () => {
+    const OLA = {
+      key: "ola",
+      label: "ola",
+      destinationUrl: "https://www.digik.pt/pt/",
+      lastUsedAt: "2026-10-02T16:58:59Z",
+    };
+    const GUIA = {
+      key: "guia",
+      label: "guia",
+      destinationUrl: "https://www.digik.pt/guia/",
+      lastUsedAt: "2026-10-01T10:00:00Z",
+    };
+
+    function mockLibrary(items) {
+      const baseFetch = mocks.fetch.getMockImplementation();
+      mocks.fetch.mockImplementation((input, init = {}) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.startsWith("/api/tracked-links/library")) {
+          return makeResponse({ items });
+        }
+        return baseFetch(input, init);
+      });
+    }
+
+    it("Usar põe o link no botão e não deixa juntar outro até o tirar", async () => {
+      mockLibrary([OLA, GUIA]);
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+
+      const editor = screen.getByRole("textbox", {
+        name: "Broadcast.message",
+      });
+      typeInEditor(editor, "Boas, tudo bem?");
+
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      const [useOla] = await screen.findAllByRole("button", {
+        name: "Broadcast.linkLibrary.use",
+      });
+      fireEvent.click(useOla);
+
+      /* O link vai no botão; o texto não muda. */
+      expect(editor.querySelector("[data-token]")).toBeNull();
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "ola",
+      );
+
+      /* Um só link por mensagem: o resto fica desativado, com o porquê. */
+      expect(
+        screen.getByRole("button", { name: "Broadcast.linkLibrary.use" }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      ).toBeDisabled();
+      expect(screen.getByText("Broadcast.linkLimitHint")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Pedro Silva"));
+      fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+      await waitFor(() => {
+        expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+      });
+
+      expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
+        message: "Boas, tudo bem?",
+        trackedLinks: [
+          {
+            key: "ola",
+            label: "ola",
+            destinationUrl: OLA.destinationUrl,
+            button: true,
+          },
+        ],
+      });
+      expect(lastPostTo("/api/broadcast/whatsapp").trackedLinks).toHaveLength(
+        1,
+      );
     });
 
-    await openWhatsapp();
-    fireEvent.click(screen.getByText("Broadcast.start.blank"));
+    it("o x no botão tira o link da mensagem", async () => {
+      mockLibrary([OLA]);
 
-    const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
-    typeInEditor(editor, "Vê o guia: ");
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.linkLibrary.use",
+        }),
+      );
 
-    pickFromPlusMenu("Broadcast.composer.addLink");
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Broadcast.linkLibrary.use" }),
-    );
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.composer.linkButtonRemove",
+        }),
+      );
 
-    /* A pastilha mostra o nome do link, não o placeholder. */
-    expect(editor.querySelector("[data-token]")).toHaveTextContent(
-      "Link: ola",
-    );
-    expect(editor).not.toHaveTextContent("{{link.ola}}");
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
 
-    fireEvent.click(screen.getByText("Pedro Silva"));
-    fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
-
-    await waitFor(() => {
-      expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+      /* Sem link na mensagem, volta a dar para escolher ou criar um. */
+      expect(
+        screen.getByRole("button", { name: "Broadcast.linkLibrary.use" }),
+      ).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      ).toBeEnabled();
     });
 
-    expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
-      message: "Vê o guia: {{link.ola}} ",
-      trackedLinks: [
-        { key: "ola", label: "ola", destinationUrl: "https://www.digik.pt/pt/" },
-      ],
+    it("no quiz, Usar põe o link no texto", async () => {
+      mockLibrary([OLA]);
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByTestId("start-card-quiz"));
+      const body = await screen.findByLabelText("Broadcast.composer.quizBody");
+
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.linkLibrary.use",
+        }),
+      );
+
+      expect(body.querySelector("[data-token]")).toHaveTextContent(
+        "Link: ola",
+      );
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
     });
   });
 
   describe("mensagem só com link", () => {
-    /* Cria o link no painel e põe-no no balão como pastilha. */
-    function insertTrackedLink() {
+    /* Cria um link novo no painel; no WhatsApp passa a ser o botão. */
+    function createTrackedLink() {
       pickFromPlusMenu("Broadcast.composer.addLink");
       fireEvent.click(
         screen.getByRole("button", { name: "Broadcast.addLink" }),
@@ -534,15 +613,18 @@ describe("BroadcastPage", () => {
         screen.getByPlaceholderText("https://example.com/course/123"),
         { target: { value: "https://x.test/guia" } },
       );
-      pickFromPlusMenu("Link: Guia");
     }
 
-    it("no WhatsApp, não deixa enviar sem texto e explica porquê", async () => {
+    it("no WhatsApp, um link novo vai no botão e pede texto", async () => {
       await openWhatsapp();
       fireEvent.click(screen.getByText("Broadcast.start.blank"));
       fireEvent.click(screen.getByText("Pedro Silva"));
 
-      insertTrackedLink();
+      createTrackedLink();
+
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "Guia",
+      );
 
       const send = screen.getByRole("button", { name: "Broadcast.send" });
       expect(send).toBeDisabled();
@@ -561,12 +643,12 @@ describe("BroadcastPage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("no WhatsApp, deixa enviar o link com uma imagem", async () => {
+    it("no WhatsApp, com uma imagem deixa enviar e o link segue num balão à parte", async () => {
       await openWhatsapp();
       fireEvent.click(screen.getByText("Broadcast.start.blank"));
       fireEvent.click(screen.getByText("Pedro Silva"));
 
-      insertTrackedLink();
+      createTrackedLink();
       fireEvent.change(screen.getByTestId("file-input"), {
         target: {
           files: [new File(["x"], "foto.png", { type: "image/png" })],
@@ -577,6 +659,10 @@ describe("BroadcastPage", () => {
       expect(
         screen.getByRole("button", { name: "Broadcast.send" }),
       ).toBeEnabled();
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+      expect(screen.getByTestId("link-bubble-preview")).toHaveTextContent(
+        "Guia",
+      );
     });
 
     it("numa corrente, diz qual é o passo que só tem o link", async () => {
@@ -608,7 +694,7 @@ describe("BroadcastPage", () => {
           name: "Broadcast.broadcastChain.chainMessage 2",
         }),
       );
-      insertTrackedLink();
+      createTrackedLink();
 
       const send = screen.getByRole("button", { name: "Broadcast.send" });
       expect(send).toBeDisabled();
@@ -639,12 +725,15 @@ describe("BroadcastPage", () => {
       expect(send).toBeEnabled();
     });
 
-    it("no Teams, deixa enviar só o link", async () => {
+    it("no Teams, o link entra no texto e deixa enviar só o link", async () => {
       render(<BroadcastPage />);
       await screen.findByText("Pedro Silva");
       fireEvent.click(screen.getByText("Pedro Silva"));
 
-      insertTrackedLink();
+      createTrackedLink();
+      pickFromPlusMenu("Link: Guia");
+
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
 
       expect(
         screen.getByRole("button", { name: "Broadcast.send" }),

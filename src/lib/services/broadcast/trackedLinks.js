@@ -103,6 +103,12 @@ export async function listReusableTrackedLinks(orgId) {
   return items;
 }
 
+function buttonFields(link) {
+  const buttonMessage = String(link?.buttonMessage || "").trim();
+
+  return { button: true, ...(buttonMessage ? { buttonMessage } : {}) };
+}
+
 export async function resolveTrackedLinksForRecipient({
   trackedLinks = [],
   orgId,
@@ -138,6 +144,11 @@ export async function resolveTrackedLinksForRecipient({
       label,
       destinationUrl,
       trackedUrl,
+      /*
+       * Link de um botão no WhatsApp; não precisa de estar no texto. Do
+       * segundo em diante, segue num balão à parte com `buttonMessage`.
+       */
+      ...(link.button === true ? buttonFields(link) : {}),
     });
   }
 

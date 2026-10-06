@@ -548,6 +548,184 @@ describe("sendWhatsappBroadcast", () => {
       });
     });
 
+    describe("link marcado como botão, fora do texto", () => {
+      const BOTAO = { ...GUIA, button: true };
+
+      beforeEach(() => {
+        mocks.resolveTrackedLinks.mockResolvedValue([BOTAO]);
+      });
+
+      it("vai no botão e o texto fica como está", async () => {
+        mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+        await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Olá {{nome}}, ativa hoje a MFA.",
+          trackedLinks: [BOTAO],
+          recipients: [{ userId: 42 }],
+        });
+
+        expect(birdCall().body.body).toEqual({
+          type: "text",
+          text: {
+            text: "Olá Pedro, ativa hoje a MFA.",
+            actions: LINK_ACTIONS,
+          },
+        });
+      });
+
+      it("guarda o botão na mensagem em espera", async () => {
+        await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Ativa hoje a MFA.",
+          trackedLinks: [BOTAO],
+          recipients: [{ userId: 42 }],
+        });
+
+        expect(mocks.createPendingOutreach.mock.calls[0][0].payload).toEqual({
+          message: "Ativa hoje a MFA.",
+          imageUrls: [],
+          actions: LINK_ACTIONS,
+        });
+      });
+
+      it("numa mensagem com imagem, segue num balão à parte", async () => {
+        mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+        await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Vê a imagem.",
+          imageUrls: ["https://x/img.png"],
+          trackedLinks: [BOTAO],
+          recipients: [{ userId: 42 }],
+        });
+
+        expect(mocks.fetch).toHaveBeenCalledTimes(2);
+        expect(birdCall(0).body.body.image).toEqual({
+          images: [{ mediaUrl: "https://x/img.png" }],
+          text: "Vê a imagem.",
+        });
+        expect(birdCall(1).body.body).toEqual({
+          type: "text",
+          text: { text: "Guia passo a passo", actions: LINK_ACTIONS },
+        });
+      });
+
+      it("num quiz, segue num balão à parte depois da pergunta", async () => {
+        mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+        await sendWhatsappBroadcast({
+          orgId: 1,
+          trackedLinks: [BOTAO],
+          recipients: [{ userId: 42 }],
+          question: {
+            kind: "quiz",
+            body: "Leste o guia?",
+            options: [
+              { label: "Sim", correct: true },
+              { label: "Não", correct: false },
+            ],
+            feedbackCorrect: "",
+            feedbackIncorrect: "",
+          },
+        });
+
+        expect(birdCall(0).body.body.text.text).toBe("Leste o guia?");
+        expect(birdCall(1).body.body).toEqual({
+          type: "text",
+          text: { text: "Guia passo a passo", actions: LINK_ACTIONS },
+        });
+      });
+    });
+
+    describe("mais do que um link", () => {
+      const CURSO = {
+        key: "curso",
+        label: "Curso Excel",
+        destinationUrl: "https://exemplo.pt/excel",
+        trackedUrl: "https://www.mydigitalbot.com/r/def",
+        button: true,
+        buttonMessage: "Já viste a formação de {{nome}}?",
+      };
+      const CURSO_ACTIONS = [
+        { type: "link", link: { text: "Curso Excel", url: CURSO.trackedUrl } },
+      ];
+
+      beforeEach(() => {
+        mocks.resolveTrackedLinks.mockResolvedValue([
+          { ...GUIA, button: true },
+          CURSO,
+        ]);
+      });
+
+      it("com a janela aberta, envia a mensagem e a seguir um balão por link", async () => {
+        mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+        const result = await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Boas {{nome}}, tudo bem?",
+          trackedLinks: [{ ...GUIA, button: true }, CURSO],
+          recipients: [{ userId: 42 }],
+        });
+
+        expect(result.ok).toBe(1);
+        expect(mocks.fetch).toHaveBeenCalledTimes(2);
+        expect(birdCall(0).body.body).toEqual({
+          type: "text",
+          text: { text: "Boas Pedro, tudo bem?", actions: LINK_ACTIONS },
+        });
+        expect(birdCall(1).body.body).toEqual({
+          type: "text",
+          text: {
+            text: "Já viste a formação de Pedro?",
+            actions: CURSO_ACTIONS,
+          },
+        });
+      });
+
+      it("com a janela fechada, guarda os balões com a mensagem em espera", async () => {
+        await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Boas {{nome}}, tudo bem?",
+          trackedLinks: [{ ...GUIA, button: true }, CURSO],
+          recipients: [{ userId: 42 }],
+        });
+
+        /* Só o template sai agora; os balões esperam pela resposta. */
+        expect(mocks.fetch).toHaveBeenCalledTimes(1);
+        expect(mocks.createPendingOutreach.mock.calls[0][0].payload).toEqual({
+          message: "Boas Pedro, tudo bem?",
+          imageUrls: [],
+          actions: LINK_ACTIONS,
+          followUps: [
+            {
+              message: "Já viste a formação de Pedro?",
+              actions: CURSO_ACTIONS,
+            },
+          ],
+        });
+      });
+
+      it("não envia os balões quando a mensagem principal falha", async () => {
+        mocks.isWindowOpenForUser.mockResolvedValue(true);
+        mocks.fetch.mockResolvedValueOnce({
+          ok: false,
+          status: 422,
+          json: async () => ({ error: "invalid" }),
+        });
+
+        const result = await sendWhatsappBroadcast({
+          orgId: 1,
+          message: "Boas!",
+          trackedLinks: [{ ...GUIA, button: true }, CURSO],
+          recipients: [{ userId: 42 }],
+        });
+
+        expect(result.ok).toBe(0);
+        expect(mocks.fetch).toHaveBeenCalledTimes(1);
+      });
+    });
+
     it("deixa o link no texto quando o corpo passa o limite de uma mensagem com botão", async () => {
       mocks.isWindowOpenForUser.mockResolvedValue(true);
 
@@ -561,6 +739,27 @@ describe("sendWhatsappBroadcast", () => {
       const { text } = birdCall().body.body;
       expect(text.actions).toBeUndefined();
       expect(text.text.endsWith(GUIA.trackedUrl)).toBe(true);
+    });
+
+    it("um link do botão com o corpo acima do limite segue num balão à parte", async () => {
+      mocks.isWindowOpenForUser.mockResolvedValue(true);
+      mocks.resolveTrackedLinks.mockResolvedValue([{ ...GUIA, button: true }]);
+
+      await sendWhatsappBroadcast({
+        orgId: 1,
+        message: "a".repeat(1100),
+        trackedLinks: [{ ...GUIA, button: true }],
+        recipients: [{ userId: 42 }],
+      });
+
+      expect(birdCall(0).body.body).toEqual({
+        type: "text",
+        text: { text: "a".repeat(1100) },
+      });
+      expect(birdCall(1).body.body).toEqual({
+        type: "text",
+        text: { text: "Guia passo a passo", actions: LINK_ACTIONS },
+      });
     });
   });
 });

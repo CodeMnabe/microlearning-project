@@ -5,12 +5,47 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/repos/trackedLinks.repo", () => ({
-  createTrackedLink: vi.fn(),
+  createTrackedLink: vi.fn(async (row) => row),
   getTrackedLinkLibraryByOrg: (...args) =>
     mocks.getTrackedLinkLibraryByOrg(...args),
 }));
 
-import { listReusableTrackedLinks } from "@/lib/services/broadcast/trackedLinks";
+import {
+  listReusableTrackedLinks,
+  resolveTrackedLinksForRecipient,
+} from "@/lib/services/broadcast/trackedLinks";
+
+describe("resolveTrackedLinksForRecipient", () => {
+  it("mantém a marca de botão no link resolvido", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://app.test");
+
+    const [botao, texto] = await resolveTrackedLinksForRecipient({
+      orgId: 7,
+      channel: "whatsapp",
+      trackedLinks: [
+        {
+          key: "guia",
+          label: "Guia",
+          destinationUrl: "https://x.pt/guia",
+          button: true,
+          buttonMessage: "  Já leste o guia?  ",
+        },
+        { key: "curso", label: "Curso", destinationUrl: "https://x.pt/curso" },
+      ],
+    });
+
+    expect(botao).toMatchObject({
+      key: "guia",
+      button: true,
+      buttonMessage: "Já leste o guia?",
+    });
+    expect(botao.trackedUrl).toMatch(/^https:\/\/app\.test\/r\//);
+    expect(texto.button).toBeUndefined();
+    expect(texto.buttonMessage).toBeUndefined();
+
+    vi.unstubAllEnvs();
+  });
+});
 
 function row(overrides = {}) {
   return {

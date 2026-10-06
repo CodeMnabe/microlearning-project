@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { LINK_BUTTON_BODY_MAX_LENGTH } from "@/lib/whatsapp/linkButton";
 
 import styles from "../../broadcast.module.css";
+import { MAX_TRACKED_LINKS } from "../../lib/constants";
 import {
   filterTrackedLinkLibrary,
   isSameTrackedLink,
@@ -12,7 +14,7 @@ import {
  * Links já usados noutros envios, para escolher em vez de escrever outra
  * vez. Sem nenhum link usado, a secção não aparece.
  */
-function LinkLibrary({ library, trackedLinks, onUse, translation }) {
+function LinkLibrary({ library, trackedLinks, full, onUse, translation }) {
   const [query, setQuery] = useState("");
   const items = library?.items || [];
 
@@ -89,7 +91,7 @@ function LinkLibrary({ library, trackedLinks, onUse, translation }) {
 
                   <button
                     type="button"
-                    disabled={added}
+                    disabled={added || full}
                     onClick={() => onUse(item)}
                     className={styles.kbdBtn}
                   >
@@ -123,8 +125,12 @@ export default function TrackedLinksPanel({
   removeTrackedLink,
   library = null,
   onUseLibraryLink,
+  bubbleLinkIds = [],
   translation,
 }) {
+  /* Um só link por mensagem: para trocar, tira-se o atual. */
+  const full = trackedLinks.length >= MAX_TRACKED_LINKS;
+
   return (
     <div className={styles.toolPanelCard}>
       <div className={styles.modalSectionHeader}>
@@ -135,6 +141,7 @@ export default function TrackedLinksPanel({
         <button
           type="button"
           onClick={addTrackedLink}
+          disabled={full}
           className={styles.kbdBtn}
         >
           <Plus size={14} />
@@ -148,9 +155,16 @@ export default function TrackedLinksPanel({
         {translation("Broadcast.addPlaceholders.second")}
       </div>
 
+      {full && (
+        <div className={styles.modalHelpText}>
+          {translation("Broadcast.linkLimitHint")}
+        </div>
+      )}
+
       <LinkLibrary
         library={library}
         trackedLinks={trackedLinks}
+        full={full}
         onUse={onUseLibraryLink}
         translation={translation}
       />
@@ -159,7 +173,18 @@ export default function TrackedLinksPanel({
         {trackedLinks.map((link, index) => (
           <div key={link.id} className={styles.trackedLinkCard}>
             <div className={styles.trackedLinkCardHeader}>
-              <strong>Link {index + 1}</strong>
+              <strong>
+                Link {index + 1}
+                {link.button && (
+                  <span className={styles.linkButtonTag}>
+                    {translation(
+                      bubbleLinkIds.includes(link.id)
+                        ? "Broadcast.linkBubbleTag"
+                        : "Broadcast.linkButtonTag",
+                    )}
+                  </span>
+                )}
+              </strong>
 
               <button
                 type="button"
@@ -198,6 +223,25 @@ export default function TrackedLinksPanel({
                 className={styles.input}
               />
             </div>
+
+            {/* Um link além do primeiro segue num balão à parte, com texto. */}
+            {bubbleLinkIds.includes(link.id) && (
+              <div className={styles.fieldWide}>
+                <label className={styles.smallLabel}>
+                  {translation("Broadcast.linkBubbleText")}
+                </label>
+                <input
+                  value={link.buttonMessage || ""}
+                  onChange={(e) =>
+                    updateTrackedLink(link.id, "buttonMessage", e.target.value)
+                  }
+                  aria-label={translation("Broadcast.linkBubbleText")}
+                  placeholder={link.label || ""}
+                  maxLength={LINK_BUTTON_BODY_MAX_LENGTH}
+                  className={styles.input}
+                />
+              </div>
+            )}
 
             <div className={styles.fieldWide}>
               <label className={styles.smallLabel}>

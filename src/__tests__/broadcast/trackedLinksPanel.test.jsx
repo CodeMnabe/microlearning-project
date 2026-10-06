@@ -72,6 +72,29 @@ describe("TrackedLinksPanel: links já usados", () => {
     ).toHaveLength(1);
   });
 
+  it("com um link na mensagem, não deixa juntar outro e explica porquê", () => {
+    renderPanel({
+      trackedLinks: [{ id: "1", key: "guia", ...GUIA }],
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Broadcast.addLink" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Broadcast.linkLibrary.use" }),
+    ).toBeDisabled();
+    expect(screen.getByText("Broadcast.linkLimitHint")).toBeTruthy();
+  });
+
+  it("sem links na mensagem, deixa juntar um", () => {
+    renderPanel();
+
+    expect(
+      screen.getByRole("button", { name: "Broadcast.addLink" }),
+    ).toBeEnabled();
+    expect(screen.queryByText("Broadcast.linkLimitHint")).toBeNull();
+  });
+
   it("filtra a lista pela pesquisa", () => {
     renderPanel();
 
