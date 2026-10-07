@@ -27,7 +27,7 @@ export default function CreateAssistantModal({
    */
   const [preset, setPreset] = useState(DEFAULT_ASSISTANT_PRESET);
   // O modelo com que os assistentes nascem. Alterável na edição.
-  const DEFAULT_MODEL = "gpt-5.6-luna";
+  const DEFAULT_MODEL = "gpt-6-luna";
   /**
    * Um pedido de cada vez. A ref trava os cliques seguidos, que chegam
    * antes de o botão aparecer desativado; o estado desativa o botão.
