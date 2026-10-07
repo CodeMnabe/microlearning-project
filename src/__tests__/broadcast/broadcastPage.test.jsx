@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
+  appMocks,
   registerAppModulePacks,
   setDefaultAppMockReturns,
   resetAppMocks,
@@ -122,6 +123,64 @@ describe("BroadcastPage", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name }));
   }
+
+  it("mostra o envio em curso e bloqueia o ecrã até o servidor responder", async () => {
+    let respond;
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      const method = (init.method || "GET").toUpperCase();
+
+      if (url === "/api/broadcast/whatsapp" && method === "POST") {
+        return new Promise((resolve) => {
+          respond = () =>
+            resolve(
+              makeResponse({ ok: 1, failed: 0, results: [], note: null }),
+            );
+        });
+      }
+
+      return baseFetch(input, init);
+    });
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByText("Broadcast.start.blank"));
+    typeInEditor(
+      screen.getByRole("textbox", { name: "Broadcast.message" }),
+      "Olá",
+    );
+    fireEvent.click(screen.getByText("Pedro Silva"));
+    fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+    /* À espera do servidor: faixa visível e ecrã bloqueado. */
+    expect(
+      await screen.findByText("Broadcast.sendingBanner"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("broadcast-columns")).toHaveAttribute("inert");
+
+    /*
+     * O alerta que a página recebe é o appMocks.alert: o
+     * registerAppModulePacks() simula o AlertProvider depois deste ficheiro.
+     */
+    expect(appMocks.alert).not.toHaveBeenCalled();
+
+    /* Sem act à volta: o waitFor já trata disso no React 19. */
+    respond();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Broadcast.sendingBanner"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("broadcast-columns")).not.toHaveAttribute(
+      "inert",
+    );
+    await waitFor(() =>
+      expect(appMocks.alert).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Broadcast sent" }),
+      ),
+    );
+  });
 
   it("shows the start menu on Teams and on WhatsApp", async () => {
     render(<BroadcastPage />);

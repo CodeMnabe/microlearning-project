@@ -34,6 +34,8 @@ import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
+import SendingBanner from "./components/SendingBanner";
+import useSendProgress from "./hooks/useSendProgress";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
@@ -129,6 +131,13 @@ export default function BroadcastPage() {
   const [trackedLinks, setTrackedLinks] = useState([]);
 
   const [sending, setSending] = useState(false);
+
+  /*
+   * `sending` dura até se fechar o alerta com o resultado (o botão fica
+   * desativado); `sendProgress.waiting` só até o servidor responder (a
+   * faixa e o ecrã bloqueado).
+   */
+  const sendProgress = useSendProgress();
 
   const [channel, setChannel] = useState("teams");
   const [deliveryMode, setDeliveryMode] = useState("now");
@@ -1483,7 +1492,7 @@ export default function BroadcastPage() {
       setSending(true);
 
       try {
-        const res = await fetch("/api/broadcast/read-chain", {
+        const res = await sendProgress.sendRequest("/api/broadcast/read-chain", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(buildChainPayload(selectedUsers)),
@@ -1565,7 +1574,7 @@ export default function BroadcastPage() {
           ? "/api/broadcast/whatsapp"
           : "/api/broadcast/teams";
 
-      const res = await fetch(endpoint, {
+      const res = await sendProgress.sendRequest(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1703,7 +1712,7 @@ export default function BroadcastPage() {
       setSending(true);
 
       try {
-        const res = await fetch("/api/broadcast/read-chain", {
+        const res = await sendProgress.sendRequest("/api/broadcast/read-chain", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1787,7 +1796,7 @@ export default function BroadcastPage() {
     try {
       const payload = buildBroadcastPayload(selectedUsers);
 
-      const res = await fetch("/api/broadcast/schedule", {
+      const res = await sendProgress.sendRequest("/api/broadcast/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2169,7 +2178,21 @@ export default function BroadcastPage() {
         onChange={handlePickThumbnail}
       />
 
-      <div className={styles.columns}>
+      {sendProgress.waiting && (
+        <SendingBanner
+          count={selected.size}
+          deliveryMode={deliveryMode}
+          translation={translation}
+        />
+      )}
+
+      {/* Enquanto o servidor não responde, a mensagem e os destinatários não mudam. */}
+      <div
+        className={styles.columns}
+        inert={sendProgress.waiting}
+        aria-busy={sendProgress.waiting}
+        data-testid="broadcast-columns"
+      >
         <div className={styles.leftCol}>{composer}</div>
 
         <div className={styles.rightCol}>
