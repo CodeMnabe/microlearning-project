@@ -47,6 +47,15 @@ function toDateInputValue(value) {
   return `${year}-${month}-${day}`;
 }
 
+/* Textos das folhas do Excel, já traduzidos. */
+function buildExportLabels(translation) {
+  return {
+    ...translation.raw("Questions.export.columns"),
+    kind: translation.raw("Questions.kind"),
+    verdicts: translation.raw("Questions.detail.verdicts"),
+  };
+}
+
 function detailHref(item) {
   return (
     `/broadcast/questions/detail?` +
@@ -82,6 +91,7 @@ export default function QuestionsPage() {
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (orgLoading) return;
@@ -182,6 +192,49 @@ export default function QuestionsPage() {
     setKindFilter(KIND_FILTER_ALL);
     setDateFrom("");
     setDateTo("");
+  }
+
+  /* Exporta as perguntas que estão na lista, com os filtros aplicados. */
+  async function handleExport() {
+    if (exporting || !org?.id) return;
+
+    setExporting(true);
+
+    try {
+      const res = await fetch(`/api/questions/export?orgId=${org.id}`, {
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to export questions.");
+      }
+
+      const shown = new Set(filtered.map((item) => String(item.id)));
+      const { exportQuestionsExcel } = await import("./lib/questions.excel");
+
+      await exportQuestionsExcel({
+        data: {
+          questions: (data.questions || []).filter((row) =>
+            shown.has(String(row.id)),
+          ),
+          answers: (data.answers || []).filter((row) =>
+            shown.has(String(row.questionId)),
+          ),
+        },
+        labels: buildExportLabels(translation),
+        fileName: `${translation("Questions.export.fileName")}-${toDateInputValue(new Date())}.xlsx`,
+      });
+    } catch {
+      void showAlert({
+        title: translation("Questions.export.failed.title"),
+        message: translation("Questions.export.failed.message"),
+        tone: "danger",
+      });
+    } finally {
+      setExporting(false);
+    }
   }
 
   function resultText(item) {
@@ -306,6 +359,17 @@ export default function QuestionsPage() {
             {translation("Questions.filters.clear")}
           </button>
         ) : null}
+
+        <button
+          type="button"
+          className={`${styles.clearButton} ${styles.exportButton}`}
+          onClick={handleExport}
+          disabled={loading || Boolean(error) || !filtered.length || exporting}
+        >
+          {translation(
+            exporting ? "Questions.export.exporting" : "Questions.export.button",
+          )}
+        </button>
       </div>
 
       {loading && (

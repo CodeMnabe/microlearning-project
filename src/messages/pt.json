@@ -1827,6 +1827,47 @@
     "correctRate": "{rate}% de acertos",
     "verdictSummary": "{completa} completa · {parcial} parcial · {incompleta} incompleta",
     "reviewCount": "{count} para rever",
+    "export": {
+      "button": "Exportar Excel",
+      "exporting": "A exportar...",
+      "fileName": "perguntas",
+      "failed": {
+        "title": "Erro ao exportar",
+        "message": "Não foi possível gerar o ficheiro Excel. Tenta novamente dentro de alguns segundos."
+      },
+      "columns": {
+        "questionsSheet": "Perguntas",
+        "answersSheet": "Respostas",
+        "sentAt": "Enviada em",
+        "kindColumn": "Tipo",
+        "question": "Pergunta",
+        "channels": "Canais",
+        "recipients": "Destinatários",
+        "answered": "Responderam",
+        "responseRate": "Taxa de resposta",
+        "correctRate": "Taxa de acertos",
+        "correctOption": "Opção certa",
+        "topOption": "Mais escolhida",
+        "expectedAnswer": "Resposta esperada",
+        "reviewNeeded": "Para rever",
+        "expiresAt": "Aceita respostas até",
+        "questionId": "ID pergunta",
+        "answeredAt": "Respondida em",
+        "name": "Nome",
+        "email": "Email",
+        "phone": "Telemóvel",
+        "tags": "Etiquetas",
+        "assistant": "Assistente",
+        "channel": "Canal",
+        "answer": "Resposta",
+        "isCorrect": "Certa",
+        "verdict": "Veredicto",
+        "feedback": "Feedback enviado",
+        "userId": "ID colaborador",
+        "yes": "Sim",
+        "no": "Não"
+      }
+    },
     "alerts": {
       "noOrg": {
         "title": "Organização em falta",
