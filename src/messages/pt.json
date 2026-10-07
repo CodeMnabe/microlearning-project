@@ -898,6 +898,7 @@
     "broadcastScheduled": "Ver Agendadas",
     "trackedLinks": "Links Rastreados",
     "questions": "Perguntas",
+    "media": "Multimédia",
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
@@ -1430,6 +1431,23 @@
       "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
       "soon": "Em breve"
     },
+    "mediaPicker": {
+      "fromComputer": "Do computador",
+      "fromMedia": "Da multimédia",
+      "title": {
+        "image": "Imagens da multimédia",
+        "video": "Vídeos da multimédia",
+        "document": "Documentos da multimédia"
+      },
+      "search": "Pesquisar por nome",
+      "loading": "A carregar ficheiros...",
+      "loadFailed": "Não foi possível carregar os ficheiros.",
+      "empty": "Ainda não há ficheiros deste tipo na multimédia. Usa \"Do computador\" para carregar o primeiro.",
+      "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+      "attached": "Já adicionado",
+      "add": "Adicionar ({count})",
+      "close": "Fechar"
+    },
     "suggest": {
       "title": "Sugerir texto",
       "promptLabel": "Pedido para a sugestão",
@@ -1460,6 +1478,8 @@
       "addImage": "Imagem",
       "addVideo": "Vídeo",
       "addDocument": "Documento",
+      "fileTooLarge": "O ficheiro {name} tem mais de 20 MB.",
+      "fileTypeNotAllowed": "O ficheiro {name} não é suportado. Usa imagens (PNG, JPG, WebP, GIF), PDF ou MP4.",
       "addLink": "Link rastreado",
       "variables": "Variáveis",
       "variableName": "Nome",
@@ -1946,6 +1966,53 @@
           "title": "Erro ao guardar o veredicto",
           "message": "Não foi possível guardar a correção. Tenta novamente."
         }
+      }
+    }
+  },
+
+  "Media": {
+    "title": "Multimédia",
+    "subtitle": "Imagens, PDF e vídeos carregados nas mensagens da organização.",
+    "totalSize": "Espaço usado",
+    "totalFiles": "Ficheiros",
+    "search": "Pesquisar por nome",
+    "loading": "A carregar ficheiros...",
+    "noFiles": "Ainda não foram carregados ficheiros nas mensagens.",
+    "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+    "inUseHint": "Este ficheiro vai ser enviado numa mensagem agendada ou numa cadeia ativa. Se fosse eliminado agora, a mensagem sairia sem ele. Pode ser eliminado depois de a mensagem ser enviada ou cancelada.",
+    "openScheduled": "Ver a mensagem agendada que usa este ficheiro",
+    "download": "Transferir {name}",
+    "table": {
+      "file": "Ficheiro",
+      "size": "Tamanho",
+      "uploaded": "Carregado em",
+      "status": "Estado"
+    },
+    "type": {
+      "image": "Imagem",
+      "pdf": "PDF",
+      "video": "Vídeo",
+      "other": "Ficheiro"
+    },
+    "status": {
+      "inUse": "Em uso",
+      "free": "Livre"
+    },
+    "confirm": {
+      "title": "Eliminar {name}?",
+      "message": "O ficheiro deixa de abrir nas mensagens já enviadas que o usam. Esta ação não pode ser desfeita."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Erro ao carregar",
+        "message": "Não foi possível carregar os ficheiros."
+      },
+      "deleteFailed": {
+        "title": "Erro ao eliminar",
+        "message": "Não foi possível eliminar o ficheiro."
+      },
+      "inUse": {
+        "title": "Ficheiro em uso"
       }
     }
   },
@@ -2669,6 +2736,7 @@
       "broadcast": "Mensagens",
       "message": "Mensagens individuais",
       "template": "Templates",
+      "media": "Multimédia",
       "organization": "Organização"
     },
     "Channels": {
@@ -2701,6 +2769,7 @@
       "broadcast_read_chain_created": "Sequência de leitura criada",
       "message_template_sent": "Template enviado a um colaborador",
       "template_created": "Template WhatsApp criado",
+      "media_deleted": "Ficheiro de multimédia eliminado",
       "organization_created": "Organização criada",
       "organization_settings_updated": "Definições da organização alteradas",
       "automation_triggered": "Automação disparada",

@@ -48,6 +48,8 @@ export const AUDIT_ACTIONS = Object.freeze({
 
   TEMPLATE_CREATED: "template.created",
 
+  MEDIA_DELETED: "media.deleted",
+
   ORGANIZATION_CREATED: "organization.created",
   ORGANIZATION_SETTINGS_UPDATED: "organization.settings_updated",
 });

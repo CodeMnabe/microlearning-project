@@ -885,6 +885,7 @@
     "broadcastScheduled": "See Scheduled",
     "trackedLinks": "Tracked Links",
     "questions": "Questions",
+    "media": "Media",
     "admin": "Admin",
     "login": "Login",
     "options": "Settings",
@@ -1422,6 +1423,23 @@
       "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
       "soon": "Coming soon"
     },
+    "mediaPicker": {
+      "fromComputer": "From computer",
+      "fromMedia": "From media",
+      "title": {
+        "image": "Images from media",
+        "video": "Videos from media",
+        "document": "Documents from media"
+      },
+      "search": "Search by name",
+      "loading": "Loading files...",
+      "loadFailed": "The files could not be loaded.",
+      "empty": "There are no files of this type in media yet. Use \"From computer\" to upload the first one.",
+      "noMatches": "No files match your search.",
+      "attached": "Already added",
+      "add": "Add ({count})",
+      "close": "Close"
+    },
     "suggest": {
       "title": "Suggest text",
       "promptLabel": "Request for the suggestion",
@@ -1452,6 +1470,8 @@
       "addImage": "Image",
       "addVideo": "Video",
       "addDocument": "Document",
+      "fileTooLarge": "The file {name} is larger than 20 MB.",
+      "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
       "addLink": "Tracked link",
       "variables": "Variables",
       "variableName": "Name",
@@ -1937,6 +1957,53 @@
           "title": "Failed to save the verdict",
           "message": "The correction could not be saved. Please try again."
         }
+      }
+    }
+  },
+
+  "Media": {
+    "title": "Media",
+    "subtitle": "Images, PDFs and videos uploaded in the organization's messages.",
+    "totalSize": "Space used",
+    "totalFiles": "Files",
+    "search": "Search by name",
+    "loading": "Loading files...",
+    "noFiles": "No files have been uploaded in messages yet.",
+    "noMatches": "No files match your search.",
+    "inUseHint": "This file will be sent in a scheduled message or an active chain. If it were deleted now, the message would go out without it. It can be deleted after the message is sent or cancelled.",
+    "openScheduled": "Open the scheduled message that uses this file",
+    "download": "Download {name}",
+    "table": {
+      "file": "File",
+      "size": "Size",
+      "uploaded": "Uploaded on",
+      "status": "Status"
+    },
+    "type": {
+      "image": "Image",
+      "pdf": "PDF",
+      "video": "Video",
+      "other": "File"
+    },
+    "status": {
+      "inUse": "In use",
+      "free": "Free"
+    },
+    "confirm": {
+      "title": "Delete {name}?",
+      "message": "The file will stop opening in messages already sent with it. This cannot be undone."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Loading error",
+        "message": "The files could not be loaded."
+      },
+      "deleteFailed": {
+        "title": "Delete error",
+        "message": "The file could not be deleted."
+      },
+      "inUse": {
+        "title": "File in use"
       }
     }
   },
@@ -2812,6 +2879,7 @@
       "broadcast": "Messages",
       "message": "Individual messages",
       "template": "Templates",
+      "media": "Media",
       "organization": "Organization"
     },
     "Channels": {
@@ -2844,6 +2912,7 @@
       "broadcast_read_chain_created": "Read chain created",
       "message_template_sent": "Template sent to a user",
       "template_created": "WhatsApp template created",
+      "media_deleted": "Media file deleted",
       "organization_created": "Organization created",
       "organization_settings_updated": "Organization settings changed",
       "automation_triggered": "Automation triggered",

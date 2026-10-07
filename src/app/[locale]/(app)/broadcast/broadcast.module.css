@@ -1291,6 +1291,27 @@
   letter-spacing: 0.04em;
 }
 
+/* Imagem, Vídeo e Documento abrem a escolha entre o computador e a multimédia. */
+.plusGroup {
+  display: grid;
+  gap: 2px;
+}
+
+.plusChevron {
+  margin-left: auto;
+  color: #6b7280;
+  transition: transform 0.15s ease;
+}
+
+.plusChevronOpen {
+  transform: rotate(180deg);
+}
+
+.plusSubItem {
+  padding-left: 36px;
+  color: #3b4a54;
+}
+
 .barHint {
   font-size: 12px;
   color: #6b7280;
