@@ -26,7 +26,7 @@ import {
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import { parseQuestionOptions } from "./questionOptions";
 import {
-  replaceTrackedPlaceholders,
+  replaceTrackedLinksInText,
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
 
@@ -526,18 +526,12 @@ export async function sendWhatsappBroadcast(input = {}) {
     });
 
     /*
-     * No texto só se trocam os placeholders: o link do botão é tratado à
-     * parte (planLinkMessages), por isso vai sem a marca `button`.
+     * No texto só se trocam os links: a formatação fica com os marcadores do
+     * WhatsApp, e o link do botão é tratado à parte (planLinkMessages).
      */
-    const textLinks = resolvedTrackedLinks.map(({ key, label, trackedUrl }) => ({
-      key,
-      label,
-      trackedUrl,
-    }));
-
     const resolveText = (text) =>
       interpolateBroadcastMessage(
-        replaceTrackedPlaceholders(text, textLinks),
+        replaceTrackedLinksInText(text, resolvedTrackedLinks),
         {
           user,
           org,

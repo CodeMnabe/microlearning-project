@@ -16,6 +16,8 @@ import {
 import { BROADCAST_MEDIA_ACCEPT } from "@/lib/uploads/broadcastMedia";
 
 import styles from "../broadcast.module.css";
+import EmojiButton from "./EmojiButton";
+import FormatToolbar from "./FormatToolbar";
 import { SuggestBar } from "./SuggestInPhone";
 
 /* Cada tipo abre a escolha entre o computador e a multimédia. */
@@ -219,7 +221,8 @@ export default function PlusMenu({
 }
 
 /**
- * Barra inferior do telemóvel com o "+" e a dica para escrever no balão.
+ * Barra inferior do telemóvel com o "+", os emojis e os botões de
+ * formatação.
  */
 export function PlusMenuBar({ tools, translation }) {
   if (!tools) return null;
@@ -239,9 +242,8 @@ export function PlusMenuBar({ tools, translation }) {
         onInsertToken={tools.onInsertToken}
         translation={translation}
       />
-      <span className={styles.barHint}>
-        {translation("Broadcast.composer.barHint")}
-      </span>
+      <EmojiButton editorRef={tools.editorRef} translation={translation} />
+      <FormatToolbar editorRef={tools.editorRef} translation={translation} />
     </>
   );
 }

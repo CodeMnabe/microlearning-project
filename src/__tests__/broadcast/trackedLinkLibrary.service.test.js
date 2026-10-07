@@ -15,9 +15,38 @@ vi.mock("@/lib/repos/trackedLinkLibrary.repo", () => ({
 
 import {
   listReusableTrackedLinks,
+  replaceTrackedLinksInText,
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "@/lib/services/broadcast/trackedLinks";
+
+describe("texto para o Teams e para o WhatsApp", () => {
+  const GUIA = {
+    key: "guia",
+    label: "Guia",
+    trackedUrl: "https://app.test/r/abc",
+  };
+
+  it("no Teams, a formatação do WhatsApp passa a Markdown", () => {
+    expect(
+      replaceTrackedPlaceholders("*Olá* ~não~ {{link.guia}}", [GUIA]),
+    ).toBe("**Olá** <s>não</s> https://app.test/r/abc");
+  });
+
+  it("no WhatsApp, os marcadores ficam e só os links são trocados", () => {
+    expect(
+      replaceTrackedLinksInText("*Olá* {{link.guia}}", [
+        { ...GUIA, button: true },
+      ]),
+    ).toBe("*Olá* https://app.test/r/abc");
+  });
+
+  it("no WhatsApp, o link do botão não vai para o fim do texto", () => {
+    expect(
+      replaceTrackedLinksInText("*Olá*", [{ ...GUIA, button: true }]),
+    ).toBe("*Olá*");
+  });
+});
 
 describe("replaceTrackedPlaceholders", () => {
   const GUIA = {
