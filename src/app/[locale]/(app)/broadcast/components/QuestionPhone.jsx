@@ -6,6 +6,7 @@ import WhatsAppPhone, {
 
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
+import { ImageSuggestBubble } from "./ImageSuggestInPhone";
 import LinkButtonPreview, { LinkBubblesPreview } from "./LinkButtonPreview";
 import { PlusMenuBar } from "./PlusMenu";
 import { SuggestBubble } from "./SuggestInPhone";
@@ -55,6 +56,13 @@ export default function QuestionPhone({
             <BubbleImages
               imageFiles={tools.imageFiles}
               onRemoveFile={tools.onRemoveFile}
+              translation={translation}
+            />
+          )}
+
+          {tools?.imageSuggest?.showsInBubble && (
+            <ImageSuggestBubble
+              suggest={tools.imageSuggest}
               translation={translation}
             />
           )}

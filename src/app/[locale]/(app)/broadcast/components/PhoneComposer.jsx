@@ -6,6 +6,7 @@ import WhatsAppPhone, {
 
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
+import { ImageSuggestBubble } from "./ImageSuggestInPhone";
 import LinkButtonPreview, {
   LinkBubblesPreview,
   LinksInTextNote,
@@ -41,6 +42,13 @@ export default function PhoneComposer({
             onRemoveFile={tools.onRemoveFile}
             translation={translation}
           />
+
+          {tools.imageSuggest?.showsInBubble && (
+            <ImageSuggestBubble
+              suggest={tools.imageSuggest}
+              translation={translation}
+            />
+          )}
 
           {tools.suggest?.showsInBubble && (
             <SuggestBubble suggest={tools.suggest} translation={translation} />
