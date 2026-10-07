@@ -1462,6 +1462,34 @@
     "addLink": "Adicionar Link",
     "linkButtonTag": "Botão",
     "linkLimitHint": "Cada mensagem leva um só link. Para escolher outro, tira o atual.",
+    "format": {
+      "toolbar": "Formatação",
+      "bold": "Negrito (Ctrl+B)",
+      "italic": "Itálico (Ctrl+I)",
+      "strike": "Riscado",
+      "mono": "Monoespaçado",
+      "lists": "Listas",
+      "bullet": "Lista com marcadores",
+      "numbered": "Lista numerada",
+      "task": "Lista de tarefas",
+      "quote": "Citação"
+    },
+    "emoji": {
+      "open": "Emojis",
+      "search": "Procurar emoji",
+      "clear": "Limpar",
+      "loading": "A carregar os emojis…",
+      "categories": {
+        "suggested": "Usados recentemente",
+        "smileys_people": "Caras e pessoas",
+        "animals_nature": "Animais e natureza",
+        "food_drink": "Comida e bebida",
+        "travel_places": "Viagens e locais",
+        "activities": "Atividades",
+        "objects": "Objetos",
+        "symbols": "Símbolos"
+      }
+    },
     "linkBubbleTag": "Balão à parte",
     "linkBubbleText": "Texto do balão (opcional)",
     "linkLibrary": {

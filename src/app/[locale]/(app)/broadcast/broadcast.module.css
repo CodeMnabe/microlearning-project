@@ -1394,6 +1394,124 @@
   color: #6b7280;
 }
 
+/* Barra de formatação, ao lado do "+" na barra de baixo do telemóvel. */
+.formatToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.formatBtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #54656f;
+  cursor: pointer;
+}
+
+.formatBtn:hover,
+.formatBtn:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111b21;
+}
+
+/* Botão ligado: a formatação está onde está o cursor. */
+.formatBtn[aria-pressed="true"],
+.formatBtn[data-active="true"] {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.formatDivider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Menu das listas: abre por cima da barra, como no Teams. */
+.listMenuWrap {
+  position: relative;
+}
+
+.listMenuBtn {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 5px;
+}
+
+.listMenu {
+  position: absolute;
+  left: 0;
+  bottom: 38px;
+  z-index: 20;
+  min-width: 210px;
+  display: grid;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.listMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #242424;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.listMenuItem:hover,
+.listMenuItem:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+/* A lista da linha do cursor fica marcada, com a mesma cor dos botões. */
+.listMenuItem[aria-checked="true"] {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* Seletor de emojis: abre por cima da barra, como o menu do "+". */
+.emojiWrap {
+  position: relative;
+}
+
+.emojiPopover {
+  position: absolute;
+  left: 0;
+  bottom: 42px;
+  z-index: 20;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.emojiLoading {
+  width: 320px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ---------- Mensagem de abertura ---------- */
 
 .openingMeta {

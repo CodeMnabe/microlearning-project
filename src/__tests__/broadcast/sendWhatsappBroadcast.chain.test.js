@@ -61,6 +61,7 @@ vi.mock("@/lib/repos/threads.repo", () => ({
 vi.mock("@/lib/services/broadcast/trackedLinks", () => ({
   resolveTrackedLinksForRecipient: async () => [],
   replaceTrackedPlaceholders: (text) => text,
+  replaceTrackedLinksInText: (text) => text,
 }));
 
 vi.mock("@/lib/whatsapp/E164", () => ({

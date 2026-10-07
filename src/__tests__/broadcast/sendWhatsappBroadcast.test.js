@@ -158,6 +158,20 @@ describe("sendWhatsappBroadcast", () => {
     },
   );
 
+  it("no WhatsApp, a formatação segue com os marcadores do WhatsApp", async () => {
+    mocks.isWindowOpenForUser.mockResolvedValue(true);
+
+    await sendWhatsappBroadcast({
+      orgId: 1,
+      message: "*Olá* {{nome}}, ~não~ te esqueças",
+      recipients: [{ userId: 42 }],
+    });
+
+    expect(birdCall().body.body.text.text).toBe(
+      "*Olá* Pedro, ~não~ te esqueças",
+    );
+  });
+
   it("sends the message directly when the 24h window is open", async () => {
     mocks.isWindowOpenForUser.mockResolvedValue(true);
 
