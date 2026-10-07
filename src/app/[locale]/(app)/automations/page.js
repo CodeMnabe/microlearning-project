@@ -578,18 +578,20 @@ export default function AutomationsPage() {
       setReadChainsEnabled(Boolean(data?.item?.read_chains_enabled));
 
       await showAlert({
-        title: nextEnabled ? "Read chains enabled" : "Read chains disabled",
+        title: nextEnabled
+          ? translation("readChains.enabledTitle")
+          : translation("readChains.disabledTitle"),
         message: nextEnabled
-          ? "Broadcasts can now create WhatsApp message chains that continue after each read receipt."
-          : "Broadcasts can no longer create new WhatsApp read chains.",
+          ? translation("readChains.enabledMessage")
+          : translation("readChains.disabledMessage"),
         tone: "success",
       });
     } catch (err) {
       console.warn("[Automations] read chain feature toggle error:", err);
 
       await showAlert({
-        title: "Could not update read chains",
-        message: err.message || "Failed to update read chain feature.",
+        title: translation("readChains.errorTitle"),
+        message: err.message || translation("readChains.errorMessage"),
         tone: "danger",
       });
     } finally {
@@ -1015,15 +1017,17 @@ export default function AutomationsPage() {
 
         <div className={styles.readChainFloatingMain}>
           <div className={styles.readChainFloatingTitle}>
-            Read chain messages
+            {translation("readChains.title")}
           </div>
 
           <div className={styles.readChainFloatingText}>
-            Send the next WhatsApp message after the previous one is read.
+            {translation("readChains.text")}
           </div>
 
           <div className={styles.readChainFloatingMeta}>
-            {readChainsEnabled ? "Feature active" : "Feature inactive"}
+            {readChainsEnabled
+              ? translation("readChains.active")
+              : translation("readChains.inactive")}
           </div>
         </div>
 
@@ -1035,7 +1039,9 @@ export default function AutomationsPage() {
           onClick={toggleReadChainsFeature}
           disabled={readChainsSaving}
           title={
-            readChainsEnabled ? "Disable read chains" : "Enable read chains"
+            readChainsEnabled
+              ? translation("readChains.disable")
+              : translation("readChains.enable")
           }
         >
           {readChainsEnabled ? (
@@ -1045,7 +1051,11 @@ export default function AutomationsPage() {
           )}
 
           <span>
-            {readChainsSaving ? "Saving..." : readChainsEnabled ? "On" : "Off"}
+            {readChainsSaving
+              ? translation("readChains.saving")
+              : readChainsEnabled
+                ? translation("readChains.on")
+                : translation("readChains.off")}
           </span>
         </button>
       </div>

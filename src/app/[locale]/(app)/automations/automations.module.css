@@ -545,12 +545,13 @@
   padding-bottom: 130px;
 }
 
+/*
+ * Fica no fim da página, no fluxo normal: em posição absoluta tapava a
+ * tabela quando esta era comprida.
+ */
 .readChainFloatingCard {
-  position: absolute;
-  left: var(--gutter-x, 20px);
-  bottom: 24px;
-  z-index: 10;
-  width: min(360px, calc(100% - 40px));
+  width: min(360px, 100%);
+  margin-top: var(--gutter-y, 16px);
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
   gap: 12px;

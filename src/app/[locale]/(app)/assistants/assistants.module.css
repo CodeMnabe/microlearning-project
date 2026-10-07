@@ -47,6 +47,8 @@
 }
 .listItem {
   display: flex;
+  width: 100%;
+  min-width: 0;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -70,11 +72,15 @@
   border-radius: 9999px;
   padding: 10px 14px;
 }
+/* Nomes longos quebram até duas linhas, sem scroll lateral na lista. */
 .listItemName {
   font-size: 0.95rem;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .listFooter {
   margin-top: 10px;
@@ -190,6 +196,9 @@
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.2px;
+  /* Nomes sem espaços quebram em vez de alargar o cartão. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .inputTitle {
@@ -601,12 +610,38 @@ body.modalOpen {
     grid-template-columns: 230px 1fr 320px;
   }
 }
+/* A conversa de teste passa para baixo do painel em vez de desaparecer. */
 @media (max-width: 1200px) {
   .hub {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-areas:
+      "list main"
+      "list chat";
+  }
+  .listCol {
+    grid-area: list;
+  }
+  .mainCol {
+    grid-area: main;
   }
   .chatCol {
-    display: none;
+    grid-area: chat;
+  }
+}
+
+/* Telemóvel e tablet: uma coluna, com a lista em cima e altura limitada. */
+@media (max-width: 900px) {
+  .hub {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "list"
+      "main"
+      "chat";
+    padding: 12px;
+    gap: 16px;
+  }
+  .listCol {
+    max-height: 320px;
   }
 }
 
