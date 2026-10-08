@@ -1423,6 +1423,9 @@
     "selected": "Selected:",
     "send": "Send",
     "sending": "Sending…",
+    "sendingBanner": "{count, plural, one {Sending to # person…} other {Sending to # people…}}",
+    "schedulingBanner": "{count, plural, one {Scheduling for # person…} other {Scheduling for # people…}}",
+    "sendingKeepOpen": "Don't close this page until the result appears.",
     "message": "Message",
     "messagePlaceholder": "Type your message...",
     "chooseRecipients": "Choose recipients",
@@ -1451,6 +1454,49 @@
     "chooseTime": "Choose a time between 08:00 and 20:00.",
     "trackedLinks": "Tracked Links",
     "addLink": "Add Link",
+    "linkButtonTag": "Button",
+    "linkLimitHint": "Each message takes a single link. To pick another, remove the current one.",
+    "format": {
+      "toolbar": "Formatting",
+      "bold": "Bold (Ctrl+B)",
+      "italic": "Italic (Ctrl+I)",
+      "strike": "Strikethrough",
+      "mono": "Monospace",
+      "lists": "Lists",
+      "bullet": "Bulleted list",
+      "numbered": "Numbered list",
+      "task": "Task list",
+      "quote": "Quote"
+    },
+    "emoji": {
+      "open": "Emojis",
+      "search": "Search emoji",
+      "clear": "Clear",
+      "loading": "Loading emojis…",
+      "categories": {
+        "suggested": "Recently used",
+        "smileys_people": "Smileys and people",
+        "animals_nature": "Animals and nature",
+        "food_drink": "Food and drink",
+        "travel_places": "Travel and places",
+        "activities": "Activities",
+        "objects": "Objects",
+        "symbols": "Symbols"
+      }
+    },
+    "linkBubbleTag": "Separate bubble",
+    "linkBubbleText": "Bubble text (optional)",
+    "linkLibrary": {
+      "title": "Links already used",
+      "search": "Search by name or URL",
+      "use": "Use",
+      "added": "Added",
+      "lastUsed": "Used on {date, date, short}",
+      "loading": "Loading links...",
+      "failed": "Could not load the links already used.",
+      "retry": "Try again",
+      "noMatches": "No link matches your search."
+    },
     "key": "Key",
     "label": "Label",
     "destinationUrl": "Destination URL",
@@ -1514,6 +1560,39 @@
       "use": "Use",
       "failed": "The suggestion could not be generated. Try again."
     },
+
+    "confirmSchedule": {
+      "isChain": {
+        "title": "Schedule message chain?",
+        "message": "You are about to schedule a WhatsApp read chain for {recipientLabel}. Message 1 will send on {formattedDate}. The next messages will send after read receipts and configured delays.",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "opening": {
+        "title": "Schedule opening message?",
+        "message": "You are scheduling the opening message for {recipientLabel} on {formattedDate}."
+      },
+      "title": "Schedule message?",
+      "message": "You are about to schedule this {channelLabel} broadcast for {recipientLabel} on {formattedDate}.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "confirmSend": {
+      "isChain": {
+        "title": "Start message chain?",
+        "message": "You are about to start a WhatsApp read chain for {recipientLabel}. Message 1 will be sent now. The next messages will send after read receipts and configured delays.",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "opening": {
+        "title": "Send opening message?",
+        "message": "You are about to send the opening message to {recipientLabel}."
+      },
+      "title": "Send message?",
+      "message": "You are about to send this {channelLabel} broadcast to {recipientLabel}.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
     "groups": {
       "tabUsers": "Colleagues",
       "tabGroups": "Teams groups",
@@ -1547,1606 +1626,1595 @@
       "scheduled": {
         "title": "Message scheduled",
         "message": "It will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
-      }
-    },
-    "composer": {
-      "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
-      "openQuestionBody": "Open question",
-      "openQuestionPlaceholder": "What would you like to ask?",
-      "expectedAnswer": "Expected answer (required)",
-      "aiEvaluation": "Evaluate the answer with AI",
-      "expectedAnswerHint": "The contact receives AI feedback followed by the expected answer. With evaluation disabled, only the expected answer is sent.",
-      "contact": "Contact",
-      "back": "Change message type",
-      "hint": "Write directly in the bubble. Use + to add images, links and variables.",
-      "placeholder": "Write your message here...",
-      "barHint": "Tap the bubble to write",
-      "add": "Add",
-      "addImage": "Image",
-      "addVideo": "Video",
-      "addDocument": "Document",
-      "fileTooLarge": "The file {name} is larger than 20 MB.",
-      "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
-      "addLink": "Tracked link",
-      "variables": "Variables",
-      "variableName": "Name",
-      "variableCompany": "Company",
-      "openingTitle": "Opening message",
-      "openingHint": "Only the approved template is sent. The start and the end are fixed; the body can be adjusted for this send.",
-      "openingBody": "Opening message body",
-      "openingPlaceholder": "Write the message body...",
-      "openingCounter": "{count} of {max} characters",
-      "openingLoading": "Loading the opening message...",
-      "openingLoadFailed": "Could not load the opening message.",
-      "retry": "Try again",
-      "quizTitle": "Quiz",
-      "quizHint": "Write the question in the bubble and the options in the buttons. Mark the right one in the circle. Use + for images, links and variables. Contacts outside the window receive the opening message first.",
-      "quizBody": "Quiz question",
-      "quizPlaceholder": "Write the question...",
-      "quizOption": "Option {index}",
-      "quizMarkCorrect": "Mark option {index} as correct",
-      "quizRemoveOption": "Remove option {index}",
-      "quizAddOption": "Add option",
-      "quizOptionLimit": "Up to {max} options of {chars} characters each, as WhatsApp requires.",
-      "quizFeedbackCorrect": "Reply when correct",
-      "quizFeedbackIncorrect": "Reply when wrong",
-      "quizFeedbackHint": "If left empty, the default text is sent. Write '{{'certa'}}' to include the correct option.",
-      "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts.",
-      "surveyTitle": "Survey",
-      "surveyHint": "Write the question in the bubble and the options in the buttons. There is no right answer: only the choice is recorded. Use + for images, links and variables.",
-      "surveyBody": "Survey question",
-      "surveyPlaceholder": "Write the question...",
-      "surveyOption": "Option {index}",
-      "surveyRemoveOption": "Remove option {index}",
-      "surveyThanks": "Message after the choice",
-      "surveyThanksHint": "If left empty, the default thank-you text is sent.",
-      "surveyValidity": "The survey accepts answers for {days} days. Only the first choice of each contact counts."
-    },
-    "alerts": {
-      "openQuestionInvalid": {
-        "title": "Complete the open question",
-        "message": "Write the question and expected answer, using up to 1024 characters each."
       },
-      "usersLoadFailed": {
-        "title": "Failed to load recipients",
-        "message": "The user list could not be loaded. Please try again in a few seconds."
+      "image": {
+        "title": "Create image",
+        "promptLabel": "Request for the image",
+        "placeholder": "Describe the image you want",
+        "ask": "Create image",
+        "close": "Close image creation",
+        "tag": "AI image",
+        "loading": "Creating the image… this can take up to a minute.",
+        "use": "Use",
+        "saving": "Adding to the message…",
+        "again": "Redo",
+        "discard": "Discard",
+        "failed": "The image could not be created. Try again or change the request.",
+        "saveFailed": "The image could not be added to the message. Try again."
       },
-      "filtersLoadFailed": {
-        "title": "Failed to load filters",
-        "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
-      },
-      "contentMissing": {
-        "title": "Missing content",
-        "sendMessage": "Write a message or add a file before sending.",
-        "scheduleMessage": "Write a message or add a file before scheduling."
-      },
-      "openingMissing": {
-        "title": "Missing body",
-        "message": "Write the opening message body before continuing."
-      },
-      "surveyInvalid": {
-        "title": "Incomplete survey",
-        "message": "Write the question and fill in 2 to 3 different options of up to 20 characters."
-      },
-      "quizInvalid": {
-        "title": "Incomplete quiz",
-        "message": "Write the question, fill in 2 to 3 different options of up to 20 characters and mark the correct one."
-      }
-    },
-    "recipient": "recipient",
-    "smallRecipients": "recipients",
-    "confirmSend": {
-      "isChain": {
-        "title": "Start message chain?",
-        "message": "You are about to start a WhatsApp read chain for {recipientLabel}. Message 1 will be sent now. The next messages will send after read receipts and configured delays.",
-        "confirm": "Confirm",
-        "cancel": "Cancel"
-      },
-      "opening": {
-        "title": "Send opening message?",
-        "message": "You are about to send the opening message to {recipientLabel}."
-      },
-      "title": "Send message?",
-      "message": "You are about to send this {channelLabel} broadcast to {recipientLabel}.",
-      "confirm": "Confirm",
-      "cancel": "Cancel"
-    },
-    "confirmSchedule": {
-      "isChain": {
-        "title": "Schedule message chain?",
-        "message": "You are about to schedule a WhatsApp read chain for {recipientLabel}. Message 1 will send on {formattedDate}. The next messages will send after read receipts and configured delays.",
-        "confirm": "Confirm",
-        "cancel": "Cancel"
-      },
-      "opening": {
-        "title": "Schedule opening message?",
-        "message": "You are scheduling the opening message for {recipientLabel} on {formattedDate}."
-      },
-      "title": "Schedule message?",
-      "message": "You are about to schedule this {channelLabel} broadcast for {recipientLabel} on {formattedDate}.",
-      "confirm": "Confirm",
-      "cancel": "Cancel"
-    },
-    "broadcastChain": {
-      "title": "Read chain messages",
-      "chainHelp": "Create a chain of messages, when the recipient sees the message another one will be sent immediately or with a delay.",
-      "createChain": "Create Chain",
-      "exitChain": "Leave Chain",
-      "chainOff": "Read chains are disabled in Automations. Enable the feature before sending.",
-      "chainMessage": "Message",
-      "chainLengthMax": "Maximum of 10 messages",
-      "chainLengthAdd": "Add message",
-      "chainDuplicate": "Duplicate",
-      "chainRemove": "Remove",
-      "chainMessages": "messages",
-      "stepKind": "Type of this message",
-      "stepKindMessage": "Message",
-      "stepKindQuiz": "Quiz",
-      "stepKindSurvey": "Survey",
-      "stepKindOpen": "Open question",
-      "chainDelayBefore": "Delay before Message ",
-      "chainHour": "Hours",
-      "chainMinute": "Minutes",
-      "chainFirstMessage": "Message 1 has no step delay. It sends when the chain starts.",
-      "chainNoDelay": "No delay. Sends immediately after the previous message is read.",
-      "chainDelayMinutes": "Wait {minutes, plural, one {# minute} other {# minutes}} after read.",
-      "chainDelayHours": "Wait {hours, plural, one {# hour} other {# hours}} after read.",
-      "chainDelayMinutesHours": "Wait {hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}} after read"
-    }
-  },
-
-  "BroadcastScheduled": {
-    "Title": "Scheduled messages",
-    "Subtitle": "Scheduled messages for organization {organization}",
-    "NewMessage": "New message",
-    "Refresh": "Refresh",
-    "Loading": "Loading scheduled messages...",
-    "Timezone": "Timezone",
-    "ConfirmDelete": "Are you sure you want to delete this scheduled message?",
-    "Stats": {
-      "total": "Total",
-      "scheduled": "Scheduled",
-      "sending": "Sending",
-      "failed": "Failed"
-    },
-    "Filters": {
-      "searchPlaceholder": "Search by message, status, channel or creator...",
-      "datePlaceholder": "Date",
-      "clearDate": "Clear date"
-    },
-    "Channels": {
-      "all": "All channels",
-      "teams": "Teams",
-      "whatsapp": "WhatsApp"
-    },
-    "Statuses": {
-      "all": "All statuses",
-      "scheduled": "Scheduled",
-      "sending": "Sending",
-      "sent": "Sent",
-      "failed": "Failed",
-      "cancelled": "Cancelled",
-      "queued": "Queued"
-    },
-    "Table": {
-      "message": "Message",
-      "channel": "Channel",
-      "recipients": "Recipients",
-      "scheduledFor": "Scheduled for",
-      "status": "Status",
-      "createdBy": "Created by",
-      "actions": "Actions",
-      "people": "people"
-    },
-    "Actions": {
-      "view": "View",
-      "edit": "Edit",
-      "delete": "Delete"
-    },
-    "ViewModal": {
-      "groups": "Teams groups",
-      "title": "Message details",
-      "createdAt": "Created at"
-    },
-    "EditModal": {
-      "groups": "Teams groups",
-      "unnamedGroup": "Unnamed group",
-      "title": "Edit scheduled message",
-      "message": "Message",
-      "recipients": "Recipients",
-      "manageRecipients": "Manage Recipients",
-      "channel": "Channel",
-      "status": "Status",
-      "date": "Date",
-      "timezone": "Timezone",
-      "hour": "Hour",
-      "minute": "Minute",
-      "cancel": "Cancel",
-      "save": "Save changes",
-      "saving": "Saving...",
-      "remove": "Remove",
-      "noRecipients": "No recipients selected.",
-      "files": "Files",
-      "noFiles": "No files added."
-    },
-    "RecipientPicker": {
-      "title": "Manage recipients",
-      "searchPlaceholder": "Search users...",
-      "countSelected": "selected",
-      "selected": "Selected",
-      "remove": "Remove",
-      "noRecipient": "No recipient selected",
-      "available": "Available",
-      "loading": "Loading users…",
-      "add": "Add",
-      "emptyRecipient": "There are no recipients available for this channel",
-      "cancel": "Cancel",
-      "apply": "Apply recipients"
-    },
-    "Empty": {
-      "title": "You do not have scheduled messages yet",
-      "text": "Once you schedule a message, it will appear here so you can view, edit or delete it."
-    },
-    "Delete": {
-      "title": "Are you sure you want to delete this message?",
-      "deleteMessage": "This action cannot be undone.",
-      "delete": "Delete",
-      "cancel": "Cancel"
-    },
-    "Errors": {
-      "load": "Could not load scheduled messages.",
-      "save": "Could not save the changes.",
-      "delete": "Could not delete the scheduled message.",
-      "invalidForm": "Please fill in the message and a valid date/time."
-    },
-    "Alerts": {
-      "noOrg": {
-        "title": "Missing organization",
-        "message": "The organization could not be identified yet. Please try again in a few seconds."
-      },
-
-      "loadError": {
-        "title": "Failed to load messages",
-        "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
-      },
-      "usersLoadError": {
-        "title": "Failed to load recipients",
-        "message": "The user list for editing recipients could not be loaded."
-      },
-      "invalidForm": {
-        "title": "Missing information",
-        "message": "Fill in the message and choose a valid date and time before saving."
-      },
-      "saveSuccess": {
-        "title": "Message updated",
-        "message": "The scheduled message changes were saved successfully."
-      },
-      "saveError": {
-        "title": "Failed to save changes",
-        "message": "The scheduled message changes could not be saved."
-      },
-      "deleteSuccess": {
-        "title": "Message deleted",
-        "message": "The scheduled message was deleted successfully."
-      },
-      "deleteError": {
-        "title": "Failed to delete message",
-        "message": "The scheduled message could not be deleted."
-      }
-    }
-  },
-
-  "TrackedLinks": {
-    "title": "Tracked Links",
-    "subtitle": "View click performance for your organization's tracked links.",
-    "totalLinks": "Total Links",
-    "search": "Search by label, key, destination, or channel",
-    "loading": "Loading tracked links...",
-    "noLinks": "No tracked links found.",
-    "table": {
-      "label": "Label",
-      "key": "Key",
-      "channel": "Channel",
-      "destination": "Destination",
-      "recipients": "Recipients",
-      "clicked": "Clicked",
-      "totalClicks": "Total Clicks",
-      "clickRate": "Click Rate",
-      "created": "Created"
-    },
-    "view": "View",
-
-    "detail": {
-      "alerts": {
-        "noOrg": {
-          "title": "Missing organization",
-          "message": "The organization could not be identified yet. Please try again in a few seconds."
-        },
-        "missingSendGroup": {
-          "title": "Invalid link",
-          "message": "The send group for this tracked link could not be identified."
-        },
-        "loadFailed": {
-          "title": "Failed to load details",
-          "message": "This tracked link's details could not be loaded. Please try again in a few seconds."
-        }
-      },
-      "back": "Back",
-      "loading": "Loading tracked link details...",
-      "trackedLink": "Tracked Link",
-      "key": "key",
-      "destinationUrl": "Destination URL",
-      "recipients": "Recipients",
-      "clicked": "Clicked",
-      "notClicked": "Not Clicked",
-      "totalClicks": "Total Clicks",
-      "clickRate": "Click Rate",
-      "created": "Created",
-      "noClickedUsers": "Nobody clicked this link yet.",
-      "allClickedUsers": "Everyone clicked this link.",
-      "recipient": "Recipient",
-      "email": "E-mail",
-      "phone": "Phone Number",
-      "clicks": "Clicks",
-      "firstClick": "First Click",
-      "lastClick": "Last Click",
-      "sentAt": "Sent at"
-    },
-    "alerts": {
-      "noOrg": {
-        "title": "Missing organization",
-        "message": "The organization could not be identified yet. Please try again in a few seconds."
-      },
-      "loadFailed": {
-        "title": "Failed to load tracked links",
-        "message": "Tracked links could not be loaded. Please try again in a few seconds."
-      }
-    }
-  },
-  "Questions": {
-    "title": "Questions",
-    "subtitle": "Results of the quizzes and open questions sent on WhatsApp and Teams.",
-    "totalQuestions": "Questions",
-    "toReview": "To review",
-    "search": "Search by question text",
-    "filters": {
-      "allKinds": "All types",
-      "sentBetween": "Sent between",
-      "and": "and",
-      "from": "Sent from",
-      "to": "Sent until",
-      "clear": "Clear filters"
-    },
-    "loading": "Loading questions...",
-    "noQuestions": "No question has been sent in this organization yet.",
-    "noMatches": "No question matches the filters.",
-    "kind": {
-      "quiz": "Quiz",
-      "survey": "Survey",
-      "open": "Open question"
-    },
-    "table": {
-      "question": "Question",
-      "answered": "Answers",
-      "responseRate": "Response rate",
-      "result": "Result"
-    },
-    "sentOn": "Sent on {date}",
-    "answersOf": "{answered} of {recipients}",
-    "correctRate": "{rate}% correct",
-    "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
-    "reviewCount": "{count} to review",
-    "export": {
-      "button": "Export Excel",
-      "exporting": "Exporting...",
-      "fileName": "questions",
-      "failed": {
-        "title": "Export failed",
-        "message": "The Excel file could not be generated. Try again in a few seconds."
-      },
-      "columns": {
-        "questionsSheet": "Questions",
-        "answersSheet": "Answers",
-        "sentAt": "Sent at",
-        "kindColumn": "Type",
-        "question": "Question",
-        "channels": "Channels",
-        "recipients": "Recipients",
-        "answered": "Answered",
-        "responseRate": "Response rate",
-        "correctRate": "Correct rate",
-        "correctOption": "Correct option",
-        "topOption": "Most chosen",
-        "expectedAnswer": "Expected answer",
-        "reviewNeeded": "To review",
-        "expiresAt": "Accepts answers until",
-        "questionId": "Question ID",
-        "answeredAt": "Answered at",
-        "name": "Name",
-        "email": "Email",
-        "phone": "Phone",
-        "tags": "Tags",
-        "assistant": "Assistant",
-        "channel": "Channel",
-        "answer": "Answer",
-        "isCorrect": "Correct",
-        "verdict": "Verdict",
-        "feedback": "Feedback sent",
-        "userId": "Contact ID",
-        "yes": "Yes",
-        "no": "No"
-      }
-    },
-    "alerts": {
-      "noOrg": {
-        "title": "Missing organization",
-        "message": "The organization could not be identified yet. Please try again in a few seconds."
-      },
-      "loadFailed": {
-        "title": "Failed to load questions",
-        "message": "The questions could not be loaded. Please try again in a few seconds."
-      }
-    },
-    "detail": {
-      "back": "Back",
-      "loading": "Loading the question...",
-      "options": "Options",
-      "correctOption": "correct",
-      "expectedAnswer": "Expected answer",
-      "aiEvaluation": "AI evaluation",
-      "aiOn": "on",
-      "aiOff": "off",
-      "sentAt": "Sent",
-      "expiresAt": "Accepts answers until",
-      "recipients": "Recipients",
-      "answered": "Answered",
-      "notAnswered": "Did not answer",
-      "responseRate": "Response rate",
-      "correct": "Correct",
-      "correctRate": "Correct rate",
-      "correctOf": "{correct} of {answered}",
-      "toReview": "To review",
-      "verdictsTitle": "Verdicts",
-      "answeredCount": "Answered ({count})",
-      "notAnsweredCount": "Did not answer ({count})",
-      "filters": {
-        "search": "Search by name, email or phone",
-        "allAnswers": "All answers",
-        "noMatches": "No contact matches the filters."
-      },
-      "verdicts": {
-        "completa": "Complete",
-        "parcial": "Partial",
-        "incompleta": "Incomplete",
-        "none": "No verdict"
-      },
-      "table": {
+      "composer": {
+        "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
+        "openQuestionBody": "Open question",
+        "openQuestionPlaceholder": "What would you like to ask?",
+        "expectedAnswer": "Expected answer (required)",
+        "aiEvaluation": "Evaluate the answer with AI",
+        "expectedAnswerHint": "The contact receives AI feedback followed by the expected answer. With evaluation disabled, only the expected answer is sent.",
         "contact": "Contact",
-        "phone": "Phone",
-        "answer": "Answer",
-        "result": "Result",
-        "verdict": "Verdict",
-        "choice": "Choice",
-        "aiVerdict": "AI: {verdict}",
-        "feedback": "Feedback sent",
-        "answeredAt": "Answered",
-        "sentAt": "Sent"
+        "back": "Change message type",
+        "hint": "Write directly in the bubble. Use + to add images, links and variables.",
+        "placeholder": "Write your message here...",
+        "barHint": "Tap the bubble to write",
+        "add": "Add",
+        "addImage": "Image",
+        "addVideo": "Video",
+        "addDocument": "Document",
+        "fileTooLarge": "The file {name} is larger than 20 MB.",
+        "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
+        "addLink": "Tracked link",
+        "linkButtonHint": "On WhatsApp, the link goes in this button.",
+        "linkButtonRemove": "Remove the link",
+        "linkButtonInText": "{count, plural, one {There are no buttons here: the link {labels} goes at the end of the text.} other {There are no buttons here: the links {labels} go at the end of the text.}}",
+        "linkNeedsText": "Write some text: on WhatsApp, the link goes in a button and the message needs text.",
+        "chainStepNeedsText": "Step {step}: write some text. On WhatsApp, the link goes in a button and the message needs text.",
+        "variables": "Variables",
+        "variableName": "Name",
+        "variableCompany": "Company",
+        "openingTitle": "Opening message",
+        "openingHint": "Only the approved template is sent. The start and the end are fixed; the body can be adjusted for this send.",
+        "openingBody": "Opening message body",
+        "openingPlaceholder": "Write the message body...",
+        "openingCounter": "{count} of {max} characters",
+        "openingLoading": "Loading the opening message...",
+        "openingLoadFailed": "Could not load the opening message.",
+        "retry": "Try again",
+        "quizTitle": "Quiz",
+        "quizHint": "Write the question in the bubble and the options in the buttons. Mark the right one in the circle. Use + for images, links and variables. Contacts outside the window receive the opening message first.",
+        "quizBody": "Quiz question",
+        "quizPlaceholder": "Write the question...",
+        "quizOption": "Option {index}",
+        "quizMarkCorrect": "Mark option {index} as correct",
+        "quizRemoveOption": "Remove option {index}",
+        "quizAddOption": "Add option",
+        "quizOptionLimit": "Up to {max} options of {chars} characters each, as WhatsApp requires.",
+        "quizFeedbackCorrect": "Reply when correct",
+        "quizFeedbackIncorrect": "Reply when wrong",
+        "quizFeedbackHint": "If left empty, the default text is sent. Write '{{'certa'}}' to include the correct option.",
+        "quizValidity": "The quiz accepts answers for {days} days. Only the first answer of each contact counts.",
+        "surveyTitle": "Survey",
+        "surveyHint": "Write the question in the bubble and the options in the buttons. There is no right answer: only the choice is recorded. Use + for images, links and variables.",
+        "surveyBody": "Survey question",
+        "surveyPlaceholder": "Write the question...",
+        "surveyOption": "Option {index}",
+        "surveyRemoveOption": "Remove option {index}",
+        "surveyThanks": "Message after the choice",
+        "surveyThanksHint": "If left empty, the default thank-you text is sent.",
+        "surveyValidity": "The survey accepts answers for {days} days. Only the first choice of each contact counts."
       },
-      "right": "Right",
-      "wrong": "Wrong",
-      "reviewNeeded": "To review",
-      "useAiVerdict": "Keep the AI verdict",
-      "noAnswers": "Nobody has answered yet.",
-      "allAnswered": "Everyone answered.",
       "alerts": {
+        "openQuestionInvalid": {
+          "title": "Complete the open question",
+          "message": "Write the question and expected answer, using up to 1024 characters each."
+        },
+        "usersLoadFailed": {
+          "title": "Failed to load recipients",
+          "message": "The user list could not be loaded. Please try again in a few seconds."
+        },
+        "filtersLoadFailed": {
+          "title": "Failed to load filters",
+          "message": "Tags or assistants could not be loaded. Some filters may be unavailable."
+        },
+        "contentMissing": {
+          "title": "Missing content",
+          "sendMessage": "Write a message or add a file before sending.",
+          "scheduleMessage": "Write a message or add a file before scheduling."
+        },
+        "openingMissing": {
+          "title": "Missing body",
+          "message": "Write the opening message body before continuing."
+        },
+        "surveyInvalid": {
+          "title": "Incomplete survey",
+          "message": "Write the question and fill in 2 to 3 different options of up to 20 characters."
+        },
+        "quizInvalid": {
+          "title": "Incomplete quiz",
+          "message": "Write the question, fill in 2 to 3 different options of up to 20 characters and mark the correct one."
+        }
+      },
+      "recipient": "recipient",
+      "smallRecipients": "recipients",
+
+      "broadcastChain": {
+        "title": "Read chain messages",
+        "chainHelp": "Create a chain of messages, when the recipient sees the message another one will be sent immediately or with a delay.",
+        "createChain": "Create Chain",
+        "exitChain": "Leave Chain",
+        "chainOff": "Read chains are disabled in Automations. Enable the feature before sending.",
+        "chainMessage": "Message",
+        "chainLengthMax": "Maximum of 10 messages",
+        "chainLengthAdd": "Add message",
+        "chainDuplicate": "Duplicate",
+        "chainRemove": "Remove",
+        "chainMessages": "messages",
+        "stepKind": "Type of this message",
+        "stepKindMessage": "Message",
+        "stepKindQuiz": "Quiz",
+        "stepKindSurvey": "Survey",
+        "stepKindOpen": "Open question",
+        "chainDelayBefore": "Delay before Message ",
+        "chainHour": "Hours",
+        "chainMinute": "Minutes",
+        "chainFirstMessage": "Message 1 has no step delay. It sends when the chain starts.",
+        "chainNoDelay": "No delay. Sends immediately after the previous message is read.",
+        "chainDelayMinutes": "Wait {minutes, plural, one {# minute} other {# minutes}} after read.",
+        "chainDelayHours": "Wait {hours, plural, one {# hour} other {# hours}} after read.",
+        "chainDelayMinutesHours": "Wait {hours, plural, one {# hour} other {# hours}} and {minutes, plural, one {# minute} other {# minutes}} after read"
+      }
+    },
+
+    "BroadcastScheduled": {
+      "Title": "Scheduled messages",
+      "Subtitle": "Scheduled messages for organization {organization}",
+      "NewMessage": "New message",
+      "Refresh": "Refresh",
+      "Loading": "Loading scheduled messages...",
+      "Timezone": "Timezone",
+      "ConfirmDelete": "Are you sure you want to delete this scheduled message?",
+      "Stats": {
+        "total": "Total",
+        "scheduled": "Scheduled",
+        "sending": "Sending",
+        "failed": "Failed"
+      },
+      "Filters": {
+        "searchPlaceholder": "Search by message, status, channel or creator...",
+        "datePlaceholder": "Date",
+        "clearDate": "Clear date"
+      },
+      "Channels": {
+        "all": "All channels",
+        "teams": "Teams",
+        "whatsapp": "WhatsApp"
+      },
+      "Statuses": {
+        "all": "All statuses",
+        "scheduled": "Scheduled",
+        "sending": "Sending",
+        "sent": "Sent",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "queued": "Queued"
+      },
+      "Table": {
+        "message": "Message",
+        "channel": "Channel",
+        "recipients": "Recipients",
+        "scheduledFor": "Scheduled for",
+        "status": "Status",
+        "createdBy": "Created by",
+        "actions": "Actions",
+        "people": "people"
+      },
+      "Actions": {
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "ViewModal": {
+        "groups": "Teams groups",
+        "title": "Message details",
+        "createdAt": "Created at"
+      },
+      "EditModal": {
+        "groups": "Teams groups",
+        "unnamedGroup": "Unnamed group",
+        "title": "Edit scheduled message",
+        "message": "Message",
+        "recipients": "Recipients",
+        "manageRecipients": "Manage Recipients",
+        "channel": "Channel",
+        "status": "Status",
+        "date": "Date",
+        "timezone": "Timezone",
+        "hour": "Hour",
+        "minute": "Minute",
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "saving": "Saving...",
+        "remove": "Remove",
+        "noRecipients": "No recipients selected.",
+        "files": "Files",
+        "noFiles": "No files added."
+      },
+      "RecipientPicker": {
+        "title": "Manage recipients",
+        "searchPlaceholder": "Search users...",
+        "countSelected": "selected",
+        "selected": "Selected",
+        "remove": "Remove",
+        "noRecipient": "No recipient selected",
+        "available": "Available",
+        "loading": "Loading users…",
+        "add": "Add",
+        "emptyRecipient": "There are no recipients available for this channel",
+        "cancel": "Cancel",
+        "apply": "Apply recipients"
+      },
+      "Empty": {
+        "title": "You do not have scheduled messages yet",
+        "text": "Once you schedule a message, it will appear here so you can view, edit or delete it."
+      },
+      "Delete": {
+        "title": "Are you sure you want to delete this message?",
+        "deleteMessage": "This action cannot be undone.",
+        "delete": "Delete",
+        "cancel": "Cancel"
+      },
+      "Errors": {
+        "load": "Could not load scheduled messages.",
+        "save": "Could not save the changes.",
+        "delete": "Could not delete the scheduled message.",
+        "invalidForm": "Please fill in the message and a valid date/time."
+      },
+      "Alerts": {
         "noOrg": {
           "title": "Missing organization",
           "message": "The organization could not be identified yet. Please try again in a few seconds."
         },
-        "missingQuestion": {
-          "title": "Invalid question",
-          "message": "The question could not be identified."
+
+        "loadError": {
+          "title": "Failed to load messages",
+          "message": "Scheduled messages could not be loaded. Please try again in a few seconds."
         },
-        "loadFailed": {
-          "title": "Failed to load the question",
-          "message": "The results of this question could not be loaded. Please try again in a few seconds."
+        "usersLoadError": {
+          "title": "Failed to load recipients",
+          "message": "The user list for editing recipients could not be loaded."
         },
-        "updateFailed": {
-          "title": "Failed to save the verdict",
-          "message": "The correction could not be saved. Please try again."
-        }
-      }
-    }
-  },
-
-  "Media": {
-    "title": "Media",
-    "subtitle": "Images, PDFs and videos uploaded in the organization's messages.",
-    "totalSize": "Space used",
-    "totalFiles": "Files",
-    "search": "Search by name",
-    "loading": "Loading files...",
-    "noFiles": "No files have been uploaded in messages yet.",
-    "noMatches": "No files match your search.",
-    "inUseHint": "This file will be sent in a scheduled message or an active chain. If it were deleted now, the message would go out without it. It can be deleted after the message is sent or cancelled.",
-    "openScheduled": "Open the scheduled message that uses this file",
-    "download": "Download {name}",
-    "table": {
-      "file": "File",
-      "size": "Size",
-      "uploaded": "Uploaded on",
-      "status": "Status"
-    },
-    "type": {
-      "image": "Image",
-      "pdf": "PDF",
-      "video": "Video",
-      "other": "File"
-    },
-    "status": {
-      "inUse": "In use",
-      "free": "Free"
-    },
-    "confirm": {
-      "title": "Delete {name}?",
-      "message": "The file will stop opening in messages already sent with it. This cannot be undone."
-    },
-    "alerts": {
-      "loadFailed": {
-        "title": "Loading error",
-        "message": "The files could not be loaded."
-      },
-      "deleteFailed": {
-        "title": "Delete error",
-        "message": "The file could not be deleted."
-      },
-      "inUse": {
-        "title": "File in use"
-      }
-    }
-  },
-
-  "Assistants": {
-    "myAssistants": "My Assistants",
-    "createAssistant": "Create Assistant",
-    "loadingOrg": "Loading organization…",
-    "empty": "No assistants yet.",
-    "details": {
-      "descriptionPlaceholder": "A brief description",
-      "instructionsPlaceholder": "Assistant's instructions",
-      "createdAt": "Created at",
-      "specs": "Specifications:",
-      "behavior": "Behaviour",
-      "customBehavior": "Custom ({temperature})",
-      "save": "Save",
-      "saving": "Saving...",
-      "cancel": "Cancel",
-      "edit": "Edit",
-      "delete": "Delete"
-    },
-    "vector": {
-      "create": "Create file collection",
-      "collectionName": "Collection name",
-      "collectionNamePlaceholder": "Eg.: Collection for",
-      "chooseFiles": "Choose Files (you can pick multiple):",
-      "createAndAttach": "Create & Attach",
-      "docCollection": "Document Collection",
-      "collectionTitle": "Collection Name",
-      "quantity": "Quantity",
-      "filenames": "File Names",
-      "edit": "Edit files",
-      "editTitle": "Edit file collection",
-      "storeNamePlaceholder": "Collection name",
-      "addFiles": "Add files",
-      "replaceHelp": "To replace a file, remove the old one and add the new one.",
-      "newFiles": "New files",
-      "noFiles": "No files are attached.",
-      "remove": "Remove",
-      "keep": "Keep",
-      "save": "Save changes",
-      "saving": "Updating..."
-    },
-    "placeholder": "Select an assistant from the left column."
-  },
-  "AssistantPresets": {
-    "formal": {
-      "name": "Formal",
-      "description": "Predictable answers that stick to the instructions. For procedures and factual information."
-    },
-    "normal": {
-      "name": "Normal",
-      "description": "A balance between consistency and natural phrasing. Fits most cases."
-    },
-    "creative": {
-      "name": "Creative",
-      "description": "More varied answers with more initiative. For conversation and suggestions."
-    }
-  },
-
-  "CreateAssistant": {
-    "title": "Create new Assistant",
-    "presetLabel": "Behaviour",
-    "presetHelp": "Sets how predictable or varied the Assistant is when answering. You can change it later when editing.",
-    "name": "Name",
-    "nameHelp": "Name that will be associated with the Assistant.",
-    "description": "Description",
-    "descriptionHelp": "A brief description about the Assistant.",
-    "instructions": "Instructions",
-    "instructionsHelp": "Instructions the Assistant will follow.",
-    "create": "Create",
-    "cancel": "Cancel"
-  },
-
-  "Chatbox": {
-    "try": "Try Assistant",
-    "threadId": "Thread ID:",
-    "placeholder": "Type your message...",
-    "send": "Send",
-    "errorReply": "Error in reply",
-    "errorApi": "Error communicating with the API.",
-
-    "alerts": {
-      "emptyMessage": {
-        "title": "Empty message",
-        "message": "Write a message before sending."
-      },
-      "missingAssistant": {
-        "title": "Missing assistant",
-        "message": "The selected assistant could not be identified."
-      },
-      "missingOpenAiId": {
-        "title": "Incomplete configuration",
-        "message": "This assistant is not available right now. Please try again later or recreate the assistant to fix the configuration."
-      },
-      "apiError": {
-        "title": "Failed to get reply",
-        "message": "The assistant could not reply. Please try again."
-      },
-      "emptyReply": {
-        "title": "Empty reply",
-        "message": "The assistant returned no content."
-      },
-      "networkError": {
-        "title": "Connection error",
-        "message": " Check the connection and try again."
-      }
-    }
-  },
-  "Reports": {
-    "eyebrow": "Metrics and reports",
-    "title": "See adoption, activity, and assistant usage in one place",
-    "subtitle": "This first version is grounded in the data the app already stores today: users, assistants, threads, channels, and messages.",
-    "trailing30": "Trailing 30 days",
-    "updated": "Updated",
-    "loading": "Loading report…",
-    "noOrg": "We could not find an organization for this account yet.",
-    "sections": {
-      "snapshot": "Snapshot",
-      "activity": "Daily activity",
-      "activitySubtitle": "The last 14 days help you spot momentum changes quickly without opening individual user threads.",
-      "channels": "Channel breakdown",
-      "channelsSubtitle": "Use this to see whether adoption is happening more through WhatsApp or Teams.",
-      "assistants": "Assistant usage",
-      "assistantsSubtitle": "A quick read on which assistants are actually assigned, active, and carrying conversation volume.",
-      "watchouts": "Signals to act on",
-      "ideas": "Good next reports to add",
-      "ideasSubtitle": "These fit the product direction well, but some of them need extra event tracking before the numbers become trustworthy."
-    },
-    "cards": {
-      "users": {
-        "title": "Users",
-        "hint": "New in 30d"
-      },
-      "activeUsers": {
-        "title": "Active users",
-        "hint": "User base active in 30d"
-      },
-      "messages": {
-        "title": "Messages",
-        "hint": "Inbound / assistant in 30d"
-      },
-      "threads": {
-        "title": "Active threads",
-        "hint": "Active in 30d / total"
-      },
-      "coverage": {
-        "title": "Assistant coverage",
-        "hint": "Users assigned to an assistant"
-      },
-      "whatsapp": {
-        "title": "WhatsApp reach",
-        "hint": "Users with a phone number"
-      },
-      "teams": {
-        "title": "Teams reach",
-        "hint": "Users linked to Teams"
-      },
-      "quiet": {
-        "title": "Quiet users",
-        "hint": "Users with no thread yet"
-      }
-    },
-    "charts": {
-      "messages": {
-        "title": "Messages per day",
-        "subtitle": "Last 14 days",
-        "footer": "Total messages in chart",
-        "empty": "No message activity yet."
-      },
-      "users": {
-        "title": "New users per day",
-        "subtitle": "Last 14 days",
-        "footer": "New users in chart",
-        "empty": "No new users in this period."
-      }
-    },
-    "channels": {
-      "whatsapp": "WhatsApp",
-      "teams": "Teams",
-      "unknown": "Other / unknown",
-      "reachable": "Reachable users",
-      "activeThreads": "Active threads (30d)",
-      "messages": "Messages (30d)",
-      "split": "Inbound / assistant",
-      "lastActivity": "Last activity"
-    },
-    "assistants": {
-      "empty": "No assistants yet.",
-      "columns": {
-        "assistant": "Assistant",
-        "users": "Users",
-        "coverage": "Coverage",
-        "threads": "Threads",
-        "messages30d": "Msgs 30d",
-        "messagesAll": "All msgs",
-        "lastActivity": "Last activity"
-      }
-    },
-    "watchouts": {
-      "noIssues": {
-        "title": "No obvious blockers in this snapshot",
-        "text": "Nothing urgent stands out from these baseline metrics right now."
-      },
-      "unassigned": {
-        "title": "Unassigned users",
-        "text": "Users exist without an assistant attached, which can break onboarding or automation consistency."
-      },
-      "quiet": {
-        "title": "Users with no activity",
-        "text": "These users have no thread history yet, so they have not actually engaged with the product."
-      },
-      "idleAssistants": {
-        "title": "Idle assistants",
-        "text": "Some assistants exist but still have no message traffic. This usually means rollout is incomplete or discoverability is weak."
-      }
-    },
-    "roadmap": [
-      {
-        "title": "Broadcast performance",
-        "label": "Needs campaign events",
-        "text": "Delivery, template usage, reply rate, and opt-out rate by message or campaign."
-      },
-      {
-        "title": "Learning outcomes",
-        "label": "Needs lesson events",
-        "text": "Completion, quiz scores, and progression by assistant, team, or user segment."
-      },
-      {
-        "title": "Retention cohorts",
-        "label": "Needs return-visit logic",
-        "text": "How many users who start in week 1 are still active in weeks 2, 4, and 8."
-      },
-      {
-        "title": "AI quality signals",
-        "label": "Needs outcome tracking",
-        "text": "Fallback rate, unanswered intents, handoff moments, and response quality over time."
-      }
-    ],
-    "misc": {
-      "last30Users": "users",
-      "messagesPerActiveUser": "msgs per active user",
-      "avgMessagesPerThread": "avg msgs / thread",
-      "noData": "No data yet.",
-      "percentSuffix": "%",
-      "todayRange": "Last 14 days",
-      "multiChannel": "Multi-channel users",
-      "assistantsCount": "Assistants"
-    }
-  },
-  "AdminPage": {
-    "title": "Admin",
-    "newOrganization": {
-      "title": "New organization",
-      "placeholder": "Organization name…",
-      "create": "Create",
-      "creating": "Creating…",
-      "required": "Please enter the organization name."
-    },
-    "themes": {
-      "title": "Themes",
-      "loading": "Loading…",
-      "empty": "No organizations.",
-      "primary": "Primary",
-      "secondary": "Secondary",
-      "save": "Save",
-      "saving": "Saving…"
-    },
-    "messages": {
-      "loadOrganizationsError": "❌ Failed to load organizations",
-      "themeSaved": "✓ Theme saved for “{name}”.",
-      "themeSaveError": "❌ Could not save the theme.",
-      "organizationCreated": "✓ Organization #{id} created: “{name}”",
-      "organizationCreateError": "❌ Error creating organization."
-    },
-    "alerts": {
-      "loadOrganizationsError": {
-        "title": "Failed to load organizations",
-        "message": "Organizations could not be loaded. Please try again in a few seconds."
-      },
-      "organizationNameRequired": {
-        "title": "Missing name",
-        "message": "Fill in the organization name before creating it."
-      },
-      "organizationCreated": {
-        "title": "Organization created",
-        "message": "The organization \"{name}\" was created successfully."
-      },
-      "organizationCreateError": {
-        "title": "Failed to create organization",
-        "message": "The organization could not be created. Check the data and try again."
-      },
-      "themeSaved": {
-        "title": "Theme saved",
-        "message": "The theme for \"{name}\" was saved successfully."
-      },
-      "themeSaveError": {
-        "title": "Failed to save theme",
-        "message": "The theme could not be saved. Please try again in a few seconds."
-      },
-      "invalidColor": {
-        "title": "Invalid color",
-        "message": "Colors must use hexadecimal format, for example #4f46e5."
-      },
-      "notAuthenticated": {
-        "title": "Invalid session",
-        "message": "The authenticated user could not be identified. Please sign in again."
-      }
-    }
-  },
-
-  "Auth": {
-    "brand": "MyDigitalBot",
-    "example": "example@example.com",
-    "login": {
-      "title": "Sign in",
-      "email": "E-mail",
-      "password": "Password",
-      "login": "Sign in",
-      "forgot": "Forgot your password?",
-      "working": "Working…",
-      "success": "Success! Redirecting…",
-      "genericError": "Unable to sign in. Check your details and try again."
-    },
-    "reset": {
-      "title": "Recover password",
-      "email": "E-mail",
-      "send": "Send link",
-      "back": "Back to login",
-      "sending": "Sending…",
-      "sent": "If an account exists for that e-mail, you will receive a recovery link."
-    },
-    "resetConfirm": {
-      "title": "Set a new password",
-      "newPassword": "New password",
-      "confirm": "Confirm",
-      "back": "Back to login",
-      "preparing": "Preparing session…",
-      "invalid": "Invalid or expired link",
-      "updating": "Updating…",
-      "updated": "Password updated! Redirecting…",
-      "passwordPolicy": "The password must be at least 8 characters long and include an uppercase letter, a lowercase letter, and a special character.",
-      "genericError": "The password could not be updated. Please try again."
-    }
-  },
-
-  "Alert": {
-    "noContact": {
-      "title": "Missing Contact",
-      "message": "Add at least one contact method: phone, Teams, or email.",
-      "ok": "OK"
-    },
-    "fullOrg": {
-      "title": "User Limits",
-      "message": "This organization has reached its user limit.",
-      "ok": "OK"
-    }
-  },
-
-  "PillSelect": {
-    "placeholder": "Select…",
-    "empty": "No options."
-  },
-
-  "ThemePreview": {
-    "sampleCard": "Sample card",
-    "sampleBody": "Body text using your theme. Tweak colors to see it change.",
-    "primaryAction": "Primary action"
-  },
-  "NotFound": {
-    "title": "Page not Found",
-    "message": " The page you are searching for doesn't exist or was moved",
-    "buttonUser": "Got to Users",
-    "buttonLogin": "Go to Login"
-  },
-
-  "Delete": {
-    "title": "Are you sure?",
-    "namedTitle": "Are you sure you want to delete {name}?",
-    "deleteMessage": "This action cannot be undone."
-  },
-
-  "QuickActions": {
-    "selected": "selected",
-    "clear": "Clear",
-    "bulkLabel": "Set Assistant",
-    "apply": "Replace",
-    "addAssistantHint": "Adds this assistant to the ones users already have",
-    "replaceAssistantHint": "Users keep only this assistant",
-    "tag": "Add/Remove Tags",
-    "add": "Add",
-    "addTags": "Add selected tags to users",
-    "remove": "Remove",
-    "removeTags": "Remove selected tags from users",
-    "delete": "Delete Users",
-    "deleteUsers": "Delete selected users",
-    "confirmUserDeletion": {
-      "title": "Delete {number}  user(s)?",
-      "message": "This action cannot be undone.",
-      "confirm": "Delete",
-      "cancel": "Cancel"
-    }
-  },
-
-  "Analytics": {
-    "title": "Analytics",
-    "description": "Activity, delivery, automations and links for the organization in the selected period.",
-    "refresh": "Refresh",
-    "updatedAt": "Updated at {time}",
-    "retry": "Try again",
-    "loading": "Loading metrics...",
-    "actions": {
-      "viewUsers": "View users",
-      "viewAutomations": "View automations"
-    },
-    "errors": {
-      "load": "Metrics could not be loaded. Please try again in a few seconds.",
-      "noOrg": "The current organization could not be identified.",
-      "export": "Could not generate the Excel file. Please try again.",
-      "exportPartial": "The Excel file was downloaded with only the Summary and Dashboard: the detail data could not be retrieved.",
-      "exportPdf": "Could not generate the PDF. Please try again."
-    },
-    "health": {
-      "ok": "All good",
-      "noErrors": "No issues were found in the loaded data.",
-      "needsAttention": "Needs attention",
-      "errorsFound": "{count} issue(s) found in the current data."
-    },
-    "cards": {
-      "users": "Users",
-      "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
-      "assistants": "Assistants",
-      "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
-      "messages": "Messages",
-      "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
-      "delivery": "Delivery",
-      "deliveryHelper": "{read} read, {failed} failed.",
-      "templates": "Templates WhatsApp",
-      "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
-      "automations": "Automations",
-      "automationsHelper": "{active} active, {paused} paused.",
-      "automationRuns": "Automation runs",
-      "automationRunsHelper": "{processed} processed, {failed} failed.",
-      "scheduledBroadcasts": "Scheduled messages",
-      "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
-      "trackedLinks": "Tracked clicks",
-      "trackedLinksHelper": "{links} tracked links.",
-      "pendingOutreach": "Pending messages",
-      "pendingOutreachHelper": "{active} still active.",
-      "health": "Overall health",
-      "assistantCoverage": "Assigned assistants",
-      "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
-      "readRate": "Read rate",
-      "readRateHelper": "{read}/{total} messages read.",
-      "failureRate": "Failure rate",
-      "failureRateHelper": "{failed}/{total} failed messages.",
-      "clickDensity": "Clicks per link",
-      "clickDensityHelper": "{clicks} clicks across {links} links."
-    },
-    "sections": {
-      "breakdownTitle": "Operational summary",
-      "users": {
-        "title": "Coverage",
-        "value": "{withAssistant}/{total} with assistant",
-        "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
-      },
-      "messages": {
-        "title": "Activity",
-        "value": "{total} registered messages",
-        "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
-      },
-      "attention": {
-        "title": "Attention points",
-        "value": "{total} active issues",
-        "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
-      },
-      "next": {
-        "title": "Next improvement",
-        "value": "Add charts",
-        "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
-      },
-      "breakdownDescription": "A quick read of coverage, activity and points to review."
-    },
-    "charts": {
-      "email": "Email",
-      "phone": "Phone",
-      "teams": "Teams",
-      "whatsapp": "WhatsApp",
-      "active": "Active",
-      "pending": "Pending",
-      "rejected": "Rejected",
-      "assistants": "Assistants",
-      "templates": "Templates",
-      "messages": "Messages",
-      "automations": "Automations",
-      "scheduled": "Scheduled",
-      "messagesTitle": "Messages by channel",
-      "messagesDescription": "Comparison between WhatsApp and Teams messages.",
-      "templatesTitle": "Template status",
-      "templatesDescription": "Distribution of templates by status.",
-      "problemsTitle": "Issues found",
-      "problemsDescription": "Summary of areas that need attention.",
-      "sectionTitle": "Current distribution",
-      "sectionDescription": "Messages split by channel and templates split by status.",
-      "empty": "No data to show."
-    },
-    "periods": {
-      "label": "Filter by period",
-      "all": "All",
-      "last7Days": "7 days",
-      "last30Days": "30 days",
-      "last90Days": "90 days"
-    },
-    "trends": {
-      "title": "Daily trends",
-      "description": "Daily values for the selected period. When All is selected, the last 90 days are shown.",
-      "messagesTitle": "Messages per day",
-      "messagesDescription": "Total messages registered each day.",
-      "clicksTitle": "Clicks per day",
-      "clicksDescription": "Tracked link clicks registered each day.",
-      "failuresTitle": "Failures per day",
-      "failuresDescription": "Messages that failed each day.",
-      "automationsTitle": "Processed automations per day",
-      "automationsDescription": "Automation runs processed each day.",
-      "empty": "No data to show for this period.",
-      "peak": "Peak of {count} on {date}",
-      "expand": "Expand chart",
-      "close": "Close",
-      "detail": {
-        "total": "Total in period",
-        "totalMeta": "{active} of {days} days with activity",
-        "average": "Average per day",
-        "averageMeta": "{value} on active days",
-        "peak": "Peak",
-        "peakMeta": "on {date}",
-        "lastWeek": "Last 7 days",
-        "lastWeekMeta": "{delta} vs the previous 7 days",
-        "lastWeekNoBase": "No data in the previous 7 days",
-        "topDays": "Most active days",
-        "columns": {
-          "day": "Day",
-          "value": "Value",
-          "share": "Share"
+        "invalidForm": {
+          "title": "Missing information",
+          "message": "Fill in the message and choose a valid date and time before saving."
+        },
+        "saveSuccess": {
+          "title": "Message updated",
+          "message": "The scheduled message changes were saved successfully."
+        },
+        "saveError": {
+          "title": "Failed to save changes",
+          "message": "The scheduled message changes could not be saved."
+        },
+        "deleteSuccess": {
+          "title": "Message deleted",
+          "message": "The scheduled message was deleted successfully."
+        },
+        "deleteError": {
+          "title": "Failed to delete message",
+          "message": "The scheduled message could not be deleted."
         }
       }
     },
-    "groups": {
-      "overview": {
-        "title": "Overview",
-        "description": "Current organization setup and configuration status."
-      },
-      "activity": {
-        "title": "Activity",
-        "description": "Messages and delivery for the period: {period}."
-      },
-      "automations": {
-        "title": "Automations",
-        "description": "Automation rules, automation runs and scheduled messages."
-      },
-      "engagement": {
-        "title": "Engagement",
-        "description": "Tracked link clicks in the selected period."
-      }
-    },
-    "customization": {
-      "title": "Dashboard customization",
-      "description": "Show or hide metric groups. Your choice is saved in this browser.",
-      "show": "Show",
-      "hide": "Hide",
-      "reset": "Reset groups",
-      "resetCharts": "Reset charts",
-      "exports": "Export",
-      "resetDashboard": "Reset dashboard",
-      "hiddenNotice": "Some sections on this page are hidden.",
-      "exportPdf": "Export PDF",
-      "exportExcel": "Export Excel",
-      "exporting": "Exporting..."
-    },
-    "rankings": {
-      "title": "Rankings",
-      "description": "The most relevant items for the selected period.",
-      "topLinksTitle": "Top tracked links",
-      "topLinksDescription": "Links with the highest number of clicks.",
-      "automationFailuresTitle": "Automation failures",
-      "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
-      "empty": "No ranking data for this period.",
-      "columns": {
-        "link": "Link",
-        "clicks": "Clicks",
-        "automation": "Automation",
-        "failures": "Failures"
-      },
-      "viewAllLinks": "View full list ({count})",
-      "allLinksTitle": "Full links list",
-      "allLinksDescription": "All tracked links ordered by number of clicks.",
-      "close": "Close"
-    },
-    "excel": {
-      "title": "Analytics",
-      "summarySheet": "Summary",
-      "detail": {
-        "messagesSheet": "Messages",
-        "templatesSheet": "Templates",
-        "dailySheet": "Daily trend",
-        "language": "Language",
-        "scope": "Scope",
-        "providerTemplateId": "Provider ID",
-        "date": "Date",
-        "failures": "Failures",
-        "usersSheet": "Users",
-        "runsSheet": "Runs",
-        "scheduledSheet": "Scheduled",
-        "linksSheet": "Links",
-        "id": "ID",
-        "name": "Name",
-        "email": "Email",
-        "phone": "Phone",
+
+    "TrackedLinks": {
+      "title": "Tracked Links",
+      "subtitle": "View click performance for your organization's tracked links.",
+      "totalLinks": "Total Links",
+      "search": "Search by label, key, destination, or channel",
+      "loading": "Loading tracked links...",
+      "noLinks": "No tracked links found.",
+      "table": {
+        "label": "Label",
+        "key": "Key",
         "channel": "Channel",
-        "role": "Origin",
-        "status": "Status",
-        "deliveryStatus": "Delivery status",
-        "rule": "Rule",
-        "createdAt": "Created at",
-        "deliveredAt": "Delivered at",
-        "readAt": "Read at",
-        "failedAt": "Failed at",
-        "scheduledFor": "Scheduled for",
-        "processedAt": "Processed at",
-        "startedAt": "Started at",
-        "completedAt": "Completed at",
-        "lastError": "Last error",
-        "userId": "User ID",
-        "assistantId": "Assistant ID",
-        "threadId": "Thread ID",
-        "scheduledBroadcastId": "Broadcast ID",
-        "automationRunId": "Run ID",
-        "assistant": "Assistant",
-        "sendGroupId": "Send group ID",
-        "whatsappId": "WhatsApp ID",
-        "teamsId": "Teams ID",
-        "tags": "Tags",
+        "destination": "Destination",
         "recipients": "Recipients",
         "clicked": "Clicked",
-        "clicksTotal": "Clicks",
-        "clickRate": "Rate",
-        "linkLabel": "Link",
-        "destinationUrl": "Destination"
+        "totalClicks": "Total Clicks",
+        "clickRate": "Click Rate",
+        "created": "Created"
       },
-      "dashboardSheet": "Dashboard",
-      "panels": {
-        "messages": "MESSAGES",
-        "operations": "OPERATIONS",
-        "templates": "TEMPLATES"
+      "view": "View",
+
+      "detail": {
+        "alerts": {
+          "noOrg": {
+            "title": "Missing organization",
+            "message": "The organization could not be identified yet. Please try again in a few seconds."
+          },
+          "missingSendGroup": {
+            "title": "Invalid link",
+            "message": "The send group for this tracked link could not be identified."
+          },
+          "loadFailed": {
+            "title": "Failed to load details",
+            "message": "This tracked link's details could not be loaded. Please try again in a few seconds."
+          }
+        },
+        "back": "Back",
+        "loading": "Loading tracked link details...",
+        "trackedLink": "Tracked Link",
+        "key": "key",
+        "destinationUrl": "Destination URL",
+        "recipients": "Recipients",
+        "clicked": "Clicked",
+        "notClicked": "Not Clicked",
+        "totalClicks": "Total Clicks",
+        "clickRate": "Click Rate",
+        "created": "Created",
+        "noClickedUsers": "Nobody clicked this link yet.",
+        "allClickedUsers": "Everyone clicked this link.",
+        "recipient": "Recipient",
+        "email": "E-mail",
+        "phone": "Phone Number",
+        "clicks": "Clicks",
+        "firstClick": "First Click",
+        "lastClick": "Last Click",
+        "sentAt": "Sent at"
       },
-      "organization": "Organisation",
-      "period": "Period",
-      "exportedAt": "Exported on",
-      "columnGroup": "Group",
-      "columnMetric": "Metric",
-      "columnValue": "Value",
-      "columnRate": "Rate",
-      "groups": {
-        "users": "Users",
-        "assistants": "Assistants",
-        "messages": "Messages",
-        "automations": "Automations",
-        "scheduled": "Scheduled broadcasts",
-        "templates": "Templates",
-        "trackedLinks": "Tracked links",
-        "pendingOutreach": "Pending outreach"
+      "alerts": {
+        "noOrg": {
+          "title": "Missing organization",
+          "message": "The organization could not be identified yet. Please try again in a few seconds."
+        },
+        "loadFailed": {
+          "title": "Failed to load tracked links",
+          "message": "Tracked links could not be loaded. Please try again in a few seconds."
+        }
+      }
+    },
+    "Questions": {
+      "title": "Questions",
+      "subtitle": "Results of the quizzes and open questions sent on WhatsApp and Teams.",
+      "totalQuestions": "Questions",
+      "toReview": "To review",
+      "search": "Search by question text",
+      "filters": {
+        "allKinds": "All types",
+        "sentBetween": "Sent between",
+        "and": "and",
+        "from": "Sent from",
+        "to": "Sent until",
+        "clear": "Clear filters"
       },
-      "metrics": {
-        "total": "Total",
-        "withAssistant": "With assistant",
-        "withoutAssistant": "Without assistant",
-        "withEmail": "With email",
-        "withPhone": "With phone",
-        "withTeams": "With Teams",
-        "withWhatsapp": "With WhatsApp",
-        "withoutOpenAiId": "Without OpenAI ID",
+      "loading": "Loading questions...",
+      "noQuestions": "No question has been sent in this organization yet.",
+      "noMatches": "No question matches the filters.",
+      "kind": {
+        "quiz": "Quiz",
+        "survey": "Survey",
+        "open": "Open question"
+      },
+      "table": {
+        "question": "Question",
+        "answered": "Answers",
+        "responseRate": "Response rate",
+        "result": "Result"
+      },
+      "sentOn": "Sent on {date}",
+      "answersOf": "{answered} of {recipients}",
+      "correctRate": "{rate}% correct",
+      "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
+      "reviewCount": "{count} to review",
+      "export": {
+        "button": "Export Excel",
+        "exporting": "Exporting...",
+        "fileName": "questions",
+        "failed": {
+          "title": "Export failed",
+          "message": "The Excel file could not be generated. Try again in a few seconds."
+        },
+        "columns": {
+          "questionsSheet": "Questions",
+          "answersSheet": "Answers",
+          "sentAt": "Sent at",
+          "kindColumn": "Type",
+          "question": "Question",
+          "channels": "Channels",
+          "recipients": "Recipients",
+          "answered": "Answered",
+          "responseRate": "Response rate",
+          "correctRate": "Correct rate",
+          "correctOption": "Correct option",
+          "topOption": "Most chosen",
+          "expectedAnswer": "Expected answer",
+          "reviewNeeded": "To review",
+          "expiresAt": "Accepts answers until",
+          "questionId": "Question ID",
+          "answeredAt": "Answered at",
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "tags": "Tags",
+          "assistant": "Assistant",
+          "channel": "Channel",
+          "answer": "Answer",
+          "isCorrect": "Correct",
+          "verdict": "Verdict",
+          "feedback": "Feedback sent",
+          "userId": "Contact ID",
+          "yes": "Yes",
+          "no": "No"
+        }
+      },
+      "alerts": {
+        "noOrg": {
+          "title": "Missing organization",
+          "message": "The organization could not be identified yet. Please try again in a few seconds."
+        },
+        "loadFailed": {
+          "title": "Failed to load questions",
+          "message": "The questions could not be loaded. Please try again in a few seconds."
+        }
+      },
+      "detail": {
+        "back": "Back",
+        "loading": "Loading the question...",
+        "options": "Options",
+        "correctOption": "correct",
+        "expectedAnswer": "Expected answer",
+        "aiEvaluation": "AI evaluation",
+        "aiOn": "on",
+        "aiOff": "off",
+        "sentAt": "Sent",
+        "expiresAt": "Accepts answers until",
+        "recipients": "Recipients",
+        "answered": "Answered",
+        "notAnswered": "Did not answer",
+        "responseRate": "Response rate",
+        "correct": "Correct",
+        "correctRate": "Correct rate",
+        "correctOf": "{correct} of {answered}",
+        "toReview": "To review",
+        "verdictsTitle": "Verdicts",
+        "answeredCount": "Answered ({count})",
+        "notAnsweredCount": "Did not answer ({count})",
+        "filters": {
+          "search": "Search by name, email or phone",
+          "allAnswers": "All answers",
+          "noMatches": "No contact matches the filters."
+        },
+        "verdicts": {
+          "completa": "Complete",
+          "parcial": "Partial",
+          "incompleta": "Incomplete",
+          "none": "No verdict"
+        },
+        "table": {
+          "contact": "Contact",
+          "phone": "Phone",
+          "answer": "Answer",
+          "result": "Result",
+          "verdict": "Verdict",
+          "choice": "Choice",
+          "aiVerdict": "AI: {verdict}",
+          "feedback": "Feedback sent",
+          "answeredAt": "Answered",
+          "sentAt": "Sent"
+        },
+        "right": "Right",
+        "wrong": "Wrong",
+        "reviewNeeded": "To review",
+        "useAiVerdict": "Keep the AI verdict",
+        "noAnswers": "Nobody has answered yet.",
+        "allAnswered": "Everyone answered.",
+        "alerts": {
+          "noOrg": {
+            "title": "Missing organization",
+            "message": "The organization could not be identified yet. Please try again in a few seconds."
+          },
+          "missingQuestion": {
+            "title": "Invalid question",
+            "message": "The question could not be identified."
+          },
+          "loadFailed": {
+            "title": "Failed to load the question",
+            "message": "The results of this question could not be loaded. Please try again in a few seconds."
+          },
+          "updateFailed": {
+            "title": "Failed to save the verdict",
+            "message": "The correction could not be saved. Please try again."
+          }
+        }
+      }
+    },
+
+    "Media": {
+      "title": "Media",
+      "subtitle": "Images, PDFs and videos uploaded in the organization's messages.",
+      "totalSize": "Space used",
+      "totalFiles": "Files",
+      "search": "Search by name",
+      "loading": "Loading files...",
+      "noFiles": "No files have been uploaded in messages yet.",
+      "noMatches": "No files match your search.",
+      "inUseHint": "This file will be sent in a scheduled message or an active chain. If it were deleted now, the message would go out without it. It can be deleted after the message is sent or cancelled.",
+      "openScheduled": "Open the scheduled message that uses this file",
+      "download": "Download {name}",
+      "table": {
+        "file": "File",
+        "size": "Size",
+        "uploaded": "Uploaded on",
+        "status": "Status"
+      },
+      "type": {
+        "image": "Image",
+        "pdf": "PDF",
+        "video": "Video",
+        "other": "File"
+      },
+      "status": {
+        "inUse": "In use",
+        "free": "Free"
+      },
+      "confirm": {
+        "title": "Delete {name}?",
+        "message": "The file will stop opening in messages already sent with it. This cannot be undone."
+      },
+      "alerts": {
+        "loadFailed": {
+          "title": "Loading error",
+          "message": "The files could not be loaded."
+        },
+        "deleteFailed": {
+          "title": "Delete error",
+          "message": "The file could not be deleted."
+        },
+        "inUse": {
+          "title": "File in use"
+        }
+      }
+    },
+
+    "Assistants": {
+      "myAssistants": "My Assistants",
+      "createAssistant": "Create Assistant",
+      "loadingOrg": "Loading organization…",
+      "empty": "No assistants yet.",
+      "details": {
+        "descriptionPlaceholder": "A brief description",
+        "instructionsPlaceholder": "Assistant's instructions",
+        "createdAt": "Created at",
+        "specs": "Specifications:",
+        "behavior": "Behaviour",
+        "customBehavior": "Custom ({temperature})",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "vector": {
+        "create": "Create file collection",
+        "collectionName": "Collection name",
+        "collectionNamePlaceholder": "Eg.: Collection for",
+        "chooseFiles": "Choose Files (you can pick multiple):",
+        "createAndAttach": "Create & Attach",
+        "docCollection": "Document Collection",
+        "collectionTitle": "Collection Name",
+        "quantity": "Quantity",
+        "filenames": "File Names",
+        "edit": "Edit files",
+        "editTitle": "Edit file collection",
+        "storeNamePlaceholder": "Collection name",
+        "addFiles": "Add files",
+        "replaceHelp": "To replace a file, remove the old one and add the new one.",
+        "newFiles": "New files",
+        "noFiles": "No files are attached.",
+        "remove": "Remove",
+        "keep": "Keep",
+        "save": "Save changes",
+        "saving": "Updating..."
+      },
+      "placeholder": "Select an assistant from the left column."
+    },
+    "AssistantPresets": {
+      "formal": {
+        "name": "Formal",
+        "description": "Predictable answers that stick to the instructions. For procedures and factual information."
+      },
+      "normal": {
+        "name": "Normal",
+        "description": "A balance between consistency and natural phrasing. Fits most cases."
+      },
+      "creative": {
+        "name": "Creative",
+        "description": "More varied answers with more initiative. For conversation and suggestions."
+      }
+    },
+
+    "CreateAssistant": {
+      "title": "Create new Assistant",
+      "presetLabel": "Behaviour",
+      "presetHelp": "Sets how predictable or varied the Assistant is when answering. You can change it later when editing.",
+      "name": "Name",
+      "nameHelp": "Name that will be associated with the Assistant.",
+      "description": "Description",
+      "descriptionHelp": "A brief description about the Assistant.",
+      "instructions": "Instructions",
+      "instructionsHelp": "Instructions the Assistant will follow.",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+
+    "Chatbox": {
+      "try": "Try Assistant",
+      "threadId": "Thread ID:",
+      "placeholder": "Type your message...",
+      "send": "Send",
+      "errorReply": "Error in reply",
+      "errorApi": "Error communicating with the API.",
+
+      "alerts": {
+        "emptyMessage": {
+          "title": "Empty message",
+          "message": "Write a message before sending."
+        },
+        "missingAssistant": {
+          "title": "Missing assistant",
+          "message": "The selected assistant could not be identified."
+        },
+        "missingOpenAiId": {
+          "title": "Incomplete configuration",
+          "message": "This assistant is not available right now. Please try again later or recreate the assistant to fix the configuration."
+        },
+        "apiError": {
+          "title": "Failed to get reply",
+          "message": "The assistant could not reply. Please try again."
+        },
+        "emptyReply": {
+          "title": "Empty reply",
+          "message": "The assistant returned no content."
+        },
+        "networkError": {
+          "title": "Connection error",
+          "message": " Check the connection and try again."
+        }
+      }
+    },
+    "Reports": {
+      "eyebrow": "Metrics and reports",
+      "title": "See adoption, activity, and assistant usage in one place",
+      "subtitle": "This first version is grounded in the data the app already stores today: users, assistants, threads, channels, and messages.",
+      "trailing30": "Trailing 30 days",
+      "updated": "Updated",
+      "loading": "Loading report…",
+      "noOrg": "We could not find an organization for this account yet.",
+      "sections": {
+        "snapshot": "Snapshot",
+        "activity": "Daily activity",
+        "activitySubtitle": "The last 14 days help you spot momentum changes quickly without opening individual user threads.",
+        "channels": "Channel breakdown",
+        "channelsSubtitle": "Use this to see whether adoption is happening more through WhatsApp or Teams.",
+        "assistants": "Assistant usage",
+        "assistantsSubtitle": "A quick read on which assistants are actually assigned, active, and carrying conversation volume.",
+        "watchouts": "Signals to act on",
+        "ideas": "Good next reports to add",
+        "ideasSubtitle": "These fit the product direction well, but some of them need extra event tracking before the numbers become trustworthy."
+      },
+      "cards": {
+        "users": {
+          "title": "Users",
+          "hint": "New in 30d"
+        },
+        "activeUsers": {
+          "title": "Active users",
+          "hint": "User base active in 30d"
+        },
+        "messages": {
+          "title": "Messages",
+          "hint": "Inbound / assistant in 30d"
+        },
+        "threads": {
+          "title": "Active threads",
+          "hint": "Active in 30d / total"
+        },
+        "coverage": {
+          "title": "Assistant coverage",
+          "hint": "Users assigned to an assistant"
+        },
+        "whatsapp": {
+          "title": "WhatsApp reach",
+          "hint": "Users with a phone number"
+        },
+        "teams": {
+          "title": "Teams reach",
+          "hint": "Users linked to Teams"
+        },
+        "quiet": {
+          "title": "Quiet users",
+          "hint": "Users with no thread yet"
+        }
+      },
+      "charts": {
+        "messages": {
+          "title": "Messages per day",
+          "subtitle": "Last 14 days",
+          "footer": "Total messages in chart",
+          "empty": "No message activity yet."
+        },
+        "users": {
+          "title": "New users per day",
+          "subtitle": "Last 14 days",
+          "footer": "New users in chart",
+          "empty": "No new users in this period."
+        }
+      },
+      "channels": {
         "whatsapp": "WhatsApp",
         "teams": "Teams",
-        "fromUser": "From user",
-        "fromAssistant": "From assistant",
-        "delivered": "Delivered",
-        "read": "Read",
-        "failed": "Failed",
-        "rulesTotal": "Rules",
-        "rulesActive": "Active rules",
-        "rulesPaused": "Paused rules",
-        "runsTotal": "Runs",
-        "runsProcessed": "Processed",
-        "runsFailed": "Failed",
-        "queued": "Queued",
-        "completed": "Completed",
-        "recipients": "Recipients",
+        "unknown": "Other / unknown",
+        "reachable": "Reachable users",
+        "activeThreads": "Active threads (30d)",
+        "messages": "Messages (30d)",
+        "split": "Inbound / assistant",
+        "lastActivity": "Last activity"
+      },
+      "assistants": {
+        "empty": "No assistants yet.",
+        "columns": {
+          "assistant": "Assistant",
+          "users": "Users",
+          "coverage": "Coverage",
+          "threads": "Threads",
+          "messages30d": "Msgs 30d",
+          "messagesAll": "All msgs",
+          "lastActivity": "Last activity"
+        }
+      },
+      "watchouts": {
+        "noIssues": {
+          "title": "No obvious blockers in this snapshot",
+          "text": "Nothing urgent stands out from these baseline metrics right now."
+        },
+        "unassigned": {
+          "title": "Unassigned users",
+          "text": "Users exist without an assistant attached, which can break onboarding or automation consistency."
+        },
+        "quiet": {
+          "title": "Users with no activity",
+          "text": "These users have no thread history yet, so they have not actually engaged with the product."
+        },
+        "idleAssistants": {
+          "title": "Idle assistants",
+          "text": "Some assistants exist but still have no message traffic. This usually means rollout is incomplete or discoverability is weak."
+        }
+      },
+      "roadmap": [
+        {
+          "title": "Broadcast performance",
+          "label": "Needs campaign events",
+          "text": "Delivery, template usage, reply rate, and opt-out rate by message or campaign."
+        },
+        {
+          "title": "Learning outcomes",
+          "label": "Needs lesson events",
+          "text": "Completion, quiz scores, and progression by assistant, team, or user segment."
+        },
+        {
+          "title": "Retention cohorts",
+          "label": "Needs return-visit logic",
+          "text": "How many users who start in week 1 are still active in weeks 2, 4, and 8."
+        },
+        {
+          "title": "AI quality signals",
+          "label": "Needs outcome tracking",
+          "text": "Fallback rate, unanswered intents, handoff moments, and response quality over time."
+        }
+      ],
+      "misc": {
+        "last30Users": "users",
+        "messagesPerActiveUser": "msgs per active user",
+        "avgMessagesPerThread": "avg msgs / thread",
+        "noData": "No data yet.",
+        "percentSuffix": "%",
+        "todayRange": "Last 14 days",
+        "multiChannel": "Multi-channel users",
+        "assistantsCount": "Assistants"
+      }
+    },
+    "AdminPage": {
+      "title": "Admin",
+      "newOrganization": {
+        "title": "New organization",
+        "placeholder": "Organization name…",
+        "create": "Create",
+        "creating": "Creating…",
+        "required": "Please enter the organization name."
+      },
+      "themes": {
+        "title": "Themes",
+        "loading": "Loading…",
+        "empty": "No organizations.",
+        "primary": "Primary",
+        "secondary": "Secondary",
+        "save": "Save",
+        "saving": "Saving…"
+      },
+      "messages": {
+        "loadOrganizationsError": "❌ Failed to load organizations",
+        "themeSaved": "✓ Theme saved for “{name}”.",
+        "themeSaveError": "❌ Could not save the theme.",
+        "organizationCreated": "✓ Organization #{id} created: “{name}”",
+        "organizationCreateError": "❌ Error creating organization."
+      },
+      "alerts": {
+        "loadOrganizationsError": {
+          "title": "Failed to load organizations",
+          "message": "Organizations could not be loaded. Please try again in a few seconds."
+        },
+        "organizationNameRequired": {
+          "title": "Missing name",
+          "message": "Fill in the organization name before creating it."
+        },
+        "organizationCreated": {
+          "title": "Organization created",
+          "message": "The organization \"{name}\" was created successfully."
+        },
+        "organizationCreateError": {
+          "title": "Failed to create organization",
+          "message": "The organization could not be created. Check the data and try again."
+        },
+        "themeSaved": {
+          "title": "Theme saved",
+          "message": "The theme for \"{name}\" was saved successfully."
+        },
+        "themeSaveError": {
+          "title": "Failed to save theme",
+          "message": "The theme could not be saved. Please try again in a few seconds."
+        },
+        "invalidColor": {
+          "title": "Invalid color",
+          "message": "Colors must use hexadecimal format, for example #4f46e5."
+        },
+        "notAuthenticated": {
+          "title": "Invalid session",
+          "message": "The authenticated user could not be identified. Please sign in again."
+        }
+      }
+    },
+
+    "Auth": {
+      "brand": "MyDigitalBot",
+      "example": "example@example.com",
+      "login": {
+        "title": "Sign in",
+        "email": "E-mail",
+        "password": "Password",
+        "login": "Sign in",
+        "forgot": "Forgot your password?",
+        "working": "Working…",
+        "success": "Success! Redirecting…",
+        "genericError": "Unable to sign in. Check your details and try again."
+      },
+      "reset": {
+        "title": "Recover password",
+        "email": "E-mail",
+        "send": "Send link",
+        "back": "Back to login",
+        "sending": "Sending…",
+        "sent": "If an account exists for that e-mail, you will receive a recovery link."
+      },
+      "resetConfirm": {
+        "title": "Set a new password",
+        "newPassword": "New password",
+        "confirm": "Confirm",
+        "back": "Back to login",
+        "preparing": "Preparing session…",
+        "invalid": "Invalid or expired link",
+        "updating": "Updating…",
+        "updated": "Password updated! Redirecting…",
+        "passwordPolicy": "The password must be at least 8 characters long and include an uppercase letter, a lowercase letter, and a special character.",
+        "genericError": "The password could not be updated. Please try again."
+      }
+    },
+
+    "Alert": {
+      "noContact": {
+        "title": "Missing Contact",
+        "message": "Add at least one contact method: phone, Teams, or email.",
+        "ok": "OK"
+      },
+      "fullOrg": {
+        "title": "User Limits",
+        "message": "This organization has reached its user limit.",
+        "ok": "OK"
+      }
+    },
+
+    "PillSelect": {
+      "placeholder": "Select…",
+      "empty": "No options."
+    },
+
+    "ThemePreview": {
+      "sampleCard": "Sample card",
+      "sampleBody": "Body text using your theme. Tweak colors to see it change.",
+      "primaryAction": "Primary action"
+    },
+    "NotFound": {
+      "title": "Page not Found",
+      "message": " The page you are searching for doesn't exist or was moved",
+      "buttonUser": "Got to Users",
+      "buttonLogin": "Go to Login"
+    },
+
+    "Delete": {
+      "title": "Are you sure?",
+      "namedTitle": "Are you sure you want to delete {name}?",
+      "deleteMessage": "This action cannot be undone."
+    },
+
+    "QuickActions": {
+      "selected": "selected",
+      "clear": "Clear",
+      "bulkLabel": "Set Assistant",
+      "apply": "Replace",
+      "addAssistantHint": "Adds this assistant to the ones users already have",
+      "replaceAssistantHint": "Users keep only this assistant",
+      "tag": "Add/Remove Tags",
+      "add": "Add",
+      "addTags": "Add selected tags to users",
+      "remove": "Remove",
+      "removeTags": "Remove selected tags from users",
+      "delete": "Delete Users",
+      "deleteUsers": "Delete selected users",
+      "confirmUserDeletion": {
+        "title": "Delete {number}  user(s)?",
+        "message": "This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
+      }
+    },
+
+    "Analytics": {
+      "title": "Analytics",
+      "description": "Activity, delivery, automations and links for the organization in the selected period.",
+      "refresh": "Refresh",
+      "updatedAt": "Updated at {time}",
+      "retry": "Try again",
+      "loading": "Loading metrics...",
+      "actions": {
+        "viewUsers": "View users",
+        "viewAutomations": "View automations"
+      },
+      "errors": {
+        "load": "Metrics could not be loaded. Please try again in a few seconds.",
+        "noOrg": "The current organization could not be identified.",
+        "export": "Could not generate the Excel file. Please try again.",
+        "exportPartial": "The Excel file was downloaded with only the Summary and Dashboard: the detail data could not be retrieved.",
+        "exportPdf": "Could not generate the PDF. Please try again."
+      },
+      "health": {
+        "ok": "All good",
+        "noErrors": "No issues were found in the loaded data.",
+        "needsAttention": "Needs attention",
+        "errorsFound": "{count} issue(s) found in the current data."
+      },
+      "cards": {
+        "users": "Users",
+        "usersHelper": "{withAssistant} with assistant, {withoutAssistant} without assistant.",
+        "assistants": "Assistants",
+        "assistantsHelper": "{withoutOpenAiId} without configured OpenAI ID.",
+        "messages": "Messages",
+        "messagesHelper": "{whatsapp} WhatsApp, {teams} Teams.",
+        "delivery": "Delivery",
+        "deliveryHelper": "{read} read, {failed} failed.",
+        "templates": "Templates WhatsApp",
+        "templatesHelper": "{active} active, {pending} pending, {rejected} rejected.",
+        "automations": "Automations",
+        "automationsHelper": "{active} active, {paused} paused.",
+        "automationRuns": "Automation runs",
+        "automationRunsHelper": "{processed} processed, {failed} failed.",
+        "scheduledBroadcasts": "Scheduled messages",
+        "scheduledBroadcastsHelper": "{queued} queued, {completed} completed, {failed} failed, {recipients} recipients.",
+        "trackedLinks": "Tracked clicks",
+        "trackedLinksHelper": "{links} tracked links.",
+        "pendingOutreach": "Pending messages",
+        "pendingOutreachHelper": "{active} still active.",
+        "health": "Overall health",
+        "assistantCoverage": "Assigned assistants",
+        "assistantCoverageHelper": "{withAssistant}/{total} users with an assistant.",
+        "readRate": "Read rate",
+        "readRateHelper": "{read}/{total} messages read.",
+        "failureRate": "Failure rate",
+        "failureRateHelper": "{failed}/{total} failed messages.",
+        "clickDensity": "Clicks per link",
+        "clickDensityHelper": "{clicks} clicks across {links} links."
+      },
+      "sections": {
+        "breakdownTitle": "Operational summary",
+        "users": {
+          "title": "Coverage",
+          "value": "{withAssistant}/{total} with assistant",
+          "text": "{email} with email, {phone} with phone, {teams} with Teams and {whatsapp} with WhatsApp/Bird."
+        },
+        "messages": {
+          "title": "Activity",
+          "value": "{total} registered messages",
+          "text": "{userMessages} user messages, {assistantMessages} assistant replies, {read} read and {failed} failed."
+        },
+        "attention": {
+          "title": "Attention points",
+          "value": "{total} active issues",
+          "text": "{automationFailures} automation failures, {scheduledFailures} failed scheduled messages and {rejectedTemplates} rejected templates."
+        },
+        "next": {
+          "title": "Next improvement",
+          "value": "Add charts",
+          "text": "The next step is to show trends over time: messages per day, clicks per day, failures per day and processed automations."
+        },
+        "breakdownDescription": "A quick read of coverage, activity and points to review."
+      },
+      "charts": {
+        "email": "Email",
+        "phone": "Phone",
+        "teams": "Teams",
+        "whatsapp": "WhatsApp",
         "active": "Active",
         "pending": "Pending",
         "rejected": "Rejected",
-        "linksTotal": "Links",
-        "clicksTotal": "Clicks"
-      }
-    }
-  },
-  "Settings": {
-    "title": "Settings",
-    "description": "Manage your organization, appearance, and integrations in one place.",
-    "loadError": "Organization settings could not be loaded.",
-    "organizationMissing": "No organization was found for this account.",
-    "retry": "Try again",
-    "save": "Save changes",
-    "saving": "Saving…",
-    "saveSuccessTitle": "Settings saved",
-    "saveSuccess": "The organization settings were updated.",
-    "saveErrorTitle": "Could not save",
-    "saveError": "The organization settings could not be saved.",
-    "organization": {
-      "title": "Organization",
-      "description": "General details used throughout the application.",
-      "name": "Name",
-      "defaultCountryCode": "Phone country code",
-      "defaultCountryCodeHelp": "Used as the default when new users are created."
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize the organization's colors and logo.",
-      "primary": "Primary color",
-      "secondary": "Secondary color",
-      "primaryPicker": "Choose primary color",
-      "secondaryPicker": "Choose secondary color"
-    },
-    "preview": {
-      "organization": "Organization",
-      "cardTitle": "Preview",
-      "cardText": "An example of the application's appearance.",
-      "action": "Primary action"
-    },
-    "logo": {
-      "title": "Logo",
-      "choose": "Choose file",
-      "help": "PNG, JPEG, or WebP. Maximum size: 2 MB.",
-      "upload": "Upload logo",
-      "working": "Working…",
-      "reset": "Reset",
-      "invalidType": "Choose a PNG, JPEG, or WebP image.",
-      "tooLarge": "The file must not exceed 2 MB.",
-      "uploadSuccessTitle": "Logo updated",
-      "uploadSuccess": "The new logo was saved.",
-      "uploadErrorTitle": "Logo error",
-      "uploadError": "The logo could not be uploaded.",
-      "resetSuccess": "The default logo was restored.",
-      "resetError": "The default logo could not be restored."
-    },
-    "favicon": {
-      "title": "Favicon",
-      "choose": "Choose file",
-      "help": "Use a square image of 64 × 64 px or larger, preferably a PNG with a transparent background. PNG, JPEG or WebP, up to 2 MB.",
-      "nonSquareWarning": "This image is not square. We will keep its proportions and add transparent padding; the symbol may look smaller in the browser tab.",
-      "upload": "Upload favicon",
-      "working": "Working…",
-      "reset": "Remove favicon",
-      "invalidType": "Choose a PNG, JPEG, or WebP image.",
-      "tooLarge": "The file must not exceed 2 MB.",
-      "uploadSuccessTitle": "Favicon updated",
-      "uploadSuccess": "The new favicon was saved.",
-      "uploadErrorTitle": "Favicon error",
-      "uploadError": "The favicon could not be uploaded.",
-      "resetSuccess": "The MyDigitalBot favicon has been restored.",
-      "resetError": "The default favicon could not be restored."
-    },
-    "integrations": {
-      "title": "Integrations",
-      "description": "Configure identifiers for messaging platforms.",
-      "teamsTitle": "Microsoft Teams",
-      "tenantId": "Tenant ID",
-      "tenantIdHelp": "The Microsoft tenant identifier associated with this organization.",
-      "whatsappTitle": "WhatsApp Business",
-      "wabaId": "Whatsapp Business Account ID",
-      "namespace": "Namespace",
-      "namespaceOptional": "optional"
-    },
-    "validation": {
-      "nameRequired": "The organization name is required.",
-      "nameTooLong": "The name must not exceed 150 characters.",
-      "invalidColor": "Use a 3- or 6-digit hexadecimal color, such as #0af or #00aaff.",
-      "teamsConflict": "This Microsoft Teams Tenant ID is already assigned to another organization."
-    }
-  },
-  "Dashboard": {
-    "title": "Home",
-    "description": "An overview of your organization's usage and configuration.",
-    "organizationMissing": "No organization was found for this account.",
-    "loadError": "The dashboard could not be loaded.",
-    "refresh": "Refresh",
-    "retry": "Try again",
-    "updatedAt": "Updated at {time}",
-    "groups": {
-      "users": "Users",
-      "content": "Content",
-      "automations": "Automations"
-    },
-    "sections": {
-      "usersDescription": "Channel configuration and usage.",
-      "contentDescription": "Content created and available to the organization.",
-      "automationsDescription": "Configured rules and queued messages."
-    },
-    "actions": {
-      "viewUsers": "View users",
-      "viewAssistants": "View assistants",
-      "viewAutomations": "View automations",
-      "viewScheduled": "View scheduled",
-      "viewAnalytics": "View analytics"
-    },
-    "metrics": {
-      "totalUsers": "Total users",
-      "teamsConfigured": "With Teams configured",
-      "whatsappConfigured": "With WhatsApp configured",
-      "teamsUsed": "Have used Teams",
-      "whatsappUsed": "Have used WhatsApp",
-      "tags": "Tags created",
-      "assistants": "Assistants created",
-      "automationsTotal": "Automations created",
-      "automationsActive": "Active automations",
-      "scheduledMessages": "Scheduled messages"
-    },
-    "meta": {
-      "inOrganization": "in the organization",
-      "shareOfUsers": "{percent}% of users",
-      "tags": "to segment users",
-      "assistants": "available to the organization",
-      "automationsTotal": "configured rules",
-      "automationsActive": "of {total} created",
-      "scheduledMessages": "queued for delivery"
-    },
-    "activity": {
-      "title": "Recent activity",
-      "description": "Messages exchanged in the last {days} days.",
-      "total": "{count, plural, one {# message} other {# messages}}",
-      "teams": "Teams",
-      "whatsapp": "WhatsApp",
-      "empty": "No messages in this period.",
-      "dayTooltip": "{date}: {teams} Teams, {whatsapp} WhatsApp"
-    },
-    "upcoming": {
-      "title": "Upcoming sends",
-      "description": "Scheduled messages still in the queue.",
-      "empty": "No scheduled sends.",
-      "recipients": "{count, plural, one {# recipient} other {# recipients}}",
-      "noPreview": "No text"
-    },
-    "channels": {
-      "teams": "Teams",
-      "whatsapp": "WhatsApp"
-    }
-  },
-  "ActivityLog": {
-    "Title": "Activity history",
-    "Subtitle": "Chronology of the actions made in the organization, newest first.",
-    "Loading": "Loading history...",
-    "Refresh": "Refresh",
-    "Filters": {
-      "from": "From",
-      "to": "To",
-      "clear": "Clear filters"
-    },
-    "Areas": {
-      "all": "All areas",
-      "teams_group": "Teams groups",
-      "user": "Users",
-      "tag": "Tags",
-      "assistant": "Assistants",
-      "automation": "Automations",
-      "broadcast": "Messages",
-      "message": "Individual messages",
-      "template": "Templates",
-      "media": "Media",
-      "organization": "Organization"
-    },
-    "Channels": {
-      "whatsapp": "WhatsApp",
-      "teams": "Teams"
-    },
-    "Actions": {
-      "user_created": "User created",
-      "user_updated": "User edited",
-      "user_deleted": "User deleted",
-      "user_bulk_updated": "Assistant changed in bulk",
-      "user_bulk_deleted": "Users deleted in bulk",
-      "user_tags_updated": "User tags changed",
-      "user_imported": "Users imported",
-      "tag_created": "Tag created",
-      "tag_updated": "Tag edited",
-      "tag_deleted": "Tag deleted",
-      "assistant_created": "Assistant created",
-      "assistant_updated": "Assistant edited",
-      "assistant_deleted": "Assistant deleted",
-      "assistant_files_added": "Files added to assistant",
-      "assistant_files_removed": "Files removed from assistant",
-      "automation_created": "Automation created",
-      "automation_updated": "Automation edited",
-      "automation_deleted": "Automation deleted",
-      "broadcast_sent": "Message sent",
-      "broadcast_scheduled": "Message scheduled",
-      "broadcast_schedule_updated": "Schedule edited",
-      "broadcast_schedule_deleted": "Schedule deleted",
-      "broadcast_read_chain_created": "Read chain created",
-      "message_template_sent": "Template sent to a user",
-      "template_created": "WhatsApp template created",
-      "media_deleted": "Media file deleted",
-      "organization_created": "Organization created",
-      "organization_settings_updated": "Organization settings changed",
-      "automation_triggered": "Automation triggered",
-      "broadcast_scheduled_sent": "Scheduled message sent",
-      "message_received": "Message received",
-      "teams_group_updated": "Teams group edited",
-      "unknown": "Unknown action"
-    },
-    "Table": {
-      "when": "When",
-      "action": "Action",
-      "entity": "Item",
-      "details": "Details",
-      "actor": "Author"
-    },
-    "Actor": {
-      "system": "System",
-      "unknown": "Unknown"
-    },
-    "Details": {
-      "yes": "Yes",
-      "no": "No",
-      "delivered": "Delivered",
-      "notDelivered": "Not delivered",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
-      "sourceAutomation": "Automation",
-      "importSummary": "{created} created, {updated} updated, {failed} failed",
-      "sendSummary": "{ok} succeeded, {failed} failed",
-      "labels": {
-        "channel": "Channel",
-        "scope": "Scope",
-        "trigger": "Trigger",
-        "user": "User",
-        "email": "Email",
-        "phone": "Phone",
-        "assistant": "Assistant",
-        "fields": "Changed fields",
-        "recipients": "Recipients",
-        "groups": "Teams groups",
-        "result": "Result",
-        "count": "Users",
-        "failedCount": "Failed",
-        "operation": "Operation",
-        "files": "Files",
-        "store": "Knowledge base",
-        "scheduledFor": "Scheduled for",
-        "timezone": "Timezone",
-        "status": "Status",
-        "enabled": "Read chains",
-        "withTemplate": "With template",
+        "assistants": "Assistants",
+        "templates": "Templates",
+        "messages": "Messages",
+        "automations": "Automations",
         "scheduled": "Scheduled",
-        "source": "Source",
-        "model": "Model",
-        "language": "Language",
-        "category": "Category",
-        "color": "Color",
-        "active": "Active",
-        "steps": "Messages in chain",
-        "sent": "Sent",
-        "waitingForReply": "Waiting for reply",
-        "error": "Error"
+        "messagesTitle": "Messages by channel",
+        "messagesDescription": "Comparison between WhatsApp and Teams messages.",
+        "templatesTitle": "Template status",
+        "templatesDescription": "Distribution of templates by status.",
+        "problemsTitle": "Issues found",
+        "problemsDescription": "Summary of areas that need attention.",
+        "sectionTitle": "Current distribution",
+        "sectionDescription": "Messages split by channel and templates split by status.",
+        "empty": "No data to show."
       },
-      "fieldNames": {
+      "periods": {
+        "label": "Filter by period",
+        "all": "All",
+        "last7Days": "7 days",
+        "last30Days": "30 days",
+        "last90Days": "90 days"
+      },
+      "trends": {
+        "title": "Daily trends",
+        "description": "Daily values for the selected period. When All is selected, the last 90 days are shown.",
+        "messagesTitle": "Messages per day",
+        "messagesDescription": "Total messages registered each day.",
+        "clicksTitle": "Clicks per day",
+        "clicksDescription": "Tracked link clicks registered each day.",
+        "failuresTitle": "Failures per day",
+        "failuresDescription": "Messages that failed each day.",
+        "automationsTitle": "Processed automations per day",
+        "automationsDescription": "Automation runs processed each day.",
+        "empty": "No data to show for this period.",
+        "peak": "Peak of {count} on {date}",
+        "expand": "Expand chart",
+        "close": "Close",
+        "detail": {
+          "total": "Total in period",
+          "totalMeta": "{active} of {days} days with activity",
+          "average": "Average per day",
+          "averageMeta": "{value} on active days",
+          "peak": "Peak",
+          "peakMeta": "on {date}",
+          "lastWeek": "Last 7 days",
+          "lastWeekMeta": "{delta} vs the previous 7 days",
+          "lastWeekNoBase": "No data in the previous 7 days",
+          "topDays": "Most active days",
+          "columns": {
+            "day": "Day",
+            "value": "Value",
+            "share": "Share"
+          }
+        }
+      },
+      "groups": {
+        "overview": {
+          "title": "Overview",
+          "description": "Current organization setup and configuration status."
+        },
+        "activity": {
+          "title": "Activity",
+          "description": "Messages and delivery for the period: {period}."
+        },
+        "automations": {
+          "title": "Automations",
+          "description": "Automation rules, automation runs and scheduled messages."
+        },
+        "engagement": {
+          "title": "Engagement",
+          "description": "Tracked link clicks in the selected period."
+        }
+      },
+      "customization": {
+        "title": "Dashboard customization",
+        "description": "Show or hide metric groups. Your choice is saved in this browser.",
+        "show": "Show",
+        "hide": "Hide",
+        "reset": "Reset groups",
+        "resetCharts": "Reset charts",
+        "exports": "Export",
+        "resetDashboard": "Reset dashboard",
+        "hiddenNotice": "Some sections on this page are hidden.",
+        "exportPdf": "Export PDF",
+        "exportExcel": "Export Excel",
+        "exporting": "Exporting..."
+      },
+      "rankings": {
+        "title": "Rankings",
+        "description": "The most relevant items for the selected period.",
+        "topLinksTitle": "Top tracked links",
+        "topLinksDescription": "Links with the highest number of clicks.",
+        "automationFailuresTitle": "Automation failures",
+        "automationFailuresDescription": "Automation rules with the highest number of failed runs.",
+        "empty": "No ranking data for this period.",
+        "columns": {
+          "link": "Link",
+          "clicks": "Clicks",
+          "automation": "Automation",
+          "failures": "Failures"
+        },
+        "viewAllLinks": "View full list ({count})",
+        "allLinksTitle": "Full links list",
+        "allLinksDescription": "All tracked links ordered by number of clicks.",
+        "close": "Close"
+      },
+      "excel": {
+        "title": "Analytics",
+        "summarySheet": "Summary",
+        "detail": {
+          "messagesSheet": "Messages",
+          "templatesSheet": "Templates",
+          "dailySheet": "Daily trend",
+          "language": "Language",
+          "scope": "Scope",
+          "providerTemplateId": "Provider ID",
+          "date": "Date",
+          "failures": "Failures",
+          "usersSheet": "Users",
+          "runsSheet": "Runs",
+          "scheduledSheet": "Scheduled",
+          "linksSheet": "Links",
+          "id": "ID",
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "channel": "Channel",
+          "role": "Origin",
+          "status": "Status",
+          "deliveryStatus": "Delivery status",
+          "rule": "Rule",
+          "createdAt": "Created at",
+          "deliveredAt": "Delivered at",
+          "readAt": "Read at",
+          "failedAt": "Failed at",
+          "scheduledFor": "Scheduled for",
+          "processedAt": "Processed at",
+          "startedAt": "Started at",
+          "completedAt": "Completed at",
+          "lastError": "Last error",
+          "userId": "User ID",
+          "assistantId": "Assistant ID",
+          "threadId": "Thread ID",
+          "scheduledBroadcastId": "Broadcast ID",
+          "automationRunId": "Run ID",
+          "assistant": "Assistant",
+          "sendGroupId": "Send group ID",
+          "whatsappId": "WhatsApp ID",
+          "teamsId": "Teams ID",
+          "tags": "Tags",
+          "recipients": "Recipients",
+          "clicked": "Clicked",
+          "clicksTotal": "Clicks",
+          "clickRate": "Rate",
+          "linkLabel": "Link",
+          "destinationUrl": "Destination"
+        },
+        "dashboardSheet": "Dashboard",
+        "panels": {
+          "messages": "MESSAGES",
+          "operations": "OPERATIONS",
+          "templates": "TEMPLATES"
+        },
+        "organization": "Organisation",
+        "period": "Period",
+        "exportedAt": "Exported on",
+        "columnGroup": "Group",
+        "columnMetric": "Metric",
+        "columnValue": "Value",
+        "columnRate": "Rate",
+        "groups": {
+          "users": "Users",
+          "assistants": "Assistants",
+          "messages": "Messages",
+          "automations": "Automations",
+          "scheduled": "Scheduled broadcasts",
+          "templates": "Templates",
+          "trackedLinks": "Tracked links",
+          "pendingOutreach": "Pending outreach"
+        },
+        "metrics": {
+          "total": "Total",
+          "withAssistant": "With assistant",
+          "withoutAssistant": "Without assistant",
+          "withEmail": "With email",
+          "withPhone": "With phone",
+          "withTeams": "With Teams",
+          "withWhatsapp": "With WhatsApp",
+          "withoutOpenAiId": "Without OpenAI ID",
+          "whatsapp": "WhatsApp",
+          "teams": "Teams",
+          "fromUser": "From user",
+          "fromAssistant": "From assistant",
+          "delivered": "Delivered",
+          "read": "Read",
+          "failed": "Failed",
+          "rulesTotal": "Rules",
+          "rulesActive": "Active rules",
+          "rulesPaused": "Paused rules",
+          "runsTotal": "Runs",
+          "runsProcessed": "Processed",
+          "runsFailed": "Failed",
+          "queued": "Queued",
+          "completed": "Completed",
+          "recipients": "Recipients",
+          "active": "Active",
+          "pending": "Pending",
+          "rejected": "Rejected",
+          "linksTotal": "Links",
+          "clicksTotal": "Clicks"
+        }
+      }
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Manage your organization, appearance, and integrations in one place.",
+      "loadError": "Organization settings could not be loaded.",
+      "organizationMissing": "No organization was found for this account.",
+      "retry": "Try again",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saveSuccessTitle": "Settings saved",
+      "saveSuccess": "The organization settings were updated.",
+      "saveErrorTitle": "Could not save",
+      "saveError": "The organization settings could not be saved.",
+      "organization": {
+        "title": "Organization",
+        "description": "General details used throughout the application.",
         "name": "Name",
-        "email": "Email",
-        "phoneNumber": "Phone",
-        "phoneCountryCode": "Phone",
-        "phoneNational": "Phone",
-        "teamsAadObjectId": "Teams identity",
-        "teamsFromId": "Teams identity",
-        "assistantId": "Assistant",
-        "tagIds": "Tags",
-        "color": "Color",
-        "is_archived": "Archived",
-        "description": "Description",
-        "instructions": "Instructions",
-        "model": "Model",
-        "top_p": "Top P",
-        "temperature": "Temperature",
-        "vector_store_id": "Knowledge base",
-        "trigger_type": "Trigger",
-        "assistant_id": "Assistant",
-        "channel": "Channel",
-        "delay_minutes": "Delay",
-        "payload": "Content",
-        "is_active": "Active",
-        "whatsapp_template_id": "Template",
-        "scheduled_for": "Send date",
-        "timezone": "Timezone",
-        "status": "Status"
+        "defaultCountryCode": "Phone country code",
+        "defaultCountryCodeHelp": "Used as the default when new users are created."
       },
-      "tagOps": {
-        "add": "Tags added",
-        "remove": "Tags removed",
-        "set": "Tags replaced"
+      "appearance": {
+        "title": "Appearance",
+        "description": "Customize the organization's colors and logo.",
+        "primary": "Primary color",
+        "secondary": "Secondary color",
+        "primaryPicker": "Choose primary color",
+        "secondaryPicker": "Choose secondary color"
       },
-      "triggers": {
-        "user_created": "User created",
-        "user_inactive": "User inactive",
-        "message_read": "Message read",
-        "message_unread": "Message not read"
+      "preview": {
+        "organization": "Organization",
+        "cardTitle": "Preview",
+        "cardText": "An example of the application's appearance.",
+        "action": "Primary action"
       },
-      "scopes": {
-        "user": "Direct conversation",
-        "group": "Group"
+      "logo": {
+        "title": "Logo",
+        "choose": "Choose file",
+        "help": "PNG, JPEG, or WebP. Maximum size: 2 MB.",
+        "upload": "Upload logo",
+        "working": "Working…",
+        "reset": "Reset",
+        "invalidType": "Choose a PNG, JPEG, or WebP image.",
+        "tooLarge": "The file must not exceed 2 MB.",
+        "uploadSuccessTitle": "Logo updated",
+        "uploadSuccess": "The new logo was saved.",
+        "uploadErrorTitle": "Logo error",
+        "uploadError": "The logo could not be uploaded.",
+        "resetSuccess": "The default logo was restored.",
+        "resetError": "The default logo could not be restored."
       },
-      "statuses": {
-        "queued": "Queued",
-        "scheduled": "Scheduled",
-        "processing": "Sending",
-        "sent": "Sent",
-        "partial": "Partially sent",
-        "failed": "Failed",
-        "cancelled": "Cancelled",
-        "new": "New",
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected"
+      "favicon": {
+        "title": "Favicon",
+        "choose": "Choose file",
+        "help": "Use a square image of 64 × 64 px or larger, preferably a PNG with a transparent background. PNG, JPEG or WebP, up to 2 MB.",
+        "nonSquareWarning": "This image is not square. We will keep its proportions and add transparent padding; the symbol may look smaller in the browser tab.",
+        "upload": "Upload favicon",
+        "working": "Working…",
+        "reset": "Remove favicon",
+        "invalidType": "Choose a PNG, JPEG, or WebP image.",
+        "tooLarge": "The file must not exceed 2 MB.",
+        "uploadSuccessTitle": "Favicon updated",
+        "uploadSuccess": "The new favicon was saved.",
+        "uploadErrorTitle": "Favicon error",
+        "uploadError": "The favicon could not be uploaded.",
+        "resetSuccess": "The MyDigitalBot favicon has been restored.",
+        "resetError": "The default favicon could not be restored."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "description": "Configure identifiers for messaging platforms.",
+        "teamsTitle": "Microsoft Teams",
+        "tenantId": "Tenant ID",
+        "tenantIdHelp": "The Microsoft tenant identifier associated with this organization.",
+        "whatsappTitle": "WhatsApp Business",
+        "wabaId": "Whatsapp Business Account ID",
+        "namespace": "Namespace",
+        "namespaceOptional": "optional"
+      },
+      "validation": {
+        "nameRequired": "The organization name is required.",
+        "nameTooLong": "The name must not exceed 150 characters.",
+        "invalidColor": "Use a 3- or 6-digit hexadecimal color, such as #0af or #00aaff.",
+        "teamsConflict": "This Microsoft Teams Tenant ID is already assigned to another organization."
       }
     },
-    "Empty": {
-      "title": "No activity yet",
-      "text": "Actions made on the platform will show up here.",
-      "filteredTitle": "No results",
-      "filteredText": "No action matches the selected filters."
+    "Dashboard": {
+      "title": "Home",
+      "description": "An overview of your organization's usage and configuration.",
+      "organizationMissing": "No organization was found for this account.",
+      "loadError": "The dashboard could not be loaded.",
+      "refresh": "Refresh",
+      "retry": "Try again",
+      "updatedAt": "Updated at {time}",
+      "groups": {
+        "users": "Users",
+        "content": "Content",
+        "automations": "Automations"
+      },
+      "sections": {
+        "usersDescription": "Channel configuration and usage.",
+        "contentDescription": "Content created and available to the organization.",
+        "automationsDescription": "Configured rules and queued messages."
+      },
+      "actions": {
+        "viewUsers": "View users",
+        "viewAssistants": "View assistants",
+        "viewAutomations": "View automations",
+        "viewScheduled": "View scheduled",
+        "viewAnalytics": "View analytics"
+      },
+      "metrics": {
+        "totalUsers": "Total users",
+        "teamsConfigured": "With Teams configured",
+        "whatsappConfigured": "With WhatsApp configured",
+        "teamsUsed": "Have used Teams",
+        "whatsappUsed": "Have used WhatsApp",
+        "tags": "Tags created",
+        "assistants": "Assistants created",
+        "automationsTotal": "Automations created",
+        "automationsActive": "Active automations",
+        "scheduledMessages": "Scheduled messages"
+      },
+      "meta": {
+        "inOrganization": "in the organization",
+        "shareOfUsers": "{percent}% of users",
+        "tags": "to segment users",
+        "assistants": "available to the organization",
+        "automationsTotal": "configured rules",
+        "automationsActive": "of {total} created",
+        "scheduledMessages": "queued for delivery"
+      },
+      "activity": {
+        "title": "Recent activity",
+        "description": "Messages exchanged in the last {days} days.",
+        "total": "{count, plural, one {# message} other {# messages}}",
+        "teams": "Teams",
+        "whatsapp": "WhatsApp",
+        "empty": "No messages in this period.",
+        "dayTooltip": "{date}: {teams} Teams, {whatsapp} WhatsApp"
+      },
+      "upcoming": {
+        "title": "Upcoming sends",
+        "description": "Scheduled messages still in the queue.",
+        "empty": "No scheduled sends.",
+        "recipients": "{count, plural, one {# recipient} other {# recipients}}",
+        "noPreview": "No text"
+      },
+      "channels": {
+        "teams": "Teams",
+        "whatsapp": "WhatsApp"
+      }
     },
-    "Errors": {
-      "load": "Could not load the activity history."
-    },
-    "Pagination": {
-      "total": "{count, plural, =1 {1 entry} other {# entries}}",
-      "pageOf": "Page {page} of {pages}",
-      "prev": "Previous page",
-      "next": "Next page"
+    "ActivityLog": {
+      "Title": "Activity history",
+      "Subtitle": "Chronology of the actions made in the organization, newest first.",
+      "Loading": "Loading history...",
+      "Refresh": "Refresh",
+      "Filters": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear filters"
+      },
+      "Areas": {
+        "all": "All areas",
+        "teams_group": "Teams groups",
+        "user": "Users",
+        "tag": "Tags",
+        "assistant": "Assistants",
+        "automation": "Automations",
+        "broadcast": "Messages",
+        "message": "Individual messages",
+        "template": "Templates",
+        "media": "Media",
+        "organization": "Organization"
+      },
+      "Channels": {
+        "whatsapp": "WhatsApp",
+        "teams": "Teams"
+      },
+      "Actions": {
+        "user_created": "User created",
+        "user_updated": "User edited",
+        "user_deleted": "User deleted",
+        "user_bulk_updated": "Assistant changed in bulk",
+        "user_bulk_deleted": "Users deleted in bulk",
+        "user_tags_updated": "User tags changed",
+        "user_imported": "Users imported",
+        "tag_created": "Tag created",
+        "tag_updated": "Tag edited",
+        "tag_deleted": "Tag deleted",
+        "assistant_created": "Assistant created",
+        "assistant_updated": "Assistant edited",
+        "assistant_deleted": "Assistant deleted",
+        "assistant_files_added": "Files added to assistant",
+        "assistant_files_removed": "Files removed from assistant",
+        "automation_created": "Automation created",
+        "automation_updated": "Automation edited",
+        "automation_deleted": "Automation deleted",
+        "broadcast_sent": "Message sent",
+        "broadcast_scheduled": "Message scheduled",
+        "broadcast_schedule_updated": "Schedule edited",
+        "broadcast_schedule_deleted": "Schedule deleted",
+        "broadcast_read_chain_created": "Read chain created",
+        "message_template_sent": "Template sent to a user",
+        "template_created": "WhatsApp template created",
+        "media_deleted": "Media file deleted",
+        "organization_created": "Organization created",
+        "organization_settings_updated": "Organization settings changed",
+        "automation_triggered": "Automation triggered",
+        "broadcast_scheduled_sent": "Scheduled message sent",
+        "message_received": "Message received",
+        "teams_group_updated": "Teams group edited",
+        "unknown": "Unknown action"
+      },
+      "Table": {
+        "when": "When",
+        "action": "Action",
+        "entity": "Item",
+        "details": "Details",
+        "actor": "Author"
+      },
+      "Actor": {
+        "system": "System",
+        "unknown": "Unknown"
+      },
+      "Details": {
+        "yes": "Yes",
+        "no": "No",
+        "delivered": "Delivered",
+        "notDelivered": "Not delivered",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "sourceAutomation": "Automation",
+        "importSummary": "{created} created, {updated} updated, {failed} failed",
+        "sendSummary": "{ok} succeeded, {failed} failed",
+        "labels": {
+          "channel": "Channel",
+          "scope": "Scope",
+          "trigger": "Trigger",
+          "user": "User",
+          "email": "Email",
+          "phone": "Phone",
+          "assistant": "Assistant",
+          "fields": "Changed fields",
+          "recipients": "Recipients",
+          "groups": "Teams groups",
+          "result": "Result",
+          "count": "Users",
+          "failedCount": "Failed",
+          "operation": "Operation",
+          "files": "Files",
+          "store": "Knowledge base",
+          "scheduledFor": "Scheduled for",
+          "timezone": "Timezone",
+          "status": "Status",
+          "enabled": "Read chains",
+          "withTemplate": "With template",
+          "scheduled": "Scheduled",
+          "source": "Source",
+          "model": "Model",
+          "language": "Language",
+          "category": "Category",
+          "color": "Color",
+          "active": "Active",
+          "steps": "Messages in chain",
+          "sent": "Sent",
+          "waitingForReply": "Waiting for reply",
+          "error": "Error"
+        },
+        "fieldNames": {
+          "name": "Name",
+          "email": "Email",
+          "phoneNumber": "Phone",
+          "phoneCountryCode": "Phone",
+          "phoneNational": "Phone",
+          "teamsAadObjectId": "Teams identity",
+          "teamsFromId": "Teams identity",
+          "assistantId": "Assistant",
+          "tagIds": "Tags",
+          "color": "Color",
+          "is_archived": "Archived",
+          "description": "Description",
+          "instructions": "Instructions",
+          "model": "Model",
+          "top_p": "Top P",
+          "temperature": "Temperature",
+          "vector_store_id": "Knowledge base",
+          "trigger_type": "Trigger",
+          "assistant_id": "Assistant",
+          "channel": "Channel",
+          "delay_minutes": "Delay",
+          "payload": "Content",
+          "is_active": "Active",
+          "whatsapp_template_id": "Template",
+          "scheduled_for": "Send date",
+          "timezone": "Timezone",
+          "status": "Status"
+        },
+        "tagOps": {
+          "add": "Tags added",
+          "remove": "Tags removed",
+          "set": "Tags replaced"
+        },
+        "triggers": {
+          "user_created": "User created",
+          "user_inactive": "User inactive",
+          "message_read": "Message read",
+          "message_unread": "Message not read"
+        },
+        "scopes": {
+          "user": "Direct conversation",
+          "group": "Group"
+        },
+        "statuses": {
+          "queued": "Queued",
+          "scheduled": "Scheduled",
+          "processing": "Sending",
+          "sent": "Sent",
+          "partial": "Partially sent",
+          "failed": "Failed",
+          "cancelled": "Cancelled",
+          "new": "New",
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        }
+      },
+      "Empty": {
+        "title": "No activity yet",
+        "text": "Actions made on the platform will show up here.",
+        "filteredTitle": "No results",
+        "filteredText": "No action matches the selected filters."
+      },
+      "Errors": {
+        "load": "Could not load the activity history."
+      },
+      "Pagination": {
+        "total": "{count, plural, =1 {1 entry} other {# entries}}",
+        "pageOf": "Page {page} of {pages}",
+        "prev": "Previous page",
+        "next": "Next page"
+      }
     }
   }
 }

@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
+  appMocks,
   registerAppModulePacks,
   setDefaultAppMockReturns,
   resetAppMocks,
@@ -122,6 +123,64 @@ describe("BroadcastPage", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name }));
   }
+
+  it("mostra o envio em curso e bloqueia o ecrã até o servidor responder", async () => {
+    let respond;
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      const method = (init.method || "GET").toUpperCase();
+
+      if (url === "/api/broadcast/whatsapp" && method === "POST") {
+        return new Promise((resolve) => {
+          respond = () =>
+            resolve(
+              makeResponse({ ok: 1, failed: 0, results: [], note: null }),
+            );
+        });
+      }
+
+      return baseFetch(input, init);
+    });
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByText("Broadcast.start.blank"));
+    typeInEditor(
+      screen.getByRole("textbox", { name: "Broadcast.message" }),
+      "Olá",
+    );
+    fireEvent.click(screen.getByText("Pedro Silva"));
+    fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+    /* À espera do servidor: faixa visível e ecrã bloqueado. */
+    expect(
+      await screen.findByText("Broadcast.sendingBanner"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("broadcast-columns")).toHaveAttribute("inert");
+
+    /*
+     * O alerta que a página recebe é o appMocks.alert: o
+     * registerAppModulePacks() simula o AlertProvider depois deste ficheiro.
+     */
+    expect(appMocks.alert).not.toHaveBeenCalled();
+
+    /* Sem act à volta: o waitFor já trata disso no React 19. */
+    respond();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Broadcast.sendingBanner"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("broadcast-columns")).not.toHaveAttribute(
+      "inert",
+    );
+    await waitFor(() =>
+      expect(appMocks.alert).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Broadcast sent" }),
+      ),
+    );
+  });
 
   it("shows the start menu on Teams and on WhatsApp", async () => {
     render(<BroadcastPage />);
@@ -285,9 +344,74 @@ describe("BroadcastPage", () => {
       "Broadcast.composer.addDocument",
       "Broadcast.composer.addLink",
       "Broadcast.suggest.title",
+      "Broadcast.image.title",
       "Broadcast.composer.variableName",
       "Broadcast.composer.variableCompany",
     ]);
+  });
+
+  it("creates an image with AI inside the phone and only uploads it when used", async () => {
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url === "/api/broadcast/image") {
+        return makeResponse({ image: "QUJD", contentType: "image/jpeg" });
+      }
+      return baseFetch(input, init);
+    });
+    storageMock.upload.mockClear();
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.composer.add" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Broadcast.image.title" }),
+    );
+
+    /* O pedido escreve-se na barra do telemóvel, como na sugestão de texto. */
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Broadcast.image.promptLabel" }),
+      { target: { value: "equipa a celebrar" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.image.ask" }),
+    );
+
+    const preview = await screen.findByRole("img", {
+      name: "equipa a celebrar",
+    });
+    expect(preview.getAttribute("src")).toBe("data:image/jpeg;base64,QUJD");
+    expect(lastPostTo("/api/broadcast/image")).toEqual({
+      orgId: ORG_ID,
+      prompt: "equipa a celebrar",
+    });
+
+    /* Enquanto é só uma proposta, nada fica guardado. */
+    expect(storageMock.upload).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.image.use" }),
+    );
+
+    /* "Usar" guarda-a pelo mesmo upload das imagens escolhidas no computador. */
+    await waitFor(() => expect(storageMock.upload).toHaveBeenCalledTimes(1));
+    const [key, file, options] = storageMock.upload.mock.calls[0];
+    expect(key).toMatch(
+      new RegExp(`^broadcasts/${ORG_ID}/.+-imagem-ia-\\d+\\.jpg$`),
+    );
+    expect(file.type).toBe("image/jpeg");
+    expect(options).toMatchObject({ contentType: "image/jpeg" });
+
+    /* E entra no balão como uma imagem carregada; a proposta desaparece. */
+    expect(
+      await screen.findByRole("img", { name: /^imagem-ia-\d+\.jpg$/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "equipa a celebrar" }),
+    ).not.toBeInTheDocument();
   });
 
   it("suggests a text inside the phone and only applies it when accepted", async () => {
@@ -464,6 +588,340 @@ describe("BroadcastPage", () => {
       recipients: [{ userId: 2 }],
     });
     expect(lastPostTo("/api/broadcast/whatsapp").openingOnly).toBeUndefined();
+  });
+
+  describe("link como botão", () => {
+    const OLA = {
+      key: "ola",
+      label: "ola",
+      destinationUrl: "https://www.digik.pt/pt/",
+      lastUsedAt: "2026-10-02T16:58:59Z",
+    };
+    const GUIA = {
+      key: "guia",
+      label: "guia",
+      destinationUrl: "https://www.digik.pt/guia/",
+      lastUsedAt: "2026-10-01T10:00:00Z",
+    };
+
+    function mockLibrary(items) {
+      const baseFetch = mocks.fetch.getMockImplementation();
+      mocks.fetch.mockImplementation((input, init = {}) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.startsWith("/api/tracked-links/library")) {
+          return makeResponse({ items });
+        }
+        return baseFetch(input, init);
+      });
+    }
+
+    it("Usar põe o link no botão e não deixa juntar outro até o tirar", async () => {
+      mockLibrary([OLA, GUIA]);
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+
+      const editor = screen.getByRole("textbox", {
+        name: "Broadcast.message",
+      });
+      typeInEditor(editor, "Boas, tudo bem?");
+
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      const [useOla] = await screen.findAllByRole("button", {
+        name: "Broadcast.linkLibrary.use",
+      });
+      fireEvent.click(useOla);
+
+      /* O link vai no botão; o texto não muda. */
+      expect(editor.querySelector("[data-token]")).toBeNull();
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "ola",
+      );
+
+      /* Um só link por mensagem: o resto fica desativado, com o porquê. */
+      expect(
+        screen.getByRole("button", { name: "Broadcast.linkLibrary.use" }),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      ).toBeDisabled();
+      expect(screen.getByText("Broadcast.linkLimitHint")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Pedro Silva"));
+      fireEvent.click(screen.getByRole("button", { name: "Broadcast.send" }));
+
+      await waitFor(() => {
+        expect(lastPostTo("/api/broadcast/whatsapp")).not.toBeNull();
+      });
+
+      expect(lastPostTo("/api/broadcast/whatsapp")).toMatchObject({
+        message: "Boas, tudo bem?",
+        trackedLinks: [
+          {
+            key: "ola",
+            label: "ola",
+            destinationUrl: OLA.destinationUrl,
+            button: true,
+          },
+        ],
+      });
+      expect(lastPostTo("/api/broadcast/whatsapp").trackedLinks).toHaveLength(
+        1,
+      );
+    });
+
+    it("o x no botão tira o link da mensagem", async () => {
+      mockLibrary([OLA]);
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.linkLibrary.use",
+        }),
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.composer.linkButtonRemove",
+        }),
+      );
+
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+
+      /* Sem link na mensagem, volta a dar para escolher ou criar um. */
+      expect(
+        screen.getByRole("button", { name: "Broadcast.linkLibrary.use" }),
+      ).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      ).toBeEnabled();
+    });
+
+    it("no quiz, Usar põe o link no texto", async () => {
+      mockLibrary([OLA]);
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByTestId("start-card-quiz"));
+      const body = await screen.findByLabelText("Broadcast.composer.quizBody");
+
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.linkLibrary.use",
+        }),
+      );
+
+      expect(body.querySelector("[data-token]")).toHaveTextContent(
+        "Link: ola",
+      );
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+    });
+  });
+
+  describe("mensagem só com link", () => {
+    /* Cria um link novo no painel; no WhatsApp passa a ser o botão. */
+    function createTrackedLink() {
+      pickFromPlusMenu("Broadcast.composer.addLink");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Broadcast.addLink" }),
+      );
+      fireEvent.change(screen.getByPlaceholderText("training"), {
+        target: { value: "guia" },
+      });
+      fireEvent.change(screen.getByPlaceholderText("Aceder à formação"), {
+        target: { value: "Guia" },
+      });
+      fireEvent.change(
+        screen.getByPlaceholderText("https://example.com/course/123"),
+        { target: { value: "https://x.test/guia" } },
+      );
+    }
+
+    it("no WhatsApp, um link novo vai no botão e pede texto", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      createTrackedLink();
+
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "Guia",
+      );
+
+      const send = screen.getByRole("button", { name: "Broadcast.send" });
+      expect(send).toBeDisabled();
+      expect(
+        screen.getByText("Broadcast.composer.linkNeedsText"),
+      ).toBeInTheDocument();
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Vê o guia",
+      );
+
+      expect(send).toBeEnabled();
+      expect(
+        screen.queryByText("Broadcast.composer.linkNeedsText"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("no WhatsApp, com uma imagem deixa enviar e o link segue num balão à parte", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      createTrackedLink();
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: {
+          files: [new File(["x"], "foto.png", { type: "image/png" })],
+        },
+      });
+      await screen.findByAltText("foto.png");
+
+      expect(
+        screen.getByRole("button", { name: "Broadcast.send" }),
+      ).toBeEnabled();
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+      expect(screen.getByTestId("link-bubble-preview")).toHaveTextContent(
+        "Guia",
+      );
+    });
+
+    it("numa corrente, diz qual é o passo que só tem o link", async () => {
+      const baseFetch = mocks.fetch.getMockImplementation();
+      mocks.fetch.mockImplementation((input, init = {}) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.startsWith("/api/organizations/messaging-feature")) {
+          return makeResponse({ item: { read_chains_enabled: true } });
+        }
+        return baseFetch(input, init);
+      });
+
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      fireEvent.click(screen.getByText("Pedro Silva"));
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: "Broadcast.broadcastChain.createChain",
+        }),
+      );
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Primeira mensagem",
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 2",
+        }),
+      );
+      createTrackedLink();
+
+      const send = screen.getByRole("button", { name: "Broadcast.send" });
+      expect(send).toBeDisabled();
+
+      /* O aviso continua visível noutro passo e aponta para o certo. */
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 1",
+        }),
+      );
+      expect(
+        screen.getByText("Broadcast.composer.chainStepNeedsText"),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Broadcast.broadcastChain.chainMessage 2",
+        }),
+      );
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Vê o guia",
+      );
+
+      expect(
+        screen.queryByText("Broadcast.composer.chainStepNeedsText"),
+      ).not.toBeInTheDocument();
+      expect(send).toBeEnabled();
+    });
+
+    it("ao trocar do Teams para o WhatsApp, o link sai do texto e vai no botão", async () => {
+      render(<BroadcastPage />);
+      await screen.findByText("Pedro Silva");
+
+      /* No staging, o Teams também abre com o menu inicial. */
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Olá ",
+      );
+      createTrackedLink();
+      pickFromPlusMenu("Link: Guia");
+
+      fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
+
+      /* No staging, a mensagem aberta continua aberta ao trocar de canal. */
+      const blankOnWhatsapp = screen.queryByText("Broadcast.start.blank");
+      if (blankOnWhatsapp) fireEvent.click(blankOnWhatsapp);
+
+      const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
+      expect(editor.querySelector("[data-token]")).toBeNull();
+      expect(editor).toHaveTextContent("Olá");
+      expect(screen.getByTestId("link-button-preview")).toHaveTextContent(
+        "Guia",
+      );
+    });
+
+    it("ao trocar do WhatsApp para o Teams, o link volta ao texto", async () => {
+      await openWhatsapp();
+      fireEvent.click(screen.getByText("Broadcast.start.blank"));
+      typeInEditor(
+        screen.getByRole("textbox", { name: "Broadcast.message" }),
+        "Olá",
+      );
+      createTrackedLink();
+      expect(screen.getByTestId("link-button-preview")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
+      const editor = screen.getByRole("textbox", { name: "Broadcast.message" });
+      expect(editor.querySelector("[data-token]")).toHaveTextContent(
+        "Link: Guia",
+      );
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+    });
+
+    it("no Teams, o link entra no texto e deixa enviar só o link", async () => {
+      render(<BroadcastPage />);
+      await screen.findByText("Pedro Silva");
+
+      /* No staging, o Teams também abre com o menu inicial. */
+      const blank = screen.queryByText("Broadcast.start.blank");
+      if (blank) fireEvent.click(blank);
+
+      fireEvent.click(screen.getByText("Pedro Silva"));
+
+      createTrackedLink();
+      pickFromPlusMenu("Link: Guia");
+
+      expect(screen.queryByTestId("link-button-preview")).toBeNull();
+
+      expect(
+        screen.getByRole("button", { name: "Broadcast.send" }),
+      ).toBeEnabled();
+      expect(
+        screen.queryByText("Broadcast.composer.linkNeedsText"),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("goes back to the start menu from the editor", async () => {

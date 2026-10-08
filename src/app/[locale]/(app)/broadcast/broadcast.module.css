@@ -98,7 +98,8 @@
   border: 1px solid var(--ui-border);
   background: #fff;
   resize: vertical;
-}.messageToolsRow {
+}
+.messageToolsRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -152,9 +153,11 @@
   place-items: center;
   font-size: 12px;
   font-weight: 700;
-}.toolCard {
+}
+.toolCard {
   min-height: 100%;
-}.label,
+}
+.label,
 .smallLabel {
   font-size: 12px;
   font-weight: 700;
@@ -165,7 +168,8 @@
 .fieldWide {
   display: grid;
   gap: 4px;
-}.scheduleModeRow {
+}
+.scheduleModeRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -357,14 +361,17 @@
 
 .calendarWrap :global(.react-datepicker-time__header) {
   font-weight: 700;
-}.fileList {
+}
+.fileList {
   display: grid;
   gap: 10px;
   margin-top: 8px;
-}.emptyMini {
+}
+.emptyMini {
   color: #888;
   font-size: 13px;
-}.errorBox {
+}
+.errorBox {
   padding: 10px;
   border-radius: 8px;
   background: #ffefef;
@@ -375,7 +382,8 @@
 .helpDanger {
   color: #c00;
   font-size: 12px;
-}.channelSwitch {
+}
+.channelSwitch {
   display: inline-flex;
   height: 45px;
   padding: 2px;
@@ -668,6 +676,55 @@
   color: #666;
 }
 
+/* Links já usados noutros envios, para escolher em vez de escrever */
+
+.linkLibrary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.linkLibraryFailed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linkLibraryList {
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linkLibraryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.linkLibraryText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.linkLibraryUrl {
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .inlineHelpText {
   font-size: 12px;
   color: #666;
@@ -683,7 +740,8 @@
   border-radius: 16px;
   padding: 16px;
   background: #fff;
-}.chainBox {
+}
+.chainBox {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -1139,6 +1197,13 @@
   margin-bottom: 12px;
 }
 
+.composerWarning {
+  font-size: 13px;
+  color: #b91c1c;
+  text-align: center;
+  margin-top: 8px;
+}
+
 .phoneWrap {
   display: flex;
   justify-content: center;
@@ -1338,6 +1403,124 @@
   color: #6b7280;
 }
 
+/* Barra de formatação, ao lado do "+" na barra de baixo do telemóvel. */
+.formatToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.formatBtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #54656f;
+  cursor: pointer;
+}
+
+.formatBtn:hover,
+.formatBtn:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111b21;
+}
+
+/* Botão ligado: a formatação está onde está o cursor. */
+.formatBtn[aria-pressed="true"],
+.formatBtn[data-active="true"] {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.formatDivider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Menu das listas: abre por cima da barra, como no Teams. */
+.listMenuWrap {
+  position: relative;
+}
+
+.listMenuBtn {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 5px;
+}
+
+.listMenu {
+  position: absolute;
+  left: 0;
+  bottom: 38px;
+  z-index: 20;
+  min-width: 210px;
+  display: grid;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.listMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #242424;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.listMenuItem:hover,
+.listMenuItem:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+/* A lista da linha do cursor fica marcada, com a mesma cor dos botões. */
+.listMenuItem[aria-checked="true"] {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* Seletor de emojis: abre por cima da barra, como o menu do "+". */
+.emojiWrap {
+  position: relative;
+}
+
+.emojiPopover {
+  position: absolute;
+  left: 0;
+  bottom: 42px;
+  z-index: 20;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.emojiLoading {
+  width: 320px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ---------- Mensagem de abertura ---------- */
 
 .openingMeta {
@@ -1353,6 +1536,57 @@
 
 .counterOver {
   color: #b91c1c;
+}
+
+/* ---------- Botão de link rastreado ---------- */
+
+/* O botão e a nota contam como linhas do chat, não como um bloco. */
+.linkButtonGroup {
+  display: contents;
+}
+
+.linkButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.linkButtonRemove {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  padding: 2px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.linkButtonRemove:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Etiqueta do link que vai no botão, no cartão do painel. */
+.linkButtonTag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.linkButtonHint {
+  justify-self: end;
+  max-width: 88%;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
 }
 
 /* ---------- Quiz ---------- */
@@ -1575,4 +1809,109 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* ---------- Envio em curso ---------- */
+
+.primaryBtnWithIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sendingSpinner {
+  flex: none;
+  animation: sendingSpin 0.8s linear infinite;
+}
+
+@keyframes sendingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Faixa por cima da mensagem enquanto o servidor não responde. */
+
+.sendingBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.sendingBannerTitle {
+  font-weight: 600;
+}
+
+.sendingBannerHint {
+  font-size: 13px;
+  color: #1e40af;
+}
+
+.suggestBubbleActions button:disabled {
+  color: #8696a0;
+  cursor: default;
+}
+
+/* ---------- Imagem com IA ---------- */
+
+/* A proposta fica no topo do balão, separada do texto que segue por baixo. */
+
+.imageSuggestBlock {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.imageSuggestPreview {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* A criar a imagem: um quadrado a pulsar no lugar onde ela vai aparecer. */
+
+.imageSuggestLoading {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  margin-bottom: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #54656f;
+  font-size: 13px;
+  text-align: center;
+  animation: imageSuggestPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes imageSuggestPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sendingSpinner,
+  .imageSuggestLoading {
+    animation: none;
+  }
 }

@@ -1,3 +1,5 @@
+import { Loader2 } from "lucide-react";
+
 import styles from "../broadcast.module.css";
 
 export default function BroadcastHeader({
@@ -39,16 +41,28 @@ export default function BroadcastHeader({
           {translation("Broadcast.selected")} <strong>{selectedCount}</strong>
         </div>
 
+        {/* A enviar: rodinha no botão até se fechar o resultado. */}
         <button
           onClick={onPrimaryClick}
           disabled={sending || !canSend}
-          className={styles.primaryBtn}
+          aria-busy={sending}
+          className={`${styles.primaryBtn} ${styles.primaryBtnWithIcon}`}
         >
-          {sending
-            ? translation("Broadcast.sending")
-            : deliveryMode === "schedule"
-              ? translation("Broadcast.schedule")
-              : translation("Broadcast.send")}
+          {sending ? (
+            <>
+              <Loader2
+                size={16}
+                className={styles.sendingSpinner}
+                aria-hidden="true"
+                data-testid="sending-spinner"
+              />
+              {translation("Broadcast.sending")}
+            </>
+          ) : deliveryMode === "schedule" ? (
+            translation("Broadcast.schedule")
+          ) : (
+            translation("Broadcast.send")
+          )}
         </button>
       </div>
     </div>

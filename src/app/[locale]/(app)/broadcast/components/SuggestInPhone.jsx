@@ -6,11 +6,20 @@ import styles from "../broadcast.module.css";
 
 const PROMPT_MAX_LENGTH = 600;
 
+/* Textos da barra na sugestão de texto (a imagem com IA traz os seus). */
+const TEXT_KEYS = {
+  close: "Broadcast.suggest.close",
+  promptLabel: "Broadcast.suggest.promptLabel",
+  placeholderWrite: "Broadcast.suggest.placeholderWrite",
+  placeholderChange: "Broadcast.suggest.placeholderChange",
+  ask: "Broadcast.suggest.ask",
+};
+
 /**
- * Barra inferior do telemóvel em modo de sugestão: o pedido escreve-se aqui,
- * como uma mensagem do WhatsApp, e segue com Enter ou com a seta.
+ * Barra inferior do telemóvel em modo de pedido à IA: o pedido escreve-se
+ * aqui, como uma mensagem do WhatsApp, e segue com Enter ou com a seta.
  */
-export function SuggestBar({ suggest, translation }) {
+export function SuggestBar({ suggest, translation, keys = TEXT_KEYS }) {
   return (
     <form
       className={styles.suggestBar}
@@ -23,7 +32,7 @@ export function SuggestBar({ suggest, translation }) {
         type="button"
         className={styles.suggestIconBtn}
         onClick={suggest.close}
-        aria-label={translation("Broadcast.suggest.close")}
+        aria-label={translation(keys.close)}
       >
         <X size={16} />
       </button>
@@ -38,11 +47,11 @@ export function SuggestBar({ suggest, translation }) {
           maxLength={PROMPT_MAX_LENGTH}
           onChange={(e) => suggest.setPrompt(e.target.value)}
           placeholder={translation(
-            suggest.hasCurrentText()
-              ? "Broadcast.suggest.placeholderChange"
-              : "Broadcast.suggest.placeholderWrite",
+            suggest.hasCurrentText?.()
+              ? keys.placeholderChange
+              : keys.placeholderWrite,
           )}
-          aria-label={translation("Broadcast.suggest.promptLabel")}
+          aria-label={translation(keys.promptLabel)}
         />
       </label>
 
@@ -50,7 +59,7 @@ export function SuggestBar({ suggest, translation }) {
         type="submit"
         className={styles.suggestSendBtn}
         disabled={suggest.loading}
-        aria-label={translation("Broadcast.suggest.ask")}
+        aria-label={translation(keys.ask)}
       >
         <SendHorizontal size={16} />
       </button>

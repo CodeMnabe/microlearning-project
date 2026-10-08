@@ -6,6 +6,11 @@ import WhatsAppPhone, {
 
 import styles from "../broadcast.module.css";
 import { BubbleImages, FileBubbles } from "./ComposerAttachments";
+import { ImageSuggestBubble } from "./ImageSuggestInPhone";
+import LinkButtonPreview, {
+  LinkBubblesPreview,
+  LinksInTextNote,
+} from "./LinkButtonPreview";
 import { PlusMenuBar } from "./PlusMenu";
 import { SuggestBubble } from "./SuggestInPhone";
 import TokenTextEditor from "./TokenTextEditor";
@@ -38,6 +43,13 @@ export default function PhoneComposer({
             translation={translation}
           />
 
+          {tools.imageSuggest?.showsInBubble && (
+            <ImageSuggestBubble
+              suggest={tools.imageSuggest}
+              translation={translation}
+            />
+          )}
+
           {tools.suggest?.showsInBubble && (
             <SuggestBubble suggest={tools.suggest} translation={translation} />
           )}
@@ -55,12 +67,30 @@ export default function PhoneComposer({
           </div>
         </WhatsAppBubble>
 
+        <LinkButtonPreview
+          linkButton={tools.linkPreview?.button}
+          onRemove={tools.onRemoveLink}
+          translation={translation}
+        />
+
+        <LinksInTextNote
+          labels={tools.linkPreview?.inTextLabels}
+          translation={translation}
+        />
+
         <FileBubbles
           videoFiles={tools.videoFiles}
           otherFiles={tools.otherFiles}
           onRemoveFile={tools.onRemoveFile}
           onPickThumbnail={tools.onPickThumbnail}
           onRemoveThumbnail={tools.onRemoveThumbnail}
+          translation={translation}
+        />
+
+        <LinkBubblesPreview
+          bubbles={tools.linkPreview?.bubbles}
+          time={previewTime}
+          onRemove={tools.onRemoveLink}
           translation={translation}
         />
       </WhatsAppPhone>
