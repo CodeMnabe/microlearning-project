@@ -7,6 +7,7 @@ import {
   FileText,
   FileVideo,
   Image as ImageIcon,
+  ImagePlus,
   Link2,
   Plus,
   Sparkles,
@@ -18,6 +19,7 @@ import { BROADCAST_MEDIA_ACCEPT } from "@/lib/uploads/broadcastMedia";
 import styles from "../broadcast.module.css";
 import EmojiButton from "./EmojiButton";
 import FormatToolbar from "./FormatToolbar";
+import { ImageSuggestBar } from "./ImageSuggestInPhone";
 import { SuggestBar } from "./SuggestInPhone";
 
 /* Cada tipo abre a escolha entre o computador e a multimédia. */
@@ -39,14 +41,15 @@ const VARIABLE_ICONS = {
 
 /**
  * O "+" da barra inferior do telemóvel: junta imagens, vídeos, documentos,
- * links rastreados, sugestão de texto com IA e variáveis. É o mesmo em todos
- * os tipos de mensagem.
+ * links rastreados, sugestão de texto e imagem com IA, e variáveis. É o
+ * mesmo em todos os tipos de mensagem.
  */
 export default function PlusMenu({
   onAddFile,
   onPickFromMedia,
   onAddLink,
   onSuggestText,
+  onCreateImage,
   variables = [],
   onInsertToken,
   translation,
@@ -192,6 +195,18 @@ export default function PlusMenu({
             </button>
           )}
 
+          {onCreateImage && (
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.plusItem}
+              onClick={() => pick(onCreateImage)}
+            >
+              <ImagePlus size={16} />
+              <span>{translation("Broadcast.image.title")}</span>
+            </button>
+          )}
+
           {variables.length > 0 && (
             <div className={styles.plusLabel}>
               {translation("Broadcast.composer.variables")}
@@ -231,6 +246,12 @@ export function PlusMenuBar({ tools, translation }) {
     return <SuggestBar suggest={tools.suggest} translation={translation} />;
   }
 
+  if (tools.imageSuggest?.active) {
+    return (
+      <ImageSuggestBar suggest={tools.imageSuggest} translation={translation} />
+    );
+  }
+
   return (
     <>
       <PlusMenu
@@ -238,6 +259,7 @@ export function PlusMenuBar({ tools, translation }) {
         onPickFromMedia={tools.onPickFromMedia}
         onAddLink={tools.onAddLink}
         onSuggestText={tools.suggest?.open}
+        onCreateImage={tools.imageSuggest?.open}
         variables={tools.variables}
         onInsertToken={tools.onInsertToken}
         translation={translation}

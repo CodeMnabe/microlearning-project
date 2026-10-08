@@ -344,9 +344,74 @@ describe("BroadcastPage", () => {
       "Broadcast.composer.addDocument",
       "Broadcast.composer.addLink",
       "Broadcast.suggest.title",
+      "Broadcast.image.title",
       "Broadcast.composer.variableName",
       "Broadcast.composer.variableCompany",
     ]);
+  });
+
+  it("creates an image with AI inside the phone and only uploads it when used", async () => {
+    const baseFetch = mocks.fetch.getMockImplementation();
+    mocks.fetch.mockImplementation((input, init = {}) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url === "/api/broadcast/image") {
+        return makeResponse({ image: "QUJD", contentType: "image/jpeg" });
+      }
+      return baseFetch(input, init);
+    });
+    storageMock.upload.mockClear();
+
+    await openWhatsapp();
+    fireEvent.click(screen.getByTestId("start-card-quiz"));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.composer.add" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Broadcast.image.title" }),
+    );
+
+    /* O pedido escreve-se na barra do telemóvel, como na sugestão de texto. */
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Broadcast.image.promptLabel" }),
+      { target: { value: "equipa a celebrar" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.image.ask" }),
+    );
+
+    const preview = await screen.findByRole("img", {
+      name: "equipa a celebrar",
+    });
+    expect(preview.getAttribute("src")).toBe("data:image/jpeg;base64,QUJD");
+    expect(lastPostTo("/api/broadcast/image")).toEqual({
+      orgId: ORG_ID,
+      prompt: "equipa a celebrar",
+    });
+
+    /* Enquanto é só uma proposta, nada fica guardado. */
+    expect(storageMock.upload).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Broadcast.image.use" }),
+    );
+
+    /* "Usar" guarda-a pelo mesmo upload das imagens escolhidas no computador. */
+    await waitFor(() => expect(storageMock.upload).toHaveBeenCalledTimes(1));
+    const [key, file, options] = storageMock.upload.mock.calls[0];
+    expect(key).toMatch(
+      new RegExp(`^broadcasts/${ORG_ID}/.+-imagem-ia-\\d+\\.jpg$`),
+    );
+    expect(file.type).toBe("image/jpeg");
+    expect(options).toMatchObject({ contentType: "image/jpeg" });
+
+    /* E entra no balão como uma imagem carregada; a proposta desaparece. */
+    expect(
+      await screen.findByRole("img", { name: /^imagem-ia-\d+\.jpg$/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "equipa a celebrar" }),
+    ).not.toBeInTheDocument();
   });
 
   it("suggests a text inside the phone and only applies it when accepted", async () => {

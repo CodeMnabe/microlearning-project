@@ -51,6 +51,7 @@ import MediaPickerModal from "./components/MediaPickerModal";
 
 import { COMPANY_KEYS, MAX_TRACKED_LINKS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
+import useImageSuggestion from "./hooks/useImageSuggestion";
 import useTrackedLinkLibrary from "./hooks/useTrackedLinkLibrary";
 import {
   asList,
@@ -1170,6 +1171,19 @@ export default function BroadcastPage() {
     resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
   });
 
+  /*
+   * A imagem com IA também vive no telemóvel. Ao usá-la, segue pelo mesmo
+   * upload das imagens escolhidas no computador.
+   */
+  const imageSuggestion = useImageSuggestion({
+    orgId: org?.id,
+    resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
+    onUse: async (file) => {
+      const uploaded = await supabaseUpload([file]);
+      setComposerFiles((prev) => [...prev, ...uploaded]);
+    },
+  });
+
   /* Links já usados noutros envios, carregados quando o painel abre. */
   const trackedLinkLibrary = useTrackedLinkLibrary({
     orgId: org?.id,
@@ -1236,6 +1250,7 @@ export default function BroadcastPage() {
     onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
+    imageSuggest: imageSuggestion,
     linkPreview,
     onRemoveLink: removeTrackedLink,
   };

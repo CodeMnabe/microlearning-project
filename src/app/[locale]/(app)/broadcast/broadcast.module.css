@@ -98,7 +98,8 @@
   border: 1px solid var(--ui-border);
   background: #fff;
   resize: vertical;
-}.messageToolsRow {
+}
+.messageToolsRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -152,9 +153,11 @@
   place-items: center;
   font-size: 12px;
   font-weight: 700;
-}.toolCard {
+}
+.toolCard {
   min-height: 100%;
-}.label,
+}
+.label,
 .smallLabel {
   font-size: 12px;
   font-weight: 700;
@@ -165,7 +168,8 @@
 .fieldWide {
   display: grid;
   gap: 4px;
-}.scheduleModeRow {
+}
+.scheduleModeRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -357,14 +361,17 @@
 
 .calendarWrap :global(.react-datepicker-time__header) {
   font-weight: 700;
-}.fileList {
+}
+.fileList {
   display: grid;
   gap: 10px;
   margin-top: 8px;
-}.emptyMini {
+}
+.emptyMini {
   color: #888;
   font-size: 13px;
-}.errorBox {
+}
+.errorBox {
   padding: 10px;
   border-radius: 8px;
   background: #ffefef;
@@ -375,7 +382,8 @@
 .helpDanger {
   color: #c00;
   font-size: 12px;
-}.channelSwitch {
+}
+.channelSwitch {
   display: inline-flex;
   height: 45px;
   padding: 2px;
@@ -732,7 +740,8 @@
   border-radius: 16px;
   padding: 16px;
   background: #fff;
-}.chainBox {
+}
+.chainBox {
   display: grid;
   gap: 12px;
   padding: 12px;
@@ -1823,6 +1832,7 @@
 }
 
 /* Faixa por cima da mensagem enquanto o servidor não responde. */
+
 .sendingBanner {
   display: flex;
   align-items: center;
@@ -1844,8 +1854,64 @@
   color: #1e40af;
 }
 
+.suggestBubbleActions button:disabled {
+  color: #8696a0;
+  cursor: default;
+}
+
+/* ---------- Imagem com IA ---------- */
+
+/* A proposta fica no topo do balão, separada do texto que segue por baixo. */
+
+.imageSuggestBlock {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.imageSuggestPreview {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* A criar a imagem: um quadrado a pulsar no lugar onde ela vai aparecer. */
+
+.imageSuggestLoading {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
+  margin-bottom: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: #54656f;
+  font-size: 13px;
+  text-align: center;
+  animation: imageSuggestPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes imageSuggestPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .sendingSpinner {
+  .sendingSpinner,
+  .imageSuggestLoading {
     animation: none;
   }
 }
