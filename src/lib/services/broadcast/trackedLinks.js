@@ -1,6 +1,8 @@
 import { createTrackedLink } from "@/lib/repos/trackedLinks.repo";
+import { getTrackedLinkLibraryByOrg } from "@/lib/repos/trackedLinkLibrary.repo";
 import crypto from "crypto";
 import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
+import { withButtonLinksInText } from "@/lib/whatsapp/linkButton";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -21,8 +23,14 @@ function getAppBaseUrl() {
   return String(base).replace(/\/$/, "");
 }
 
+/*
+ * Troca cada {{link.chave}} pelo URL rastreado. Um link marcado como botão
+ * (`button: true`) que não está no texto vai antes para o fim, com o nome
+ * em Markdown: é o caso do Teams, que não tem os botões do WhatsApp. O
+ * WhatsApp trata o botão à parte e passa os links sem essa marca.
+ */
 export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
-  let out = String(message || "");
+  let out = withButtonLinksInText(message, resolvedLinks, { markdown: true });
 
   for (const link of resolvedLinks) {
     const placeholder = `{{link.${link.key}}}`;
@@ -68,6 +76,44 @@ export async function createTrackedLinkForRecipient({
   };
 }
 
+/**
+ * Links já usados pela organização, para o composer os poder escolher em vez
+ * de os escrever outra vez. Chegam do mais recente para o mais antigo; os
+ * que só diferem em espaços juntam-se no mais recente. Um link sem nome ou
+ * com um destino que o envio recusaria não aparece.
+ */
+export async function listReusableTrackedLinks(orgId) {
+  const rows = await getTrackedLinkLibraryByOrg(orgId);
+  const seen = new Set();
+  const items = [];
+
+  for (const row of rows) {
+    const label = String(row?.link_label || "").trim();
+    const destinationUrl = String(row?.destination_url || "").trim();
+
+    if (!label || !isAllowedDestinationUrl(destinationUrl)) continue;
+
+    const identity = `${label}\n${destinationUrl}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+
+    items.push({
+      key: String(row.link_key || "").trim(),
+      label,
+      destinationUrl,
+      lastUsedAt: row.last_used_at || null,
+    });
+  }
+
+  return items;
+}
+
+function buttonFields(link) {
+  const buttonMessage = String(link?.buttonMessage || "").trim();
+
+  return { button: true, ...(buttonMessage ? { buttonMessage } : {}) };
+}
+
 export async function resolveTrackedLinksForRecipient({
   trackedLinks = [],
   orgId,
@@ -103,6 +149,11 @@ export async function resolveTrackedLinksForRecipient({
       label,
       destinationUrl,
       trackedUrl,
+      /*
+       * Link de um botão no WhatsApp; não precisa de estar no texto. Do
+       * segundo em diante, segue num balão à parte com `buttonMessage`.
+       */
+      ...(link.button === true ? buttonFields(link) : {}),
     });
   }
 

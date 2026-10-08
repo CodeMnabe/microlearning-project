@@ -44,37 +44,66 @@ export async function createTrackedLinkEvent(row) {
   return data;
 }
 
+/*
+ * Links já usados pela organização, um por nome e destino, do mais recente
+ * para o mais antigo. Lê a vista tracked_link_library.
+ */
+export async function getTrackedLinkLibraryByOrg(orgId, { limit = 200 } = {}) {
+  const { data, error } = await supabaseAdmin
+    .from("tracked_link_library")
+    .select("link_key, link_label, destination_url, last_used_at")
+    .eq("org_id", orgId)
+    .order("last_used_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getTrackedLinkReportsByOrg(
   orgId,
   periodStart = null,
   { paginate = false } = {},
 ) {
   let rows;
+
   if (paginate) {
     rows = await fetchExportRows(
       "tracked_link",
       "id, org_id, channel, recipient_user_id, scheduled_broadcast_id, send_group_id, destination_url, link_label, link_key, source_type, created_at",
       (query) => {
         query = query.eq("org_id", orgId);
+
         return periodStart ? query.gte("created_at", periodStart) : query;
       },
     );
+
     // Read events separately: embedded arrays can also be capped by PostgREST.
     const eventsByLink = new Map();
+
     for (let offset = 0; offset < rows.length; offset += 200) {
       const ids = rows.slice(offset, offset + 200).map((row) => row.id);
+
       const events = await fetchExportRows(
         "tracked_link_event",
         "id, tracked_link_id, created_at",
         (query) => query.in("tracked_link_id", ids),
       );
+
       for (const event of events) {
         const eventsForLink = eventsByLink.get(event.tracked_link_id) ?? [];
+
         eventsForLink.push(event);
         eventsByLink.set(event.tracked_link_id, eventsForLink);
       }
     }
-    rows = rows.map((row) => ({ ...row, tracked_link_event: eventsByLink.get(row.id) ?? [] }));
+
+    rows = rows.map((row) => ({
+      ...row,
+      tracked_link_event: eventsByLink.get(row.id) ?? [],
+    }));
+
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   } else {
     const { data: links, error } = await supabaseAdmin
@@ -164,6 +193,7 @@ export async function getTrackedLinkReportsByOrg(
   return Array.from(grouped.values()).map((group) => {
     const recipientCount = group.recipientIds.size;
     const clickedCount = group.clickedRecipientIds.size;
+
     const clickRate =
       recipientCount > 0
         ? Number(((clickedCount / recipientCount) * 100).toFixed(1))
@@ -224,6 +254,7 @@ export async function getTrackedLinkReportDetail({ orgId, sendGroupId }) {
   if (error) throw error;
 
   const rows = Array.isArray(data) ? data : [];
+
   if (!rows.length) return null;
 
   const first = rows[0];
@@ -264,7 +295,9 @@ export async function getTrackedLinkReportDetail({ orgId, sendGroupId }) {
   const totalRecipients = rows.length;
   const clickedCount = clicked.length;
   const notClickedCount = notClicked.length;
+
   const totalClicks = clicked.reduce((sum, item) => sum + item.clickCount, 0);
+
   const clickRate =
     totalRecipients > 0
       ? Number(((clickedCount / totalRecipients) * 100).toFixed(1))

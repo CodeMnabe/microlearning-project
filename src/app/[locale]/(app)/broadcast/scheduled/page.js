@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./scheduled.module.css";
@@ -15,6 +16,7 @@ import {
   normalizeBroadcast,
   canEditItem,
   canDeleteItem,
+  getScheduledGroups,
   toDateInputValue,
 } from "./helpers/scheduled.helpers";
 
@@ -162,6 +164,7 @@ function uniqueSavedRecipients(recipients, channel) {
 
 export default function ScheduledPage() {
   const t = useTranslations("BroadcastScheduled");
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { org, loading: orgLoading } = useOrganization(user);
   const confirm = useConfirm();
@@ -315,6 +318,25 @@ export default function ScheduledPage() {
     };
   }, []);
 
+  /*
+   * ?view=<id> abre logo essa mensagem (vem da página de multimédia). Espera
+   * que ela apareça na lista, porque a organização e a lista chegam depois do
+   * primeiro render. O parâmetro sai do URL para não reabrir ao atualizar.
+   */
+  const viewParam = searchParams.get("view");
+  const viewHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (!viewParam || viewHandledRef.current) return;
+
+    const item = items.find((x) => String(x.id) === viewParam);
+    if (!item) return;
+
+    viewHandledRef.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    openViewModal(item);
+  }, [viewParam, items]);
+
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -434,7 +456,10 @@ export default function ScheduledPage() {
       return;
     }
 
-    if (!recipients.length) {
+    /* Nas mensagens para grupos do Teams (#166) não há colaboradores. */
+    const groupItems = getScheduledGroups(editingItem);
+
+    if (!groupItems && !recipients.length) {
       setError(t("Errors.invalidForm"));
 
       await showAlert({
@@ -465,7 +490,7 @@ export default function ScheduledPage() {
       if (formData.channel === "whatsapp") {
         nextPayload.recipients = recipients;
         delete nextPayload.userIds;
-      } else {
+      } else if (!groupItems) {
         const userIds = recipients
           .map((recipient) => recipient.userId)
           .filter(Boolean);
@@ -491,7 +516,7 @@ export default function ScheduledPage() {
             status:
               formData.status === "scheduled" ? "queued" : formData.status,
             payload: nextPayload,
-            recipient_count: recipients.length,
+            recipient_count: groupItems ? groupItems.length : recipients.length,
           }),
         },
       );

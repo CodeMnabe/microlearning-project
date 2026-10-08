@@ -308,8 +308,17 @@ export default function ViewUserModal({
                             `DB Thread ${t.id}`
                           }
                         >
-                          <div className={styles.threadTitle}>
-                            {getAssistantName(t.assistantId)}
+                          <div className={styles.threadTitleRow}>
+                            <span className={styles.threadTitle}>
+                              {getAssistantName(t.assistantId)}
+                            </span>
+
+                            {/* Canal da conversa (#167). */}
+                            {t.channel ? (
+                              <span className={styles.threadChannel}>
+                                {t.channel === "whatsapp" ? "WhatsApp" : "Teams"}
+                              </span>
+                            ) : null}
                           </div>
 
                           <div className={styles.threadMeta}>

@@ -77,8 +77,18 @@ export default function UsersPage() {
       showAlertRef.current = showAlert;
     }, [showAlert]);
 
-  // how many tags to show before "+n"
-  const MAX_TAGS = 6;
+  // how many tags to show before "+n"; the tags column is narrow up to 1400px
+  const [compactTags, setCompactTags] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1400px)");
+    const update = () => setCompactTags(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  const MAX_TAGS = compactTags ? 2 : 6;
 
   const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
 
@@ -756,7 +766,7 @@ async function openCreateUserModal() {
 
                   <div className={styles.cellTags}>
                     {shown.map((t) => (
-                      <span key={t} className={styles.chip}>
+                      <span key={t} className={styles.chip} title={t}>
                         {t}
                       </span>
                     ))}

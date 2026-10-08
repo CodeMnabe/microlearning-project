@@ -3,11 +3,16 @@ import { createScheduledBroadcast } from "@/lib/repos/scheduledBroadcasts.repo";
 import { recordAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
 import {
+  assertTeamsGroupsBelongToOrg,
   assertUsersBelongToOrg,
   handleApiError,
   requireAllRecipientsToBeKnownUsers,
   requireOwnedOrg,
 } from "@/lib/auth/guards";
+import {
+  assertGroupBroadcastContent,
+  parseGroupIds,
+} from "@/lib/services/broadcast/groupBroadcastOptions";
 import { parseOpeningOptions } from "@/lib/services/broadcast/openingOptions";
 import { parseQuestionOptions } from "@/lib/services/broadcast/questionOptions";
 
@@ -44,6 +49,51 @@ export async function POST(req) {
         { error: "Scheduled date must be in the future" },
         { status: 400 },
       );
+    }
+
+    /* Grupos do Teams (#166): só mensagem em branco, sem colaboradores. */
+    if (channel === "teams" && Array.isArray(payload?.groupIds)) {
+      assertGroupBroadcastContent(payload);
+
+      const groups = await assertTeamsGroupsBelongToOrg(
+        orgAuth.admin,
+        orgAuth.orgId,
+        parseGroupIds(payload.groupIds),
+      );
+
+      const groupRow = await createScheduledBroadcast({
+        organization_id: orgAuth.orgId,
+        created_by_user_id: orgAuth.user.id,
+        channel,
+        status: "queued",
+        scheduled_for: when.toISOString(),
+        timezone: timezone || null,
+        payload: {
+          orgId: orgAuth.orgId,
+          message: payload?.message || "",
+          files: Array.isArray(payload?.files) ? payload.files : [],
+          imageUrls: Array.isArray(payload?.imageUrls) ? payload.imageUrls : [],
+          trackedLinks: [],
+          groupIds: groups.map((group) => group.id),
+          /* Só para mostrar nas agendadas; o envio relê os grupos. */
+          groups: groups.map((group) => ({ id: group.id, name: group.name })),
+        },
+        recipient_count: groups.length,
+      });
+
+      await recordAuditEvent(orgAuth, {
+        action: AUDIT_ACTIONS.BROADCAST_SCHEDULED,
+        entityType: "scheduled_broadcast",
+        entityId: groupRow?.id,
+        details: {
+          channel,
+          groupCount: groups.length,
+          scheduledFor: when.toISOString(),
+          timezone: timezone || null,
+        },
+      });
+
+      return NextResponse.json({ ok: true, item: groupRow });
     }
 
     const rawRecipients =

@@ -878,6 +878,7 @@
   "Nav": {
     "home": "Home",
     "users": "Users",
+    "teamsGroups": "Teams groups",
     "assistants": "Assistants",
     "automations": "Automations",
     "broadcast": "Messages",
@@ -885,6 +886,7 @@
     "broadcastScheduled": "See Scheduled",
     "trackedLinks": "Tracked Links",
     "questions": "Questions",
+    "media": "Media",
     "admin": "Admin",
     "login": "Login",
     "options": "Settings",
@@ -1025,6 +1027,65 @@
       "userUpdated": {
         "title": "User updated",
         "message": "The user changes were saved successfully."
+      }
+    }
+  },
+
+  "TeamsGroups": {
+    "title": "Teams groups",
+    "subtitle": "Teams group chats and teams where MyDigitalBot was added.",
+    "totalGroups": "Groups",
+    "activeGroups": "Active",
+    "search": "Search by name",
+    "loading": "Loading groups...",
+    "empty": "There are no groups yet. Add MyDigitalBot to a group chat or a team in Teams for it to show up here.",
+    "noMatches": "No groups match your search.",
+    "unnamed": "Unnamed group",
+    "never": "No messages",
+    "type": {
+      "groupChat": "Group chat",
+      "channel": "Team channel"
+    },
+    "status": {
+      "active": "Active",
+      "removed": "Bot removed"
+    },
+    "table": {
+      "group": "Group",
+      "assistant": "Assistant",
+      "lastMessage": "Last message",
+      "status": "Status"
+    },
+    "detail": {
+      "back": "Teams groups",
+      "settings": "Group settings",
+      "name": "Name",
+      "namePlaceholder": "Group name in the platform",
+      "nameHint": "Teams group chats do not always have a name. You can give it one here.",
+      "assistant": "Assistant that answers in the group",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "members": "Members",
+      "membersLoading": "Loading members...",
+      "membersFailed": "The members could not be read from Teams.",
+      "membersRemoved": "The bot is no longer in this group, so the members cannot be read.",
+      "noMembers": "No members.",
+      "colleague": "Colleague",
+      "conversation": "Conversation",
+      "conversationHint": "Latest messages exchanged with the bot in this group.",
+      "noMessages": "There are no messages in this group yet.",
+      "platform": "Message sent from the platform",
+      "unknownUser": "Group member",
+      "removedNotice": "MyDigitalBot was removed from this group in Teams. Old messages stay here, but messages can no longer be sent and members can no longer be read."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Loading error",
+        "message": "The groups could not be loaded."
+      },
+      "saveFailed": {
+        "title": "Save error",
+        "message": "The group changes could not be saved."
       }
     }
   },
@@ -1337,6 +1398,23 @@
         "title": "Deliveries materialized",
         "message": "The materialization routine ran successfully."
       }
+    },
+    "readChains": {
+      "title": "Read chain messages",
+      "text": "Send the next message after the previous one is read, on WhatsApp and Teams.",
+      "active": "Feature active",
+      "inactive": "Feature inactive",
+      "on": "On",
+      "off": "Off",
+      "saving": "Saving...",
+      "enable": "Enable read chains",
+      "disable": "Disable read chains",
+      "enabledTitle": "Read chains enabled",
+      "enabledMessage": "Broadcasts can now create message chains on WhatsApp and Teams that continue after each read receipt.",
+      "disabledTitle": "Read chains disabled",
+      "disabledMessage": "Broadcasts can no longer create new read chains.",
+      "errorTitle": "Could not update read chains",
+      "errorMessage": "Failed to update read chain feature."
     }
   },
 
@@ -1376,6 +1454,21 @@
     "chooseTime": "Choose a time between 08:00 and 20:00.",
     "trackedLinks": "Tracked Links",
     "addLink": "Add Link",
+    "linkButtonTag": "Button",
+    "linkLimitHint": "Each message takes a single link. To pick another, remove the current one.",
+    "linkBubbleTag": "Separate bubble",
+    "linkBubbleText": "Bubble text (optional)",
+    "linkLibrary": {
+      "title": "Links already used",
+      "search": "Search by name or URL",
+      "use": "Use",
+      "added": "Added",
+      "lastUsed": "Used on {date, date, short}",
+      "loading": "Loading links...",
+      "failed": "Could not load the links already used.",
+      "retry": "Try again",
+      "noMatches": "No link matches your search."
+    },
     "key": "Key",
     "label": "Label",
     "destinationUrl": "Destination URL",
@@ -1408,6 +1501,23 @@
       "questionSample": "Hi {name}! What would you do if a customer asked for a discount off the price list?",
       "soon": "Coming soon"
     },
+    "mediaPicker": {
+      "fromComputer": "From computer",
+      "fromMedia": "From media",
+      "title": {
+        "image": "Images from media",
+        "video": "Videos from media",
+        "document": "Documents from media"
+      },
+      "search": "Search by name",
+      "loading": "Loading files...",
+      "loadFailed": "The files could not be loaded.",
+      "empty": "There are no files of this type in media yet. Use \"From computer\" to upload the first one.",
+      "noMatches": "No files match your search.",
+      "attached": "Already added",
+      "add": "Add ({count})",
+      "close": "Close"
+    },
     "suggest": {
       "title": "Suggest text",
       "promptLabel": "Request for the suggestion",
@@ -1421,6 +1531,41 @@
       "loading": "Writing...",
       "use": "Use",
       "failed": "The suggestion could not be generated. Try again."
+    },
+    "groups": {
+      "tabUsers": "Colleagues",
+      "tabGroups": "Teams groups",
+      "onlyBlank": "Groups only receive blank messages, without a chain.",
+      "search": "Search group...",
+      "empty": "There are no active groups yet. Add MyDigitalBot to a group chat or a team in Teams.",
+      "unnamed": "Unnamed group",
+      "groupFallback": "Group",
+      "chooseGroups": "Choose at least one group.",
+      "noTrackedLinks": {
+        "title": "Tracked links",
+        "message": "Tracked links are per person and cannot go to groups. Remove them before sending."
+      },
+      "noNameVariable": {
+        "title": "Name variable",
+        "message": "The Name variable has no value in a group. Remove it before sending."
+      },
+      "confirmSend": {
+        "title": "Send to groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}}."
+      },
+      "confirmSchedule": {
+        "title": "Schedule for groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      },
+      "sent": {
+        "title": "Message sent",
+        "titleWithIssues": "Message sent with issues",
+        "message": "Posted in {ok} of {total} groups."
+      },
+      "scheduled": {
+        "title": "Message scheduled",
+        "message": "It will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      }
     },
     "composer": {
       "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
@@ -1438,7 +1583,14 @@
       "addImage": "Image",
       "addVideo": "Video",
       "addDocument": "Document",
+      "fileTooLarge": "The file {name} is larger than 20 MB.",
+      "fileTypeNotAllowed": "The file {name} is not supported. Use images (PNG, JPG, WebP, GIF), PDF or MP4.",
       "addLink": "Tracked link",
+      "linkButtonHint": "On WhatsApp, the link goes in this button.",
+      "linkButtonRemove": "Remove the link",
+      "linkButtonInText": "{count, plural, one {There are no buttons here: the link {labels} goes at the end of the text.} other {There are no buttons here: the links {labels} go at the end of the text.}}",
+      "linkNeedsText": "Write some text: on WhatsApp, the link goes in a button and the message needs text.",
+      "chainStepNeedsText": "Step {step}: write some text. On WhatsApp, the link goes in a button and the message needs text.",
       "variables": "Variables",
       "variableName": "Name",
       "variableCompany": "Company",
@@ -1615,10 +1767,13 @@
       "delete": "Delete"
     },
     "ViewModal": {
+      "groups": "Teams groups",
       "title": "Message details",
       "createdAt": "Created at"
     },
     "EditModal": {
+      "groups": "Teams groups",
+      "unnamedGroup": "Unnamed group",
       "title": "Edit scheduled message",
       "message": "Message",
       "recipients": "Recipients",
@@ -1804,6 +1959,47 @@
     "correctRate": "{rate}% correct",
     "verdictSummary": "{completa} complete · {parcial} partial · {incompleta} incomplete",
     "reviewCount": "{count} to review",
+    "export": {
+      "button": "Export Excel",
+      "exporting": "Exporting...",
+      "fileName": "questions",
+      "failed": {
+        "title": "Export failed",
+        "message": "The Excel file could not be generated. Try again in a few seconds."
+      },
+      "columns": {
+        "questionsSheet": "Questions",
+        "answersSheet": "Answers",
+        "sentAt": "Sent at",
+        "kindColumn": "Type",
+        "question": "Question",
+        "channels": "Channels",
+        "recipients": "Recipients",
+        "answered": "Answered",
+        "responseRate": "Response rate",
+        "correctRate": "Correct rate",
+        "correctOption": "Correct option",
+        "topOption": "Most chosen",
+        "expectedAnswer": "Expected answer",
+        "reviewNeeded": "To review",
+        "expiresAt": "Accepts answers until",
+        "questionId": "Question ID",
+        "answeredAt": "Answered at",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "tags": "Tags",
+        "assistant": "Assistant",
+        "channel": "Channel",
+        "answer": "Answer",
+        "isCorrect": "Correct",
+        "verdict": "Verdict",
+        "feedback": "Feedback sent",
+        "userId": "Contact ID",
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
     "alerts": {
       "noOrg": {
         "title": "Missing organization",
@@ -1882,6 +2078,53 @@
           "title": "Failed to save the verdict",
           "message": "The correction could not be saved. Please try again."
         }
+      }
+    }
+  },
+
+  "Media": {
+    "title": "Media",
+    "subtitle": "Images, PDFs and videos uploaded in the organization's messages.",
+    "totalSize": "Space used",
+    "totalFiles": "Files",
+    "search": "Search by name",
+    "loading": "Loading files...",
+    "noFiles": "No files have been uploaded in messages yet.",
+    "noMatches": "No files match your search.",
+    "inUseHint": "This file will be sent in a scheduled message or an active chain. If it were deleted now, the message would go out without it. It can be deleted after the message is sent or cancelled.",
+    "openScheduled": "Open the scheduled message that uses this file",
+    "download": "Download {name}",
+    "table": {
+      "file": "File",
+      "size": "Size",
+      "uploaded": "Uploaded on",
+      "status": "Status"
+    },
+    "type": {
+      "image": "Image",
+      "pdf": "PDF",
+      "video": "Video",
+      "other": "File"
+    },
+    "status": {
+      "inUse": "In use",
+      "free": "Free"
+    },
+    "confirm": {
+      "title": "Delete {name}?",
+      "message": "The file will stop opening in messages already sent with it. This cannot be undone."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Loading error",
+        "message": "The files could not be loaded."
+      },
+      "deleteFailed": {
+        "title": "Delete error",
+        "message": "The file could not be deleted."
+      },
+      "inUse": {
+        "title": "File in use"
       }
     }
   },
@@ -2750,6 +2993,7 @@
     },
     "Areas": {
       "all": "All areas",
+      "teams_group": "Teams groups",
       "user": "Users",
       "tag": "Tags",
       "assistant": "Assistants",
@@ -2757,6 +3001,7 @@
       "broadcast": "Messages",
       "message": "Individual messages",
       "template": "Templates",
+      "media": "Media",
       "organization": "Organization"
     },
     "Channels": {
@@ -2789,11 +3034,13 @@
       "broadcast_read_chain_created": "Read chain created",
       "message_template_sent": "Template sent to a user",
       "template_created": "WhatsApp template created",
+      "media_deleted": "Media file deleted",
       "organization_created": "Organization created",
       "organization_settings_updated": "Organization settings changed",
       "automation_triggered": "Automation triggered",
       "broadcast_scheduled_sent": "Scheduled message sent",
       "message_received": "Message received",
+      "teams_group_updated": "Teams group edited",
       "unknown": "Unknown action"
     },
     "Table": {
@@ -2827,6 +3074,7 @@
         "assistant": "Assistant",
         "fields": "Changed fields",
         "recipients": "Recipients",
+        "groups": "Teams groups",
         "result": "Result",
         "count": "Users",
         "failedCount": "Failed",

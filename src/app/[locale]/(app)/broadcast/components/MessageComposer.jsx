@@ -11,6 +11,7 @@ export default function MessageComposer({
   title,
   onBack,
   hint,
+  warning = null,
   chainControls = null,
   leftToolsContent = null,
   showLinks = true,
@@ -41,6 +42,13 @@ export default function MessageComposer({
       {hint ? <div className={styles.composerHint}>{hint}</div> : null}
 
       {phone}
+
+      {/* Porque o envio está bloqueado, quando não é óbvio. */}
+      {warning ? (
+        <div className={styles.composerWarning} role="status">
+          {warning}
+        </div>
+      ) : null}
 
       <div className={styles.messageToolsRow}>
         <div className={styles.messageToolsLeft}>{leftToolsContent}</div>

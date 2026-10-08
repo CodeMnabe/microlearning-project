@@ -891,6 +891,7 @@
   "Nav": {
     "home": "Início",
     "users": "Colaboradores",
+    "teamsGroups": "Grupos Teams",
     "assistants": "Assistentes",
     "automations": "Automações",
     "broadcast": "Mensagens",
@@ -898,6 +899,7 @@
     "broadcastScheduled": "Ver Agendadas",
     "trackedLinks": "Links Rastreados",
     "questions": "Perguntas",
+    "media": "Multimédia",
     "admin": "Administração",
     "login": "Login",
     "options": "Definições",
@@ -1035,6 +1037,65 @@
       "importSuccess": {
         "title": "Importação concluída",
         "message": "Os utilizadores foram importados com sucesso."
+      }
+    }
+  },
+
+  "TeamsGroups": {
+    "title": "Grupos Teams",
+    "subtitle": "Chats de grupo e equipas do Teams onde o MyDigitalBot foi adicionado.",
+    "totalGroups": "Grupos",
+    "activeGroups": "Ativos",
+    "search": "Pesquisar por nome",
+    "loading": "A carregar grupos...",
+    "empty": "Ainda não há grupos. Adiciona o MyDigitalBot a um chat de grupo ou a uma equipa no Teams para ele aparecer aqui.",
+    "noMatches": "Nenhum grupo corresponde à pesquisa.",
+    "unnamed": "Grupo sem nome",
+    "never": "Sem mensagens",
+    "type": {
+      "groupChat": "Chat de grupo",
+      "channel": "Canal de equipa"
+    },
+    "status": {
+      "active": "Ativo",
+      "removed": "Bot removido"
+    },
+    "table": {
+      "group": "Grupo",
+      "assistant": "Assistente",
+      "lastMessage": "Última mensagem",
+      "status": "Estado"
+    },
+    "detail": {
+      "back": "Grupos Teams",
+      "settings": "Definições do grupo",
+      "name": "Nome",
+      "namePlaceholder": "Nome do grupo na plataforma",
+      "nameHint": "Os chats de grupo do Teams nem sempre trazem nome. Aqui podes dar-lhe um.",
+      "assistant": "Assistente que responde no grupo",
+      "save": "Guardar",
+      "saved": "Alterações guardadas.",
+      "members": "Membros",
+      "membersLoading": "A carregar membros...",
+      "membersFailed": "Não foi possível obter os membros no Teams.",
+      "membersRemoved": "O bot já não está neste grupo, por isso os membros não podem ser lidos.",
+      "noMembers": "Sem membros.",
+      "colleague": "Colaborador",
+      "conversation": "Conversa",
+      "conversationHint": "Últimas mensagens trocadas com o bot neste grupo.",
+      "noMessages": "Ainda não há mensagens neste grupo.",
+      "platform": "Mensagem enviada pela plataforma",
+      "unknownUser": "Membro do grupo",
+      "removedNotice": "O MyDigitalBot foi removido deste grupo no Teams. As mensagens antigas continuam aqui, mas já não é possível enviar mensagens nem ler os membros."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Erro ao carregar",
+        "message": "Não foi possível carregar os grupos."
+      },
+      "saveFailed": {
+        "title": "Erro ao guardar",
+        "message": "Não foi possível guardar as alterações do grupo."
       }
     }
   },
@@ -1346,6 +1407,23 @@
         "title": "Envios materializados",
         "message": "A rotina de materialização foi executada com sucesso."
       }
+    },
+    "readChains": {
+      "title": "Mensagens em cadeia",
+      "text": "Envia a mensagem seguinte depois de a anterior ser lida, no WhatsApp e no Teams.",
+      "active": "Funcionalidade ativa",
+      "inactive": "Funcionalidade inativa",
+      "on": "Ligado",
+      "off": "Desligado",
+      "saving": "A guardar...",
+      "enable": "Ligar mensagens em cadeia",
+      "disable": "Desligar mensagens em cadeia",
+      "enabledTitle": "Mensagens em cadeia ligadas",
+      "enabledMessage": "Os envios podem criar cadeias de mensagens no WhatsApp e no Teams, que avançam quando cada mensagem é lida.",
+      "disabledTitle": "Mensagens em cadeia desligadas",
+      "disabledMessage": "Os envios deixam de poder criar novas cadeias de mensagens.",
+      "errorTitle": "Não foi possível alterar as mensagens em cadeia",
+      "errorMessage": "Não foi possível atualizar a funcionalidade."
     }
   },
 
@@ -1385,6 +1463,21 @@
     "chooseTime": "Escolhe um tempo entre as 08:00 e as 20:00",
     "trackedLinks": "Links Rastreados",
     "addLink": "Adicionar Link",
+    "linkButtonTag": "Botão",
+    "linkLimitHint": "Cada mensagem leva um só link. Para escolher outro, tira o atual.",
+    "linkBubbleTag": "Balão à parte",
+    "linkBubbleText": "Texto do balão (opcional)",
+    "linkLibrary": {
+      "title": "Links já usados",
+      "search": "Procurar por nome ou URL",
+      "use": "Usar",
+      "added": "Adicionado",
+      "lastUsed": "Usado a {date, date, short}",
+      "loading": "A carregar os links...",
+      "failed": "Não foi possível carregar os links já usados.",
+      "retry": "Tentar novamente",
+      "noMatches": "Nenhum link corresponde à pesquisa."
+    },
     "key": "Chave",
     "label": "Rótulo",
     "destinationUrl": "URL Destino",
@@ -1416,6 +1509,23 @@
       "questionSample": "Olá {name}! O que farias se um cliente pedisse um desconto fora da tabela? Responde por aqui.",
       "soon": "Em breve"
     },
+    "mediaPicker": {
+      "fromComputer": "Do computador",
+      "fromMedia": "Da multimédia",
+      "title": {
+        "image": "Imagens da multimédia",
+        "video": "Vídeos da multimédia",
+        "document": "Documentos da multimédia"
+      },
+      "search": "Pesquisar por nome",
+      "loading": "A carregar ficheiros...",
+      "loadFailed": "Não foi possível carregar os ficheiros.",
+      "empty": "Ainda não há ficheiros deste tipo na multimédia. Usa \"Do computador\" para carregar o primeiro.",
+      "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+      "attached": "Já adicionado",
+      "add": "Adicionar ({count})",
+      "close": "Fechar"
+    },
     "suggest": {
       "title": "Sugerir texto",
       "promptLabel": "Pedido para a sugestão",
@@ -1429,6 +1539,41 @@
       "loading": "A escrever...",
       "use": "Usar",
       "failed": "Não foi possível gerar a sugestão. Tenta outra vez."
+    },
+    "groups": {
+      "tabUsers": "Colaboradores",
+      "tabGroups": "Grupos Teams",
+      "onlyBlank": "Os grupos só recebem mensagens em branco, sem cadeia.",
+      "search": "Procurar grupo...",
+      "empty": "Ainda não há grupos ativos. Adiciona o MyDigitalBot a um chat de grupo ou a uma equipa no Teams.",
+      "unnamed": "Grupo sem nome",
+      "groupFallback": "Grupo",
+      "chooseGroups": "Escolhe pelo menos um grupo.",
+      "noTrackedLinks": {
+        "title": "Links rastreados",
+        "message": "Os links rastreados são por pessoa e não podem ir para grupos. Remove-os antes de enviar."
+      },
+      "noNameVariable": {
+        "title": "Variável Nome",
+        "message": "A variável Nome não tem valor num grupo. Remove-a antes de enviar."
+      },
+      "confirmSend": {
+        "title": "Enviar para grupos?",
+        "message": "A mensagem vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams."
+      },
+      "confirmSchedule": {
+        "title": "Agendar para grupos?",
+        "message": "A mensagem vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams a {date}."
+      },
+      "sent": {
+        "title": "Mensagem enviada",
+        "titleWithIssues": "Mensagem enviada com falhas",
+        "message": "Publicada em {ok} de {total} grupos."
+      },
+      "scheduled": {
+        "title": "Mensagem agendada",
+        "message": "Vai ser publicada em {count, plural, one {# grupo} other {# grupos}} do Teams a {date}."
+      }
     },
     "composer": {
       "openQuestionHint": "Escreve a pergunta no balão e define a resposta esperada abaixo. Usa o + para imagens, links e variáveis.",
@@ -1446,7 +1591,14 @@
       "addImage": "Imagem",
       "addVideo": "Vídeo",
       "addDocument": "Documento",
+      "fileTooLarge": "O ficheiro {name} tem mais de 20 MB.",
+      "fileTypeNotAllowed": "O ficheiro {name} não é suportado. Usa imagens (PNG, JPG, WebP, GIF), PDF ou MP4.",
       "addLink": "Link rastreado",
+      "linkButtonHint": "No WhatsApp, o link vai neste botão.",
+      "linkButtonRemove": "Tirar o link",
+      "linkButtonInText": "{count, plural, one {Aqui não há botões: o link {labels} vai no fim do texto.} other {Aqui não há botões: os links {labels} vão no fim do texto.}}",
+      "linkNeedsText": "Escreve algum texto: no WhatsApp, o link vai num botão e a mensagem precisa de texto.",
+      "chainStepNeedsText": "Passo {step}: escreve algum texto. No WhatsApp, o link vai num botão e a mensagem precisa de texto.",
       "variables": "Variáveis",
       "variableName": "Nome",
       "variableCompany": "Empresa",
@@ -1623,10 +1775,13 @@
       "delete": "Eliminar"
     },
     "ViewModal": {
+      "groups": "Grupos Teams",
       "title": "Detalhes da mensagem",
       "createdAt": "Criada em"
     },
     "EditModal": {
+      "groups": "Grupos Teams",
+      "unnamedGroup": "Grupo sem nome",
       "title": "Editar mensagem agendada",
       "message": "Mensagem",
       "recipients": "Destinatários",
@@ -1813,6 +1968,47 @@
     "correctRate": "{rate}% de acertos",
     "verdictSummary": "{completa} completa · {parcial} parcial · {incompleta} incompleta",
     "reviewCount": "{count} para rever",
+    "export": {
+      "button": "Exportar Excel",
+      "exporting": "A exportar...",
+      "fileName": "perguntas",
+      "failed": {
+        "title": "Erro ao exportar",
+        "message": "Não foi possível gerar o ficheiro Excel. Tenta novamente dentro de alguns segundos."
+      },
+      "columns": {
+        "questionsSheet": "Perguntas",
+        "answersSheet": "Respostas",
+        "sentAt": "Enviada em",
+        "kindColumn": "Tipo",
+        "question": "Pergunta",
+        "channels": "Canais",
+        "recipients": "Destinatários",
+        "answered": "Responderam",
+        "responseRate": "Taxa de resposta",
+        "correctRate": "Taxa de acertos",
+        "correctOption": "Opção certa",
+        "topOption": "Mais escolhida",
+        "expectedAnswer": "Resposta esperada",
+        "reviewNeeded": "Para rever",
+        "expiresAt": "Aceita respostas até",
+        "questionId": "ID pergunta",
+        "answeredAt": "Respondida em",
+        "name": "Nome",
+        "email": "Email",
+        "phone": "Telemóvel",
+        "tags": "Etiquetas",
+        "assistant": "Assistente",
+        "channel": "Canal",
+        "answer": "Resposta",
+        "isCorrect": "Certa",
+        "verdict": "Veredicto",
+        "feedback": "Feedback enviado",
+        "userId": "ID colaborador",
+        "yes": "Sim",
+        "no": "Não"
+      }
+    },
     "alerts": {
       "noOrg": {
         "title": "Organização em falta",
@@ -1891,6 +2087,53 @@
           "title": "Erro ao guardar o veredicto",
           "message": "Não foi possível guardar a correção. Tenta novamente."
         }
+      }
+    }
+  },
+
+  "Media": {
+    "title": "Multimédia",
+    "subtitle": "Imagens, PDF e vídeos carregados nas mensagens da organização.",
+    "totalSize": "Espaço usado",
+    "totalFiles": "Ficheiros",
+    "search": "Pesquisar por nome",
+    "loading": "A carregar ficheiros...",
+    "noFiles": "Ainda não foram carregados ficheiros nas mensagens.",
+    "noMatches": "Nenhum ficheiro corresponde à pesquisa.",
+    "inUseHint": "Este ficheiro vai ser enviado numa mensagem agendada ou numa cadeia ativa. Se fosse eliminado agora, a mensagem sairia sem ele. Pode ser eliminado depois de a mensagem ser enviada ou cancelada.",
+    "openScheduled": "Ver a mensagem agendada que usa este ficheiro",
+    "download": "Transferir {name}",
+    "table": {
+      "file": "Ficheiro",
+      "size": "Tamanho",
+      "uploaded": "Carregado em",
+      "status": "Estado"
+    },
+    "type": {
+      "image": "Imagem",
+      "pdf": "PDF",
+      "video": "Vídeo",
+      "other": "Ficheiro"
+    },
+    "status": {
+      "inUse": "Em uso",
+      "free": "Livre"
+    },
+    "confirm": {
+      "title": "Eliminar {name}?",
+      "message": "O ficheiro deixa de abrir nas mensagens já enviadas que o usam. Esta ação não pode ser desfeita."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Erro ao carregar",
+        "message": "Não foi possível carregar os ficheiros."
+      },
+      "deleteFailed": {
+        "title": "Erro ao eliminar",
+        "message": "Não foi possível eliminar o ficheiro."
+      },
+      "inUse": {
+        "title": "Ficheiro em uso"
       }
     }
   },
@@ -2607,6 +2850,7 @@
     },
     "Areas": {
       "all": "Todas as áreas",
+      "teams_group": "Grupos Teams",
       "user": "Colaboradores",
       "tag": "Tags",
       "assistant": "Assistentes",
@@ -2614,6 +2858,7 @@
       "broadcast": "Mensagens",
       "message": "Mensagens individuais",
       "template": "Templates",
+      "media": "Multimédia",
       "organization": "Organização"
     },
     "Channels": {
@@ -2646,11 +2891,13 @@
       "broadcast_read_chain_created": "Sequência de leitura criada",
       "message_template_sent": "Template enviado a um colaborador",
       "template_created": "Template WhatsApp criado",
+      "media_deleted": "Ficheiro de multimédia eliminado",
       "organization_created": "Organização criada",
       "organization_settings_updated": "Definições da organização alteradas",
       "automation_triggered": "Automação disparada",
       "broadcast_scheduled_sent": "Mensagem agendada enviada",
       "message_received": "Mensagem recebida",
+      "teams_group_updated": "Grupo Teams editado",
       "unknown": "Ação desconhecida"
     },
     "Table": {
@@ -2684,6 +2931,7 @@
         "assistant": "Assistente",
         "fields": "Campos alterados",
         "recipients": "Destinatários",
+        "groups": "Grupos Teams",
         "result": "Resultado",
         "count": "Colaboradores",
         "failedCount": "Falhados",

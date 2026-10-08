@@ -6,6 +6,12 @@ export function buildSecurityHeaders({ supabaseUrl, isProduction, isVercelPrevie
 
   const connectSources = ["'self'"];
   if (supabaseOrigin) connectSources.push(supabaseOrigin);
+
+  // O Supabase local é http; em produção já entra pelo https:.
+  const imageSources = ["'self'", "data:", "blob:", "https:"];
+  if (supabaseOrigin && !supabaseOrigin.startsWith("https:")) {
+    imageSources.push(supabaseOrigin);
+  }
   if (isVercelPreview) {
     connectSources.push("https://vercel.live", "wss://ws-us3.pusher.com");
   }
@@ -14,7 +20,7 @@ export function buildSecurityHeaders({ supabaseUrl, isProduction, isVercelPrevie
     "default-src 'self'",
     `script-src ${scriptSources.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
+    `img-src ${imageSources.join(" ")}`,
     "font-src 'self' data:",
     `connect-src ${connectSources.join(" ")}`,
     "media-src 'self' blob:",

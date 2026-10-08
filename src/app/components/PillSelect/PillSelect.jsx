@@ -3,6 +3,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./pillSelect.module.css";
 
+const MIN_MENU_WIDTH = 240;
+
 export default function PillSelect({
   options = [],
   value,
@@ -62,7 +64,10 @@ export default function PillSelect({
     if (!open || !triggerRef.current) return;
 
     const r = triggerRef.current.getBoundingClientRect();
-    const width = menuWidth ?? r.width;
+    // A short selected label makes a narrow trigger; the menu keeps room for the other options.
+    const width =
+      menuWidth ??
+      Math.min(Math.max(r.width, MIN_MENU_WIDTH), window.innerWidth - 24);
     const left = Math.max(12, Math.min(window.innerWidth - width - 12, r.left));
 
     const downTop = r.bottom + 6;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Building2,
+  ChevronDown,
   FileText,
   FileVideo,
   Image as ImageIcon,
@@ -12,8 +13,21 @@ import {
   User,
 } from "lucide-react";
 
+import { BROADCAST_MEDIA_ACCEPT } from "@/lib/uploads/broadcastMedia";
+
 import styles from "../broadcast.module.css";
 import { SuggestBar } from "./SuggestInPhone";
+
+/* Cada tipo abre a escolha entre o computador e a multimédia. */
+const FILE_KINDS = [
+  { kind: "image", Icon: ImageIcon, labelKey: "Broadcast.composer.addImage" },
+  { kind: "video", Icon: FileVideo, labelKey: "Broadcast.composer.addVideo" },
+  {
+    kind: "document",
+    Icon: FileText,
+    labelKey: "Broadcast.composer.addDocument",
+  },
+];
 
 const VARIABLE_ICONS = {
   name: User,
@@ -28,6 +42,7 @@ const VARIABLE_ICONS = {
  */
 export default function PlusMenu({
   onAddFile,
+  onPickFromMedia,
   onAddLink,
   onSuggestText,
   variables = [],
@@ -35,10 +50,14 @@ export default function PlusMenu({
   translation,
 }) {
   const [open, setOpen] = useState(false);
+  const [expandedKind, setExpandedKind] = useState(null);
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setExpandedKind(null);
+      return;
+    }
 
     function onDoc(e) {
       if (wrapRef.current?.contains(e.target)) return;
@@ -78,35 +97,74 @@ export default function PlusMenu({
 
       {open && (
         <div className={styles.plusMenu} role="menu">
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("image/*"))}
-          >
-            <ImageIcon size={16} />
-            <span>{translation("Broadcast.composer.addImage")}</span>
-          </button>
+          {FILE_KINDS.map(({ kind, Icon, labelKey }) => {
+            const isExpanded = expandedKind === kind;
 
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("video/*"))}
-          >
-            <FileVideo size={16} />
-            <span>{translation("Broadcast.composer.addVideo")}</span>
-          </button>
+            /* Sem galeria disponível, vai direto ao computador. */
+            if (!onPickFromMedia) {
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  role="menuitem"
+                  className={styles.plusItem}
+                  onClick={() =>
+                    pick(() => onAddFile(BROADCAST_MEDIA_ACCEPT[kind]))
+                  }
+                >
+                  <Icon size={16} />
+                  <span>{translation(labelKey)}</span>
+                </button>
+              );
+            }
 
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.plusItem}
-            onClick={() => pick(() => onAddFile("*/*"))}
-          >
-            <FileText size={16} />
-            <span>{translation("Broadcast.composer.addDocument")}</span>
-          </button>
+            return (
+              <div key={kind} className={styles.plusGroup}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.plusItem}
+                  aria-expanded={isExpanded}
+                  onClick={() =>
+                    setExpandedKind((prev) => (prev === kind ? null : kind))
+                  }
+                >
+                  <Icon size={16} />
+                  <span>{translation(labelKey)}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`${styles.plusChevron} ${
+                      isExpanded ? styles.plusChevronOpen : ""
+                    }`}
+                    aria-hidden
+                  />
+                </button>
+
+                {isExpanded && (
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={`${styles.plusItem} ${styles.plusSubItem}`}
+                      onClick={() =>
+                        pick(() => onAddFile(BROADCAST_MEDIA_ACCEPT[kind]))
+                      }
+                    >
+                      {translation("Broadcast.mediaPicker.fromComputer")}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={`${styles.plusItem} ${styles.plusSubItem}`}
+                      onClick={() => pick(() => onPickFromMedia(kind))}
+                    >
+                      {translation("Broadcast.mediaPicker.fromMedia")}
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
 
           {onAddLink && (
             <button
@@ -174,6 +232,7 @@ export function PlusMenuBar({ tools, translation }) {
     <>
       <PlusMenu
         onAddFile={tools.onAddFile}
+        onPickFromMedia={tools.onPickFromMedia}
         onAddLink={tools.onAddLink}
         onSuggestText={tools.suggest?.open}
         variables={tools.variables}

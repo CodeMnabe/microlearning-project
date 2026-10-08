@@ -7,14 +7,17 @@ import styles from "./broadcast.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import {
-  BROADCAST_IMAGES_BUCKET,
-  buildBroadcastImageKey,
-} from "@/lib/uploads/broadcastImages";
+  BROADCAST_MEDIA_ACCEPT,
+  BROADCAST_MEDIA_BUCKET,
+  broadcastMediaRejection,
+  buildBroadcastMediaKey,
+} from "@/lib/uploads/broadcastMedia";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import {
+  hasReplyButtons,
   isQuizValid,
   isSurveyValid,
   makeEmptyQuiz,
@@ -22,6 +25,12 @@ import {
   makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
+import {
+  buttonLinkBubbles,
+  chooseButtonLink,
+  convertLinksForButton,
+  isOnlyTrackedLinks,
+} from "@/lib/whatsapp/linkButton";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -33,21 +42,28 @@ import OpenQuestionComposer from "./components/OpenQuestionComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
+import AudienceTabs from "./components/recipients/AudienceTabs";
+import GroupsPanel from "./components/recipients/GroupsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 import SendingBanner from "./components/SendingBanner";
 import useSendProgress from "./hooks/useSendProgress";
+import MediaPickerModal from "./components/MediaPickerModal";
 
-import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
+import { COMPANY_KEYS, MAX_TRACKED_LINKS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
+import useTrackedLinkLibrary from "./hooks/useTrackedLinkLibrary";
 import {
   asList,
   buildInitialScheduledDate,
+  buttonFieldsOf,
   formatHour,
   formatMinute,
   guessContentTypeFromName,
   isImageContentType,
+  isSameTrackedLink,
   isVideoContentType,
   makeTrackedLinkDraft,
+  makeTrackedLinkFromLibrary,
   sanitizeTrackedKey,
   makeChainStep,
   formatDelayLabel,
@@ -113,6 +129,12 @@ export default function BroadcastPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
 
+  /* Destinatários: colaboradores ou grupos do Teams (#166). */
+  const [audience, setAudience] = useState("users");
+  const [teamsGroups, setTeamsGroups] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState(new Set());
+  const [groupQuery, setGroupQuery] = useState("");
+
   const [allTags, setAllTags] = useState([]);
   const [assistantsList, setAssistantsList] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -125,6 +147,8 @@ export default function BroadcastPage() {
   const thumbInputRef = useRef(null);
   const editorRef = useRef(null);
   const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
+  /* Tipo escolhido em "Da multimédia" no menu "+"; null com a janela fechada. */
+  const [mediaPickerKind, setMediaPickerKind] = useState(null);
 
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
@@ -187,6 +211,16 @@ export default function BroadcastPage() {
   const isQuizMode = composeMode === "quiz";
   const isOpenQuestionMode = composeMode === "question";
 
+  /*
+   * Os grupos só recebem mensagens em branco, sem cadeia: num grupo não há
+   * um destinatário único para as perguntas nem para a leitura.
+   */
+  const isGroupAudience = audience === "groups";
+  const canUseGroups =
+    channel === "teams" &&
+    (composeMode === null || composeMode === "blank") &&
+    !chainMode;
+
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
   const activeChainStepFiles = activeChainStep?.files || EMPTY_ARRAY;
@@ -204,6 +238,21 @@ export default function BroadcastPage() {
   const composerTrackedLinks = chainMode
     ? activeChainStepTrackedLinks
     : trackedLinks;
+
+  const activeQuestionKind = isQuizMode
+    ? "quiz"
+    : isSurveyMode
+      ? "survey"
+      : isOpenQuestionMode
+        ? "open"
+        : chainQuestionKind;
+
+  /*
+   * No WhatsApp, o link vai num botão e não entra no texto. Quiz e
+   * sondagem já têm botões de resposta, e o Teams não tem este botão: aí o
+   * link entra no texto, como pastilha.
+   */
+  const linkButtonAllowed = isWhatsapp && !hasReplyButtons(activeQuestionKind);
 
   const updateActiveChainStep = useCallback(
     (patchOrUpdater) => {
@@ -276,6 +325,62 @@ export default function BroadcastPage() {
     },
     [chainMode, updateActiveChainStep],
   );
+
+  /* Texto do tipo de mensagem aberto: mensagem livre ou enunciado. */
+  const activeBodyText = isQuizMode
+    ? quiz.body
+    : isSurveyMode
+      ? survey.body
+      : isOpenQuestionMode
+        ? openQuestion.body
+        : chainQuestionKind === "open"
+          ? activeChainStep.openQuestion?.body
+          : chainQuestionKind
+            ? activeChainStep[chainQuestionKind]?.body
+            : composerMessage;
+
+  function setActiveBodyText(text) {
+    if (isQuizMode) return setQuiz((q) => ({ ...q, body: text }));
+    if (isSurveyMode) return setSurvey((s) => ({ ...s, body: text }));
+    if (isOpenQuestionMode) {
+      return setOpenQuestion((q) => ({ ...q, body: text }));
+    }
+
+    if (chainQuestionKind) {
+      const field =
+        chainQuestionKind === "open" ? "openQuestion" : chainQuestionKind;
+
+      return updateActiveChainStep((step) => ({
+        [field]: { ...step[field], body: text },
+      }));
+    }
+
+    return setComposerMessage(text);
+  }
+
+  /*
+   * Ao trocar de canal ou de tipo de mensagem, o link muda de forma: na
+   * mensagem de WhatsApp vai no botão; no Teams, no quiz e na sondagem
+   * volta ao texto, como pastilha. Só converte quando se muda de um lado
+   * para o outro, nunca a meio da escrita.
+   */
+  const lastLinkButtonAllowed = useRef(linkButtonAllowed);
+
+  useEffect(() => {
+    if (lastLinkButtonAllowed.current === linkButtonAllowed) return;
+    lastLinkButtonAllowed.current = linkButtonAllowed;
+
+    const result = convertLinksForButton({
+      text: activeBodyText,
+      links: composerTrackedLinks,
+      buttonAllowed: linkButtonAllowed,
+    });
+
+    if (!result.changed) return;
+
+    setComposerTrackedLinks(result.links);
+    setActiveBodyText(result.text);
+  });
 
   function addChainStep() {
     setChainSteps((prev) => {
@@ -431,6 +536,7 @@ export default function BroadcastPage() {
           key: sanitizeTrackedKey(l.key),
           label: String(l.label || "").trim(),
           destinationUrl: String(l.destinationUrl || "").trim(),
+          ...buttonFieldsOf(l),
         }))
         .filter((l) => l.key && l.label && l.destinationUrl),
     [composerTrackedLinks],
@@ -560,6 +666,93 @@ export default function BroadcastPage() {
       setChainMode(false);
     }
   }, [chainMode, composeMode]);
+
+  /* Fora da mensagem em branco do Teams, volta aos colaboradores (#166). */
+  useEffect(() => {
+    if (
+      audience === "groups" &&
+      (channel !== "teams" || composeMode !== "blank" || chainMode)
+    ) {
+      setAudience("users");
+    }
+  }, [audience, channel, composeMode, chainMode]);
+
+  /* Só os grupos onde o bot ainda está podem receber mensagens. */
+  useEffect(() => {
+    if (!org?.id || channel !== "teams") return;
+
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/teams-groups?orgId=${org.id}`, {
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) throw new Error(data?.error || "Failed to load groups.");
+        if (!alive) return;
+
+        setTeamsGroups(
+          (Array.isArray(data?.items) ? data.items : []).filter(
+            (group) => group.isActive,
+          ),
+        );
+      } catch (err) {
+        console.warn("[Broadcast] Teams groups load error:", err);
+        if (alive) setTeamsGroups([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [org?.id, channel]);
+
+  const filteredGroups = useMemo(() => {
+    const term = groupQuery.trim().toLowerCase();
+    if (!term) return teamsGroups;
+
+    return teamsGroups.filter((group) =>
+      String(group.name || "")
+        .toLowerCase()
+        .includes(term),
+    );
+  }, [teamsGroups, groupQuery]);
+
+  const allGroupsSelected =
+    filteredGroups.length > 0 &&
+    filteredGroups.every((group) => selectedGroups.has(group.id));
+
+  function toggleGroup(id) {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      const ids = filteredGroups.map((group) => group.id);
+
+      if (allGroupsSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+
+      return next;
+    });
+  }
+
+  /* Na mensagem em branco do Teams, "Grupos" escolhe logo esse tipo. */
+  function chooseGroupAudience() {
+    if (!canUseGroups) return;
+    if (composeMode === null) setComposeMode("blank");
+    setAudience("groups");
+  }
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -699,8 +892,50 @@ export default function BroadcastPage() {
     setComposerFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
+  /*
+   * Um só link por mensagem (MAX_TRACKED_LINKS): o painel desativa os
+   * botões e estas funções não deixam passar do limite.
+   */
+  const trackedLinksFull = composerTrackedLinks.length >= MAX_TRACKED_LINKS;
+
+  /* No WhatsApp, o link novo passa a ser o botão. */
   function addTrackedLink() {
-    setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
+    if (trackedLinksFull) return;
+
+    const draft = makeTrackedLinkDraft();
+
+    setComposerTrackedLinks((prev) => [
+      ...prev,
+      linkButtonAllowed ? { ...draft, button: true } : draft,
+    ]);
+  }
+
+  /*
+   * Um link já usado entra na mensagem: no WhatsApp, como botão; fora
+   * dele, logo no balão, onde estava o cursor.
+   */
+  function addTrackedLinkFromLibrary(item) {
+    if (
+      trackedLinksFull ||
+      composerTrackedLinks.some((link) => isSameTrackedLink(link, item))
+    ) {
+      return;
+    }
+
+    const draft = makeTrackedLinkFromLibrary(item, composerTrackedLinks);
+
+    if (linkButtonAllowed) {
+      setComposerTrackedLinks((prev) => [...prev, { ...draft, button: true }]);
+      return;
+    }
+
+    setComposerTrackedLinks((prev) => [...prev, draft]);
+
+    /* O nome vai já: a lista de links só se atualiza no render seguinte. */
+    editorRef.current?.insertToken?.(
+      `link.${draft.key}`,
+      `Link: ${draft.label}`,
+    );
   }
 
   function updateTrackedLink(id, field, value) {
@@ -726,20 +961,31 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = BROADCAST_IMAGES_BUCKET;
+    const bucket = BROADCAST_MEDIA_BUCKET;
     const uploaded = [];
 
-    const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[̀-ͯ]/g, "");
-      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-      if (!safe) safe = "file";
-      return safe;
-    };
+    const contentTypeOf = (file) =>
+      file.type || guessContentTypeFromName(file.name);
+
+    /* Valida todos antes de subir o primeiro, para não ficar meio envio. */
+    for (const file of pickedFiles) {
+      const reason = broadcastMediaRejection(contentTypeOf(file), file.size);
+
+      if (reason) {
+        throw new Error(
+          translation(
+            reason === "size"
+              ? "Broadcast.composer.fileTooLarge"
+              : "Broadcast.composer.fileTypeNotAllowed",
+            { name: file.name },
+          ),
+        );
+      }
+    }
 
     for (const file of pickedFiles) {
-      const safeName = makeSafeName(file.name);
-      const key = buildBroadcastImageKey(org?.id, safeName);
-      const ct = file.type || guessContentTypeFromName(file.name);
+      const key = buildBroadcastMediaKey(org?.id, file.name);
+      const ct = contentTypeOf(file);
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
@@ -755,8 +1001,8 @@ export default function BroadcastPage() {
       if (pub?.publicUrl) {
         uploaded.push({
           url: pub.publicUrl,
-          name: file.name || safeName,
-          contentType: ct || "application/octet-stream",
+          name: file.name || "file",
+          contentType: ct,
         });
       }
     }
@@ -782,7 +1028,7 @@ export default function BroadcastPage() {
     }
   }
 
-  function openFilePicker(accept = "*/*") {
+  function openFilePicker(accept = BROADCAST_MEDIA_ACCEPT.image) {
     const input = fileInputRef.current;
     if (!input) return;
     input.accept = accept;
@@ -836,8 +1082,10 @@ export default function BroadcastPage() {
   }
 
   const sampleRecipient = selectedUsers[0] || null;
-  const sampleName =
-    sampleRecipient?.name || translation("Broadcast.composer.contact");
+  const sampleGroup = teamsGroups.find((group) => selectedGroups.has(group.id));
+  const sampleName = isGroupAudience
+    ? sampleGroup?.name || translation("Broadcast.groups.groupFallback")
+    : sampleRecipient?.name || translation("Broadcast.composer.contact");
 
   /*
    * Rótulos das pastilhas no balão. Nome e empresa são preenchidos no envio;
@@ -866,25 +1114,37 @@ export default function BroadcastPage() {
     [normalizedTrackedLinks, translation],
   );
 
+  /* Num grupo não há nome do destinatário nem links rastreados (#166). */
   const composerVariables = useMemo(
-    () => [
-      {
-        key: "nome",
-        kind: "name",
-        label: translation("Broadcast.composer.variableName"),
-      },
-      {
-        key: "empresa",
-        kind: "company",
-        label: translation("Broadcast.composer.variableCompany"),
-      },
-      ...normalizedTrackedLinks.map((l) => ({
-        key: `link.${l.key}`,
-        kind: "link",
-        label: `Link: ${l.label}`,
-      })),
-    ],
-    [normalizedTrackedLinks, translation],
+    () =>
+      isGroupAudience
+        ? [
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+          ]
+        : [
+            {
+              key: "nome",
+              kind: "name",
+              label: translation("Broadcast.composer.variableName"),
+            },
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+            ...normalizedTrackedLinks
+              .filter((l) => !(linkButtonAllowed && l.button))
+              .map((l) => ({
+                key: `link.${l.key}`,
+                kind: "link",
+                label: `Link: ${l.label}`,
+              })),
+          ],
+    [isGroupAudience, linkButtonAllowed, normalizedTrackedLinks, translation],
   );
 
   function insertToken(key) {
@@ -910,6 +1170,52 @@ export default function BroadcastPage() {
     resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
   });
 
+  /* Links já usados noutros envios, carregados quando o painel abre. */
+  const trackedLinkLibrary = useTrackedLinkLibrary({
+    orgId: org?.id,
+    enabled: activeToolPanel === "links",
+  });
+
+  const activeBody = isOpenQuestionMode
+    ? openQuestion.body
+    : chainQuestionKind === "open"
+      ? activeChainStep.openQuestion?.body
+      : composerMessage;
+
+  /*
+   * Pré-visualização do link, com as regras do envio (planLinkMessages):
+   * o botão por baixo da mensagem, que aparece mesmo sem texto para se ver
+   * logo (o envio é que fica à espera do texto). Com imagem ou num quiz, a
+   * mensagem não leva o botão e o link segue num balão à parte. No Teams
+   * não há botões: avisa que o link vai no fim do texto.
+   */
+  const buttonCanGo = linkButtonAllowed && imageFiles.length === 0;
+  const buttonChoice = buttonCanGo
+    ? chooseButtonLink(activeBody, composerTrackedLinks)
+    : null;
+  const allBubbles = buttonLinkBubbles(composerTrackedLinks);
+
+  const linkPreview = {
+    button: buttonChoice
+      ? {
+          id: buttonChoice.link.button ? buttonChoice.link.id : null,
+          buttonText: buttonChoice.buttonText,
+        }
+      : null,
+    bubbles: isWhatsapp
+      ? allBubbles
+          .filter((bubble) => bubble.link !== buttonChoice?.link)
+          .map((bubble) => ({
+            id: bubble.link.id,
+            buttonText: bubble.buttonText,
+            text: bubble.text,
+          }))
+      : [],
+    inTextLabels: isWhatsapp
+      ? []
+      : allBubbles.map((bubble) => String(bubble.link.label).trim()),
+  };
+
   /*
    * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
    * ficheiros e os links rastreados pertencem ao composer (ou ao passo
@@ -927,9 +1233,15 @@ export default function BroadcastPage() {
     onPickThumbnail: openThumbnailPicker,
     onRemoveThumbnail: removeThumbnail,
     onAddFile: openFilePicker,
+    onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
+    linkPreview,
+    onRemoveLink: removeTrackedLink,
   };
+
+  /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
+  if (isGroupAudience) composerTools.onAddLink = null;
 
   const trackedLinksValid =
     normalizedTrackedLinks.length === composerTrackedLinks.length &&
@@ -942,6 +1254,7 @@ export default function BroadcastPage() {
         key: sanitizeTrackedKey(link.key),
         label: String(link.label || "").trim(),
         destinationUrl: String(link.destinationUrl || "").trim(),
+        ...buttonFieldsOf(link),
       }))
       .filter((link) => link.key && link.label && link.destinationUrl);
   }
@@ -973,11 +1286,32 @@ export default function BroadcastPage() {
   function chainStepHasContent(step) {
     if (step.kind === "quiz") return isQuizValid(step.quiz);
     if (step.kind === "survey") return isSurveyValid(step.survey);
-    if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
+    if (step.kind === "open")
+      return !normalizeOpenQuestion(step.openQuestion).error;
+
+    const message = String(step.message || "");
+    const files = Array.isArray(step.files) ? step.files : [];
 
     return (
-      String(step.message || "").trim().length > 0 ||
-      (Array.isArray(step.files) && step.files.length > 0)
+      (message.trim().length > 0 || files.length > 0) &&
+      !needsTextBesideLinks(message, files, step.trackedLinks)
+    );
+  }
+
+  /*
+   * No WhatsApp o link vai num botão, e uma mensagem com botão precisa de
+   * texto: só links (no texto ou no botão), sem anexos, não se envia. No
+   * Teams o link aparece com o nome e fica bem sozinho; com um anexo, o
+   * link segue no texto.
+   */
+  function needsTextBesideLinks(message, files = [], links = []) {
+    if (!isWhatsapp || files.length > 0) return false;
+
+    const text = String(message || "");
+
+    return (
+      isOnlyTrackedLinks(text) ||
+      (!text.trim() && (links || []).some((link) => link.button))
     );
   }
 
@@ -1113,12 +1447,41 @@ export default function BroadcastPage() {
   const hasManualContent =
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
+  const messageNeedsText =
+    !isSurveyMode &&
+    !isOpenQuestionMode &&
+    !isQuizMode &&
+    !chainQuestionKind &&
+    needsTextBesideLinks(composerMessage, composerFiles, composerTrackedLinks);
+
+  /* Numa corrente, o aviso diz qual é o passo que só tem links. */
+  const chainStepNeedingText = chainMode
+    ? chainSteps.findIndex(
+        (step) =>
+          (step.kind || "message") === "message" &&
+          needsTextBesideLinks(
+            step.message,
+            step.files || [],
+            step.trackedLinks,
+          ),
+      )
+    : -1;
+
+  const composerWarning =
+    chainStepNeedingText >= 0
+      ? translation("Broadcast.composer.chainStepNeedsText", {
+          step: chainStepNeedingText + 1,
+        })
+      : messageNeedsText
+        ? translation("Broadcast.composer.linkNeedsText")
+        : null;
+
   const quizValid = isQuizValid(quiz);
   const surveyValid = isSurveyValid(survey);
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
 
   const baseCanSend =
-    selected.size > 0 &&
+    (isGroupAudience ? selectedGroups.size : selected.size) > 0 &&
     (isSurveyMode
       ? surveyValid && trackedLinksValid
       : isOpenQuestionMode
@@ -1127,7 +1490,7 @@ export default function BroadcastPage() {
           ? quizValid && trackedLinksValid
           : chainMode
             ? chainValid
-            : trackedLinksValid && hasManualContent);
+            : trackedLinksValid && hasManualContent && !messageNeedsText);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -1454,7 +1817,197 @@ export default function BroadcastPage() {
     return true;
   }
 
+  /* =========================================================
+     GRUPOS DO TEAMS (#166)
+     ========================================================= */
+
+  const nameTokenPattern = new RegExp(
+    `\\{\\{\\s*(${NAME_KEYS.join("|")})\\s*\\}\\}`,
+    "i",
+  );
+
+  async function validateGroupBroadcast(action) {
+    if (!selectedGroups.size) {
+      await showAlert({
+        title: translation("Broadcast.groups.tabGroups"),
+        message: translation("Broadcast.groups.chooseGroups"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (!(await validateContentBeforeAction(action))) return false;
+
+    if (composerTrackedLinks.length) {
+      await showAlert({
+        title: translation("Broadcast.groups.noTrackedLinks.title"),
+        message: translation("Broadcast.groups.noTrackedLinks.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (nameTokenPattern.test(composerMessage)) {
+      await showAlert({
+        title: translation("Broadcast.groups.noNameVariable.title"),
+        message: translation("Broadcast.groups.noNameVariable.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  function buildGroupPayload() {
+    return {
+      orgId: org?.id,
+      groupIds: [...selectedGroups],
+      message: composerMessage,
+      files: composerFiles,
+      imageUrls,
+    };
+  }
+
+  function groupResultSummary(data) {
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const ok = results.filter((r) => r.ok).length;
+
+    const failedLines = results
+      .filter((r) => !r.ok)
+      .map((r) => {
+        const group = teamsGroups.find((g) => g.id === r.groupId);
+        const name = group?.name || translation("Broadcast.groups.unnamed");
+
+        return `- ${name}: ${r.error || translation("Common.error")}`;
+      });
+
+    return {
+      failed: results.length - ok,
+      message: [
+        translation("Broadcast.groups.sent.message", {
+          ok,
+          total: results.length,
+        }),
+        failedLines.join("\n"),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+  }
+
+  async function sendToGroups() {
+    if (!(await validateGroupBroadcast("send"))) return;
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSend.title"),
+      message: translation("Broadcast.groups.confirmSend.message", {
+        count: selectedGroups.size,
+      }),
+      confirmText: translation("Broadcast.confirmSend.confirm"),
+      cancelText: translation("Broadcast.confirmSend.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/teams-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildGroupPayload()),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      const summary = groupResultSummary(data);
+
+      await showAlert({
+        title: translation(
+          summary.failed
+            ? "Broadcast.groups.sent.titleWithIssues"
+            : "Broadcast.groups.sent.title",
+        ),
+        message: summary.message,
+        tone: summary.failed ? "warning" : "success",
+      });
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function scheduleToGroups(scheduledDate) {
+    if (!(await validateGroupBroadcast("schedule"))) return;
+
+    const date = scheduledDate.toLocaleString();
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSchedule.title"),
+      message: translation("Broadcast.groups.confirmSchedule.message", {
+        count: selectedGroups.size,
+        date,
+      }),
+      confirmText: translation("Broadcast.confirmSchedule.confirm"),
+      cancelText: translation("Broadcast.confirmSchedule.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: org?.id,
+          channel: "teams",
+          scheduledFor: scheduledDate.toISOString(),
+          timezone: browserTimeZone,
+          payload: buildGroupPayload(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      await showAlert({
+        title: translation("Broadcast.groups.scheduled.title"),
+        message: translation("Broadcast.groups.scheduled.message", {
+          count: selectedGroups.size,
+          date,
+        }),
+        tone: "success",
+      });
+
+      setDeliveryMode("now");
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function handleSend() {
+    if (isGroupAudience) {
+      await sendToGroups();
+      return;
+    }
+
     if (!(await validateTrackedDestinationsBeforeAction())) return;
     if (!selectedUsers.length) {
       await showAlert({
@@ -1641,7 +2194,7 @@ export default function BroadcastPage() {
 
   async function handleSchedule() {
     if (!(await validateTrackedDestinationsBeforeAction())) return;
-    if (!selectedUsers.length) {
+    if (!isGroupAudience && !selectedUsers.length) {
       await showAlert({
         title: "Choose recipients",
         message: translation("Broadcast.chooseRecipients"),
@@ -1679,6 +2232,11 @@ export default function BroadcastPage() {
         message: "The scheduled date must be in the future.",
         tone: "warning",
       });
+      return;
+    }
+
+    if (isGroupAudience) {
+      await scheduleToGroups(scheduledDate);
       return;
     }
 
@@ -1971,6 +2529,9 @@ export default function BroadcastPage() {
         addTrackedLink={addTrackedLink}
         updateTrackedLink={updateTrackedLink}
         removeTrackedLink={removeTrackedLink}
+        library={trackedLinkLibrary}
+        onUseLibraryLink={addTrackedLinkFromLibrary}
+        bubbleLinkIds={linkPreview.bubbles.map((bubble) => bubble.id)}
         translation={translation}
       />
     ) : null;
@@ -2071,29 +2632,33 @@ export default function BroadcastPage() {
         title={translation("Broadcast.message")}
         onBack={() => setComposeMode(null)}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
+        warning={composerWarning}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}
         trackedLinksCount={trackedLinksCount}
         translation={translation}
         leftToolsContent={chainDelayTools}
+        showLinks={!isGroupAudience}
         chainControls={
-          <ChainMessagesBar
-            enabled={readChainsFeatureEnabled}
-            chainMode={chainMode}
-            setChainMode={setChainMode}
-            chainSteps={chainSteps}
-            activeChainStepIndex={activeChainStepIndex}
-            setActiveChainStepIndex={setActiveChainStepIndex}
-            addChainStep={addChainStep}
-            duplicateChainStep={duplicateChainStep}
-            removeChainStep={removeChainStep}
-            activeStepKind={activeChainStep?.kind || "message"}
-            onChangeStepKind={(kind) =>
-              updateChainStepKind(activeChainStepIndex, kind)
-            }
-            translation={translation}
-          />
+          isGroupAudience ? null : (
+            <ChainMessagesBar
+              enabled={readChainsFeatureEnabled}
+              chainMode={chainMode}
+              setChainMode={setChainMode}
+              chainSteps={chainSteps}
+              activeChainStepIndex={activeChainStepIndex}
+              setActiveChainStepIndex={setActiveChainStepIndex}
+              addChainStep={addChainStep}
+              duplicateChainStep={duplicateChainStep}
+              removeChainStep={removeChainStep}
+              activeStepKind={activeChainStep?.kind || "message"}
+              onChangeStepKind={(kind) =>
+                updateChainStepKind(activeChainStepIndex, kind)
+              }
+              translation={translation}
+            />
+          )
         }
         phone={
           chainQuestionKind === "quiz" ? (
@@ -2150,7 +2715,7 @@ export default function BroadcastPage() {
       <BroadcastHeader
         channel={channel}
         setChannel={setChannel}
-        selectedCount={selected.size}
+        selectedCount={isGroupAudience ? selectedGroups.size : selected.size}
         sending={sending}
         canSend={canSend}
         deliveryMode={deliveryMode}
@@ -2163,17 +2728,28 @@ export default function BroadcastPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="*/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         multiple
         hidden
         data-testid="file-input"
         onChange={handlePickFiles}
       />
 
+      {mediaPickerKind ? (
+        <MediaPickerModal
+          kind={mediaPickerKind}
+          orgId={org?.id}
+          attachedUrls={composerFiles.map((f) => f.url)}
+          onAdd={(picked) => setComposerFiles((prev) => [...prev, ...picked])}
+          onClose={() => setMediaPickerKind(null)}
+          translation={translation}
+        />
+      ) : null}
+
       <input
         ref={thumbInputRef}
         type="file"
-        accept="image/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         hidden
         onChange={handlePickThumbnail}
       />
@@ -2196,27 +2772,50 @@ export default function BroadcastPage() {
         <div className={styles.leftCol}>{composer}</div>
 
         <div className={styles.rightCol}>
-          <RecipientsPanel
-            filterBtnRef={filterBtnRef}
-            filterOpen={filterOpen}
-            setFilterOpen={setFilterOpen}
-            activeFilterCount={activeFilterCount}
-            allTags={allTags}
-            assistantsList={assistantsList}
-            selectedTagIds={selectedTagIds}
-            setSelectedTagIds={setSelectedTagIds}
-            selectedAssistantIds={selectedAssistantIds}
-            setSelectedAssistantIds={setSelectedAssistantIds}
-            q={q}
-            setQ={setQ}
-            filtered={filtered}
-            selected={selected}
-            toggleOne={toggleOne}
-            toggleAllCurrent={toggleAllCurrent}
-            allOnPageSelected={allOnPageSelected}
-            channel={channel}
-            translation={translation}
-          />
+          {channel === "teams" && (
+            <AudienceTabs
+              audience={audience}
+              canUseGroups={canUseGroups}
+              onChooseUsers={() => setAudience("users")}
+              onChooseGroups={chooseGroupAudience}
+              translation={translation}
+            />
+          )}
+
+          {isGroupAudience ? (
+            <GroupsPanel
+              groups={filteredGroups}
+              q={groupQuery}
+              setQ={setGroupQuery}
+              selected={selectedGroups}
+              toggleOne={toggleGroup}
+              toggleAll={toggleAllGroups}
+              allSelected={allGroupsSelected}
+              translation={translation}
+            />
+          ) : (
+            <RecipientsPanel
+              filterBtnRef={filterBtnRef}
+              filterOpen={filterOpen}
+              setFilterOpen={setFilterOpen}
+              activeFilterCount={activeFilterCount}
+              allTags={allTags}
+              assistantsList={assistantsList}
+              selectedTagIds={selectedTagIds}
+              setSelectedTagIds={setSelectedTagIds}
+              selectedAssistantIds={selectedAssistantIds}
+              setSelectedAssistantIds={setSelectedAssistantIds}
+              q={q}
+              setQ={setQ}
+              filtered={filtered}
+              selected={selected}
+              toggleOne={toggleOne}
+              toggleAllCurrent={toggleAllCurrent}
+              allOnPageSelected={allOnPageSelected}
+              channel={channel}
+              translation={translation}
+            />
+          )}
         </div>
       </div>
     </div>

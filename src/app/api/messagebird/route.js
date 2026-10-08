@@ -62,6 +62,7 @@ import {
 } from "@/lib/repos/messageChain.repo";
 
 import { splitE164 } from "@/lib/whatsapp/E164";
+import { followUpBodies } from "@/lib/whatsapp/linkButton";
 
 import { processReadChainAfterRead } from "@/lib/services/broadcast/readChains/processReadChainAfterRead";
 
@@ -1590,6 +1591,28 @@ async function handlePendingMessages({
     }
 
     const outboundId = sendRes.providerMessageId;
+
+    /*
+     * Balões à parte de uma mensagem com vários links: saem a seguir à
+     * mensagem, um de cada vez. Um que falhe não impede os seguintes.
+     */
+    for (const followUpBody of followUpBodies(p.followUps)) {
+      const followUpRes = await sendBirdMessage({
+        channelId: outgoingChannelId,
+        contactId,
+        phoneNumber: inboundIdentity?.phoneNumber || user.phone_number,
+        whatsappBsuid: inboundIdentity?.whatsappBsuid || user.whatsapp_bsuid,
+        body: followUpBody,
+      });
+
+      if (!followUpRes.ok) {
+        console.warn("Failed to send pending outreach follow-up", {
+          pendingOutreachId: row.id,
+          status: followUpRes.status,
+          data: followUpRes.data,
+        });
+      }
+    }
 
     const hasChainMetadata =
       row.message_chain_id &&

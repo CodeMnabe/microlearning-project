@@ -396,7 +396,7 @@ function toDate(value) {
  * recebia texto: ordenava por ordem alfabética, e "Filtrar por mês"
  * deixava de existir. É o mesmo erro dos números, com outra roupa.
  */
-function addDataSheet(workbook, { name, columns, rows }) {
+export function addDataSheet(workbook, { name, columns, rows }) {
   const sheet = workbook.addWorksheet(name, {
     properties: { tabColor: { argb: BRAND_ARGB } },
     views: [{ showGridLines: true }],
@@ -1283,6 +1283,14 @@ export async function exportAnalyticsExcel({ data, meta, detail = null }) {
 
   buildAnalyticsWorkbook(workbook, data, meta, detail);
 
+  await downloadWorkbook(workbook, meta.fileName);
+}
+
+/**
+ * Entrega um livro já preenchido como ficheiro .xlsx. Também usado pela
+ * exportação da página das Perguntas.
+ */
+export async function downloadWorkbook(workbook, fileName) {
   const buffer = await workbook.xlsx.writeBuffer();
 
   const blob = new Blob([buffer], {
@@ -1293,7 +1301,7 @@ export async function exportAnalyticsExcel({ data, meta, detail = null }) {
   const link = document.createElement("a");
 
   link.href = url;
-  link.download = meta.fileName;
+  link.download = fileName;
 
   document.body.appendChild(link);
   link.click();

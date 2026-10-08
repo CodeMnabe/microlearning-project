@@ -11,6 +11,7 @@ import {
   markAutomationRunSent,
 } from "@/lib/repos/automationRuns.repo";
 import { sendTeamsBroadcast } from "@/lib/services/broadcast/sendTeamsBroadcast";
+import { sendTeamsGroupBroadcast } from "@/lib/services/broadcast/sendTeamsGroupBroadcast";
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
 import { recordSystemAuditEvent } from "@/lib/services/audit/recordAuditEvent";
 import { AUDIT_ACTIONS } from "@/lib/audit/auditEvents";
@@ -199,8 +200,22 @@ async function processOneBroadcast(broadcast) {
 
     let result;
 
+    const groupIds = Array.isArray(storedPayload.groupIds)
+      ? storedPayload.groupIds
+      : [];
+
     if (broadcast.channel === "whatsapp") {
       result = await sendWhatsappBroadcast(payload);
+    } else if (broadcast.channel === "teams" && groupIds.length) {
+      /* Grupos do Teams (#166): o serviço relê os grupos da organização. */
+      result = await sendTeamsGroupBroadcast({
+        orgId: broadcast.organization_id,
+        groupIds,
+        message: payload.message,
+        files: payload.files,
+        imageUrls: payload.imageUrls,
+        scheduledBroadcastId: broadcast.id,
+      });
     } else if (broadcast.channel === "teams") {
       result = await sendTeamsBroadcast(payload);
     } else {
