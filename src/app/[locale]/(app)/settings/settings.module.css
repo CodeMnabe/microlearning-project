@@ -1,8 +1,11 @@
 .page {
   width: min(1100px, 100%);
+  /* As grelhas seguem a largura da página, que depende do menu lateral. */
+  container-type: inline-size;
   margin: 0 auto;
   padding: 28px 24px 48px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
 }
 
@@ -382,6 +385,8 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  /* Deixa a tabela fazer scroll por dentro em vez de alargar a página. */
+  min-width: 0;
 }
 
 .toolbar {
@@ -485,6 +490,7 @@
 
 .tableCard {
   width: 100%;
+  min-width: 0;
   background: var(--ui-bg, #fff);
   border: 1px solid var(--ui-border, #e5e7eb);
   border-radius: 20px;
@@ -778,5 +784,22 @@
 @media (max-width: 700px) {
   .brandingUploads {
     grid-template-columns: 1fr;
+  }
+}
+
+@container (max-width: 760px) {
+  .appearanceGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 560px) {
+  .formGrid,
+  .logoUploader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .preview {
+    grid-template-columns: 96px 1fr;
   }
 }

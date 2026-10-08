@@ -86,13 +86,14 @@ export async function setReadChainsEnabled({
   return data;
 }
 
-export async function isReadChainsEnabled({
-  organizationId,
-  channel = "whatsapp",
-}) {
+/*
+ * One switch covers WhatsApp and Teams chains (#149). It is stored on
+ * the WhatsApp row, which is the one the Automations page toggles.
+ */
+export async function isReadChainsEnabled({ organizationId }) {
   const feature = await getOrganizationMessagingFeature({
     organizationId,
-    channel,
+    channel: "whatsapp",
   });
 
   return Boolean(feature?.read_chains_enabled);

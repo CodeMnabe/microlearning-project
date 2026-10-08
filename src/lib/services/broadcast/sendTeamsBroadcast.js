@@ -3,12 +3,14 @@ import { getBotToken } from "@/lib/teams/auth";
 import { getOrganization } from "@/lib/repos/organizations.repo";
 import { getTeamsUserInstallation } from "@/lib/repos/teamsInstallations.repo";
 import { getUserById } from "@/lib/repos/user.repo";
-import {
-  BroadcastError,
-  normalizeFiles,
-  isImageType,
-  isVideoType,
-} from "./shared";
+import { createMessage } from "@/lib/repos/messages.repo";
+import { createQuestion, getQuestionById } from "@/lib/repos/questions.repo";
+import { hasReplyButtons, questionExpiryDate } from "@/lib/whatsapp/question";
+import { buildQuestionCard } from "@/lib/teams/questionCard";
+import { parseQuestionOptions } from "./questionOptions";
+import { getUserThreadForChannel } from "@/lib/repos/threads.repo";
+import { BroadcastError, normalizeFiles } from "./shared";
+import { buildTeamsFileParts } from "./teamsAttachments";
 import { interpolateBroadcastMessage } from "./interpolateMessage";
 import {
   replaceTrackedPlaceholders,
@@ -24,6 +26,10 @@ export async function sendTeamsBroadcast(input = {}) {
     imageUrls = [],
     trackedLinks = [],
     scheduledBroadcastId = null,
+    automationRunId = null,
+    chainMetadata = null,
+    question: rawQuestion = null,
+    questionId: existingQuestionId = null,
     sendGroupId = crypto.randomUUID(),
     createdByUserId = null,
   } = input;
@@ -32,15 +38,68 @@ export async function sendTeamsBroadcast(input = {}) {
     throw new BroadcastError("Missing orgId or userIds", 400);
   }
 
+  const parsed = parseQuestionOptions({ question: rawQuestion });
+  if (parsed.error) throw new BroadcastError(parsed.error, 400);
+
+  /*
+   * Como no WhatsApp: o passo de uma cadeia traz a pergunta já criada em
+   * `questionId`; um envio normal traz-a por criar em `question`.
+   */
+  let questionRow = null;
+  let question = parsed.question;
+
+  if (existingQuestionId) {
+    questionRow = await getQuestionById(existingQuestionId);
+
+    if (!questionRow || Number(questionRow.organization_id) !== Number(orgId)) {
+      throw new BroadcastError("Question not found", 404);
+    }
+
+    question = {
+      kind: questionRow.kind,
+      body: questionRow.body,
+      options: questionRow.options,
+    };
+  }
+
+  const withButtons = Boolean(question) && hasReplyButtons(question.kind);
+
+  /* A pergunta é a própria mensagem. */
+  const messageText = question ? question.body : message;
+
   const normalizedFiles = normalizeFiles({ files, imageUrls });
 
-  if (!String(message || "").trim() && normalizedFiles.length === 0) {
+  if (!String(messageText || "").trim() && normalizedFiles.length === 0) {
     throw new BroadcastError("Message or files must be provided", 400);
   }
 
   const org = await getOrganization(orgId);
   if (!org) {
     throw new BroadcastError("Organization not found", 400);
+  }
+
+  if (question && !questionRow) {
+    questionRow = await createQuestion({
+      organizationId: orgId,
+      kind: question.kind,
+      body: question.body,
+      options: withButtons ? question.options : null,
+      /* Na sondagem, feedback_correct guarda o agradecimento. */
+      feedbackCorrect:
+        question.kind === "quiz"
+          ? question.feedbackCorrect
+          : question.kind === "survey"
+            ? question.thanksText
+            : null,
+      feedbackIncorrect:
+        question.kind === "quiz" ? question.feedbackIncorrect : null,
+      expectedAnswer: question.expectedAnswer,
+      aiEvaluation: withButtons ? true : question.aiEvaluation !== false,
+      scheduledBroadcastId,
+      sendGroupId,
+      createdByUserId,
+      expiresAt: questionExpiryDate(),
+    });
   }
 
   const results = [];
@@ -71,36 +130,7 @@ export async function sendTeamsBroadcast(input = {}) {
 
       const endpoint = `${String(install.service_url).replace(/\/$/, "")}/v3/conversations/${install.conversation_id}/activities`;
 
-      const imageFiles = normalizedFiles.filter((f) =>
-        isImageType(f.contentType),
-      );
-
-      const videoFiles = normalizedFiles.filter((f) =>
-        isVideoType(f.contentType),
-      );
-
-      const otherFiles = normalizedFiles.filter(
-        (f) => !isImageType(f.contentType) && !isVideoType(f.contentType),
-      );
-
-      const imageAttachments = imageFiles.map((f) => ({
-        contentType: f.contentType || "image/png",
-        contentUrl: f.url,
-        name: f.name || "image",
-      }));
-
-      const videoCardAttachments = videoFiles.map((f) => {
-        const hasThumb = Boolean(f.thumbnailUrl);
-
-        return {
-          contentType: "application/vnd.microsoft.card.hero",
-          content: {
-            title: f.name || "Video",
-            ...(hasThumb ? { images: [{ url: f.thumbnailUrl }] } : {}),
-            buttons: [{ type: "openUrl", title: "▶ Ver vídeo", value: f.url }],
-          },
-        };
-      });
+      const fileParts = buildTeamsFileParts(normalizedFiles);
 
       const resolvedTrackedLinks = await resolveTrackedLinksForRecipient({
         trackedLinks,
@@ -116,16 +146,17 @@ export async function sendTeamsBroadcast(input = {}) {
 
       // Nome, empresa, email e telemóvel, como no WhatsApp.
       let text = interpolateBroadcastMessage(
-        replaceTrackedPlaceholders(message, resolvedTrackedLinks),
+        replaceTrackedPlaceholders(messageText, resolvedTrackedLinks),
         { user, org, assistant: null },
       ).trim();
 
-      if (otherFiles.length) {
-        const links = otherFiles
-          .map((f) => `[${f.name || "file"}](${f.url})`)
-          .join("\n");
+      /* Quiz e sondagem: o texto vai dentro do cartão, com os botões. */
+      const questionCard = withButtons
+        ? buildQuestionCard({ text, options: question.options })
+        : null;
 
-        text = [text, links].filter(Boolean).join("\n\n");
+      if (fileParts.linksText) {
+        text = [text, fileParts.linksText].filter(Boolean).join("\n\n");
       }
 
       if (!text) text = " ";
@@ -139,9 +170,11 @@ export async function sendTeamsBroadcast(input = {}) {
 
       const payload = {
         type: "message",
-        text,
-        textFormat: "markdown",
-        attachments: [...imageAttachments, ...videoCardAttachments],
+        ...(questionCard ? {} : { text, textFormat: "markdown" }),
+        attachments: [
+          ...fileParts.attachments,
+          ...(questionCard ? [questionCard] : []),
+        ],
       };
 
       const res = await fetch(endpoint, {
@@ -162,10 +195,51 @@ export async function sendTeamsBroadcast(input = {}) {
         data = raw;
       }
 
+      /*
+       * Keep the Teams activity id so read receipts can mark it read.
+       * The message already went out, so a failure here is only logged.
+       */
+      let messageRow = null;
+
+      if (res.ok && user) {
+        try {
+          const thread = user.assistant_id
+            ? await getUserThreadForChannel({
+                userId,
+                assistantId: user.assistant_id,
+                channel: "teams",
+              })
+            : null;
+
+          messageRow = await createMessage({
+            threadId: thread?.id ?? null,
+            userId,
+            organizationId: orgId,
+            assistantId: user.assistant_id ?? null,
+            channel: "teams",
+            messageId: data?.id ?? null,
+            content: text,
+            role: "assistant",
+            deliveryStatus: "accepted",
+            scheduledBroadcastId,
+            automationRunId,
+            questionId: questionRow?.id ?? null,
+            ...(chainMetadata || {}),
+          });
+        } catch (recordErr) {
+          console.error("[Teams broadcast] could not record message", {
+            userId,
+            error: recordErr?.message || String(recordErr),
+          });
+        }
+      }
+
       results.push({
         userId,
         ok: res.ok,
         status: res.status,
+        providerMessageId: data?.id ?? null,
+        messageRowId: messageRow?.id ?? null,
         data,
       });
     } catch (err) {

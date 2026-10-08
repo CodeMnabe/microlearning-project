@@ -10,6 +10,7 @@
 
 .headerRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -23,6 +24,7 @@
 
 .selectedLabel {
   color: #666;
+  white-space: nowrap;
 }
 
 .primaryBtn {
@@ -398,6 +400,27 @@
   color: #fff;
 }
 
+/* Colaboradores | Grupos Teams no painel de destinatários (#166). */
+.audienceTabs {
+  display: flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--ui-pill);
+  border: 1px solid var(--ui-border);
+  gap: 2px;
+}
+
+.audienceTab {
+  flex: 1 1 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.audienceTab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .filterBtn {
   display: inline-flex;
   gap: 8px;
@@ -476,7 +499,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 36px 36px 1fr;
+  grid-template-columns: 36px 36px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -521,6 +544,9 @@
 .subline {
   font-size: 12px;
   color: var(--ui-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .empty {
@@ -963,6 +989,14 @@
 
 /* ---------- Início: escolher o tipo de mensagem ---------- */
 
+/*
+ * O espaço do menu depende do menu lateral e da coluna dos destinatários,
+ * por isso as regras seguem a largura do próprio menu e não a do ecrã.
+ */
+.startMenu {
+  container-type: inline-size;
+}
+
 .startIntro {
   margin-bottom: 12px;
 }
@@ -984,15 +1018,9 @@
   gap: 12px;
 }
 
-@media (max-width: 900px) {
-  .startGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .startCard {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   padding: 12px;
   border: 1px solid var(--ui-border);
@@ -1070,9 +1098,17 @@
   color: #6b7280;
 }
 
-@media (max-width: 560px) {
+/* Texto ao lado do telemóvel só quando o cartão tem largura para isso. */
+@container (min-width: 1100px) {
   .startCard {
-    grid-template-columns: 1fr;
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+
+/* Uma coluna só no telemóvel; aí há largura para o texto ao lado. */
+@container (max-width: 440px) {
+  .startGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1274,6 +1310,27 @@
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Imagem, Vídeo e Documento abrem a escolha entre o computador e a multimédia. */
+.plusGroup {
+  display: grid;
+  gap: 2px;
+}
+
+.plusChevron {
+  margin-left: auto;
+  color: #6b7280;
+  transition: transform 0.15s ease;
+}
+
+.plusChevronOpen {
+  transform: rotate(180deg);
+}
+
+.plusSubItem {
+  padding-left: 36px;
+  color: #3b4a54;
 }
 
 .barHint {

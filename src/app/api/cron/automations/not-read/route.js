@@ -6,6 +6,7 @@ import {
   getLastOutboundForUserAssistant,
 } from "@/lib/repos/messages.repo";
 import { queueAutomationRunForRule } from "@/lib/services/automations/automationEngine";
+import { getAutomationRunById } from "@/lib/repos/automationRuns.repo";
 import { assertAssistantBelongsToOrg } from "@/lib/auth/guards";
 import { getSupabaseAdminClient } from "@/lib/db/admin";
 
@@ -130,6 +131,20 @@ function wasSentBySameAutomationRule(message, rule) {
   return String(messageRuleId) === String(rule.id);
 }
 
+/*
+ * Teams stores the automation run on each message it sends, so a
+ * reminder from this rule does not trigger the same rule again.
+ */
+async function wasSentByRuleRun(message, rule) {
+  if (!message?.automation_run_id || rule?.id == null) {
+    return false;
+  }
+
+  const run = await getAutomationRunById(message.automation_run_id);
+
+  return run != null && String(run.rule_id) === String(rule.id);
+}
+
 async function processOrganizationChannel({ organizationId, channel, rules }) {
   let page = 1;
   let scanned = 0;
@@ -199,7 +214,10 @@ async function processOrganizationChannel({ organizationId, channel, rules }) {
         continue;
       }
 
-      if (wasSentBySameAutomationRule(lastOutbound, chosenRule)) {
+      if (
+        wasSentBySameAutomationRule(lastOutbound, chosenRule) ||
+        (await wasSentByRuleRun(lastOutbound, chosenRule))
+      ) {
         skipped += 1;
         continue;
       }

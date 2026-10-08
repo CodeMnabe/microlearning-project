@@ -326,6 +326,15 @@
   background: #f7fbff;
 }
 
+.exportButton {
+  margin-left: auto;
+}
+
+.exportButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 @media (max-width: 900px) {
   .toolbar .searchWrap,
   .kindFilter,
@@ -336,8 +345,14 @@
     max-width: none;
   }
 
+  /* Rótulo numa linha e, por baixo, "data e data" lado a lado. */
   .dateRange {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .dateLabel:first-child {
+    grid-column: 1 / -1;
   }
 
   /* Justos ao texto em ecrãs largos; aqui ocupam a linha, seta à direita. */
@@ -347,8 +362,9 @@
   }
 
   .dateInput {
-    flex: 1 1 140px;
-    width: auto;
+    width: 100%;
+    min-width: 0;
+    padding: 0 10px;
   }
 }
 

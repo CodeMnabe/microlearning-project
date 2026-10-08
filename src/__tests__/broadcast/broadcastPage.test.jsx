@@ -123,14 +123,12 @@ describe("BroadcastPage", () => {
     fireEvent.click(screen.getByRole("menuitem", { name }));
   }
 
-  it("shows the start menu for WhatsApp and the editor for Teams", async () => {
+  it("shows the start menu on Teams and on WhatsApp", async () => {
     render(<BroadcastPage />);
     await screen.findByText("Pedro Silva");
 
-    expect(screen.queryByTestId("start-menu")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: "Broadcast.message" }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("start-menu")).toBeInTheDocument();
+    expect(screen.getByText("Broadcast.start.quiz")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
 

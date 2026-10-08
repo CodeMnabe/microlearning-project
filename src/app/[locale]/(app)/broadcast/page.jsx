@@ -7,9 +7,11 @@ import styles from "./broadcast.module.css";
 import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import {
-  BROADCAST_IMAGES_BUCKET,
-  buildBroadcastImageKey,
-} from "@/lib/uploads/broadcastImages";
+  BROADCAST_MEDIA_ACCEPT,
+  BROADCAST_MEDIA_BUCKET,
+  broadcastMediaRejection,
+  buildBroadcastMediaKey,
+} from "@/lib/uploads/broadcastMedia";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
@@ -33,7 +35,10 @@ import OpenQuestionComposer from "./components/OpenQuestionComposer";
 import SchedulePanel from "./components/panels/SchedulePanel";
 import TrackedLinksPanel from "./components/panels/TrackedLinksPanel";
 import RecipientsPanel from "./components/recipients/RecipientsPanel";
+import AudienceTabs from "./components/recipients/AudienceTabs";
+import GroupsPanel from "./components/recipients/GroupsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
+import MediaPickerModal from "./components/MediaPickerModal";
 
 import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
@@ -111,6 +116,12 @@ export default function BroadcastPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(new Set());
 
+  /* Destinatários: colaboradores ou grupos do Teams (#166). */
+  const [audience, setAudience] = useState("users");
+  const [teamsGroups, setTeamsGroups] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState(new Set());
+  const [groupQuery, setGroupQuery] = useState("");
+
   const [allTags, setAllTags] = useState([]);
   const [assistantsList, setAssistantsList] = useState([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -123,6 +134,8 @@ export default function BroadcastPage() {
   const thumbInputRef = useRef(null);
   const editorRef = useRef(null);
   const [thumbForVideoUrl, setThumbForVideoUrl] = useState(null);
+  /* Tipo escolhido em "Da multimédia" no menu "+"; null com a janela fechada. */
+  const [mediaPickerKind, setMediaPickerKind] = useState(null);
 
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
@@ -172,10 +185,21 @@ export default function BroadcastPage() {
   );
 
   const isWhatsapp = channel === "whatsapp";
-  const showStartMenu = isWhatsapp && composeMode === null;
-  const isSurveyMode = isWhatsapp && composeMode === "survey";
-  const isQuizMode = isWhatsapp && composeMode === "quiz";
-  const isOpenQuestionMode = isWhatsapp && composeMode === "question";
+  /* Quiz, sondagem e pergunta aberta nos dois canais (#151). */
+  const showStartMenu = composeMode === null;
+  const isSurveyMode = composeMode === "survey";
+  const isQuizMode = composeMode === "quiz";
+  const isOpenQuestionMode = composeMode === "question";
+
+  /*
+   * Os grupos só recebem mensagens em branco, sem cadeia: num grupo não há
+   * um destinatário único para as perguntas nem para a leitura.
+   */
+  const isGroupAudience = audience === "groups";
+  const canUseGroups =
+    channel === "teams" &&
+    (composeMode === null || composeMode === "blank") &&
+    !chainMode;
 
   const activeChainStep = chainSteps[activeChainStepIndex] || chainSteps[0];
 
@@ -541,15 +565,100 @@ export default function BroadcastPage() {
   }, [org?.id, getUsers, stopLoading]);
 
   /*
-   * A corrente só existe na mensagem livre WhatsApp. Sair dela (mudar de
-   * canal ou de tipo de mensagem) desliga-a, senão o envio seguia pela
+   * A corrente só existe na mensagem livre, no WhatsApp e no Teams. Sair
+   * dela (mudar de tipo de mensagem) desliga-a, senão o envio seguia pela
    * corrente.
    */
   useEffect(() => {
-    if (chainMode && (channel !== "whatsapp" || composeMode !== "blank")) {
+    if (chainMode && composeMode !== "blank") {
       setChainMode(false);
     }
-  }, [channel, chainMode, composeMode]);
+  }, [chainMode, composeMode]);
+
+  /* Fora da mensagem em branco do Teams, volta aos colaboradores (#166). */
+  useEffect(() => {
+    if (
+      audience === "groups" &&
+      (channel !== "teams" || composeMode !== "blank" || chainMode)
+    ) {
+      setAudience("users");
+    }
+  }, [audience, channel, composeMode, chainMode]);
+
+  /* Só os grupos onde o bot ainda está podem receber mensagens. */
+  useEffect(() => {
+    if (!org?.id || channel !== "teams") return;
+
+    let alive = true;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/teams-groups?orgId=${org.id}`, {
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) throw new Error(data?.error || "Failed to load groups.");
+        if (!alive) return;
+
+        setTeamsGroups(
+          (Array.isArray(data?.items) ? data.items : []).filter(
+            (group) => group.isActive,
+          ),
+        );
+      } catch (err) {
+        console.warn("[Broadcast] Teams groups load error:", err);
+        if (alive) setTeamsGroups([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [org?.id, channel]);
+
+  const filteredGroups = useMemo(() => {
+    const term = groupQuery.trim().toLowerCase();
+    if (!term) return teamsGroups;
+
+    return teamsGroups.filter((group) =>
+      String(group.name || "").toLowerCase().includes(term),
+    );
+  }, [teamsGroups, groupQuery]);
+
+  const allGroupsSelected =
+    filteredGroups.length > 0 &&
+    filteredGroups.every((group) => selectedGroups.has(group.id));
+
+  function toggleGroup(id) {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      const ids = filteredGroups.map((group) => group.id);
+
+      if (allGroupsSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+
+      return next;
+    });
+  }
+
+  /* Na mensagem em branco do Teams, "Grupos" escolhe logo esse tipo. */
+  function chooseGroupAudience() {
+    if (!canUseGroups) return;
+    if (composeMode === null) setComposeMode("blank");
+    setAudience("groups");
+  }
 
   const normalizedUsers = useMemo(() => {
     return (users || []).map((u) => ({
@@ -716,20 +825,31 @@ export default function BroadcastPage() {
   }
 
   const supabaseUpload = async (pickedFiles) => {
-    const bucket = BROADCAST_IMAGES_BUCKET;
+    const bucket = BROADCAST_MEDIA_BUCKET;
     const uploaded = [];
 
-    const makeSafeName = (name) => {
-      let safe = name.normalize("NFD").replace(/[̀-ͯ]/g, "");
-      safe = safe.replace(/[^a-zA-Z0-9._-]/g, "_");
-      if (!safe) safe = "file";
-      return safe;
-    };
+    const contentTypeOf = (file) =>
+      file.type || guessContentTypeFromName(file.name);
+
+    /* Valida todos antes de subir o primeiro, para não ficar meio envio. */
+    for (const file of pickedFiles) {
+      const reason = broadcastMediaRejection(contentTypeOf(file), file.size);
+
+      if (reason) {
+        throw new Error(
+          translation(
+            reason === "size"
+              ? "Broadcast.composer.fileTooLarge"
+              : "Broadcast.composer.fileTypeNotAllowed",
+            { name: file.name },
+          ),
+        );
+      }
+    }
 
     for (const file of pickedFiles) {
-      const safeName = makeSafeName(file.name);
-      const key = buildBroadcastImageKey(org?.id, safeName);
-      const ct = file.type || guessContentTypeFromName(file.name);
+      const key = buildBroadcastMediaKey(org?.id, file.name);
+      const ct = contentTypeOf(file);
 
       const { error: upErr } = await supabase.storage
         .from(bucket)
@@ -745,8 +865,8 @@ export default function BroadcastPage() {
       if (pub?.publicUrl) {
         uploaded.push({
           url: pub.publicUrl,
-          name: file.name || safeName,
-          contentType: ct || "application/octet-stream",
+          name: file.name || "file",
+          contentType: ct,
         });
       }
     }
@@ -772,7 +892,7 @@ export default function BroadcastPage() {
     }
   }
 
-  function openFilePicker(accept = "*/*") {
+  function openFilePicker(accept = BROADCAST_MEDIA_ACCEPT.image) {
     const input = fileInputRef.current;
     if (!input) return;
     input.accept = accept;
@@ -826,8 +946,10 @@ export default function BroadcastPage() {
   }
 
   const sampleRecipient = selectedUsers[0] || null;
-  const sampleName =
-    sampleRecipient?.name || translation("Broadcast.composer.contact");
+  const sampleGroup = teamsGroups.find((group) => selectedGroups.has(group.id));
+  const sampleName = isGroupAudience
+    ? sampleGroup?.name || translation("Broadcast.groups.groupFallback")
+    : sampleRecipient?.name || translation("Broadcast.composer.contact");
 
   /*
    * Rótulos das pastilhas no balão. Nome e empresa são preenchidos no envio;
@@ -856,25 +978,35 @@ export default function BroadcastPage() {
     [normalizedTrackedLinks, translation],
   );
 
+  /* Num grupo não há nome do destinatário nem links rastreados (#166). */
   const composerVariables = useMemo(
-    () => [
-      {
-        key: "nome",
-        kind: "name",
-        label: translation("Broadcast.composer.variableName"),
-      },
-      {
-        key: "empresa",
-        kind: "company",
-        label: translation("Broadcast.composer.variableCompany"),
-      },
-      ...normalizedTrackedLinks.map((l) => ({
-        key: `link.${l.key}`,
-        kind: "link",
-        label: `Link: ${l.label}`,
-      })),
-    ],
-    [normalizedTrackedLinks, translation],
+    () =>
+      isGroupAudience
+        ? [
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+          ]
+        : [
+            {
+              key: "nome",
+              kind: "name",
+              label: translation("Broadcast.composer.variableName"),
+            },
+            {
+              key: "empresa",
+              kind: "company",
+              label: translation("Broadcast.composer.variableCompany"),
+            },
+            ...normalizedTrackedLinks.map((l) => ({
+              key: `link.${l.key}`,
+              kind: "link",
+              label: `Link: ${l.label}`,
+            })),
+          ],
+    [isGroupAudience, normalizedTrackedLinks, translation],
   );
 
   function insertToken(key) {
@@ -917,9 +1049,13 @@ export default function BroadcastPage() {
     onPickThumbnail: openThumbnailPicker,
     onRemoveThumbnail: removeThumbnail,
     onAddFile: openFilePicker,
+    onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
   };
+
+  /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
+  if (isGroupAudience) composerTools.onAddLink = null;
 
   const trackedLinksValid =
     normalizedTrackedLinks.length === composerTrackedLinks.length &&
@@ -1005,7 +1141,6 @@ export default function BroadcastPage() {
   const chainValid =
     !chainMode ||
     (readChainsFeatureEnabled &&
-      channel === "whatsapp" &&
       chainSteps.length >= 2 &&
       chainSteps.length <= 10 &&
       chainSteps.every(chainStepHasContent) &&
@@ -1109,7 +1244,7 @@ export default function BroadcastPage() {
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
 
   const baseCanSend =
-    selected.size > 0 &&
+    (isGroupAudience ? selectedGroups.size : selected.size) > 0 &&
     (isSurveyMode
       ? surveyValid && trackedLinksValid
       : isOpenQuestionMode
@@ -1175,12 +1310,15 @@ export default function BroadcastPage() {
       };
     }
 
+    const question = composerQuestionPayload();
+
     return {
       orgId: org?.id,
       userIds: chosen.map((u) => u.id),
-      message: composerMessage,
+      message: question ? "" : composerMessage,
       files: composerFiles,
       trackedLinks: normalizedTrackedLinks,
+      ...(question ? { question } : {}),
     };
   }
 
@@ -1188,8 +1326,10 @@ export default function BroadcastPage() {
     return {
       orgId: org?.id,
       createdByUserId: user?.id || null,
-      channel: "whatsapp",
-      recipients: buildRecipients(chosen),
+      channel,
+      recipients: isWhatsapp
+        ? buildRecipients(chosen)
+        : chosen.map((u) => ({ userId: u.id })),
       steps: chainSteps.map((step, index) => {
         const question = chainStepQuestionPayload(step);
 
@@ -1440,7 +1580,197 @@ export default function BroadcastPage() {
     return true;
   }
 
+  /* =========================================================
+     GRUPOS DO TEAMS (#166)
+     ========================================================= */
+
+  const nameTokenPattern = new RegExp(
+    `\\{\\{\\s*(${NAME_KEYS.join("|")})\\s*\\}\\}`,
+    "i",
+  );
+
+  async function validateGroupBroadcast(action) {
+    if (!selectedGroups.size) {
+      await showAlert({
+        title: translation("Broadcast.groups.tabGroups"),
+        message: translation("Broadcast.groups.chooseGroups"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (!(await validateContentBeforeAction(action))) return false;
+
+    if (composerTrackedLinks.length) {
+      await showAlert({
+        title: translation("Broadcast.groups.noTrackedLinks.title"),
+        message: translation("Broadcast.groups.noTrackedLinks.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    if (nameTokenPattern.test(composerMessage)) {
+      await showAlert({
+        title: translation("Broadcast.groups.noNameVariable.title"),
+        message: translation("Broadcast.groups.noNameVariable.message"),
+        tone: "warning",
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  function buildGroupPayload() {
+    return {
+      orgId: org?.id,
+      groupIds: [...selectedGroups],
+      message: composerMessage,
+      files: composerFiles,
+      imageUrls,
+    };
+  }
+
+  function groupResultSummary(data) {
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const ok = results.filter((r) => r.ok).length;
+
+    const failedLines = results
+      .filter((r) => !r.ok)
+      .map((r) => {
+        const group = teamsGroups.find((g) => g.id === r.groupId);
+        const name = group?.name || translation("Broadcast.groups.unnamed");
+
+        return `- ${name}: ${r.error || translation("Common.error")}`;
+      });
+
+    return {
+      failed: results.length - ok,
+      message: [
+        translation("Broadcast.groups.sent.message", {
+          ok,
+          total: results.length,
+        }),
+        failedLines.join("\n"),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    };
+  }
+
+  async function sendToGroups() {
+    if (!(await validateGroupBroadcast("send"))) return;
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSend.title"),
+      message: translation("Broadcast.groups.confirmSend.message", {
+        count: selectedGroups.size,
+      }),
+      confirmText: translation("Broadcast.confirmSend.confirm"),
+      cancelText: translation("Broadcast.confirmSend.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/teams-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildGroupPayload()),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      const summary = groupResultSummary(data);
+
+      await showAlert({
+        title: translation(
+          summary.failed
+            ? "Broadcast.groups.sent.titleWithIssues"
+            : "Broadcast.groups.sent.title",
+        ),
+        message: summary.message,
+        tone: summary.failed ? "warning" : "success",
+      });
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function scheduleToGroups(scheduledDate) {
+    if (!(await validateGroupBroadcast("schedule"))) return;
+
+    const date = scheduledDate.toLocaleString();
+
+    const confirmed = await confirm({
+      title: translation("Broadcast.groups.confirmSchedule.title"),
+      message: translation("Broadcast.groups.confirmSchedule.message", {
+        count: selectedGroups.size,
+        date,
+      }),
+      confirmText: translation("Broadcast.confirmSchedule.confirm"),
+      cancelText: translation("Broadcast.confirmSchedule.cancel"),
+    });
+
+    if (!confirmed) return;
+
+    setSending(true);
+
+    try {
+      const res = await fetch("/api/broadcast/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId: org?.id,
+          channel: "teams",
+          scheduledFor: scheduledDate.toISOString(),
+          timezone: browserTimeZone,
+          payload: buildGroupPayload(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(data?.error || translation("Common.error"));
+
+      await showAlert({
+        title: translation("Broadcast.groups.scheduled.title"),
+        message: translation("Broadcast.groups.scheduled.message", {
+          count: selectedGroups.size,
+          date,
+        }),
+        tone: "success",
+      });
+
+      setDeliveryMode("now");
+    } catch (err) {
+      await showAlert({
+        title: translation("Common.error"),
+        message: err.message,
+        tone: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   async function handleSend() {
+    if (isGroupAudience) {
+      await sendToGroups();
+      return;
+    }
+
     if (!(await validateTrackedDestinationsBeforeAction())) return;
     if (!selectedUsers.length) {
       await showAlert({
@@ -1452,15 +1782,6 @@ export default function BroadcastPage() {
     }
 
     if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
-
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -1518,7 +1839,9 @@ export default function BroadcastPage() {
             failed: counts.failed,
             note:
               data?.note ||
-              "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply.",
+              (isWhatsapp
+                ? "Message 1 was sent if the 24h window was open. If not, the opening message was sent and the chain waits for a reply."
+                : "Message 1 was sent. Each next message follows once the previous one is read."),
             failedRecipients,
           }),
           tone: counts.failed > 0 ? "warning" : "success",
@@ -1634,7 +1957,7 @@ export default function BroadcastPage() {
 
   async function handleSchedule() {
     if (!(await validateTrackedDestinationsBeforeAction())) return;
-    if (!selectedUsers.length) {
+    if (!isGroupAudience && !selectedUsers.length) {
       await showAlert({
         title: "Choose recipients",
         message: translation("Broadcast.chooseRecipients"),
@@ -1675,16 +1998,12 @@ export default function BroadcastPage() {
       return;
     }
 
-    if (chainMode) {
-      if (channel !== "whatsapp") {
-        await showAlert({
-          title: "WhatsApp only",
-          message: "Read chains currently only work for WhatsApp.",
-          tone: "warning",
-        });
-        return;
-      }
+    if (isGroupAudience) {
+      await scheduleToGroups(scheduledDate);
+      return;
+    }
 
+    if (chainMode) {
       if (!readChainsFeatureEnabled) {
         await showAlert({
           title: "Read chains are disabled",
@@ -1982,6 +2301,7 @@ export default function BroadcastPage() {
   if (showStartMenu) {
     composer = (
       <StartMenu
+        channel={channel}
         onChoose={setComposeMode}
         sampleName={sampleName}
         previewTime={previewTime}
@@ -2000,6 +2320,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <SurveyComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             survey={survey}
             onChange={setSurvey}
             contactName={sampleName}
@@ -2025,6 +2346,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <OpenQuestionComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             question={openQuestion}
             onChange={setOpenQuestion}
             contactName={sampleName}
@@ -2050,6 +2372,7 @@ export default function BroadcastPage() {
         translation={translation}
         phone={
           <QuizComposer
+            variant={isWhatsapp ? "whatsapp" : "teams"}
             quiz={quiz}
             onChange={setQuiz}
             contactName={sampleName}
@@ -2067,7 +2390,7 @@ export default function BroadcastPage() {
     composer = (
       <MessageComposer
         title={translation("Broadcast.message")}
-        onBack={isWhatsapp ? () => setComposeMode(null) : null}
+        onBack={() => setComposeMode(null)}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
@@ -2075,8 +2398,9 @@ export default function BroadcastPage() {
         trackedLinksCount={trackedLinksCount}
         translation={translation}
         leftToolsContent={chainDelayTools}
+        showLinks={!isGroupAudience}
         chainControls={
-          isWhatsapp ? (
+          isGroupAudience ? null : (
             <ChainMessagesBar
               enabled={readChainsFeatureEnabled}
               chainMode={chainMode}
@@ -2093,11 +2417,12 @@ export default function BroadcastPage() {
               }
               translation={translation}
             />
-          ) : null
+          )
         }
         phone={
           chainQuestionKind === "quiz" ? (
             <QuizComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               quiz={activeChainStep.quiz}
               onChange={(next) => updateActiveChainStep({ quiz: next })}
               contactName={sampleName}
@@ -2107,6 +2432,7 @@ export default function BroadcastPage() {
             />
           ) : chainQuestionKind === "survey" ? (
             <SurveyComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               survey={activeChainStep.survey}
               onChange={(next) => updateActiveChainStep({ survey: next })}
               contactName={sampleName}
@@ -2116,6 +2442,7 @@ export default function BroadcastPage() {
             />
           ) : chainQuestionKind === "open" ? (
             <OpenQuestionComposer
+              variant={isWhatsapp ? "whatsapp" : "teams"}
               question={activeChainStep.openQuestion}
               onChange={(next) => updateActiveChainStep({ openQuestion: next })}
               contactName={sampleName}
@@ -2147,7 +2474,7 @@ export default function BroadcastPage() {
       <BroadcastHeader
         channel={channel}
         setChannel={setChannel}
-        selectedCount={selected.size}
+        selectedCount={isGroupAudience ? selectedGroups.size : selected.size}
         sending={sending}
         canSend={canSend}
         deliveryMode={deliveryMode}
@@ -2160,17 +2487,28 @@ export default function BroadcastPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="*/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         multiple
         hidden
         data-testid="file-input"
         onChange={handlePickFiles}
       />
 
+      {mediaPickerKind ? (
+        <MediaPickerModal
+          kind={mediaPickerKind}
+          orgId={org?.id}
+          attachedUrls={composerFiles.map((f) => f.url)}
+          onAdd={(picked) => setComposerFiles((prev) => [...prev, ...picked])}
+          onClose={() => setMediaPickerKind(null)}
+          translation={translation}
+        />
+      ) : null}
+
       <input
         ref={thumbInputRef}
         type="file"
-        accept="image/*"
+        accept={BROADCAST_MEDIA_ACCEPT.image}
         hidden
         onChange={handlePickThumbnail}
       />
@@ -2179,27 +2517,50 @@ export default function BroadcastPage() {
         <div className={styles.leftCol}>{composer}</div>
 
         <div className={styles.rightCol}>
-          <RecipientsPanel
-            filterBtnRef={filterBtnRef}
-            filterOpen={filterOpen}
-            setFilterOpen={setFilterOpen}
-            activeFilterCount={activeFilterCount}
-            allTags={allTags}
-            assistantsList={assistantsList}
-            selectedTagIds={selectedTagIds}
-            setSelectedTagIds={setSelectedTagIds}
-            selectedAssistantIds={selectedAssistantIds}
-            setSelectedAssistantIds={setSelectedAssistantIds}
-            q={q}
-            setQ={setQ}
-            filtered={filtered}
-            selected={selected}
-            toggleOne={toggleOne}
-            toggleAllCurrent={toggleAllCurrent}
-            allOnPageSelected={allOnPageSelected}
-            channel={channel}
-            translation={translation}
-          />
+          {channel === "teams" && (
+            <AudienceTabs
+              audience={audience}
+              canUseGroups={canUseGroups}
+              onChooseUsers={() => setAudience("users")}
+              onChooseGroups={chooseGroupAudience}
+              translation={translation}
+            />
+          )}
+
+          {isGroupAudience ? (
+            <GroupsPanel
+              groups={filteredGroups}
+              q={groupQuery}
+              setQ={setGroupQuery}
+              selected={selectedGroups}
+              toggleOne={toggleGroup}
+              toggleAll={toggleAllGroups}
+              allSelected={allGroupsSelected}
+              translation={translation}
+            />
+          ) : (
+            <RecipientsPanel
+              filterBtnRef={filterBtnRef}
+              filterOpen={filterOpen}
+              setFilterOpen={setFilterOpen}
+              activeFilterCount={activeFilterCount}
+              allTags={allTags}
+              assistantsList={assistantsList}
+              selectedTagIds={selectedTagIds}
+              setSelectedTagIds={setSelectedTagIds}
+              selectedAssistantIds={selectedAssistantIds}
+              setSelectedAssistantIds={setSelectedAssistantIds}
+              q={q}
+              setQ={setQ}
+              filtered={filtered}
+              selected={selected}
+              toggleOne={toggleOne}
+              toggleAllCurrent={toggleAllCurrent}
+              allOnPageSelected={allOnPageSelected}
+              channel={channel}
+              translation={translation}
+            />
+          )}
         </div>
       </div>
     </div>

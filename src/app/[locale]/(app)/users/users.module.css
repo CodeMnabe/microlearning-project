@@ -11,7 +11,7 @@
   --col-checkbox: 52px;
   --col-name: minmax(220px, 1fr);
   --col-phone: 160px;
-  --col-tags: minmax(0, 1.4fr);
+  --col-tags: minmax(110px, 1.4fr);
   --col-assistant: minmax(240px, 0.9fr);
   /* make this wide enough to hold "Ver • Editar • Apagar" */
   --col-actions: 260px;
@@ -204,6 +204,8 @@
 .avatar {
   width: var(--avatar);
   height: var(--avatar);
+  /* Um nome longo não pode espremer o círculo. */
+  flex: none;
   border-radius: 9999px;
   display: grid;
   place-items: center;
@@ -247,9 +249,13 @@
 
 .chip {
   height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  line-height: 26px;
+  /* Uma linha só; o nome completo fica no title. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 0 10px;
   border-radius: 9999px;
   background: var(--chip-bg);
@@ -734,13 +740,26 @@
   margin-left: auto;
 }
 
-@media (max-width: 1280px) {
+/*
+ * Com o menu lateral aberto, a tabela fica com pouco espaço: as ações
+ * mostram só o ícone e as Tags mantêm largura para o título não se
+ * sobrepor ao do Assistente.
+ */
+@media (max-width: 1400px) {
   .usersScreen {
-    --col-name: minmax(180px, 0.9fr);
-    --col-phone: 140px;
-    --col-assistant: minmax(220px, 0.8fr);
-    --col-actions: 220px;
-    /* shrink if needed on smaller screens */
+    --col-name: minmax(150px, 1fr);
+    --col-phone: 120px;
+    --col-tags: minmax(110px, 1fr);
+    --col-assistant: minmax(180px, 1fr);
+    --col-actions: 92px;
+  }
+
+  .rowActBtn {
+    padding: 0 8px;
+  }
+
+  .rowActBtn span {
+    display: none;
   }
 }
 
@@ -883,6 +902,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .assistantExtra {
@@ -1121,6 +1141,25 @@
 .threadTitle {
   font-weight: 800;
   color: #0f1c3f;
+}
+
+/* Nome do assistente e canal da conversa (#167). */
+.threadTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.threadChannel {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .threadMeta {
@@ -1401,6 +1440,7 @@
 .paginationLeft,
 .paginationRight {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -1524,6 +1564,7 @@
 
   .chip {
     height: 24px;
+    line-height: 22px;
     padding: 0 8px;
     font-size: 11px;
   }

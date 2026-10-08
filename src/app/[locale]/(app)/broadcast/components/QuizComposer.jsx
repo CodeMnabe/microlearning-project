@@ -29,6 +29,7 @@ export default function QuizComposer({
   previewTime,
   tools,
   translation,
+  variant,
 }) {
   const options = Array.isArray(quiz.options) ? quiz.options : [];
 
@@ -75,6 +76,7 @@ export default function QuizComposer({
 
       <QuestionPhone
         contactName={contactName}
+        variant={variant}
         previewTime={previewTime}
         body={quiz.body}
         onBodyChange={(body) => update({ body })}

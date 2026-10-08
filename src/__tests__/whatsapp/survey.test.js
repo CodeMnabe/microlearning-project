@@ -117,7 +117,7 @@ describe("handleQuestionReply for a survey", () => {
     user_id: 42,
     message_id: "bird-out-1",
     question_id: 20,
-    created_at: "2026-09-14T10:00:00Z",
+    created_at: new Date().toISOString(),
   };
 
   let sendText;

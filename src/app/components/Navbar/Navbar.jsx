@@ -8,6 +8,7 @@ import styles from "./navbar.module.css";
 import {
   Home,
   Users,
+  UsersRound,
   Bot,
   MessageSquare,
   Settings,
@@ -18,6 +19,7 @@ import {
   CalendarClock,
   Link2,
   ListChecks,
+  Images,
   Zap,
   BarChart3,
 } from "lucide-react";
@@ -148,6 +150,17 @@ export default function Navbar() {
               </Link>
 
               <Link
+                href="/teams-groups"
+                onClick={onNavClick("/teams-groups")}
+                className={`${styles.navItem} ${
+                  isActive("/teams-groups") ? styles.active : ""
+                }`}
+              >
+                <UsersRound aria-hidden className={styles.icon} />
+                <span>{translation("Nav.teamsGroups")}</span>
+              </Link>
+
+              <Link
                 href="/assistants"
                 onClick={onNavClick("/assistants")}
                 className={`${styles.navItem} ${
@@ -257,6 +270,17 @@ export default function Navbar() {
                     >
                       <ListChecks aria-hidden className={styles.subnavIcon} />
                       <span>{translation("Nav.questions")}</span>
+                    </Link>
+
+                    <Link
+                      href="/broadcast/media"
+                      onClick={onNavClick("/broadcast/media")}
+                      className={`${styles.subnavItem} ${
+                        isActive("/broadcast/media") ? styles.active : ""
+                      }`}
+                    >
+                      <Images aria-hidden className={styles.subnavIcon} />
+                      <span>{translation("Nav.media")}</span>
                     </Link>
                   </div>
                 )}

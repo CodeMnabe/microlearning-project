@@ -99,9 +99,9 @@ export async function POST(req) {
     const orgAuth = await requireOwnedOrg(orgId);
     if (orgAuth.error) return orgAuth.error;
 
-    if (channel !== "whatsapp") {
+    if (!["whatsapp", "teams"].includes(channel)) {
       return NextResponse.json(
-        { error: "Read chains currently only support WhatsApp." },
+        { error: "Read chains only support WhatsApp and Teams." },
         { status: 400 },
       );
     }

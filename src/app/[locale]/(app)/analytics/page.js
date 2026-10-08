@@ -8,6 +8,9 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import styles from "./analytics.module.css";
+import { exportAnalyticsPdf } from "./lib/analytics.export";
+import { exportAnalyticsExcel } from "./lib/analytics.excel";
+import { buildExcelLabels, buildExcelFileName } from "./lib/analytics.helpers";
 
 /**
  * Opções disponíveis para filtrar as métricas por período.
@@ -105,13 +108,13 @@ function Section({
   children,
 }) {
   return (
-    <section className={`${styles.section} ${!visible ? styles.sectionCollapsed : ""}`}>
+    <section data-pdf-section={visible ? "" : undefined} data-html2canvas-ignore={visible ? undefined : "true"} className={`${styles.section} ${!visible ? styles.sectionCollapsed : ""}`}>
       <header className={styles.sectionHeader}>
         <div className={styles.sectionCopy}>
           <h2>{title}</h2>
           {description ? <p>{description}</p> : null}
         </div>
-        <div className={styles.sectionActions}>
+        <div className={styles.sectionActions} data-html2canvas-ignore="true">
           {linkHref && visible ? (
             <Link href={linkHref} className={styles.sectionLink}>
               {linkLabel}
@@ -417,6 +420,7 @@ function TrendPanel({ trend, locale, format, t, onExpand }) {
           <button
             type="button"
             className={styles.trendExpand}
+            data-html2canvas-ignore="true"
             onClick={onExpand}
             aria-label={t("trends.expand")}
             title={t("trends.expand")}
@@ -616,7 +620,7 @@ function LinksTable({ rows, maxClicks, offset = 0, format, t }) {
 
 function PageHeader({ t, children }) {
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-pdf-section>
       <div className={styles.headerCopy}>
         <h1>{t("title")}</h1>
         <p>{t("description")}</p>
@@ -662,6 +666,14 @@ export default function AnalyticsPage() {
   const [expandedTrend, setExpandedTrend] = useState(null);
   const [visibleSections, setVisibleSections] = useState(DEFAULT_VISIBLE_SECTIONS);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [exportNotice, setExportNotice] = useState(null);
+  const [metricsOrgId, setMetricsOrgId] = useState(null);
+  const exportRef = useRef(null);
+  const exportInProgress = useRef(false);
+  const isExporting = isExportingPdf || isExportingExcel;
+  const canExport = Boolean(metrics && metricsOrgId === orgId && metrics.period?.value === period && !isLoadingMetrics && !error);
 
   /**
    * Carrega do localStorage as secções que o utilizador quer ver.
@@ -762,6 +774,8 @@ export default function AnalyticsPage() {
       }
 
       setMetrics(data);
+      setMetricsOrgId(orgId);
+      setExportNotice(null);
       setUpdatedAt(new Date());
     } catch (err) {
       console.warn("[Analytics] load error:", err);
@@ -845,193 +859,64 @@ export default function AnalyticsPage() {
   );
 
   async function handleExportPdf() {
-    if (!metrics) return;
-
-    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-      import("jspdf"),
-      import("jspdf-autotable"),
-    ]);
-
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const headStyles = { fillColor: [48, 169, 224], textColor: [255, 255, 255] };
-    const tableStyles = { fontSize: 9, cellPadding: 3 };
-
-    function addFooter(pageNumber) {
-      pdf.setFontSize(9);
-      pdf.setTextColor(120, 130, 145);
-      pdf.text(`Analytics report • ${periodLabel} • Página ${pageNumber}`, 16, pageHeight - 10);
+    if (!canExport || !exportRef.current || exportInProgress.current) return;
+    exportInProgress.current = true;
+    setIsExportingPdf(true);
+    setExportNotice(null);
+    try {
+      await exportAnalyticsPdf({
+        exportElement: exportRef.current,
+        period,
+        exportClassName: styles.exportingPdf,
+        footerLabel: [t("title"), org?.name, periodLabel].filter(Boolean).join(" - "),
+      });
+    } catch (err) {
+      console.error("[analytics] PDF export failed", err);
+      setExportNotice({ tone: "error", message: t("errors.exportPdf") });
+    } finally {
+      exportInProgress.current = false;
+      setIsExportingPdf(false);
     }
+  }
 
-    function addSectionTitle(title, y) {
-      pdf.setFontSize(15);
-      pdf.setTextColor(15, 23, 42);
-      pdf.setFont(undefined, "bold");
-      pdf.text(title, 16, y);
+  async function handleExportExcel() {
+    if (!canExport || exportInProgress.current) return;
+    exportInProgress.current = true;
+    setIsExportingExcel(true);
+    setExportNotice(null);
+    try {
+      const exportedAt = new Date();
+      let detail = null;
+      try {
+        const response = await fetch(
+          "/api/analytics/export?orgId=" + orgId + "&period=" + period,
+          { cache: "no-store" },
+        );
+        const payload = await response.json().catch(() => null);
+        if (response.ok && payload?.ok) detail = { ...payload, daily };
+      } catch (err) {
+        console.warn("[analytics] Export detail unavailable", err);
+      }
+      await exportAnalyticsExcel({
+        detail,
+        data: { users, assistants, templates, messages, automations, scheduledBroadcasts, trackedLinks, pendingOutreach },
+        meta: {
+          organizationName: org?.name ?? "",
+          periodLabel,
+          exportedAt,
+          exportedAtLabel: new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(exportedAt),
+          fileName: buildExcelFileName(period, exportedAt),
+          labels: buildExcelLabels(t),
+        },
+      });
+      if (!detail) setExportNotice({ tone: "warning", message: t("errors.exportPartial") });
+    } catch (err) {
+      console.error("[analytics] Excel export failed", err);
+      setExportNotice({ tone: "error", message: t("errors.export") });
+    } finally {
+      exportInProgress.current = false;
+      setIsExportingExcel(false);
     }
-
-    const generatedAt = new Intl.DateTimeFormat(locale || "pt-PT", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date());
-
-    // Página 1 — Capa
-    pdf.setFillColor(48, 169, 224);
-    pdf.rect(0, 0, pageWidth, 70, "F");
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(28);
-    pdf.setFont(undefined, "bold");
-    pdf.text("Analytics", 16, 32);
-    pdf.setFontSize(13);
-    pdf.setFont(undefined, "normal");
-    pdf.text("Dashboard report", 16, 43);
-    pdf.setTextColor(15, 23, 42);
-    pdf.setFontSize(14);
-    pdf.setFont(undefined, "bold");
-    pdf.text(org?.name || "Organization", 16, 92);
-    pdf.setFontSize(11);
-    pdf.setFont(undefined, "normal");
-    pdf.setTextColor(82, 100, 122);
-    pdf.text(`Período: ${periodLabel}`, 16, 104);
-    pdf.text(`Gerado em: ${generatedAt}`, 16, 112);
-    pdf.setFontSize(10);
-    pdf.text(
-      "Este relatório resume os principais indicadores de utilização, atividade, automações, links e evolução diária.",
-      16,
-      132,
-      { maxWidth: pageWidth - 32 }
-    );
-    addFooter(1);
-
-    // Página 2 — Métricas principais
-    pdf.addPage();
-    addSectionTitle("Resumo geral", 20);
-    autoTable(pdf, {
-      startY: 30,
-      head: [["Métrica", "Valor", "Detalhe"]],
-      body: [
-        [
-          t("cards.users"),
-          format(users.total),
-          `${format(users.withAssistant)} com assistente, ${format(users.withoutAssistant)} sem assistente`,
-        ],
-        [
-          t("cards.assistants"),
-          format(assistants.total),
-          `${format(assistants.withoutOpenAiId)} sem OpenAI ID configurado`,
-        ],
-        [
-          t("cards.templates"),
-          format(templates.total),
-          `${format(templates.active)} ativos, ${format(templates.pending)} pendentes, ${format(templates.rejected)} rejeitados`,
-        ],
-        [
-          t("cards.assistantCoverage"),
-          `${assistantCoverageRate}%`,
-          `${format(users.withAssistant)}/${format(users.total)} utilizadores com assistente`,
-        ],
-      ],
-      styles: tableStyles,
-      headStyles,
-    });
-
-    addSectionTitle("Atividade", pdf.lastAutoTable.finalY + 16);
-    autoTable(pdf, {
-      startY: pdf.lastAutoTable.finalY + 24,
-      head: [["Métrica", "Valor", "Detalhe"]],
-      body: [
-        [
-          t("cards.messages"),
-          format(messages.total),
-          `${format(messages.whatsapp)} WhatsApp, ${format(messages.teams)} Teams`,
-        ],
-        [
-          t("cards.delivery"),
-          format(messages.delivered),
-          `${format(messages.read)} lidas, ${format(messages.failed)} falhadas`,
-        ],
-        [
-          t("cards.readRate"),
-          `${readRate}%`,
-          `${format(messages.read)} de ${format(messages.total)} mensagens`,
-        ],
-        [
-          t("cards.failureRate"),
-          `${failedMessageRate}%`,
-          `${format(messages.failed)} de ${format(messages.total)} mensagens`,
-        ],
-      ],
-      styles: tableStyles,
-      headStyles,
-    });
-    addFooter(2);
-
-    // Página 3 — Automações e links
-    pdf.addPage();
-    addSectionTitle("Automações", 20);
-    autoTable(pdf, {
-      startY: 30,
-      head: [["Métrica", "Valor", "Detalhe"]],
-      body: [
-        [
-          t("cards.automations"),
-          format(automations.rulesTotal),
-          `${format(automations.rulesActive)} ativas, ${format(automations.rulesPaused)} pausadas`,
-        ],
-        [
-          t("cards.automationRuns"),
-          format(automations.runsTotal),
-          `${format(automations.runsProcessed)} processadas, ${format(automations.runsFailed)} falhadas`,
-        ],
-        [
-          t("cards.scheduledBroadcasts"),
-          format(scheduledBroadcasts.total),
-          `${format(scheduledBroadcasts.completed)} concluídas, ${format(scheduledBroadcasts.failed)} falhadas, ${format(scheduledBroadcasts.recipientCount)} destinatários`,
-        ],
-      ],
-      styles: tableStyles,
-      headStyles,
-    });
-
-    addSectionTitle("Links mais clicados", pdf.lastAutoTable.finalY + 16);
-    autoTable(pdf, {
-      startY: pdf.lastAutoTable.finalY + 24,
-      head: [["#", t("rankings.columns.link"), t("rankings.columns.clicks")]],
-      body: topTrackedLinks.slice(0, 10).map((link, index) => [
-        index + 1,
-        link.label,
-        format(link.clicks),
-      ]),
-      styles: tableStyles,
-      headStyles,
-    });
-    addFooter(3);
-
-    // Página 4 — Evolução diária
-    pdf.addPage();
-    addSectionTitle("Evolução diária", 20);
-    autoTable(pdf, {
-      startY: 30,
-      head: [["Data", "Mensagens", "Cliques", "Falhas", "Automações processadas"]],
-      body: dailyMessagesData.map((item) => {
-        const clickItem = dailyClicksData.find((row) => row.date === item.date);
-        const failedItem = dailyFailedMessagesData.find((row) => row.date === item.date);
-        const automationItem = dailyAutomationRunsData.find((row) => row.date === item.date);
-        return [
-          item.date,
-          format(item.messages),
-          format(clickItem?.clicks),
-          format(failedItem?.failures),
-          format(automationItem?.processed),
-        ];
-      }),
-      styles: { fontSize: 8, cellPadding: 2.4 },
-      headStyles,
-    });
-    addFooter(4);
-
-    pdf.save(`analytics-${period}-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   const updatedLabel = updatedAt
@@ -1061,9 +946,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <main ref={exportRef} data-analytics-pdf-root="true" className={styles.page}>
       <PageHeader t={t}>
-        <div className={styles.headerActions}>
+        <div className={styles.headerActions} data-html2canvas-ignore="true">
           {updatedLabel ? <span className={styles.updatedAt}>{updatedLabel}</span> : null}
           <div className={styles.periodTabs} role="group" aria-label={t("periods.label")}>
             {PERIOD_OPTIONS.map((option) => (
@@ -1074,7 +959,7 @@ export default function AnalyticsPage() {
                   period === option.value ? styles.periodButtonActive : ""
                 }`}
                 onClick={() => setPeriod(option.value)}
-                disabled={isLoadingMetrics}
+                disabled={isLoadingMetrics || isExporting}
                 aria-pressed={period === option.value}
               >
                 {t(option.labelKey)}
@@ -1085,15 +970,23 @@ export default function AnalyticsPage() {
             type="button"
             className={styles.secondaryButton}
             onClick={handleExportPdf}
-            disabled={!metrics || isLoadingMetrics}
+            disabled={!canExport || isExporting}
           >
-            {t("customization.exports")}
+            {isExportingPdf ? t("customization.exporting") : t("customization.exportPdf")}
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={handleExportExcel}
+            disabled={!canExport || isExporting}
+          >
+            {isExportingExcel ? t("customization.exporting") : t("customization.exportExcel")}
           </button>
           <button
             type="button"
             className={styles.refreshButton}
             onClick={loadMetrics}
-            disabled={isLoadingMetrics}
+            disabled={isLoadingMetrics || isExporting}
           >
             <RefreshCw size={15} className={isLoadingMetrics ? styles.spin : ""} aria-hidden="true" />
             {t("refresh")}
@@ -1101,10 +994,16 @@ export default function AnalyticsPage() {
         </div>
       </PageHeader>
 
+      {exportNotice ? (
+        <div className={exportNotice.tone === "error" ? styles.errorBox : styles.exportWarning} role={exportNotice.tone === "error" ? "alert" : "status"}>
+          <p>{exportNotice.message}</p>
+        </div>
+      ) : null}
+
       {hasHiddenSections ? (
         <div className={styles.hiddenNotice}>
           <span>{t("customization.hiddenNotice")}</span>
-          <button type="button" onClick={resetSections}>
+          <button type="button" onClick={resetSections} disabled={isExporting}>
             {t("customization.resetDashboard")}
           </button>
         </div>
@@ -1113,14 +1012,14 @@ export default function AnalyticsPage() {
       {error ? (
         <div className={styles.errorBox} role="alert">
           <p>{error}</p>
-          <button type="button" onClick={loadMetrics} disabled={isLoadingMetrics}>
+          <button type="button" onClick={loadMetrics} disabled={isLoadingMetrics || isExporting}>
             {t("retry")}
           </button>
         </div>
       ) : null}
 
       {metrics ? (
-        <div className={`${styles.content} ${isLoadingMetrics ? styles.contentLoading : ""}`}>
+        <div className={`${styles.content} ${isLoadingMetrics ? styles.contentLoading : ""} ${isExporting ? styles.exportBusy : ""}`} aria-busy={isExporting} inert={isExporting ? true : undefined}>
           <Section
             title={t("groups.overview.title")}
             description={t("groups.overview.description")}
@@ -1227,7 +1126,7 @@ export default function AnalyticsPage() {
             </div>
           </Section>
 
-          <div className={styles.columns}>
+          <div className={styles.columns} data-pdf-section={visibleSections.automations || visibleSections.engagement ? "" : undefined}>
             <Section
               title={t("groups.automations.title")}
               description={t("groups.automations.description")}
@@ -1299,7 +1198,7 @@ export default function AnalyticsPage() {
             </Section>
           </div>
 
-          <div className={styles.columnsWide}>
+          <div className={styles.columnsWide} data-pdf-section={visibleSections.distribution || visibleSections.rankings ? "" : undefined}>
             <Section
               title={t("charts.sectionTitle")}
               description={t("charts.sectionDescription")}
