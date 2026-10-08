@@ -146,7 +146,12 @@ export async function sendTeamsBroadcast(input = {}) {
 
       // Nome, empresa, email e telemóvel, como no WhatsApp.
       let text = interpolateBroadcastMessage(
-        replaceTrackedPlaceholders(messageText, resolvedTrackedLinks),
+        replaceTrackedPlaceholders(
+          withButtonLinksInText(messageText, resolvedTrackedLinks, {
+            markdown: true,
+          }),
+          resolvedTrackedLinks,
+        ),
         { user, org, assistant: null },
       ).trim();
 

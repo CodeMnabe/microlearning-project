@@ -17,6 +17,7 @@ import { useGlobalLoader } from "@/app/LoadingScreen/GlobalLoaderContext";
 import { useAlert } from "@/app/components/Alert/AlertProvider";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
 import {
+  hasReplyButtons,
   isQuizValid,
   isSurveyValid,
   makeEmptyQuiz,
@@ -24,6 +25,12 @@ import {
   makeEmptySurvey,
   normalizeOpenQuestion,
 } from "@/lib/whatsapp/question";
+import {
+  buttonLinkBubbles,
+  chooseButtonLink,
+  convertLinksForButton,
+  isOnlyTrackedLinks,
+} from "@/lib/whatsapp/linkButton";
 
 import BroadcastHeader from "./components/BroadcastHeader";
 import MessageComposer from "./components/MessageComposer";
@@ -40,17 +47,21 @@ import GroupsPanel from "./components/recipients/GroupsPanel";
 import ChainMessagesBar from "./components/ChainMessagesBar";
 import MediaPickerModal from "./components/MediaPickerModal";
 
-import { COMPANY_KEYS, NAME_KEYS } from "./lib/constants";
+import { COMPANY_KEYS, MAX_TRACKED_LINKS, NAME_KEYS } from "./lib/constants";
 import useTextSuggestion from "./lib/useTextSuggestion";
+import useTrackedLinkLibrary from "./hooks/useTrackedLinkLibrary";
 import {
   asList,
   buildInitialScheduledDate,
+  buttonFieldsOf,
   formatHour,
   formatMinute,
   guessContentTypeFromName,
   isImageContentType,
+  isSameTrackedLink,
   isVideoContentType,
   makeTrackedLinkDraft,
+  makeTrackedLinkFromLibrary,
   sanitizeTrackedKey,
   makeChainStep,
   formatDelayLabel,
@@ -219,6 +230,21 @@ export default function BroadcastPage() {
     ? activeChainStepTrackedLinks
     : trackedLinks;
 
+  const activeQuestionKind = isQuizMode
+    ? "quiz"
+    : isSurveyMode
+      ? "survey"
+      : isOpenQuestionMode
+        ? "open"
+        : chainQuestionKind;
+
+  /*
+   * No WhatsApp, o link vai num botão e não entra no texto. Quiz e
+   * sondagem já têm botões de resposta, e o Teams não tem este botão: aí o
+   * link entra no texto, como pastilha.
+   */
+  const linkButtonAllowed = isWhatsapp && !hasReplyButtons(activeQuestionKind);
+
   const updateActiveChainStep = useCallback(
     (patchOrUpdater) => {
       setChainSteps((prev) =>
@@ -290,6 +316,62 @@ export default function BroadcastPage() {
     },
     [chainMode, updateActiveChainStep],
   );
+
+  /* Texto do tipo de mensagem aberto: mensagem livre ou enunciado. */
+  const activeBodyText = isQuizMode
+    ? quiz.body
+    : isSurveyMode
+      ? survey.body
+      : isOpenQuestionMode
+        ? openQuestion.body
+        : chainQuestionKind === "open"
+          ? activeChainStep.openQuestion?.body
+          : chainQuestionKind
+            ? activeChainStep[chainQuestionKind]?.body
+            : composerMessage;
+
+  function setActiveBodyText(text) {
+    if (isQuizMode) return setQuiz((q) => ({ ...q, body: text }));
+    if (isSurveyMode) return setSurvey((s) => ({ ...s, body: text }));
+    if (isOpenQuestionMode) {
+      return setOpenQuestion((q) => ({ ...q, body: text }));
+    }
+
+    if (chainQuestionKind) {
+      const field =
+        chainQuestionKind === "open" ? "openQuestion" : chainQuestionKind;
+
+      return updateActiveChainStep((step) => ({
+        [field]: { ...step[field], body: text },
+      }));
+    }
+
+    return setComposerMessage(text);
+  }
+
+  /*
+   * Ao trocar de canal ou de tipo de mensagem, o link muda de forma: na
+   * mensagem de WhatsApp vai no botão; no Teams, no quiz e na sondagem
+   * volta ao texto, como pastilha. Só converte quando se muda de um lado
+   * para o outro, nunca a meio da escrita.
+   */
+  const lastLinkButtonAllowed = useRef(linkButtonAllowed);
+
+  useEffect(() => {
+    if (lastLinkButtonAllowed.current === linkButtonAllowed) return;
+    lastLinkButtonAllowed.current = linkButtonAllowed;
+
+    const result = convertLinksForButton({
+      text: activeBodyText,
+      links: composerTrackedLinks,
+      buttonAllowed: linkButtonAllowed,
+    });
+
+    if (!result.changed) return;
+
+    setComposerTrackedLinks(result.links);
+    setActiveBodyText(result.text);
+  });
 
   function addChainStep() {
     setChainSteps((prev) => {
@@ -445,6 +527,7 @@ export default function BroadcastPage() {
           key: sanitizeTrackedKey(l.key),
           label: String(l.label || "").trim(),
           destinationUrl: String(l.destinationUrl || "").trim(),
+          ...buttonFieldsOf(l),
         }))
         .filter((l) => l.key && l.label && l.destinationUrl),
     [composerTrackedLinks],
@@ -622,7 +705,9 @@ export default function BroadcastPage() {
     if (!term) return teamsGroups;
 
     return teamsGroups.filter((group) =>
-      String(group.name || "").toLowerCase().includes(term),
+      String(group.name || "")
+        .toLowerCase()
+        .includes(term),
     );
   }, [teamsGroups, groupQuery]);
 
@@ -798,8 +883,50 @@ export default function BroadcastPage() {
     setComposerFiles((prev) => prev.filter((f) => f.url !== url));
   }
 
+  /*
+   * Um só link por mensagem (MAX_TRACKED_LINKS): o painel desativa os
+   * botões e estas funções não deixam passar do limite.
+   */
+  const trackedLinksFull = composerTrackedLinks.length >= MAX_TRACKED_LINKS;
+
+  /* No WhatsApp, o link novo passa a ser o botão. */
   function addTrackedLink() {
-    setComposerTrackedLinks((prev) => [...prev, makeTrackedLinkDraft()]);
+    if (trackedLinksFull) return;
+
+    const draft = makeTrackedLinkDraft();
+
+    setComposerTrackedLinks((prev) => [
+      ...prev,
+      linkButtonAllowed ? { ...draft, button: true } : draft,
+    ]);
+  }
+
+  /*
+   * Um link já usado entra na mensagem: no WhatsApp, como botão; fora
+   * dele, logo no balão, onde estava o cursor.
+   */
+  function addTrackedLinkFromLibrary(item) {
+    if (
+      trackedLinksFull ||
+      composerTrackedLinks.some((link) => isSameTrackedLink(link, item))
+    ) {
+      return;
+    }
+
+    const draft = makeTrackedLinkFromLibrary(item, composerTrackedLinks);
+
+    if (linkButtonAllowed) {
+      setComposerTrackedLinks((prev) => [...prev, { ...draft, button: true }]);
+      return;
+    }
+
+    setComposerTrackedLinks((prev) => [...prev, draft]);
+
+    /* O nome vai já: a lista de links só se atualiza no render seguinte. */
+    editorRef.current?.insertToken?.(
+      `link.${draft.key}`,
+      `Link: ${draft.label}`,
+    );
   }
 
   function updateTrackedLink(id, field, value) {
@@ -1000,13 +1127,15 @@ export default function BroadcastPage() {
               kind: "company",
               label: translation("Broadcast.composer.variableCompany"),
             },
-            ...normalizedTrackedLinks.map((l) => ({
-              key: `link.${l.key}`,
-              kind: "link",
-              label: `Link: ${l.label}`,
-            })),
+            ...normalizedTrackedLinks
+              .filter((l) => !(linkButtonAllowed && l.button))
+              .map((l) => ({
+                key: `link.${l.key}`,
+                kind: "link",
+                label: `Link: ${l.label}`,
+              })),
           ],
-    [isGroupAudience, normalizedTrackedLinks, translation],
+    [isGroupAudience, linkButtonAllowed, normalizedTrackedLinks, translation],
   );
 
   function insertToken(key) {
@@ -1032,6 +1161,52 @@ export default function BroadcastPage() {
     resetKey: `${channel}:${composeMode}:${chainMode}:${activeChainStepIndex}`,
   });
 
+  /* Links já usados noutros envios, carregados quando o painel abre. */
+  const trackedLinkLibrary = useTrackedLinkLibrary({
+    orgId: org?.id,
+    enabled: activeToolPanel === "links",
+  });
+
+  const activeBody = isOpenQuestionMode
+    ? openQuestion.body
+    : chainQuestionKind === "open"
+      ? activeChainStep.openQuestion?.body
+      : composerMessage;
+
+  /*
+   * Pré-visualização do link, com as regras do envio (planLinkMessages):
+   * o botão por baixo da mensagem, que aparece mesmo sem texto para se ver
+   * logo (o envio é que fica à espera do texto). Com imagem ou num quiz, a
+   * mensagem não leva o botão e o link segue num balão à parte. No Teams
+   * não há botões: avisa que o link vai no fim do texto.
+   */
+  const buttonCanGo = linkButtonAllowed && imageFiles.length === 0;
+  const buttonChoice = buttonCanGo
+    ? chooseButtonLink(activeBody, composerTrackedLinks)
+    : null;
+  const allBubbles = buttonLinkBubbles(composerTrackedLinks);
+
+  const linkPreview = {
+    button: buttonChoice
+      ? {
+          id: buttonChoice.link.button ? buttonChoice.link.id : null,
+          buttonText: buttonChoice.buttonText,
+        }
+      : null,
+    bubbles: isWhatsapp
+      ? allBubbles
+          .filter((bubble) => bubble.link !== buttonChoice?.link)
+          .map((bubble) => ({
+            id: bubble.link.id,
+            buttonText: bubble.buttonText,
+            text: bubble.text,
+          }))
+      : [],
+    inTextLabels: isWhatsapp
+      ? []
+      : allBubbles.map((bubble) => String(bubble.link.label).trim()),
+  };
+
   /*
    * O "+" e os anexos são os mesmos em todos os tipos de mensagem: os
    * ficheiros e os links rastreados pertencem ao composer (ou ao passo
@@ -1052,6 +1227,8 @@ export default function BroadcastPage() {
     onPickFromMedia: setMediaPickerKind,
     onAddLink: () => setActiveToolPanel("links"),
     suggest: textSuggestion,
+    linkPreview,
+    onRemoveLink: removeTrackedLink,
   };
 
   /* Num grupo não há links rastreados (#166): o "+" deixa de os oferecer. */
@@ -1068,6 +1245,7 @@ export default function BroadcastPage() {
         key: sanitizeTrackedKey(link.key),
         label: String(link.label || "").trim(),
         destinationUrl: String(link.destinationUrl || "").trim(),
+        ...buttonFieldsOf(link),
       }))
       .filter((link) => link.key && link.label && link.destinationUrl);
   }
@@ -1099,11 +1277,32 @@ export default function BroadcastPage() {
   function chainStepHasContent(step) {
     if (step.kind === "quiz") return isQuizValid(step.quiz);
     if (step.kind === "survey") return isSurveyValid(step.survey);
-    if (step.kind === "open") return !normalizeOpenQuestion(step.openQuestion).error;
+    if (step.kind === "open")
+      return !normalizeOpenQuestion(step.openQuestion).error;
+
+    const message = String(step.message || "");
+    const files = Array.isArray(step.files) ? step.files : [];
 
     return (
-      String(step.message || "").trim().length > 0 ||
-      (Array.isArray(step.files) && step.files.length > 0)
+      (message.trim().length > 0 || files.length > 0) &&
+      !needsTextBesideLinks(message, files, step.trackedLinks)
+    );
+  }
+
+  /*
+   * No WhatsApp o link vai num botão, e uma mensagem com botão precisa de
+   * texto: só links (no texto ou no botão), sem anexos, não se envia. No
+   * Teams o link aparece com o nome e fica bem sozinho; com um anexo, o
+   * link segue no texto.
+   */
+  function needsTextBesideLinks(message, files = [], links = []) {
+    if (!isWhatsapp || files.length > 0) return false;
+
+    const text = String(message || "");
+
+    return (
+      isOnlyTrackedLinks(text) ||
+      (!text.trim() && (links || []).some((link) => link.button))
     );
   }
 
@@ -1239,6 +1438,35 @@ export default function BroadcastPage() {
   const hasManualContent =
     composerMessage.trim().length > 0 || composerFiles.length > 0;
 
+  const messageNeedsText =
+    !isSurveyMode &&
+    !isOpenQuestionMode &&
+    !isQuizMode &&
+    !chainQuestionKind &&
+    needsTextBesideLinks(composerMessage, composerFiles, composerTrackedLinks);
+
+  /* Numa corrente, o aviso diz qual é o passo que só tem links. */
+  const chainStepNeedingText = chainMode
+    ? chainSteps.findIndex(
+        (step) =>
+          (step.kind || "message") === "message" &&
+          needsTextBesideLinks(
+            step.message,
+            step.files || [],
+            step.trackedLinks,
+          ),
+      )
+    : -1;
+
+  const composerWarning =
+    chainStepNeedingText >= 0
+      ? translation("Broadcast.composer.chainStepNeedsText", {
+          step: chainStepNeedingText + 1,
+        })
+      : messageNeedsText
+        ? translation("Broadcast.composer.linkNeedsText")
+        : null;
+
   const quizValid = isQuizValid(quiz);
   const surveyValid = isSurveyValid(survey);
   const openQuestionValid = !normalizeOpenQuestion(openQuestion).error;
@@ -1253,7 +1481,7 @@ export default function BroadcastPage() {
           ? quizValid && trackedLinksValid
           : chainMode
             ? chainValid
-            : trackedLinksValid && hasManualContent);
+            : trackedLinksValid && hasManualContent && !messageNeedsText);
 
   const scheduleInvalid =
     deliveryMode === "schedule" &&
@@ -2292,6 +2520,9 @@ export default function BroadcastPage() {
         addTrackedLink={addTrackedLink}
         updateTrackedLink={updateTrackedLink}
         removeTrackedLink={removeTrackedLink}
+        library={trackedLinkLibrary}
+        onUseLibraryLink={addTrackedLinkFromLibrary}
+        bubbleLinkIds={linkPreview.bubbles.map((bubble) => bubble.id)}
         translation={translation}
       />
     ) : null;
@@ -2392,6 +2623,7 @@ export default function BroadcastPage() {
         title={translation("Broadcast.message")}
         onBack={() => setComposeMode(null)}
         hint={chainQuestionKind ? null : translation("Broadcast.composer.hint")}
+        warning={composerWarning}
         activeToolPanel={activeToolPanel}
         toggleToolPanel={toggleToolPanel}
         scheduleButtonLabel={scheduleButtonLabel}

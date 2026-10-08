@@ -131,14 +131,18 @@ const TokenTextEditor = forwardRef(function TokenTextEditor(
     onChange(serializeEditor(root));
   };
 
-  const insertToken = (key) => {
+  /*
+   * `labelOverride` serve para um token que ainda não está em `tokenLabel`:
+   * um link acabado de juntar só entra na lista no render seguinte.
+   */
+  const insertToken = (key, labelOverride = null) => {
     const root = rootRef.current;
     if (!root || disabled) return;
 
     const doc = root.ownerDocument;
     const win = doc.defaultView;
     const token = `{{${key}}}`;
-    const label = tokenLabel(key) || token;
+    const label = labelOverride || tokenLabel(key) || token;
     const chip = makeChip(doc, { token, label });
 
     const selection = win.getSelection?.();
