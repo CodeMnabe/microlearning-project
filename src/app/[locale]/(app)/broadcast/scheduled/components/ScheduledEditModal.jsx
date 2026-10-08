@@ -6,7 +6,11 @@ import { Users, X } from "lucide-react";
 import styles from "../scheduled.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import RecipientPicker from "./RecipientPicker";
-import { toDateInputValue, toTimeParts } from "../helpers/scheduled.helpers";
+import {
+  getScheduledGroups,
+  toDateInputValue,
+  toTimeParts,
+} from "../helpers/scheduled.helpers";
 import {
   cleanText,
   getRecipientForChannel,
@@ -142,6 +146,9 @@ export default function ScheduledEditModal({
   saving,
 }) {
   const [recipientPickerOpen, setRecipientPickerOpen] = useState(false);
+
+  /* Mensagem para grupos do Teams (#166): mostra os grupos, sem editar. */
+  const groupItems = getScheduledGroups(item);
 
   const [editForm, setEditForm] = useState({
     message: "",
@@ -284,77 +291,105 @@ export default function ScheduledEditModal({
             />
           </label>
 
-          <div className={styles.field}>
-            <div className={styles.sectionRow}>
-              <div>
-                <span>{translation("EditModal.recipients")}</span>
-                <p className={styles.sectionHint}>
-                  WhatsApp uses phone numbers first. BSUID/Bird IDs are only
-                  fallbacks.
-                </p>
-              </div>
+          {groupItems ? (
+            <div className={styles.field}>
+              <span>{translation("EditModal.groups")}</span>
 
-              <button
-                type="button"
-                className={styles.secondaryInlineButton}
-                onClick={() => setRecipientPickerOpen(true)}
-              >
-                <Users size={16} />
-                <span>{translation("EditModal.manageRecipients")}</span>
-              </button>
-            </div>
-
-            <div className={styles.recipientSummaryBox}>
-              {currentRecipientEntries.length ? (
+              <div className={styles.recipientSummaryBox}>
                 <div className={styles.recipientPreviewList}>
-                  {currentRecipientEntries.map((entry) => (
+                  {groupItems.map((group) => (
                     <div
-                      key={entry.key}
-                      className={`${styles.recipientPreviewItem} ${
-                        entry.unresolved ? styles.recipientPreviewWarning : ""
-                      }`}
+                      key={group.id}
+                      className={styles.recipientPreviewItem}
                     >
                       <div className={styles.recipientAvatar}>
-                        {entry.initials}
+                        {String(group.name || "G").trim()[0].toUpperCase()}
                       </div>
-
                       <div className={styles.recipientPreviewInfo}>
                         <div className={styles.recipientNameLine}>
-                          <strong>{entry.name}</strong>
-                          <span
-                            className={`${styles.recipientTypeBadge} ${
-                              entry.kind === "phone"
-                                ? styles.recipientTypePhone
-                                : entry.kind === "bsuid" ||
-                                    entry.kind === "bird"
-                                  ? styles.recipientTypeFallback
-                                  : ""
-                            }`}
-                          >
-                            {kindLabel(entry.kind)}
-                          </span>
+                          <strong>
+                            {group.name || translation("EditModal.unnamedGroup")}
+                          </strong>
                         </div>
-
-                        <span>{entry.secondary}</span>
                       </div>
-
-                      <button
-                        type="button"
-                        className={styles.recipientPreviewRemove}
-                        onClick={() => removeRecipient(entry.key)}
-                      >
-                        {translation("EditModal.remove")}
-                      </button>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className={styles.recipientEmptyText}>
-                  {translation("EditModal.noRecipients")}
-                </p>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={styles.field}>
+              <div className={styles.sectionRow}>
+                <div>
+                  <span>{translation("EditModal.recipients")}</span>
+                  <p className={styles.sectionHint}>
+                    WhatsApp uses phone numbers first. BSUID/Bird IDs are only
+                    fallbacks.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.secondaryInlineButton}
+                  onClick={() => setRecipientPickerOpen(true)}
+                >
+                  <Users size={16} />
+                  <span>{translation("EditModal.manageRecipients")}</span>
+                </button>
+              </div>
+
+              <div className={styles.recipientSummaryBox}>
+                {currentRecipientEntries.length ? (
+                  <div className={styles.recipientPreviewList}>
+                    {currentRecipientEntries.map((entry) => (
+                      <div
+                        key={entry.key}
+                        className={`${styles.recipientPreviewItem} ${
+                          entry.unresolved ? styles.recipientPreviewWarning : ""
+                        }`}
+                      >
+                        <div className={styles.recipientAvatar}>
+                          {entry.initials}
+                        </div>
+
+                        <div className={styles.recipientPreviewInfo}>
+                          <div className={styles.recipientNameLine}>
+                            <strong>{entry.name}</strong>
+                            <span
+                              className={`${styles.recipientTypeBadge} ${
+                                entry.kind === "phone"
+                                  ? styles.recipientTypePhone
+                                  : entry.kind === "bsuid" ||
+                                      entry.kind === "bird"
+                                    ? styles.recipientTypeFallback
+                                    : ""
+                              }`}
+                            >
+                              {kindLabel(entry.kind)}
+                            </span>
+                          </div>
+
+                          <span>{entry.secondary}</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={styles.recipientPreviewRemove}
+                          onClick={() => removeRecipient(entry.key)}
+                        >
+                          {translation("EditModal.remove")}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.recipientEmptyText}>
+                    {translation("EditModal.noRecipients")}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className={styles.field}>
             <span>{translation("EditModal.files")}</span>

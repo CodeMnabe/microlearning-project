@@ -529,6 +529,98 @@ export async function requireOrgForAutomationRule(id) {
 }
 
 /* =========================================================
+   TEAMS GROUP
+   ========================================================= */
+
+const TEAMS_GROUP_COLUMNS =
+  "id, organization_id, assistant_id, name, conversation_id, conversation_type, service_url, tenant_id, team_id, channel_id, is_active, created_at, last_seen_at";
+
+/* Grupo do Teams onde o bot está instalado (#165). */
+export async function requireOrgForTeamsGroup(groupId) {
+  const parsedGroupId = parsePositiveInt(groupId);
+
+  if (!parsedGroupId) {
+    return {
+      error: jsonError("Invalid group id", 400),
+    };
+  }
+
+  const auth = await requireUser();
+
+  if (auth.error) {
+    return auth;
+  }
+
+  const { data: group, error } = await auth.admin
+    .from("teams_installation")
+    .select(TEAMS_GROUP_COLUMNS)
+    .eq("id", parsedGroupId)
+    .eq("scope", "group")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Auth] teams group lookup failed", error);
+
+    return {
+      error: jsonError("Authorization check failed", 500),
+    };
+  }
+
+  if (!group) {
+    return {
+      error: jsonError("Group not found", 404),
+    };
+  }
+
+  const orgAuth = await requireOwnedOrg(group.organization_id, auth);
+
+  if (orgAuth.error) {
+    return orgAuth;
+  }
+
+  return {
+    ...orgAuth,
+    group,
+    groupId: parsedGroupId,
+  };
+}
+
+/**
+ * Grupos ativos da organização com estes ids (#166). Recusa a lista inteira
+ * se algum não for da organização ou já não tiver o bot.
+ */
+export async function assertTeamsGroupsBelongToOrg(admin, orgId, groupIds) {
+  const uniqueIds = [
+    ...new Set((groupIds || []).map(Number).filter((id) => id > 0)),
+  ];
+
+  if (!uniqueIds.length) {
+    throwHttpError("No groups selected", 400);
+  }
+
+  const { data, error } = await admin
+    .from("teams_installation")
+    .select(TEAMS_GROUP_COLUMNS)
+    .eq("organization_id", orgId)
+    .eq("scope", "group")
+    .eq("is_active", true)
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw error;
+  }
+
+  if ((data || []).length !== uniqueIds.length) {
+    throwHttpError(
+      "One or more groups do not belong to this organization",
+      403,
+    );
+  }
+
+  return data;
+}
+
+/* =========================================================
    ORGANIZATION ASSERTIONS
    ========================================================= */
 

@@ -8,6 +8,7 @@ import styles from "./navbar.module.css";
 import {
   Home,
   Users,
+  UsersRound,
   Bot,
   MessageSquare,
   Settings,
@@ -146,6 +147,17 @@ export default function Navbar() {
               >
                 <Users aria-hidden className={styles.icon} />
                 <span>{translation("Nav.users")}</span>
+              </Link>
+
+              <Link
+                href="/teams-groups"
+                onClick={onNavClick("/teams-groups")}
+                className={`${styles.navItem} ${
+                  isActive("/teams-groups") ? styles.active : ""
+                }`}
+              >
+                <UsersRound aria-hidden className={styles.icon} />
+                <span>{translation("Nav.teamsGroups")}</span>
               </Link>
 
               <Link

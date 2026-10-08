@@ -123,3 +123,20 @@ export function canEditItem(item) {
 export function canDeleteItem(item) {
   return !["sending", "sent"].includes(item.status);
 }
+
+/* Grupos do Teams de uma mensagem agendada para grupos (#166), ou null. */
+export function getScheduledGroups(item) {
+  const payload = item?.payload || {};
+  const ids = Array.isArray(payload.groupIds) ? payload.groupIds : [];
+
+  if (!ids.length) return null;
+
+  const names = new Map(
+    (Array.isArray(payload.groups) ? payload.groups : []).map((group) => [
+      group.id,
+      group.name,
+    ]),
+  );
+
+  return ids.map((id) => ({ id, name: names.get(id) || null }));
+}

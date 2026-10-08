@@ -878,6 +878,7 @@
   "Nav": {
     "home": "Home",
     "users": "Users",
+    "teamsGroups": "Teams groups",
     "assistants": "Assistants",
     "automations": "Automations",
     "broadcast": "Messages",
@@ -1026,6 +1027,65 @@
       "userUpdated": {
         "title": "User updated",
         "message": "The user changes were saved successfully."
+      }
+    }
+  },
+
+  "TeamsGroups": {
+    "title": "Teams groups",
+    "subtitle": "Teams group chats and teams where MyDigitalBot was added.",
+    "totalGroups": "Groups",
+    "activeGroups": "Active",
+    "search": "Search by name",
+    "loading": "Loading groups...",
+    "empty": "There are no groups yet. Add MyDigitalBot to a group chat or a team in Teams for it to show up here.",
+    "noMatches": "No groups match your search.",
+    "unnamed": "Unnamed group",
+    "never": "No messages",
+    "type": {
+      "groupChat": "Group chat",
+      "channel": "Team channel"
+    },
+    "status": {
+      "active": "Active",
+      "removed": "Bot removed"
+    },
+    "table": {
+      "group": "Group",
+      "assistant": "Assistant",
+      "lastMessage": "Last message",
+      "status": "Status"
+    },
+    "detail": {
+      "back": "Teams groups",
+      "settings": "Group settings",
+      "name": "Name",
+      "namePlaceholder": "Group name in the platform",
+      "nameHint": "Teams group chats do not always have a name. You can give it one here.",
+      "assistant": "Assistant that answers in the group",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "members": "Members",
+      "membersLoading": "Loading members...",
+      "membersFailed": "The members could not be read from Teams.",
+      "membersRemoved": "The bot is no longer in this group, so the members cannot be read.",
+      "noMembers": "No members.",
+      "colleague": "Colleague",
+      "conversation": "Conversation",
+      "conversationHint": "Latest messages exchanged with the bot in this group.",
+      "noMessages": "There are no messages in this group yet.",
+      "platform": "Message sent from the platform",
+      "unknownUser": "Group member",
+      "removedNotice": "MyDigitalBot was removed from this group in Teams. Old messages stay here, but messages can no longer be sent and members can no longer be read."
+    },
+    "alerts": {
+      "loadFailed": {
+        "title": "Loading error",
+        "message": "The groups could not be loaded."
+      },
+      "saveFailed": {
+        "title": "Save error",
+        "message": "The group changes could not be saved."
       }
     }
   },
@@ -1454,6 +1514,41 @@
       "use": "Use",
       "failed": "The suggestion could not be generated. Try again."
     },
+    "groups": {
+      "tabUsers": "Colleagues",
+      "tabGroups": "Teams groups",
+      "onlyBlank": "Groups only receive blank messages, without a chain.",
+      "search": "Search group...",
+      "empty": "There are no active groups yet. Add MyDigitalBot to a group chat or a team in Teams.",
+      "unnamed": "Unnamed group",
+      "groupFallback": "Group",
+      "chooseGroups": "Choose at least one group.",
+      "noTrackedLinks": {
+        "title": "Tracked links",
+        "message": "Tracked links are per person and cannot go to groups. Remove them before sending."
+      },
+      "noNameVariable": {
+        "title": "Name variable",
+        "message": "The Name variable has no value in a group. Remove it before sending."
+      },
+      "confirmSend": {
+        "title": "Send to groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}}."
+      },
+      "confirmSchedule": {
+        "title": "Schedule for groups?",
+        "message": "The message will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      },
+      "sent": {
+        "title": "Message sent",
+        "titleWithIssues": "Message sent with issues",
+        "message": "Posted in {ok} of {total} groups."
+      },
+      "scheduled": {
+        "title": "Message scheduled",
+        "message": "It will be posted in {count, plural, one {# Teams group} other {# Teams groups}} on {date}."
+      }
+    },
     "composer": {
       "openQuestionHint": "Write the question in the bubble and set the expected answer below. Use + for images, links and variables.",
       "openQuestionBody": "Open question",
@@ -1649,10 +1744,13 @@
       "delete": "Delete"
     },
     "ViewModal": {
+      "groups": "Teams groups",
       "title": "Message details",
       "createdAt": "Created at"
     },
     "EditModal": {
+      "groups": "Teams groups",
+      "unnamedGroup": "Unnamed group",
       "title": "Edit scheduled message",
       "message": "Message",
       "recipients": "Recipients",
@@ -2872,6 +2970,7 @@
     },
     "Areas": {
       "all": "All areas",
+      "teams_group": "Teams groups",
       "user": "Users",
       "tag": "Tags",
       "assistant": "Assistants",
@@ -2918,6 +3017,7 @@
       "automation_triggered": "Automation triggered",
       "broadcast_scheduled_sent": "Scheduled message sent",
       "message_received": "Message received",
+      "teams_group_updated": "Teams group edited",
       "unknown": "Unknown action"
     },
     "Table": {
@@ -2951,6 +3051,7 @@
         "assistant": "Assistant",
         "fields": "Changed fields",
         "recipients": "Recipients",
+        "groups": "Teams groups",
         "result": "Result",
         "count": "Users",
         "failedCount": "Failed",
