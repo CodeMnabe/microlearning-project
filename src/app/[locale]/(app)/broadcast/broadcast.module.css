@@ -1683,3 +1683,51 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ---------- Envio em curso ---------- */
+
+.primaryBtnWithIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sendingSpinner {
+  flex: none;
+  animation: sendingSpin 0.8s linear infinite;
+}
+
+@keyframes sendingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Faixa por cima da mensagem enquanto o servidor não responde. */
+.sendingBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.sendingBannerTitle {
+  font-weight: 600;
+}
+
+.sendingBannerHint {
+  font-size: 13px;
+  color: #1e40af;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sendingSpinner {
+    animation: none;
+  }
+}
