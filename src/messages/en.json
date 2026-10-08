@@ -1456,6 +1456,34 @@
     "addLink": "Add Link",
     "linkButtonTag": "Button",
     "linkLimitHint": "Each message takes a single link. To pick another, remove the current one.",
+    "format": {
+      "toolbar": "Formatting",
+      "bold": "Bold (Ctrl+B)",
+      "italic": "Italic (Ctrl+I)",
+      "strike": "Strikethrough",
+      "mono": "Monospace",
+      "lists": "Lists",
+      "bullet": "Bulleted list",
+      "numbered": "Numbered list",
+      "task": "Task list",
+      "quote": "Quote"
+    },
+    "emoji": {
+      "open": "Emojis",
+      "search": "Search emoji",
+      "clear": "Clear",
+      "loading": "Loading emojis…",
+      "categories": {
+        "suggested": "Recently used",
+        "smileys_people": "Smileys and people",
+        "animals_nature": "Animals and nature",
+        "food_drink": "Food and drink",
+        "travel_places": "Travel and places",
+        "activities": "Activities",
+        "objects": "Objects",
+        "symbols": "Symbols"
+      }
+    },
     "linkBubbleTag": "Separate bubble",
     "linkBubbleText": "Bubble text (optional)",
     "linkLibrary": {

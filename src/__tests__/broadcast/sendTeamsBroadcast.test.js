@@ -112,6 +112,18 @@ describe("sendTeamsBroadcast: link marcado como botão", () => {
     );
   });
 
+  it("converte a formatação do WhatsApp para o Markdown do Teams", async () => {
+    mocks.resolveTrackedLinks.mockResolvedValue([]);
+
+    await sendTeamsBroadcast({
+      orgId: 1,
+      userIds: [42],
+      message: "*Olá* _tu_ ~não~ ```código```",
+    });
+
+    expect(sentText()).toBe("**Olá** <i>tu</i> <s>não</s> `código`");
+  });
+
   it("um link no texto fica onde está", async () => {
     mocks.resolveTrackedLinks.mockResolvedValue([GUIA]);
 

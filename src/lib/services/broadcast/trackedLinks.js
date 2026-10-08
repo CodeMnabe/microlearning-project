@@ -3,6 +3,7 @@ import { getTrackedLinkLibraryByOrg } from "@/lib/repos/trackedLinkLibrary.repo"
 import crypto from "crypto";
 import { isAllowedDestinationUrl } from "@/lib/security/destinationUrl";
 import { withButtonLinksInText } from "@/lib/whatsapp/linkButton";
+import { toTeamsMarkdown } from "@/lib/whatsapp/textFormat";
 
 function makeToken() {
   return crypto.randomBytes(18).toString("base64url");
@@ -23,14 +24,9 @@ function getAppBaseUrl() {
   return String(base).replace(/\/$/, "");
 }
 
-/*
- * Troca cada {{link.chave}} pelo URL rastreado. Um link marcado como botão
- * (`button: true`) que não está no texto vai antes para o fim, com o nome
- * em Markdown: é o caso do Teams, que não tem os botões do WhatsApp. O
- * WhatsApp trata o botão à parte e passa os links sem essa marca.
- */
-export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
-  let out = withButtonLinksInText(message, resolvedLinks, { markdown: true });
+/* Troca cada {{link.chave}} pelo URL rastreado, e mais nada (WhatsApp). */
+export function replaceTrackedLinksInText(message = "", resolvedLinks = []) {
+  let out = String(message || "");
 
   for (const link of resolvedLinks) {
     const placeholder = `{{link.${link.key}}}`;
@@ -38,6 +34,24 @@ export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
   }
 
   return out;
+}
+
+/*
+ * Texto para o Teams, que usa Markdown e não tem os botões do WhatsApp:
+ * - a formatação do WhatsApp passa a Markdown (`*negrito*` seria itálico);
+ * - um link marcado como botão que não está no texto vai para o fim, com o
+ *   nome;
+ * - os links são trocados pelos URLs rastreados.
+ * O WhatsApp usa replaceTrackedLinksInText.
+ */
+export function replaceTrackedPlaceholders(message = "", resolvedLinks = []) {
+  const markdown = withButtonLinksInText(
+    toTeamsMarkdown(message),
+    resolvedLinks,
+    { markdown: true },
+  );
+
+  return replaceTrackedLinksInText(markdown, resolvedLinks);
 }
 
 export async function createTrackedLinkForRecipient({
