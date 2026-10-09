@@ -16,6 +16,7 @@ import {
   replaceTrackedPlaceholders,
   resolveTrackedLinksForRecipient,
 } from "./trackedLinks";
+import { withButtonLinksInText } from "@/lib/whatsapp/linkButton";
 
 export async function sendTeamsBroadcast(input = {}) {
   const {
