@@ -52,7 +52,6 @@ vi.mock("@/lib/whatsapp/E164", () => ({
 }));
 
 import { sendWhatsappBroadcast } from "@/lib/services/broadcast/sendWhatsappBroadcast";
-import { DEFAULT_OPENING_BODY } from "@/lib/whatsapp/openingTemplate";
 
 const ORG = {
   id: 1,
@@ -190,7 +189,7 @@ describe("sendWhatsappBroadcast", () => {
     expect(mocks.createPendingOutreach).not.toHaveBeenCalled();
   });
 
-  it("sends the opening template with the organization body and queues the message when the window is closed", async () => {
+  it("sends the opening template with name and company and queues the message when the window is closed", async () => {
     const result = await sendWhatsappBroadcast({
       orgId: 1,
       message: "Dica de hoje",
@@ -209,7 +208,6 @@ describe("sendWhatsappBroadcast", () => {
     expect(templateParams(body)).toEqual({
       nome: "Pedro",
       empresa: "DIGIK",
-      mensagem: "Corpo guardado na organização",
     });
 
     expect(mocks.createPendingOutreach).toHaveBeenCalledTimes(1);
@@ -221,29 +219,19 @@ describe("sendWhatsappBroadcast", () => {
     });
   });
 
-  it("uses the default body when the organization has none", async () => {
-    mocks.org = { ...ORG, whatsapp_opening_body: null };
-
+  /*
+   * O template utility não tem corpo: nem o guardado na organização nem o
+   * escolhido para um envio chegam ao Bird.
+   */
+  it("never sends a body in the opening template, even one chosen for the send", async () => {
     await sendWhatsappBroadcast({
       orgId: 1,
       message: "Dica",
+      openingBody: "Corpo só para este envio",
       recipients: [{ userId: 42 }],
     });
 
-    expect(templateParams(birdCall().body).mensagem).toBe(DEFAULT_OPENING_BODY);
-  });
-
-  it("lets a send override the body for that send only", async () => {
-    await sendWhatsappBroadcast({
-      orgId: 1,
-      message: "Dica",
-      openingBody: "  Corpo\n\nsó para este envio ",
-      recipients: [{ userId: 42 }],
-    });
-
-    expect(templateParams(birdCall().body).mensagem).toBe(
-      "Corpo só para este envio",
-    );
+    expect(templateParams(birdCall().body)).not.toHaveProperty("mensagem");
   });
 
   it("sends only the opening template when openingOnly is set, even inside the window", async () => {

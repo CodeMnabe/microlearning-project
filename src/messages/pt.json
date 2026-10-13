@@ -1204,7 +1204,12 @@
   },
   "OpeningMessage": {
     "title": "Mensagem de abertura WhatsApp",
-    "subtitle": "Enviada automaticamente quando um contacto está fora da janela de 24 horas. O início e o fim são fixos e aprovados pela Meta; só o corpo pode ser alterado.",
+    "subtitle": "Mensagem de abertura predefinida para o WhatsApp. O nome do destinatário e o nome da organização são preenchidos automaticamente.",
+    "previewTitle": "Pré-visualização do modelo",
+    "fixedNotice": "O texto corresponde ao modelo aprovado e é fixo. Apenas o nome do destinatário e da organização variam em cada envio.",
+    "recipientName": "Nome do destinatário",
+    "organizationName": "Organização",
+    "sampleCompany": "Nome da organização",
     "bodyLabel": "Corpo da mensagem",
     "bodyPlaceholder": "Escreve o corpo da mensagem...",
     "sampleName": "Maria",
