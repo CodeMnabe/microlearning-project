@@ -1196,7 +1196,12 @@
   },
   "OpeningMessage": {
     "title": "WhatsApp opening message",
-    "subtitle": "Sent automatically when a contact is outside the 24-hour window. The start and the end are fixed and approved by Meta; only the body can be changed.",
+    "subtitle": "Predefined WhatsApp opening message. The recipient's name and the organization's name are filled in automatically.",
+    "previewTitle": "Template preview",
+    "fixedNotice": "The text matches the approved template and is fixed. Only the recipient's name and the organization change for each send.",
+    "recipientName": "Recipient's name",
+    "organizationName": "Organization",
+    "sampleCompany": "Organization name",
     "bodyLabel": "Message body",
     "bodyPlaceholder": "Write the message body...",
     "sampleName": "Maria",
