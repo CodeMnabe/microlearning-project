@@ -1,10 +1,10 @@
 /**
  * Template de abertura da janela de 24h.
  *
- * Existe um único template WhatsApp, aprovado uma vez no Bird e partilhado
- * por todas as organizações. Serve apenas para reabrir a conversa com quem
- * está fora da janela. O início e o fim são fixos; só o corpo (variável
- * "mensagem") é personalizável por organização.
+ * O template DigikBot tem texto fixo e recebe apenas "nome" e "empresa".
+ * A pré-visualização nas Definições reproduz o texto publicado na Bird.
+ * Os helpers do corpo antigo mantêm-se para compatibilidade com as
+ * configurações e os pedidos de broadcast já guardados.
  *
  * Este ficheiro não lê variáveis de ambiente fora de getOpeningTemplateConfig,
  * por isso pode ser importado tanto no servidor como no browser.
@@ -14,6 +14,11 @@ export const OPENING_TEMPLATE_VARIABLES = {
   name: "nome",
   company: "empresa",
   body: "mensagem",
+};
+
+export const OPENING_TEMPLATE_PREVIEW = {
+  text: "Olá, {{nome}}. O teu acesso ao assistente MyDigitalBot, disponibilizado por {{empresa}}, foi ativado. Para o abrir, toca no botão abaixo.",
+  button: "Aceder ao Assistente",
 };
 
 export const OPENING_TEMPLATE_INTRO =
@@ -60,9 +65,16 @@ function fill(text, values) {
   );
 }
 
+export function renderOpeningTemplatePreview({ name, orgName } = {}) {
+  return fill(OPENING_TEMPLATE_PREVIEW.text, {
+    [OPENING_TEMPLATE_VARIABLES.name]: name || "",
+    [OPENING_TEMPLATE_VARIABLES.company]: orgName || "",
+  });
+}
+
 /**
- * Texto completo da mensagem, tal como o contacto a vê. Usado nas
- * pré-visualizações.
+ * Renderização do editor antigo, mantida para compatibilidade.
+ * O template atual usa renderOpeningTemplatePreview nas Definições.
  */
 export function renderOpeningMessage({ name, orgName, body } = {}) {
   const values = {
@@ -81,11 +93,10 @@ export function renderOpeningMessage({ name, orgName, body } = {}) {
  * Parâmetros do template no formato "chave=valor" esperado pelo envio ao
  * Bird, pela ordem das variáveis do template.
  */
-export function buildOpeningTemplateParams({ userName, orgName, body } = {}) {
+export function buildOpeningTemplateParams({ userName, orgName } = {}) {
   return [
     `${OPENING_TEMPLATE_VARIABLES.name}=${userName || ""}`,
     `${OPENING_TEMPLATE_VARIABLES.company}=${orgName || ""}`,
-    `${OPENING_TEMPLATE_VARIABLES.body}=${resolveOpeningBody(body)}`,
   ];
 }
 
