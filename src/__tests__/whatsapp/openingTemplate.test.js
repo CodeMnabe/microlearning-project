@@ -56,24 +56,24 @@ describe("renderOpeningMessage", () => {
 });
 
 describe("buildOpeningTemplateParams", () => {
-  it("returns the three template variables in order", () => {
+  it("returns only the name and company variables, in order", () => {
     expect(
-      buildOpeningTemplateParams({
-        userName: "Pedro",
-        orgName: "DIGIK",
-        body: "Corpo",
-      }),
-    ).toEqual(["nome=Pedro", "empresa=DIGIK", "mensagem=Corpo"]);
+      buildOpeningTemplateParams({ userName: "Pedro", orgName: "DIGIK" }),
+    ).toEqual(["nome=Pedro", "empresa=DIGIK"]);
   });
 
-  it("never sends an empty body", () => {
+  /*
+   * O template utility não tem corpo variável. Mandar uma variável que o
+   * template não tem pode fazer o Bird recusar o envio.
+   */
+  it("never sends a body, even when one is given", () => {
     const params = buildOpeningTemplateParams({
       userName: "Pedro",
       orgName: "DIGIK",
-      body: "",
+      body: "Corpo",
     });
 
-    expect(params[2]).toBe(`mensagem=${DEFAULT_OPENING_BODY}`);
+    expect(params).toEqual(["nome=Pedro", "empresa=DIGIK"]);
   });
 });
 

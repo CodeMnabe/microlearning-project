@@ -81,11 +81,10 @@ export function renderOpeningMessage({ name, orgName, body } = {}) {
  * Parâmetros do template no formato "chave=valor" esperado pelo envio ao
  * Bird, pela ordem das variáveis do template.
  */
-export function buildOpeningTemplateParams({ userName, orgName, body } = {}) {
+export function buildOpeningTemplateParams({ userName, orgName } = {}) {
   return [
     `${OPENING_TEMPLATE_VARIABLES.name}=${userName || ""}`,
     `${OPENING_TEMPLATE_VARIABLES.company}=${orgName || ""}`,
-    `${OPENING_TEMPLATE_VARIABLES.body}=${resolveOpeningBody(body)}`,
   ];
 }
 
