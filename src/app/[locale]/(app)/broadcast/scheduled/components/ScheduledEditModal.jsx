@@ -424,25 +424,14 @@ export default function ScheduledEditModal({
           </div>
 
           <div className={styles.formGrid}>
+            {/* O canal define o formato do payload, por isso não se muda. */}
             <label className={styles.field}>
               <span>{translation("EditModal.channel")}</span>
-              <PillSelect
-                value={editForm.channel}
-                options={[
-                  { value: "teams", label: translation("Channels.teams") },
-                  {
-                    value: "whatsapp",
-                    label: translation("Channels.whatsapp"),
-                  },
-                ]}
-                onChange={(newValue) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    channel: newValue,
-                    recipients: [],
-                  }))
-                }
-                className={styles.nativeSelect}
+              <input
+                type="text"
+                value={translation(`Channels.${editForm.channel}`)}
+                className={styles.input}
+                disabled
               />
             </label>
 
@@ -454,10 +443,6 @@ export default function ScheduledEditModal({
                   {
                     value: "scheduled",
                     label: translation("Statuses.scheduled"),
-                  },
-                  {
-                    value: "failed",
-                    label: translation("Statuses.failed"),
                   },
                   {
                     value: "cancelled",

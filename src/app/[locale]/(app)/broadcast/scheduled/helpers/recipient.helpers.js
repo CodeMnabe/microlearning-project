@@ -74,10 +74,11 @@ export function getRecipientForChannel(user, channel) {
   const normalized = normalizeUser(user);
 
   if (channel === "teams") {
+    /* O servidor só aceita o id do utilizador, não os ids do Teams. */
     const userId =
+      normalized.id ||
       normalized.teamsFromId ||
       normalized.teamsAadObjectId ||
-      normalized.id ||
       "";
 
     if (!userId) return null;

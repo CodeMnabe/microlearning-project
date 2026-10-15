@@ -116,8 +116,9 @@ export function normalizeBroadcast(row) {
   };
 }
 
+/* O servidor só deixa alterar mensagens que ainda estão na fila. */
 export function canEditItem(item) {
-  return !["sending", "sent"].includes(item.status);
+  return item.status === "scheduled";
 }
 
 export function canDeleteItem(item) {

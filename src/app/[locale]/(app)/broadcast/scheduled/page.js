@@ -509,19 +509,32 @@ export default function ScheduledPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          /* O servidor valida o payload e recalcula o número de destinatários. */
           body: JSON.stringify({
-            channel: formData.channel,
             scheduled_for: scheduledIso,
             timezone: formData.timezone.trim() || "Europe/Lisbon",
             status:
               formData.status === "scheduled" ? "queued" : formData.status,
             payload: nextPayload,
-            recipient_count: groupItems ? groupItems.length : recipients.length,
           }),
         },
       );
 
       const result = await response.json();
+
+      /* Entretanto a mensagem foi enviada (ou está a ser): já não se edita. */
+      if (response.status === 409) {
+        closeEditModal();
+        loadItems();
+
+        await showAlert({
+          title: t("Alerts.saveConflict.title"),
+          message: t("Alerts.saveConflict.message"),
+          tone: "warning",
+        });
+
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(

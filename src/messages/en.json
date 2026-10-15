@@ -1873,6 +1873,10 @@
           "title": "Failed to save changes",
           "message": "The scheduled message changes could not be saved."
         },
+        "saveConflict": {
+          "title": "Message already sending",
+          "message": "This message is no longer scheduled (it was already sent or is being sent), so it cannot be changed."
+        },
         "deleteSuccess": {
           "title": "Message deleted",
           "message": "The scheduled message was deleted successfully."
@@ -3445,6 +3449,10 @@
       "saveError": {
         "title": "Failed to save changes",
         "message": "The scheduled message changes could not be saved."
+      },
+      "saveConflict": {
+        "title": "Message already sending",
+        "message": "This message is no longer scheduled (it was already sent or is being sent), so it cannot be changed."
       },
       "deleteSuccess": {
         "title": "Message deleted",

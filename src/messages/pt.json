@@ -1881,6 +1881,10 @@
           "title": "Erro ao guardar alterações",
           "message": "Não foi possível guardar as alterações à mensagem agendada."
         },
+        "saveConflict": {
+          "title": "Mensagem já em envio",
+          "message": "Esta mensagem já não está agendada (já foi enviada ou está a ser enviada), por isso não pode ser alterada."
+        },
         "deleteSuccess": {
           "title": "Mensagem eliminada",
           "message": "A mensagem agendada foi eliminada com sucesso."
@@ -3453,6 +3457,10 @@
       "saveError": {
         "title": "Erro ao guardar alterações",
         "message": "Não foi possível guardar as alterações à mensagem agendada."
+      },
+      "saveConflict": {
+        "title": "Mensagem já em envio",
+        "message": "Esta mensagem já não está agendada (já foi enviada ou está a ser enviada), por isso não pode ser alterada."
       },
       "deleteSuccess": {
         "title": "Mensagem eliminada",
