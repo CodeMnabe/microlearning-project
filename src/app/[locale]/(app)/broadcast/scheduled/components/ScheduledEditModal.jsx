@@ -6,7 +6,9 @@ import { Users, X } from "lucide-react";
 import styles from "../scheduled.module.css";
 import PillSelect from "@/app/components/PillSelect/PillSelect";
 import RecipientPicker from "./RecipientPicker";
+import QuestionFields from "./QuestionFields";
 import {
+  getPayloadQuestion,
   getScheduledGroups,
   toDateInputValue,
   toTimeParts,
@@ -152,6 +154,7 @@ export default function ScheduledEditModal({
 
   const [editForm, setEditForm] = useState({
     message: "",
+    question: null,
     channel: "teams",
     date: "",
     hour: "12",
@@ -178,8 +181,12 @@ export default function ScheduledEditModal({
     const recipients = uniqueRecipients(rawRecipients, channel);
     const files = Array.isArray(payload.files) ? payload.files : [];
 
+    /* Nas perguntas a mensagem é vazia: o texto está em payload.question. */
+    const question = getPayloadQuestion(payload);
+
     setEditForm({
-      message: item.message ?? "",
+      message: question ? "" : (item.message ?? ""),
+      question: question ? JSON.parse(JSON.stringify(question)) : null,
       channel,
       date: toDateInputValue(item.scheduledFor),
       hour: timeParts.hour,
@@ -276,20 +283,30 @@ export default function ScheduledEditModal({
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          <label className={styles.field}>
-            <span>{translation("EditModal.message")}</span>
-            <textarea
-              value={editForm.message}
-              onChange={(event) =>
-                setEditForm((prev) => ({
-                  ...prev,
-                  message: event.target.value,
-                }))
+          {editForm.question ? (
+            <QuestionFields
+              question={editForm.question}
+              onChange={(question) =>
+                setEditForm((prev) => ({ ...prev, question }))
               }
-              className={styles.textarea}
-              rows={7}
+              translation={translation}
             />
-          </label>
+          ) : (
+            <label className={styles.field}>
+              <span>{translation("EditModal.message")}</span>
+              <textarea
+                value={editForm.message}
+                onChange={(event) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    message: event.target.value,
+                  }))
+                }
+                className={styles.textarea}
+                rows={7}
+              />
+            </label>
+          )}
 
           {groupItems ? (
             <div className={styles.field}>

@@ -1801,6 +1801,12 @@
         "delete": "Eliminar"
       },
       "ViewModal": {
+        "question": {
+          "quiz": "Quiz",
+          "survey": "Sondagem",
+          "open": "Pergunta aberta",
+          "expectedAnswer": "Resposta esperada"
+        },
         "groups": "Grupos Teams",
         "title": "Detalhes da mensagem",
         "createdAt": "Criada em"
@@ -1824,7 +1830,18 @@
         "remove": "Remover",
         "noRecipients": "Sem destinatários selecionados.",
         "files": "Ficheiros",
-        "noFiles": "Sem ficheiros adicionados."
+        "noFiles": "Sem ficheiros adicionados.",
+        "question": {
+          "body": "Pergunta",
+          "options": "Opções",
+          "correct": "Opção certa",
+          "addOption": "Adicionar opção",
+          "feedbackCorrect": "Feedback se acertar",
+          "feedbackIncorrect": "Feedback se errar",
+          "thanksText": "Agradecimento depois da escolha",
+          "expectedAnswer": "Resposta esperada",
+          "aiEvaluation": "Avaliar a resposta com IA"
+        }
       },
       "RecipientPicker": {
         "title": "Gerir destinatários",
@@ -3378,6 +3395,12 @@
       "delete": "Eliminar"
     },
     "ViewModal": {
+      "question": {
+        "quiz": "Quiz",
+        "survey": "Sondagem",
+        "open": "Pergunta aberta",
+        "expectedAnswer": "Resposta esperada"
+      },
       "groups": "Grupos Teams",
       "title": "Detalhes da mensagem",
       "createdAt": "Criada em"
@@ -3401,7 +3424,18 @@
       "remove": "Remover",
       "noRecipients": "Sem destinatários selecionados.",
       "files": "Ficheiros",
-      "noFiles": "Sem ficheiros adicionados."
+      "noFiles": "Sem ficheiros adicionados.",
+      "question": {
+        "body": "Pergunta",
+        "options": "Opções",
+        "correct": "Opção certa",
+        "addOption": "Adicionar opção",
+        "feedbackCorrect": "Feedback se acertar",
+        "feedbackIncorrect": "Feedback se errar",
+        "thanksText": "Agradecimento depois da escolha",
+        "expectedAnswer": "Resposta esperada",
+        "aiEvaluation": "Avaliar a resposta com IA"
+      }
     },
     "RecipientPicker": {
       "title": "Gerir destinatários",

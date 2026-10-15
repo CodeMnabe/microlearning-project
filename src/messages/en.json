@@ -1793,6 +1793,12 @@
         "delete": "Delete"
       },
       "ViewModal": {
+        "question": {
+          "quiz": "Quiz",
+          "survey": "Survey",
+          "open": "Open question",
+          "expectedAnswer": "Expected answer"
+        },
         "groups": "Teams groups",
         "title": "Message details",
         "createdAt": "Created at"
@@ -1816,7 +1822,18 @@
         "remove": "Remove",
         "noRecipients": "No recipients selected.",
         "files": "Files",
-        "noFiles": "No files added."
+        "noFiles": "No files added.",
+        "question": {
+          "body": "Question",
+          "options": "Options",
+          "correct": "Correct option",
+          "addOption": "Add option",
+          "feedbackCorrect": "Feedback when correct",
+          "feedbackIncorrect": "Feedback when wrong",
+          "thanksText": "Thank-you message after the choice",
+          "expectedAnswer": "Expected answer",
+          "aiEvaluation": "Evaluate the answer with AI"
+        }
       },
       "RecipientPicker": {
         "title": "Manage recipients",
@@ -3370,6 +3387,12 @@
       "delete": "Delete"
     },
     "ViewModal": {
+      "question": {
+        "quiz": "Quiz",
+        "survey": "Survey",
+        "open": "Open question",
+        "expectedAnswer": "Expected answer"
+      },
       "groups": "Teams groups",
       "title": "Message details",
       "createdAt": "Created at"
@@ -3393,7 +3416,18 @@
       "remove": "Remove",
       "noRecipients": "No recipients selected.",
       "files": "Files",
-      "noFiles": "No files added."
+      "noFiles": "No files added.",
+      "question": {
+        "body": "Question",
+        "options": "Options",
+        "correct": "Correct option",
+        "addOption": "Add option",
+        "feedbackCorrect": "Feedback when correct",
+        "feedbackIncorrect": "Feedback when wrong",
+        "thanksText": "Thank-you message after the choice",
+        "expectedAnswer": "Expected answer",
+        "aiEvaluation": "Evaluate the answer with AI"
+      }
     },
     "RecipientPicker": {
       "title": "Manage recipients",

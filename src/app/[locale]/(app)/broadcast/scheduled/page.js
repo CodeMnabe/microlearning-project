@@ -7,6 +7,7 @@ import { useAuth } from "@/app/AuthContext";
 import useOrganization from "@/app/hooks/useOrganization";
 import styles from "./scheduled.module.css";
 import { useConfirm } from "@/app/components/Confirm/ConfirmProvider";
+import { parseQuestionOptions } from "@/lib/services/broadcast/questionOptions";
 
 import { normalizeUser } from "./helpers/recipient.helpers";
 import {
@@ -444,7 +445,30 @@ export default function ScheduledPage() {
       formData.channel,
     );
 
-    if (!formData.message.trim() || !scheduledIso) {
+    /*
+     * Nas perguntas valida-se a pergunta (as mesmas regras do envio) e a
+     * mensagem fica vazia; nas outras mensagens, o texto é obrigatório.
+     */
+    const questionResult = formData.question
+      ? parseQuestionOptions({ question: formData.question })
+      : null;
+
+    if (questionResult?.error) {
+      setError(t("Errors.invalidForm"));
+
+      await showAlert({
+        title: t("Alerts.invalidForm.title"),
+        message: questionResult.error,
+        tone: "warning",
+      });
+
+      return;
+    }
+
+    if (
+      (!questionResult && !formData.message.trim()) ||
+      !scheduledIso
+    ) {
       setError(t("Errors.invalidForm"));
 
       await showAlert({
@@ -480,7 +504,8 @@ export default function ScheduledPage() {
 
       const nextPayload = {
         ...previousPayload,
-        message: formData.message.trim(),
+        message: questionResult ? "" : formData.message.trim(),
+        ...(questionResult ? { question: questionResult.question } : {}),
         files: nextFiles,
         imageUrls: nextFiles
           .filter((file) => file?.contentType?.startsWith("image/"))
