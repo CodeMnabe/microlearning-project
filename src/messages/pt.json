@@ -1831,6 +1831,7 @@
         "noRecipients": "Sem destinatários selecionados.",
         "files": "Ficheiros",
         "noFiles": "Sem ficheiros adicionados.",
+        "unknownRecipient": "Utilizador removido",
         "question": {
           "body": "Pergunta",
           "options": "Opções",
@@ -3425,6 +3426,7 @@
       "noRecipients": "Sem destinatários selecionados.",
       "files": "Ficheiros",
       "noFiles": "Sem ficheiros adicionados.",
+      "unknownRecipient": "Utilizador removido",
       "question": {
         "body": "Pergunta",
         "options": "Opções",

@@ -1823,6 +1823,7 @@
         "noRecipients": "No recipients selected.",
         "files": "Files",
         "noFiles": "No files added.",
+        "unknownRecipient": "Removed user",
         "question": {
           "body": "Question",
           "options": "Options",
@@ -3417,6 +3418,7 @@
       "noRecipients": "No recipients selected.",
       "files": "Files",
       "noFiles": "No files added.",
+      "unknownRecipient": "Removed user",
       "question": {
         "body": "Question",
         "options": "Options",

@@ -14,12 +14,14 @@ import {
   toTimeParts,
 } from "../helpers/scheduled.helpers";
 import {
+  buildUnresolvedEntry,
+  canonicalizeRecipients,
   cleanText,
+  findCandidateForRecipient,
   getRecipientForChannel,
   getRecipientKey,
   getRecipientKind,
   getRecipientSecondary,
-  normalizeRecipientForChannel,
   uniqueRecipients,
 } from "../helpers/recipient.helpers";
 
@@ -94,47 +96,16 @@ function buildCandidate(orgUser, channel) {
   };
 }
 
-function buildEntry(recipient, candidates, channel) {
-  const normalized = normalizeRecipientForChannel(recipient, channel);
-  const key = getRecipientKey(normalized, channel);
-
-  if (!normalized || !key) return null;
-
-  const found = candidates.find((candidate) => candidate.key === key);
+function buildEntry(recipient, candidates, channel, unknownLabel) {
+  const found = findCandidateForRecipient(recipient, candidates, channel);
 
   if (found) return found;
 
-  const name =
-    cleanText(normalized.name) ||
-    cleanText(normalized.phoneNumber) ||
-    cleanText(normalized.whatsappUsername) ||
-    cleanText(normalized.whatsappBsuid) ||
-    cleanText(normalized.birdContactId) ||
-    cleanText(normalized.email) ||
-    cleanText(normalized.userId) ||
-    "Unknown recipient";
+  const entry = buildUnresolvedEntry(recipient, channel, unknownLabel);
 
-  const kind = getRecipientKind(normalized, channel);
+  if (!entry) return null;
 
-  const secondary =
-    normalized.phoneNumber ||
-    normalized.email ||
-    normalized.whatsappUsername ||
-    normalized.whatsappBsuid ||
-    normalized.birdContactId ||
-    normalized.userId ||
-    "Sem utilizador associado";
-
-  return {
-    key,
-    payloadRecipient: normalized,
-    recipient: normalized,
-    name,
-    secondary,
-    kind,
-    initials: getInitials(name),
-    unresolved: true,
-  };
+  return { ...entry, initials: getInitials(entry.name) };
 }
 
 export default function ScheduledEditModal({
@@ -218,19 +189,37 @@ export default function ScheduledEditModal({
       ? recipientCandidates
       : [];
 
-    return safeRecipients
-      .map((recipient) =>
-        buildEntry(recipient, safeCandidates, editForm.channel),
-      )
-      .filter(Boolean);
-  }, [editForm.recipients, recipientCandidates, editForm.channel]);
+    const entries = new Map();
+
+    for (const recipient of safeRecipients) {
+      const entry = buildEntry(
+        recipient,
+        safeCandidates,
+        editForm.channel,
+        translation("EditModal.unknownRecipient"),
+      );
+
+      /* Uma pessoa só aparece uma vez, mesmo que esteja guardada de 2 formas. */
+      if (entry && !entries.has(entry.key)) entries.set(entry.key, entry);
+    }
+
+    return [...entries.values()];
+  }, [editForm.recipients, recipientCandidates, editForm.channel, translation]);
 
   function removeRecipient(key) {
     setEditForm((prev) => ({
       ...prev,
-      recipients: prev.recipients.filter(
-        (recipient) => getRecipientKey(recipient, prev.channel) !== key,
-      ),
+      recipients: prev.recipients.filter((recipient) => {
+        const found = findCandidateForRecipient(
+          recipient,
+          recipientCandidates,
+          prev.channel,
+        );
+
+        return (
+          (found?.key || getRecipientKey(recipient, prev.channel)) !== key
+        );
+      }),
     }));
   }
 
@@ -246,7 +235,12 @@ export default function ScheduledEditModal({
 
     onSave({
       ...editForm,
-      recipients: uniqueRecipients(editForm.recipients, editForm.channel),
+      /* Agendas antigas, sem userId, passam à forma que o servidor aceita. */
+      recipients: canonicalizeRecipients(
+        editForm.recipients,
+        recipientCandidates,
+        editForm.channel,
+      ),
     });
   }
 

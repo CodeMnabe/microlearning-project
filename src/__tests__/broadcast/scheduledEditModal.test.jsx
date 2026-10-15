@@ -134,3 +134,62 @@ describe("ScheduledEditModal: perguntas", () => {
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
   });
 });
+
+describe("ScheduledEditModal: destinatários", () => {
+  it("mostra o nome e o telefone em vez do id", () => {
+    renderModal({
+      message: "Olá",
+      recipients: [{ userId: 5704 }, { userId: 5703 }],
+    });
+
+    expect(screen.getByText("Diogo")).toBeInTheDocument();
+    expect(screen.getByText("+351933000001")).toBeInTheDocument();
+    expect(screen.getByText("Beatriz")).toBeInTheDocument();
+    expect(screen.queryByText("5704")).toBeNull();
+  });
+
+  it("utilizador que já não existe aparece como removido, não com o id", () => {
+    renderModal({ message: "Olá", recipients: [{ userId: 999 }] });
+
+    expect(
+      screen.getByText("EditModal.unknownRecipient"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("999")).toBeNull();
+  });
+
+  it("no seletor, quem está selecionado não aparece como disponível", () => {
+    renderModal({
+      message: "Olá",
+      recipients: [{ userId: 5704 }, { userId: 5703 }],
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /EditModal.manageRecipients/ }),
+    );
+
+    const dialog = screen.getAllByRole("dialog").at(-1);
+
+    /* Diogo e Beatriz só uma vez cada (selecionados); Alexandre disponível. */
+    expect(within(dialog).getAllByText("Diogo")).toHaveLength(1);
+    expect(within(dialog).getAllByText("Beatriz")).toHaveLength(1);
+    expect(within(dialog).getAllByText("Alexandre")).toHaveLength(1);
+    expect(
+      within(dialog).getAllByRole("button", { name: /RecipientPicker.add/ }),
+    ).toHaveLength(1);
+  });
+
+  it("agenda antiga só com telefone resolve o nome e grava com userId", () => {
+    const { onSave } = renderModal({
+      message: "Olá",
+      recipients: [{ phoneNumber: "+351933000001" }],
+    });
+
+    expect(screen.getByText("Diogo")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "EditModal.save" }));
+
+    expect(onSave.mock.calls[0][0].recipients).toEqual([
+      expect.objectContaining({ userId: "5704" }),
+    ]);
+  });
+});
